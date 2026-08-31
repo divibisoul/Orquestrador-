@@ -46,6 +46,9 @@ func Select(wl core.Workload, catalog []models.PerformanceModel, mode string, st
 		if mode != "" && !matchesMode(model.Name(), mode) {
 			continue
 		}
+		if wl.Precision == core.FP64 && !isFP64Family(model.Name()) {
+			continue
+		}
 		precision := wl.Precision
 		fallbackUsed := false
 		penalty := 0.0
@@ -56,6 +59,9 @@ func Select(wl core.Workload, catalog []models.PerformanceModel, mode string, st
 			precision = fallback
 			fallbackUsed = true
 			penalty = 0.25
+		}
+		if wl.Precision == core.FP64 && precision != core.FP64 {
+			continue
 		}
 		if model.GetPFLOPS(precision) <= 0 {
 			continue
@@ -111,6 +117,11 @@ func matchesMode(name, mode string) bool {
 	default:
 		return false
 	}
+}
+
+func isFP64Family(name string) bool {
+	n := strings.ToLower(name)
+	return strings.Contains(n, "blackwell") || strings.Contains(n, "rubin")
 }
 
 func score(wl core.Workload, s Selection, strategy string) float64 {
