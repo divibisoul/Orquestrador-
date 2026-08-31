@@ -8,6 +8,8 @@ on:
       - integration/soul-six-nuclei
       - feature/trinity-fundamental-v1
       - feature/trinity-production-hardening-v1
+      - feature/nexus-runtime-hardening-batch1
+      - feature/readiness-dashboard
   pull_request:
   workflow_dispatch:
 
