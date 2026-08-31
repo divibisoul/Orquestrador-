@@ -1,33 +1,72 @@
-# Architecture — Orchestrator Nexus
+# Architecture — Recovery Baseline
 
-## Six planes
+## Canonical direction
 
-1. **State Fabric** — versioned state boundary; production consensus can be supplied through `RaftBoundary` without coupling the core to one vendor.
-2. **Neo-Cortex Prefrontal** — context, signal fusion, anomaly detection, causal/probabilistic reasoning, planning, decision and feedback.
-3. **Orchestrator** — DAG validation, step execution, parallel/distributed execution, retry, circuit breaker, bulkhead, rate limiting and fractal workers.
-4. **Super AGI** — provider-neutral generation/inference, memory systems, verification, learning boundaries, model selection and tensor cache.
-5. **Mesh** — capability discovery, registration, routing and health endpoints.
-6. **API/Control** — HTTP control plane with clean boundaries for future gRPC/Protobuf, mTLS and external adapters.
+The recovery branch treats the `core/*` packages as the canonical domain layer:
 
-## Function contract map
+- `core/orchestrator` — workflow planning/execution domain.
+- `core/prefrontal` — executive decision/policy layer.
+- `core/neuralfabric` — route scoring and learning abstractions.
+- `core/superagi` — generation/agent capability boundaries.
+- `compute` — device/job execution abstraction.
+- `mesh` — node discovery/heartbeat runtime.
+- `state` — state/runtime abstraction.
+- `security` — execution policy boundary.
+- `api/proto` — provider-neutral inter-core contracts.
 
-### Orchestrator (1–15)
-1 CreateWorkflow; 2 ExecuteStep; 3 GetWorkflowStatus; 4 PauseWorkflow; 5 ResumeWorkflow; 6 RollbackWorkflow; 7 RetryFailedStep; 8 ExecuteParallel; 9 ExecuteDistributed; 10 CircuitBreaker; 11 Bulkhead; 12 RateLimiter; 13 SpawnSubOrchestrator; 14 KillSubOrchestrator; 15 RebalanceTasks.
+`internal/*` packages are compatibility/integration surfaces until their consumers are migrated. They must not become a second source of truth for domain behavior.
 
-### Neo-Cortex (16–29)
-16 ReadContext; 17 FuseSignals; 18 DetectAnomalies; 19 CausalReason; 20 ProbabilisticReason; 21 GeneratePlan; 22 SimulatePlan; 23 PrioritizeGoals; 24 Decide; 25 Delegate; 26 EvaluateOutcome; 27 LearnFromFeedback; 28 OptimizePolicy; 29 ExplainDecision.
+## Target flow
 
-### Super AGI (30–60)
-30 GenerateText; 31 GenerateEmbedding; 32 GenerateImage; 33 GenerateCode; 34 Classify; 35 Summarize; 36 Translate; 37 VerifyFact; 38 VerifySafety; 39 VerifyCoherence; 40 VerifyCode; 41 WorkingMemory; 42 EpisodicMemory; 43 SemanticMemory; 44 ProceduralMemory; 45 VectorMemory; 46 TrainOnline; 47 FineTuneLoRA; 48 PredictLoRADemand; 49 SwapLoRA; 50 ReplayExperience; 51 Inference; 52 BatchInference; 53 DynamicQuantization; 54 SelectBestModel; 55 CacheTensor; 56 ProfileModel; 57 EstimateCost; 58 ExplainInference; 59 MonitorDrift; 60 AutoRetry.
+```text
+                    +----------------------+
+                    |   API / Contracts    |
+                    | REST / Proto / gRPC  |
+                    +----------+-----------+
+                               |
+                               v
+                    +----------------------+
+                    |    Orchestrator      |
+                    | core/orchestrator    |
+                    +----------+-----------+
+                               |
+                 +-------------+-------------+
+                 |                           |
+                 v                           v
+        +------------------+        +------------------+
+        | Neo-Cortex       |        | Neural Fabric    |
+        | core/prefrontal  |        | core/neuralfabric|
+        +--------+---------+        +--------+---------+
+                 |                           |
+                 +-------------+-------------+
+                               |
+                               v
+                    +----------------------+
+                    | Compute / Super AGI |
+                    +----------+-----------+
+                               |
+                 +-------------+-------------+
+                 |                           |
+                 v                           v
+            +---------+                 +---------+
+            |  Mesh   |                 | State   |
+            +---------+                 +---------+
 
-## Engineering truthfulness
+Security policy is an enforcement boundary around externally observable effects.
+```
 
-The foundation implements deterministic and provider-neutral behavior where a real external model/runtime is not present. Image generation, translation, online weight training, LoRA training/swapping and accelerator execution therefore expose explicit extension boundaries rather than pretending to execute a model that is not installed. This makes tests honest and production integration possible.
+## Duplication policy
 
-## Performance
+No duplicate package is to be deleted merely because it exists. Before removal, all imports and tests must be migrated and the replacement must preserve behavior. `internal/nexus`, `internal/mesh`, and `internal/state` are therefore compatibility candidates, not automatically safe deletion targets.
 
-Targets such as P95 decision latency <15 ms, 1,200 RPS, 40% energy reduction, 99.99% control-plane availability and 1→1,000 nodes/30 s are acceptance targets. They require hardware, topology, workload and benchmark evidence before being marked achieved.
+## Runtime maturity
 
-## Failure model
+The repository contains real implementations mixed with explicit boundaries/stubs. A contract, interface, or method existing in source code is not evidence that the underlying distributed/GPU/learning behavior is operational.
 
-DAG cycles are rejected; unknown dependencies are rejected; node selection requires `ready` status and declared capability; retries have bounded backoff; workflow state is explicit; and the control plane shuts down gracefully.
+## Communication
+
+Protobuf definitions are the canonical inter-core contract when cross-process communication is required. Generated bindings and a live gRPC server are a separate implementation milestone.
+
+## Existing function map
+
+Orchestrator: 1–15. Neo-Cortex: 16–29. Super AGI: 30–60. The original detailed contract map remains preserved in git history and should be kept synchronized with implementation changes.
