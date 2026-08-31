@@ -76,14 +76,12 @@ func (e *SimulatedExecutor) Execute(ctx context.Context, wl core.Workload) (core
 }
 
 // ExecutePlan runs independent simulated workloads in parallel using a bounded worker pool.
-// No more than MaxSimulationParallelUnits goroutines are created, even if configuration requests more.
+// The configured value can describe a larger hardware model, but runtime workers are capped at 1000.
 func (e *SimulatedExecutor) ExecutePlan(ctx context.Context, workloads []core.Workload) []core.Result {
 	results := make([]core.Result, len(workloads))
 	if len(workloads) == 0 { return results }
 	if ctx == nil { ctx = context.Background() }
-	workers := e.Engine.Config.MaxParallelUnits
-	if workers < 1 { workers = 1 }
-	if workers > core.MaxSimulationParallelUnits { workers = core.MaxSimulationParallelUnits }
+	workers := e.Engine.Config.EffectiveParallelUnits()
 	if workers > len(workloads) { workers = len(workloads) }
 	jobs := make(chan int)
 	var wg sync.WaitGroup
@@ -91,21 +89,14 @@ func (e *SimulatedExecutor) ExecutePlan(ctx context.Context, workloads []core.Wo
 	for i := 0; i < workers; i++ {
 		go func() {
 			defer wg.Done()
-			for idx := range jobs {
-				results[idx], _ = e.Execute(ctx, workloads[idx])
-			}
+			for idx := range jobs { results[idx], _ = e.Execute(ctx, workloads[idx]) }
 		}()
 	}
 	for i := range workloads {
 		select {
 		case <-ctx.Done():
 			results[i] = core.Result{WorkloadID: workloads[i].ID, Error: ctx.Err()}
-		default:
-			select {
-			case <-ctx.Done():
-				results[i] = core.Result{WorkloadID: workloads[i].ID, Error: ctx.Err()}
-			case jobs <- i:
-			}
+		case jobs <- i:
 		}
 	}
 	close(jobs)
