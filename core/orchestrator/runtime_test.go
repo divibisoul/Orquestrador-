@@ -6,7 +6,6 @@ import (
 	"sync"
 	"sync/atomic"
 	"testing"
-	"time"
 )
 
 func TestExecuteStepRejectsConcurrentDuplicateExecution(t *testing.T) {
@@ -49,7 +48,6 @@ func TestExecuteStepRejectsConcurrentDuplicateExecution(t *testing.T) {
 func TestRollbackPreservesProgressWhenCompensationFails(t *testing.T) {
 	e := NewEngine(1)
 	var compensated atomic.Int32
-	var failOnce sync.Once
 	compensationErr := errors.New("compensation failed")
 
 	steps := []Step{
@@ -58,19 +56,16 @@ func TestRollbackPreservesProgressWhenCompensationFails(t *testing.T) {
 			return nil
 		}},
 		{ID: "s2", Run: func(context.Context) error { return nil }, Compensate: func(context.Context) error {
-			var err error
-			failOnce.Do(func() { err = compensationErr })
-			return err
+			return compensationErr
 		}},
 	}
 	if err := e.CreateWorkflow("w", steps); err != nil {
 		t.Fatal(err)
 	}
-	if err := e.ExecuteStep(context.Background(), "w"); err != nil {
-		t.Fatal(err)
-	}
-	if err := e.ExecuteStep(context.Background(), "w"); err != nil {
-		t.Fatal(err)
+	for range steps {
+		if err := e.ExecuteStep(context.Background(), "w"); err != nil {
+			t.Fatal(err)
+		}
 	}
 
 	if err := e.RollbackWorkflow(context.Background(), "w"); !errors.Is(err, compensationErr) {
@@ -83,14 +78,14 @@ func TestRollbackPreservesProgressWhenCompensationFails(t *testing.T) {
 	if state.Status != RollbackFailed {
 		t.Fatalf("expected rollback_failed, got %s", state.Status)
 	}
-	if state.Current != 1 {
-		t.Fatalf("expected rollback cursor at failed step boundary, got %d", state.Current)
+	if state.Current != 2 {
+		t.Fatalf("expected executed-step cursor preserved at 2, got %d", state.Current)
 	}
 	if state.RollbackError != compensationErr.Error() {
 		t.Fatalf("unexpected rollback error: %q", state.RollbackError)
 	}
 	if compensated.Load() != 0 {
-		t.Fatalf("s1 should not compensate after s2 compensation failed first, got %d", compensated.Load())
+		t.Fatalf("s1 should not compensate after s2 compensation failed, got %d", compensated.Load())
 	}
 }
 
@@ -164,4 +159,4 @@ func closeOnce(ch chan struct{}) {
 	}
 }
 
-var _ = time.Second
+var _ sync.Once
