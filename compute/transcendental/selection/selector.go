@@ -13,7 +13,7 @@ type Selection struct {
 	Model              models.PerformanceModel
 	EffectivePrecision core.Precision
 	FallbackUsed       bool
-	Penalty            float64
+	Penalty             float64
 }
 
 func Select(wl core.Workload, catalog []models.PerformanceModel, mode string, strategy string, fallback core.Precision) (Selection, error) {
@@ -33,13 +33,17 @@ func Select(wl core.Workload, catalog []models.PerformanceModel, mode string, st
 	if strategy != "auto" && strategy != "precision_first" && strategy != "latency_first" && strategy != "memory_first" {
 		return Selection{}, fmt.Errorf("unsupported strategy: %s", strategy)
 	}
+	mode = strings.ToLower(strings.TrimSpace(mode))
+	if mode == "auto" {
+		mode = ""
+	}
 
 	candidates := make([]Selection, 0, len(catalog))
 	for _, model := range catalog {
-		if model == nil || model.GetMemoryCapacityGB() < wl.MemoryNeeded {
+		if model == nil || model.GetMemoryCapacityGB() < wl.MemoryNeeded || model.GetBandwidthGBs() <= 0 {
 			continue
 		}
-		if mode != "" && !strings.EqualFold(mode, "auto") && !matchesMode(model.Name(), mode) {
+		if mode != "" && !matchesMode(model.Name(), mode) {
 			continue
 		}
 		precision := wl.Precision
@@ -53,7 +57,7 @@ func Select(wl core.Workload, catalog []models.PerformanceModel, mode string, st
 			fallbackUsed = true
 			penalty = 0.25
 		}
-		if model.GetPFLOPS(precision) <= 0 || model.GetBandwidthGBs() <= 0 {
+		if model.GetPFLOPS(precision) <= 0 {
 			continue
 		}
 		candidates = append(candidates, Selection{Model: model, EffectivePrecision: precision, FallbackUsed: fallbackUsed, Penalty: penalty})
@@ -61,6 +65,13 @@ func Select(wl core.Workload, catalog []models.PerformanceModel, mode string, st
 	if len(candidates) == 0 {
 		return Selection{}, errors.New("no compatible model satisfies mode, memory, and precision requirements")
 	}
+
+	if strategy == "auto" && mode == "" {
+		if preferred, ok := selectSmallWorkloadTrillium(wl, candidates); ok {
+			return preferred, nil
+		}
+	}
+
 	best := candidates[0]
 	bestScore := score(wl, best, strategy)
 	for _, candidate := range candidates[1:] {
@@ -72,8 +83,20 @@ func Select(wl core.Workload, catalog []models.PerformanceModel, mode string, st
 	return best, nil
 }
 
+func selectSmallWorkloadTrillium(wl core.Workload, candidates []Selection) (Selection, bool) {
+	if wl.MatrixSize >= 1024 {
+		return Selection{}, false
+	}
+	for _, candidate := range candidates {
+		if strings.Contains(strings.ToLower(candidate.Model.Name()), "trillium") && !candidate.FallbackUsed {
+			return candidate, true
+		}
+	}
+	return Selection{}, false
+}
+
 func matchesMode(name, mode string) bool {
-	n := strings.ToLower(name)
+	n := strings.ToLower(strings.TrimSpace(name))
 	switch strings.ToLower(strings.TrimSpace(mode)) {
 	case "blackwell":
 		return strings.Contains(n, "blackwell")
@@ -118,9 +141,6 @@ func score(wl core.Workload, s Selection, strategy string) float64 {
 		return penalized - 0.1 + mem*1e-6
 	}
 
-	if wl.MatrixSize < 1024 && strings.Contains(strings.ToLower(s.Model.Name()), "trillium") {
-		return penalized*0.5 + mem*1e-6
-	}
 	if wl.MatrixSize > 4096 && (s.Model.GetBandwidthGBs() > 10000 || s.Model.GetMemoryCapacityGB() > 200) {
 		return penalized*0.8 + mem*1e-6
 	}
