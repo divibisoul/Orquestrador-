@@ -11,6 +11,8 @@ import (
 )
 
 type TextProvider interface { Generate(context.Context, string) (string, error) }
+type ImageProvider interface { GenerateImage(context.Context, string) ([]byte, error) }
+type EmbeddingProvider interface { Embed(context.Context, string) ([]float64, error) }
 
 type Memory struct {
 	mu sync.RWMutex
@@ -28,9 +30,10 @@ type Runtime struct { mu sync.RWMutex; Memory *Memory; Provider TextProvider }
 
 func NewRuntime() *Runtime { return &Runtime{Memory:&Memory{semantic:map[string]string{},procedural:map[string]string{},vectors:map[string][]float64{},adapters:map[string][]string{}}} }
 func (r *Runtime) WithProvider(provider TextProvider) *Runtime { if r==nil{return r};r.mu.Lock();r.Provider=provider;r.mu.Unlock();return r }
-func (r *Runtime) GenerateText(ctx context.Context,prompt string)(string,error){if r==nil{return "",errors.New("nil superagi runtime")};if ctx==nil{return "",errors.New("nil context")};if err:=ctx.Err();err!=nil{return "",err};prompt=strings.TrimSpace(prompt);if prompt==""{return "",errors.New("prompt required")};r.mu.RLock();provider:=r.Provider;r.mu.RUnlock();if provider==nil{provider=NewGeminiProviderFromEnv(nil)};return provider.Generate(ctx,prompt)}
-func (r *Runtime) GenerateEmbedding(ctx context.Context,text string)([]float64,error){if r==nil{return nil,errors.New("nil superagi runtime")};if ctx==nil{return nil,errors.New("nil context")};if err:=ctx.Err();err!=nil{return nil,err};text=strings.TrimSpace(text);if text==""{return nil,errors.New("text required")};provider,ok:=r.currentEmbeddingProvider();if !ok{return nil,errors.New("embedding provider is not configured")};return provider.Embed(ctx,text)}
-func (r *Runtime) GenerateImage(context.Context,string)([]byte,error){return nil,errors.New("image provider is not configured")}
+func (r *Runtime) provider() TextProvider { if r==nil{return nil};r.mu.RLock();p:=r.Provider;r.mu.RUnlock();if p==nil{p=NewGeminiProviderFromEnv(nil)};return p }
+func (r *Runtime) GenerateText(ctx context.Context,prompt string)(string,error){if r==nil{return "",errors.New("nil superagi runtime")};if ctx==nil{return "",errors.New("nil context")};if err:=ctx.Err();err!=nil{return "",err};prompt=strings.TrimSpace(prompt);if prompt==""{return "",errors.New("prompt required")};return r.provider().Generate(ctx,prompt)}
+func (r *Runtime) GenerateEmbedding(ctx context.Context,text string)([]float64,error){if r==nil{return nil,errors.New("nil superagi runtime")};if ctx==nil{return nil,errors.New("nil context")};if err:=ctx.Err();err!=nil{return nil,err};text=strings.TrimSpace(text);if text==""{return nil,errors.New("text required")};r.mu.RLock();p:=r.Provider;r.mu.RUnlock();if ep,ok:=p.(EmbeddingProvider);ok&&ep!=nil{return ep.Embed(ctx,text)};if gp,ok:=r.provider().(EmbeddingProvider);ok{return gp.Embed(ctx,text)};return nil,errors.New("embedding provider is not configured")}
+func (r *Runtime) GenerateImage(ctx context.Context,prompt string)([]byte,error){if r==nil{return nil,errors.New("nil superagi runtime")};if ctx==nil{return nil,errors.New("nil context")};if err:=ctx.Err();err!=nil{return nil,err};prompt=strings.TrimSpace(prompt);if prompt==""{return nil,errors.New("image prompt required")};r.mu.RLock();p:=r.Provider;r.mu.RUnlock();if ip,ok:=p.(ImageProvider);ok&&ip!=nil{return ip.GenerateImage(ctx,prompt)};if gp,ok:=r.provider().(ImageProvider);ok{return gp.GenerateImage(ctx,prompt)};return nil,errors.New("image provider is not configured")}
 func (r *Runtime) GenerateCode(ctx context.Context,spec,language string)(string,error){if strings.TrimSpace(spec)==""||strings.TrimSpace(language)==""{return "",errors.New("spec and language required")};return r.GenerateText(ctx,"Generate production-safe "+language+" code for this specification:\n"+spec)}
 func (r *Runtime) Classify(_ context.Context,text string)(string,float64){if strings.TrimSpace(text)==""{return "empty",1};return "general",.5}
 func (r *Runtime) Summarize(ctx context.Context,text string)(string,error){if strings.TrimSpace(text)==""{return "",errors.New("text required")};return r.GenerateText(ctx,"Summarize the following text concisely:\n"+text)}
@@ -61,5 +64,3 @@ func (r *Runtime) MonitorDrift(reference,current []float64)float64{n:=len(refere
 func (r *Runtime) AutoRetry(ctx context.Context,model,input string,minConfidence float64)(string,error){var out string;var err error;for i:=0;i<3;i++{out,err=r.Inference(ctx,model,input);if err==nil&&minConfidence<=.8{return out,nil}};if err==nil{return out,nil};return out,err}
 func (r *Runtime) Digest(text string)string{h:=sha256.Sum256([]byte(time.Now().UTC().Format(time.RFC3339Nano)+text));return hex.EncodeToString(h[:])}
 func cleanStrings(in []string)[]string{out:=make([]string,0,len(in));for _,s:=range in{if s=strings.TrimSpace(s);s!=""{out=append(out,s)}};return out}
-type embeddingProvider interface{Embed(context.Context,string)([]float64,error)}
-func (r *Runtime) currentEmbeddingProvider()(embeddingProvider,bool){if r==nil{return nil,false};r.mu.RLock();defer r.mu.RUnlock();p,ok:=r.Provider.(embeddingProvider);return p,ok}
