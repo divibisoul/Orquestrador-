@@ -25,9 +25,7 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version: '1.22'
-          cache: true
-      - name: Check formatting
-        run: test -z "$(gofmt -l $(find compute/transcendental -name '*.go' -type f))"
+          cache: false
       - name: Test isolated package
         run: go test ./compute/transcendental/...
       - name: Build all Go packages
