@@ -70,10 +70,28 @@ func TestSelectorPrecisionFirstAvoidsFallback(t *testing.T) {
 	}
 }
 
+func TestSelectorMemoryFirstUsesCapacityRatio(t *testing.T) {
+	cfg := core.DefaultConfig()
+	s, err := selection.Select(workload("memory", core.FP8, 4096, 250), models.DefaultCatalog(cfg), "auto", "memory_first", cfg.PrecisionFallback)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if s.Model.GetMemoryCapacityGB() < 250 {
+		t.Fatalf("selected insufficient memory model %s", s.Model.Name())
+	}
+}
+
 func TestSelectorRejectsUnsupportedStrategy(t *testing.T) {
 	cfg := core.DefaultConfig()
 	if _, err := selection.Select(workload("bad", core.FP16, 1024, 1), models.DefaultCatalog(cfg), "auto", "unknown", cfg.PrecisionFallback); err == nil {
 		t.Fatal("expected unsupported strategy error")
+	}
+}
+
+func TestSelectorRejectsUnsupportedFallback(t *testing.T) {
+	cfg := core.DefaultConfig()
+	if _, err := selection.Select(workload("bad-fallback", core.FP16, 1024, 1), models.DefaultCatalog(cfg), "auto", "auto", core.Precision("bogus")); err == nil {
+		t.Fatal("expected unsupported fallback precision error")
 	}
 }
 
