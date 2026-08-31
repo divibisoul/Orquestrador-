@@ -1,6 +1,6 @@
 # ORQUESTRADOR-NEXUS
 
-Plataforma cognitiva distribuída e provider-neutral. Esta recuperação consolida a fundação existente em uma base canônica, testável e preparada para evolução entre os seis planos.
+Plataforma cognitiva distribuída e provider-neutral. A linha de finalização consolida a fundação, Trinity, Mesh/SOUL, estado, segurança, transporte e fronteiras de provider em uma base canônica, testável e evolutiva.
 
 ## Arquitetura
 
@@ -15,32 +15,39 @@ Neo-Córtex -> Neural Fabric -> Orquestrador -> Compute
               Mesh <-> State
                   |
              API / Protobuf
+                  |
+           Provider boundaries
 ```
 
 Pacotes canônicos de domínio:
 
-- `core/orchestrator` — engine único de workflow, execução e resiliência.
-- `core/prefrontal` — planejamento, decisão, contexto e feedback executivo.
-- `core/neuralfabric` — encoding, previsão, seleção de rotas e feedback.
-- `core/superagi` — geração/provider boundary, memória e verificação.
-- `mesh` — registro, descoberta, heartbeat e stale-node.
-- `state` — armazenamento versionado e CAS.
-- `compute` — abstração de dispositivos e execução local/simulada.
-- `security` — policy/auth/audit boundary.
+- `core/orchestrator` — engine único de workflow, execução, resiliência e recovery.
+- `core/prefrontal` — planejamento, decisão, conflito, working memory e feedback executivo.
+- `core/neuralfabric` — seleção de rota e feedback adaptativo para a Trinity, preservando a Neural Fabric histórica.
+- `core/trinity` — contrato e fluxo PFC -> Fabric -> Compute -> Feedback -> memória.
+- `core/superagi` — geração, inferência, memória, verificação e lifecycle de aprendizado sobre uma única fonte de verdade.
+- `mesh` — registro, descoberta, heartbeat, stale-node e capacidades.
+- `core/soul` — integração canônica dos núcleos N01-N06 sem copiar seus runtimes.
+- `state` — armazenamento versionado, CAS e durable store.
+- `state/raft` — núcleo de consenso distribuído isolado, pronto para integração controlada ao recovery.
+- `compute` — abstração de dispositivos e execução local; backends físicos são providers explícitos.
+- `mesh/security` — mTLS TLS 1.3 e verificação opcional de identidade SPIFFE.
+- `api/grpc` — servidor/cliente gRPC e health checking; HTTP legado permanece disponível.
+- `observability` — métricas e propagação de trace context.
 
-As antigas implementações `internal/nexus`, `internal/mesh` e `internal/state` foram removidas da árvore de recuperação após verificação de consumidores. O histórico original continua preservado no Git e na branch `foundation/orchestrator-nexus-v1`.
+## Estado de maturidade
 
-## Maturidade
+A linha atual está em **hardening/finalização**. O critério de conclusão é comportamento demonstrado, não quantidade de arquivos.
 
-**Implementado:** workflow lifecycle, execução sequencial/paralela/distribuída, retry, circuit breaker, bulkhead, rate limiter, fractal primitives; planejamento/decisão executiva; roteamento Neural Fabric; registro/descoberta/heartbeat do Mesh; state versionado/CAS; políticas básicas de segurança; E2E dos seis planos.
+**Funcionando e testado:** workflow lifecycle; execução concorrente/distribuída; retry; circuit breaker; bulkhead; rate limiter; PFC; working memory; Neural Fabric; Trinity; compute CPU determinístico; Mesh registry; SOUL envelope/trace validation; durable store; núcleo Raft; mTLS; gRPC round-trip/health; adapters SuperAGI para generator/inference/learning/memory/verifier; provider Gemini como boundary injetável.
 
-**Parcial/boundary:** aprendizagem adaptativa/persistência da Neural Fabric; modelos/provider reais do Super AGI; GPU/NPU físico; Raft distribuído; mTLS/SPIFFE; observabilidade externa; runtime gRPC.
+**Ainda dependente de ambiente/provider real:** GPU CUDA/ROCm/NPU físicos; workload identity SPIFFE provisionada por uma autoridade de identidade; treinamento efetivo de pesos LoRA; E2E entre os seis repositórios ativos; integração operacional de Raft ao scheduler/recovery distribuído; tracing/exportador externo; CI de segurança do HEAD final.
 
-**Experimental:** adapter Gemini da branch `feature/gemini-provider`; permanece isolado do runtime Go canônico.
+Nada desses itens é apresentado como funcional só porque possui interface ou catálogo.
 
-## Executar
+## Execução
 
-Requisitos: Go conforme `go.mod` e Python 3 para os testes do adapter.
+Requisitos: Go conforme `go.mod` e Python 3 para os adapters.
 
 ```bash
 go mod tidy
@@ -48,32 +55,21 @@ go build ./...
 go test ./...
 go test ./... -race
 go run ./cmd/nexus
-```
-
-Demonstração independente dos seis planos:
-
-```bash
 go run ./cmd/orchestrator
 ```
 
 O plano de controle Nexus usa `:8080`. Consulte `docs/API_REFERENCE.md`.
 
-## CI / self-hosted runner
+## Feature flags
 
-A recuperação usa um GitHub Actions runner auto-hospedado para CI, segurança e benchmarks. O runner deve fornecer Linux/x64, compatibilidade com a versão configurada do Actions Runner, Go 1.23, Python 3 e Docker para o scanner Gosec.
-
-Consulte `docs/SELF_HOSTED_RUNNER.md` para a preparação e verificação do ambiente.
-
-## Recuperação
-
-A branch de trabalho é `recovery/consolidation`. O relatório forense e a lista de inconsistências estão em `ISSUES.md` e `RECOVERY_REPORT.md`.
-
-Antes de qualquer merge em `main`, os workflows atuais devem comprovar build, vet, testes/race, Python adapter e security scan verdes no runner auto-hospedado.
+A Trinity permanece opt-in. O caminho legado continua intacto quando a integração não está habilitada. A ativação completa deve ocorrer somente depois de todos os gates de validação.
 
 ## Princípios
 
 1. Nenhuma funcionalidade existente é removida sem rastreabilidade e justificativa.
-2. Contratos, simuladores e adapters não são confundidos com runtimes reais.
-3. Falhas e operações não implementadas devem ser explícitas.
-4. Segurança é uma fronteira de enforcement, não apenas documentação.
-5. Performance só é declarada após benchmark reproduzível.
+2. Uma única implementação canônica por responsabilidade; adapters delegam, não duplicam.
+3. Contratos, simuladores e boundaries de provider não são confundidos com runtimes físicos.
+4. Toda falha encontrada entra imediatamente no ciclo de correção e teste.
+5. Estado compartilhado é protegido contra concorrência, aliasing e recuperação inconsistente.
+6. Performance e disponibilidade só são declaradas após teste reproduzível.
+7. Branches de outras frentes são tratadas como trabalho do mesmo sistema: antes de modificar, comparar; diante de conflito, integrar a solução mais completa sem apagar a outra.
