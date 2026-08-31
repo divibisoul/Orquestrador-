@@ -8,53 +8,49 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: orchestrator-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   go:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
           go-version: '1.23'
           cache: true
+      - name: Environment diagnostics
+        run: |
+          go version
+          go env
+          git --version
+          uname -a
       - name: Go diagnostics and validation
         shell: bash
         run: |
-          set +e
-          : > /tmp/gofmt.log
-          : > /tmp/vet.log
-          : > /tmp/build.log
-          : > /tmp/test.log
-          gofmt -w . > /tmp/gofmt.log 2>&1
-          fmt_status=$?
-          go vet ./... > /tmp/vet.log 2>&1
-          vet_status=$?
-          go build ./... > /tmp/build.log 2>&1
-          build_status=$?
-          go test ./... -count=1 -race > /tmp/test.log 2>&1
-          test_status=$?
-          cat /tmp/gofmt.log /tmp/vet.log /tmp/build.log /tmp/test.log
-          if [ "$fmt_status" -ne 0 ] || [ "$vet_status" -ne 0 ] || [ "$build_status" -ne 0 ] || [ "$test_status" -ne 0 ]; then
-            echo "Go validation failed: format=$fmt_status vet=$vet_status build=$build_status test=$test_status"
-            exit 1
-          fi
-
+          set -euo pipefail
+          gofmt -l . | tee /tmp/gofmt.log
+          test ! -s /tmp/gofmt.log
+          go vet ./... | tee /tmp/vet.log
+          go build ./... | tee /tmp/build.log
+          go test ./... -count=1 -race | tee /tmp/test.log
       - name: Upload Go diagnostics
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: go-recovery-diagnostics
+          name: go-recovery-diagnostics-${{ github.run_id }}
           path: /tmp/*.log
           if-no-files-found: ignore
 
   python-adapter:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
+      - name: Verify Python runtime
+        run: python3 --version
       - name: Install Gemini SDK
-        run: python -m pip install --disable-pip-version-check 'google-genai>=1.0.0,<2.0.0'
+        run: python3 -m pip install --disable-pip-version-check 'google-genai>=1.0.0,<2.0.0'
       - name: Python adapter syntax check
-        run: python -m py_compile core/superagi/generator/providers/base.py core/superagi/generator/providers/gemini.py core/neural_fabric/router.py api/gemini.py
+        run: python3 -m py_compile core/superagi/generator/providers/base.py core/superagi/generator/providers/gemini.py core/neural_fabric/router.py api/gemini.py
