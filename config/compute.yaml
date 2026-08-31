@@ -1,0 +1,11 @@
+compute:
+  enabled: false
+  mode: "auto"
+  precision_fallback: "fp32"
+  max_parallel_units: 8192
+  simulation:
+    efficiency_factor: 0.7
+    use_sparsity: false
+
+# The configured value may describe hardware parallelism. The simulated executor
+# hard-caps runtime goroutines at 1000 (core.MaxSimulationParallelUnits).
