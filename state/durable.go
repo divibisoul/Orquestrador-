@@ -96,7 +96,8 @@ func (s *DurableStore) flushLocked() error {
 	if err != nil {
 		return err
 	}
-	tmp := s.path + ".tmp"
+	tmp := filepath.Clean(s.path + ".tmp")
+	// #nosec G304 -- s.path is the normalized application-selected durable-store path; tmp only appends a fixed suffix.
 	f, err := os.OpenFile(tmp, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0600)
 	if err != nil {
 		return err
@@ -115,7 +116,6 @@ func (s *DurableStore) flushLocked() error {
 	if err := os.Rename(tmp, s.path); err != nil {
 		return err
 	}
-	// Persist the directory entry when the platform supports syncing it.
 	dir, err := os.Open(filepath.Dir(s.path))
 	if err == nil {
 		_ = dir.Sync()
