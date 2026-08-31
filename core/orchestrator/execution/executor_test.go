@@ -45,10 +45,19 @@ func TestExecuteParallelHonorsCancellation(t *testing.T) {
 
 func TestExecuteDistributedRejectsNilDispatcher(t *testing.T) {
 	errs := New(1).ExecuteDistributed(context.Background(), []Task{func(context.Context) error { return nil }}, nil)
-	if len(errs) != 1 || !errors.Is(errs[0], errors.New("nil dispatcher")) {
-		if len(errs) != 1 || errs[0] == nil || errs[0].Error() != "nil dispatcher" {
-			t.Fatalf("expected nil dispatcher error, got %#v", errs)
-		}
+	if len(errs) != 1 || errs[0] == nil || errs[0].Error() != "nil dispatcher" {
+		t.Fatalf("expected nil dispatcher error, got %#v", errs)
+	}
+}
+
+func TestExecuteDistributedPropagatesCancellation(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	errs := New(1).ExecuteDistributed(ctx, []Task{func(context.Context) error { return nil }}, func(context.Context, Task) error {
+		return nil
+	})
+	if len(errs) != 1 || !errors.Is(errs[0], context.Canceled) {
+		t.Fatalf("expected context cancellation, got %#v", errs)
 	}
 }
 
