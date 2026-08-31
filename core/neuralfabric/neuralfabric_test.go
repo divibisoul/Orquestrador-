@@ -2,6 +2,7 @@ package neuralfabric
 
 import (
 	"context"
+	"errors"
 	"sync"
 	"testing"
 
@@ -70,3 +71,50 @@ func TestConcurrency(t *testing.T) {
 	}
 	wg.Wait()
 }
+
+func TestRuntimeCheckpointLifecycle(t *testing.T) {
+	ctx := context.Background()
+	f := NewRuntime()
+	f.RecordFeedback(Experience{WorkloadID: "checkpoint", Reward: 0.8})
+	before := f.ExperienceCount()
+	if before != 1 {
+		t.Fatalf("experience count=%d want 1", before)
+	}
+	if err := f.Save(ctx); err != nil {
+		t.Fatal(err)
+	}
+	f.RecordFeedback(Experience{WorkloadID: "extra", Reward: -0.2})
+	if f.ExperienceCount() != 2 {
+		t.Fatalf("experience count=%d want 2", f.ExperienceCount())
+	}
+	if err := f.Load(ctx); err != nil {
+		t.Fatal(err)
+	}
+	if f.ExperienceCount() != before {
+		t.Fatalf("restored experience count=%d want %d", f.ExperienceCount(), before)
+	}
+}
+
+func TestRuntimeUpdateChangesWeightsSafely(t *testing.T) {
+	f := NewRuntime()
+	f.RecordFeedback(Experience{WorkloadID: "rewarded", Reward: 1})
+	if err := f.Update(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	f.mu.RLock()
+	defer f.mu.RUnlock()
+	for i, w := range f.weights {
+		if w < 0 || w > 1 {
+			t.Fatalf("weight[%d]=%f outside [0,1]", i, w)
+		}
+	}
+}
+
+func TestRuntimeRejectsNilContext(t *testing.T) {
+	f := NewRuntime()
+	if _, err := f.EncodeTask(nil, "task"); !errors.Is(err, errNilContext) {
+		t.Fatalf("EncodeTask error=%v", err)
+	}
+}
+
+var errNilContext = errors.New("nil context")
