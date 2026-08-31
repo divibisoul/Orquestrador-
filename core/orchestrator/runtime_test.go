@@ -3,7 +3,6 @@ package orchestrator
 import (
 	"context"
 	"errors"
-	"sync"
 	"sync/atomic"
 	"testing"
 )
@@ -158,5 +157,3 @@ func closeOnce(ch chan struct{}) {
 		close(ch)
 	}
 }
-
-var _ sync.Once
