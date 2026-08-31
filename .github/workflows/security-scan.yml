@@ -2,7 +2,7 @@ name: Security
 
 on:
   push:
-    branches: [main, recovery/consolidation, integration/soul-six-nuclei]
+    branches: [main, recovery/consolidation, integration/soul-six-nuclei, feature/trinity-fundamental-v1, feature/trinity-production-hardening-v1, feature/nexus-runtime-hardening-batch1, feature/nexus-finalization-v1, feature/readiness-dashboard]
   pull_request:
   workflow_dispatch:
 
@@ -11,9 +11,14 @@ permissions:
 
 jobs:
   gosec:
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
-      - uses: securego/gosec@v2.22.8
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.25'
+          cache: true
+      - name: Go vulnerability scan
+        uses: securego/gosec@v2.22.8
         with:
           args: ./...
