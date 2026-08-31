@@ -3,11 +3,15 @@ package main
 import (
 	"context"
 	"fmt"
+	"os"
+	"strconv"
+	"time"
 
+	"github.com/divibisoul/Orquestrador-/compute/transcendental"
 	"github.com/divibisoul/Orquestrador-/core/neuralfabric"
 	"github.com/divibisoul/Orquestrador-/core/orchestrator"
 	"github.com/divibisoul/Orquestrador-/core/prefrontal"
-	"github.com/divibisoul/Orquestrador-/core/superagi"
+	"github.com/divibisoul/Orquestrador-/core/trinity"
 	"github.com/divibisoul/Orquestrador-/mesh"
 	"github.com/divibisoul/Orquestrador-/state"
 )
@@ -52,15 +56,50 @@ func main() {
 	}
 	fmt.Println("[neural-fabric] route accepted")
 
-	agi := superagi.NewRuntime()
-	if _, err := agi.GenerateEmbedding(ctx, goal); err != nil {
-		fmt.Printf("super AGI failed: %v\n", err)
-		return
-	}
-	fmt.Println("[super-agi] deterministic embedding generated")
-
+	// The legacy state store remains part of the legacy path. It is not used
+	// as evidence of durable execution; durable recovery is a separate gate.
 	store := state.NewStore()
 	version := store.Put("workflow", []byte("completed"))
-	fmt.Printf("[state] workflow version=%d\n", version)
-	fmt.Println("six-plane orchestrator demo completed")
+	fmt.Printf("[state][legacy] workflow version=%d\n", version)
+
+	if trinityEnabled() {
+		if err := runTrinity(ctx, goal); err != nil {
+			fmt.Printf("[trinity] activation failed: %v\n", err)
+			return
+		}
+	}
+	fmt.Println("orchestrator runtime path completed")
+}
+
+func trinityEnabled() bool {
+	v, err := strconv.ParseBool(os.Getenv("TRINITY_ENABLED"))
+	return err == nil && v
+}
+
+func runTrinity(ctx context.Context, goal string) error {
+	trace := os.Getenv("TRINITY_TRACE_ID")
+	if trace == "" {
+		trace = fmt.Sprintf("trinity-%d", time.Now().UnixNano())
+	}
+	ctx = trinity.WithTraceID(ctx, trace)
+
+	cfg := trinity.TrinityConfig{
+		PFCEnabled: true, FabricEnabled: true, ComputeEnabled: true,
+		RiskThreshold: 0.75, FallbackMode: "retry",
+		Prefrontal: trinity.PrefrontalConfig{WorkingMemoryLimit: 16, MetaRLEpsilon: 0.1, ConflictSensitivity: 0.5},
+		Fabric: trinity.FabricConfig{DecisionTreeDepth: 6, LearningRate: 0.01, FeedbackDiscount: 0.9},
+		Compute: trinity.ComputeConfig{Mode: "auto", PrecisionFallback: "fp32", EfficiencyFactor: 0.7},
+	}
+
+	compute := transcendental.NewEngine(cfg.Compute)
+	pfc := prefrontal.NewPrefrontal(cfg.Prefrontal, compute)
+	fabric := neuralfabric.NewFabric(cfg.Fabric)
+	tri := &trinity.TrinityOrchestrator{PFC: pfc, Fabric: fabric, Compute: compute, Config: cfg}
+
+	result, err := tri.ExecuteTask(ctx, trinity.Task{ID: "activation-demo", Kind: "text", Payload: goal, BatchSize: 1, Precision: "fp32"})
+	if err != nil {
+		return fmt.Errorf("trace=%s: %w", trace, err)
+	}
+	fmt.Printf("[trinity][trace=%s] target=%s model=%s backend=%s latency_ms=%.3f\n", trace, result.Route.Target, result.Route.Model, result.Metadata["backend"], result.LatencyMS)
+	return nil
 }
