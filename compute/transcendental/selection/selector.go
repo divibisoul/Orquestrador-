@@ -26,6 +26,9 @@ func Select(wl core.Workload, catalog []models.PerformanceModel, mode string, st
 	if fallback == "" {
 		fallback = core.FP32
 	}
+	if !fallback.Valid() {
+		return Selection{}, fmt.Errorf("unsupported fallback precision: %q", fallback)
+	}
 	strategy = strings.ToLower(strings.TrimSpace(strategy))
 	if strategy == "" {
 		strategy = "auto"
@@ -137,25 +140,25 @@ func score(wl core.Workload, s Selection, strategy string) float64 {
 		Metadata:     wl.Metadata,
 	})
 	base := estimate.Seconds()
-	mem := float64(max64(wl.MemoryNeeded, 0))
+	memoryRatio := float64(max64(wl.MemoryNeeded, 0)) / float64(max64(s.Model.GetMemoryCapacityGB(), 1))
 	penalized := base * (1 + s.Penalty)
 
 	switch strings.ToLower(strategy) {
 	case "latency_first":
-		return penalized + mem*1e-6
+		return penalized + memoryRatio*1e-6
 	case "memory_first":
-		return mem + base*1e-3*(1+s.Penalty)
+		return memoryRatio + base*1e-3*(1+s.Penalty)
 	case "precision_first":
 		if s.FallbackUsed {
-			return penalized + 0.1 + mem*1e-6
+			return penalized + 0.1 + memoryRatio*1e-6
 		}
-		return penalized - 0.1 + mem*1e-6
+		return penalized - 0.1 + memoryRatio*1e-6
 	}
 
 	if wl.MatrixSize > 4096 && (s.Model.GetBandwidthGBs() > 10000 || s.Model.GetMemoryCapacityGB() > 200) {
-		return penalized*0.8 + mem*1e-6
+		return penalized*0.8 + memoryRatio*1e-6
 	}
-	return penalized + mem*1e-6
+	return penalized + memoryRatio*1e-6
 }
 
 func max64(a, b int64) int64 {
