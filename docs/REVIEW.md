@@ -1,0 +1,1 @@
+Review the foundation branch before merge. Automated CI will validate formatting, vet and tests on push.

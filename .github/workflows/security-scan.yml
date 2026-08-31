@@ -1,0 +1,19 @@
+name: Security
+
+on:
+  push:
+    branches: [main, recovery/consolidation]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  gosec:
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v7
+      - uses: securego/gosec@v2.22.8
+        with:
+          args: ./...

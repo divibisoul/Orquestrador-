@@ -1,0 +1,57 @@
+name: CI
+
+on:
+  push:
+    branches: [main, recovery/consolidation]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: orchestrator-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  go:
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with:
+          go-version: '1.23'
+          cache: true
+      - name: Environment diagnostics
+        run: |
+          go version
+          go env
+          git --version
+          uname -a
+      - name: Go diagnostics and validation
+        shell: bash
+        run: |
+          set -euo pipefail
+          gofmt -l . | tee /tmp/gofmt.log
+          test ! -s /tmp/gofmt.log
+          go vet ./... | tee /tmp/vet.log
+          go build ./... | tee /tmp/build.log
+          go test ./... -count=1 -race | tee /tmp/test.log
+      - name: Upload Go diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: go-recovery-diagnostics-${{ github.run_id }}
+          path: /tmp/*.log
+          if-no-files-found: ignore
+
+  python-adapter:
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v7
+      - name: Verify Python runtime
+        run: python3 --version
+      - name: Install Gemini SDK
+        run: python3 -m pip install --disable-pip-version-check 'google-genai>=1.0.0,<2.0.0'
+      - name: Python adapter syntax check
+        run: python3 -m py_compile core/superagi/generator/providers/base.py core/superagi/generator/providers/gemini.py core/neural_fabric/router.py api/gemini.py

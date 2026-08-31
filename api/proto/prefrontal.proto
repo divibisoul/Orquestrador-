@@ -1,0 +1,8 @@
+syntax = "proto3";
+package nexus.v1;
+option go_package = "github.com/divibisoul/Orquestrador-/api/gen";
+message Goal { string name=1; double urgency=2; double impact=3; double weight=4; }
+message Plan { string id=1; repeated string steps=2; double score=3; }
+message DecisionRequest { string objective=1; repeated Goal goals=2; repeated Plan plans=3; double budget=4; }
+message DecisionReply { string plan_id=1; repeated string tasks=2; string explanation=3; }
+service Prefrontal { rpc Decide(DecisionRequest) returns (DecisionReply); }

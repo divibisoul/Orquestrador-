@@ -1,0 +1,1 @@
+Foundation branch ready for review. Merge only after CI passes and the existing repository license is reconciled with the intended Apache-2.0 policy.

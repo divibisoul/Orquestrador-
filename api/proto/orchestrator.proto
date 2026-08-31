@@ -1,0 +1,8 @@
+syntax = "proto3";
+package nexus.v1;
+option go_package = "github.com/divibisoul/Orquestrador-/api/gen";
+message Task { string task_id=1; string goal=2; repeated string dependencies=3; }
+message TaskSpec { string task_id=1; string goal=2; repeated Task subtasks=3; int32 priority=4; string precision_required=5; double max_cost_in_ujoules=6; bool speculative_allowed=7; double confidence_threshold=8; map<string,string> metadata=9; repeated string compatible_with=10; }
+message WorkflowRequest { string workflow_id=1; repeated TaskSpec tasks=2; }
+message WorkflowReply { string workflow_id=1; string status=2; }
+service Orchestrator { rpc CreateWorkflow(WorkflowRequest) returns (WorkflowReply); rpc GetWorkflowStatus(WorkflowRequest) returns (WorkflowReply); }
