@@ -112,9 +112,7 @@ func TestRuntimeUpdateChangesWeightsSafely(t *testing.T) {
 
 func TestRuntimeRejectsNilContext(t *testing.T) {
 	f := NewRuntime()
-	if _, err := f.EncodeTask(nil, "task"); !errors.Is(err, errNilContext) {
+	if _, err := f.EncodeTask(nil, "task"); !errors.Is(err, ErrNilContext) {
 		t.Fatalf("EncodeTask error=%v", err)
 	}
 }
-
-var errNilContext = errors.New("nil context")
