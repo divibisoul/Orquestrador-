@@ -12,14 +12,10 @@ import (
 	"github.com/divibisoul/Orquestrador-/core/trinity"
 )
 
-// Executor is the concrete compute boundary. Hardware-specific backends can
-// implement this interface without changing Trinity contracts.
 type Executor interface {
 	Execute(context.Context, trinity.Workload, trinity.Route) (trinity.Result, error)
 }
 
-// Engine is the provider-neutral compute engine. In auto mode it selects a
-// real local CPU backend unless an external executor is supplied.
 type Engine struct {
 	cfg      trinity.ComputeConfig
 	executor Executor
@@ -41,8 +37,8 @@ func NewEngine(cfg trinity.ComputeConfig) *Engine {
 	return &Engine{cfg: cfg, executor: CPUExecutor{}}
 }
 
-// WithExecutor replaces the local backend with a real provider/runtime.
-// Passing nil restores the local CPU backend.
+// WithExecutor installs a concrete hardware/provider runtime. A nil executor
+// restores the real deterministic CPU backend.
 func (e *Engine) WithExecutor(executor Executor) *Engine {
 	if e == nil {
 		return e
@@ -83,8 +79,8 @@ func (e *Engine) Execute(ctx context.Context, w trinity.Workload, r trinity.Rout
 	return e.executor.Execute(ctx, w, r)
 }
 
-// CPUExecutor performs a real deterministic CPU operation over the workload
-// payload. It is intentionally not presented as GPU/model inference.
+// CPUExecutor performs a real deterministic CPU operation. It is deliberately
+// not advertised as GPU execution or LLM inference.
 type CPUExecutor struct{}
 
 func (CPUExecutor) Execute(ctx context.Context, w trinity.Workload, r trinity.Route) (trinity.Result, error) {
@@ -115,17 +111,13 @@ func (CPUExecutor) Execute(ctx context.Context, w trinity.Workload, r trinity.Ro
 		input = h[:]
 	}
 
-	trace := ""
-	if v, ok := ctx.Value(traceContextKey{}).(string); ok {
-		trace = strings.TrimSpace(v)
-	}
 	metadata := map[string]string{
-		"backend":      "cpu",
-		"execution":    "deterministic",
+		"backend":        "cpu",
+		"execution":      "deterministic",
 		"hardware_model": r.Model,
-		"digest":       hex.EncodeToString(digest[:]),
+		"digest":         hex.EncodeToString(digest[:]),
 	}
-	if trace != "" {
+	if trace := trinity.TraceID(ctx); trace != "" {
 		metadata["trace_id"] = trace
 	}
 	return trinity.Result{
@@ -135,15 +127,4 @@ func (CPUExecutor) Execute(ctx context.Context, w trinity.Workload, r trinity.Ro
 		Success:   true,
 		Metadata:  metadata,
 	}, nil
-}
-
-type traceContextKey struct{}
-
-// WithTraceID makes the trace available to the compute boundary without
-// coupling the compute package to the orchestrator package.
-func WithTraceID(ctx context.Context, id string) context.Context {
-	if ctx == nil {
-		return nil
-	}
-	return context.WithValue(ctx, traceContextKey{}, strings.TrimSpace(id))
 }
