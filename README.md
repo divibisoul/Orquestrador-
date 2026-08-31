@@ -1,37 +1,54 @@
 # ORQUESTRADOR-NEXUS
 
-Plataforma cognitiva distribuída substrate-agnostic. A fundação implementa três pilares: **Orquestrador**, **Neo-Córtex Pré-Frontal** e **Super AGI**, ligados por uma malha de capacidades.
-
-## Estado da fundação
-
-Esta branch (`foundation/orchestrator-nexus-v1`) contém uma implementação executável sem dependência obrigatória de fornecedor: workflow/DAG validation, execução paralela/distribuída, resiliência, registro de nós, roteamento por capacidade, estado versionado, planejamento executivo, memória e uma camada de modelo plugável com fallback determinístico.
-
-As metas de 15 ms P95, 1.200 RPS, 40% de economia energética, 99,99% e 1.000 nós são **SLOs de benchmark**, não capacidades declaradas sem medição.
-
-## Fluxo
-
-```text
-Objetivo -> Neo-Córtex -> Plano/DAG -> Orquestrador -> Mesh -> Nó/Modelo
-                         ^                         |
-                         |---- avaliação/feedback-|
-```
-
-## Executável
-
-`go run ./cmd/nexus` inicia o plano de controle HTTP em `:8080`.
-
-- `GET /health` — saúde do processo e contagem de nós
-- `GET /v1/nodes` — snapshot da federação
-- `POST /v1/plan` — gera e decide um plano a partir de `{ "goal": "..." }`
+Plataforma cognitiva distribuída e provider-neutral. Esta recuperação consolida a fundação existente sem apagar funcionalidades por suposição.
 
 ## Arquitetura
 
-Consulte [ARCHITECTURE.md](ARCHITECTURE.md), [API_REFERENCE.md](docs/API_REFERENCE.md), [DEPLOYMENT.md](docs/DEPLOYMENT.md) e [SECURITY.md](docs/SECURITY.md).
+```text
+Objetivo
+   |
+   v
+Neo-Córtex -> Neural Fabric -> Orquestrador -> Compute
+   |                              |
+   +------------------------------+
+                  |
+               Mesh <-> State
+                  |
+             API / Protobuf
+```
+
+Pacotes canônicos de domínio: `core/orchestrator`, `core/prefrontal`, `core/neuralfabric`, `core/superagi`. `mesh`, `state`, `compute` e `security` fornecem infraestrutura/runtime. Pacotes `internal/*` permanecem como compatibilidade até que seus consumidores sejam migrados e sua remoção seja comprovadamente segura.
+
+## Maturidade
+
+- **Implementado:** workflow/DAG e primitives de resiliência; planejamento/decisão do Neo-Córtex; roteamento básico; registro/descoberta/heartbeat do Mesh; estado versionado/cache; políticas básicas de segurança.
+- **Parcial/boundary:** Neural Fabric adaptativa/persistência; Super AGI com provedores/modelos reais; GPU/NPU; Raft distribuído; mTLS/SPIFFE; observabilidade externa; gRPC runtime.
+- **Experimental:** adapter Gemini da branch `feature/gemini-provider`; não é considerado parte segura do runtime canônico até revisão específica.
+
+## Executar
+
+Requisitos: Go conforme `go.mod`.
+
+```bash
+go mod tidy
+go build ./...
+go test ./...
+go test ./... -race
+go run ./cmd/nexus
+```
+
+O plano de controle Nexus usa `:8080` e fornece os endpoints documentados em `docs/API_REFERENCE.md`.
+
+## Recuperação
+
+A branch de trabalho é `recovery/consolidation`. O relatório forense e a lista de inconsistências estão em `ISSUES.md` e `RECOVERY_REPORT.md`.
+
+Antes de qualquer merge em `main`, os workflows do GitHub Actions devem comprovar build, vet, testes e security scan verdes.
 
 ## Princípios
 
-1. Sem lock-in de modelo, hardware ou transporte.
-2. Capacidades são anunciadas por nós e usadas por matching dinâmico.
-3. Falhas são estados explícitos; não são mascaradas como sucesso.
-4. Infraestrutura externa (Raft, GPU/NPU, mTLS, OpenTelemetry) entra por boundaries/adapters, preservando o núcleo compilável e testável.
-5. Toda alegação de performance deve ser comprovada por benchmark reproduzível.
+1. Nenhuma funcionalidade existente é removida sem rastreabilidade e justificativa.
+2. Contratos e adapters não são confundidos com runtimes reais.
+3. Falhas e operações não implementadas devem ser explícitas.
+4. Segurança deve ser uma fronteira de enforcement, não apenas documentação.
+5. Performance só é declarada após benchmark reproduzível.
