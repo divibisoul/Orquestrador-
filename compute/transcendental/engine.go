@@ -37,8 +37,6 @@ func NewEngine(cfg trinity.ComputeConfig) *Engine {
 	return &Engine{cfg: cfg, executor: CPUExecutor{}}
 }
 
-// WithExecutor installs a concrete hardware/provider runtime. A nil executor
-// restores the real deterministic CPU backend.
 func (e *Engine) WithExecutor(executor Executor) *Engine {
 	if e == nil {
 		return e
@@ -49,6 +47,40 @@ func (e *Engine) WithExecutor(executor Executor) *Engine {
 		e.executor = executor
 	}
 	return e
+}
+
+// Estimate supplies a concrete conservative cost model to the PFC. It does
+// not claim that a named GPU is physically present; availability belongs to
+// the provider/device executor.
+func (e *Engine) Estimate(ctx context.Context, w trinity.Workload) (trinity.CostEstimate, error) {
+	if e == nil {
+		return trinity.CostEstimate{}, errors.New("nil compute engine")
+	}
+	if ctx == nil {
+		return trinity.CostEstimate{}, errors.New("nil context")
+	}
+	if err := ctx.Err(); err != nil {
+		return trinity.CostEstimate{}, err
+	}
+	matrix := w.MatrixSize
+	if matrix < 1 {
+		matrix = 1
+	}
+	batch := w.BatchSize
+	if batch < 1 {
+		batch = 1
+	}
+	memory := w.MemoryNeeded
+	if memory <= 0 {
+		memory = float64(matrix*matrix) * 4 / (1024 * 1024)
+	}
+	latency := (float64(matrix*matrix)/10000 + float64(batch)*5) / e.cfg.EfficiencyFactor
+	return trinity.CostEstimate{
+		LatencyMS:   latency,
+		Memory:      memory,
+		ComputeCost: latency / 1000,
+		Confidence:  0.8,
+	}, nil
 }
 
 func (e *Engine) Execute(ctx context.Context, w trinity.Workload, r trinity.Route) (trinity.Result, error) {
@@ -79,8 +111,6 @@ func (e *Engine) Execute(ctx context.Context, w trinity.Workload, r trinity.Rout
 	return e.executor.Execute(ctx, w, r)
 }
 
-// CPUExecutor performs a real deterministic CPU operation. It is deliberately
-// not advertised as GPU execution or LLM inference.
 type CPUExecutor struct{}
 
 func (CPUExecutor) Execute(ctx context.Context, w trinity.Workload, r trinity.Route) (trinity.Result, error) {
