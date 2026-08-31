@@ -1,71 +1,105 @@
 # Nexus / Trinity Readiness Dashboard
 
-> A prontidão só sobe quando uma capacidade está implementada, testável e conectada ao caminho real. Código de fachada, simulações e README não contam como funcionamento.
+> O percentual só sobe quando uma capacidade está implementada, testável e conectada ao caminho real. Código de fachada, README e simulação apresentada como runtime não contam.
 
 ## Estado atual
 
-**Prontidão técnica conservadora: 65% — 35% restante.**
+**Prontidão técnica conservadora: 78% — 22% restante.**
 
-A implementação avançou além do painel anterior, mas o commit final ainda aguarda execução CI/E2E comprovada.
+O CI do HEAD anterior confirmou `go` e adapter Python verdes; novos commits de hardening exigem novo ciclo de validação antes da fusão. A última execução de Security ainda precisa de conclusão no HEAD atual.
 
 | Área | Estado atual | Progresso |
 |---|---|---:|
-| Contratos Trinity | implementado | 100% |
-| Neo-Córtex / PFC | implementado + race-safe | 92% |
-| Neural Fabric | heurísticas + feedback + race-safe | 95% |
-| Transcendental Compute | CPU real; provider físico depende do backend disponível | 68% |
-| Fluxo Trinity | PFC -> Fabric -> Compute -> Feedback -> memória | 90% |
-| Runtime legado | caminho preservado e opt-in | 85% |
-| Concorrência / resiliência | worker pool + circuit breaker + rate limiter | 85% |
-| Mesh / N01-N06 | registro e transporte existentes; E2E ainda pendente | 55% |
-| Estado durável / recovery | store persistente + Raft core | 65% |
-| Observabilidade | métricas + traceID local | 60% |
-| Segurança / transporte | mTLS real + HTTP; SPIFFE ainda não integrado | 60% |
-| CI / build / race / E2E | workflow fortalecido; execução ainda não comprovada | 55% |
-| Documentação | arquitetura e dashboard | 80% |
+| Contratos Trinity | canônicos + validados | 100% |
+| Neo-Córtex / PFC | decisão, conflito, memória e meta-policy | 94% |
+| Neural Fabric | rota heurística + feedback + concorrência | 97% |
+| Transcendental Compute | CPU determinístico + boundary de providers | 72% |
+| Fluxo Trinity | PFC -> Fabric -> Compute -> Feedback -> memória | 94% |
+| Runtime legado | preservado + integração opt-in | 90% |
+| Concorrência / resiliência | worker pool, retry, breaker, rate limit | 90% |
+| Mesh / N01-N06 | registry, heartbeat, envelope e validação | 62% |
+| Estado durável / recovery | store persistente + restore + Raft core | 74% |
+| Observabilidade | métricas + trace context local | 70% |
+| Segurança / transporte | mTLS TLS 1.3 + gRPC/HTTP | 68% |
+| SuperAGI | runtime + provider + adapters especializados | 78% |
+| CI / build / race | pipeline de build/vet/test-race | 80% |
+| E2E / ativação | fluxo local comprovado; seis núcleos reais pendentes | 50% |
+| Documentação / organização | arquitetura e dashboard alinhados | 92% |
 
-## Gráfico
+## Gráfico global
 
 ```text
-PRONTIDÃO GLOBAL
-
 0%        20%        40%        60%        80%       100%
 |----------|----------|----------|----------|----------|
-███████████████████████████████░░░░░░░░░░░
-                              65%
-                              ↑
-                         35% restante
+███████████████████████████████████████░░░░░░░
+                                      78%
+                                      ↑
+                                 22% restante
 ```
 
-## Correções aplicadas neste lote
+## Evolução do sistema por prompt / lote
 
-- Corrigida duplicação do mecanismo de trace da Trinity.
-- Validação de workloads e recursos negativos.
-- Compute Engine tornou-se protegido contra concorrência no executor/configuração.
-- Neural Fabric deixou de permitir que pesos iniciais substituam aleatoriamente as heurísticas.
-- Working Memory passou a copiar metadata para evitar aliasing concorrente.
-- Mesh Registry passou a ser nil-safe, determinístico e seguro para snapshots.
-- Soul Fabric valida correlação de trace e origem das respostas.
-- SuperAGI Runtime deixou de retornar implementações `not implemented` nas operações de aprendizado.
-- Provider Gemini real via HTTP foi conectado ao Runtime.
-- Embedding não usa mais fallback hash quando o Runtime pretende atuar como provider real.
-- Criado núcleo Raft com eleição, votação, append entries e aplicação de comandos.
-- Criado mTLS real com TLS 1.3 e verificação por CA.
-- Estado persistente atômico foi adicionado para recuperação após restart.
-- CI passou a usar runner hospedado e executar build, vet, testes e `-race`.
+```text
+Lote 0  Auditoria inicial                  0%   ▏
+Lote 1  Runtime + resiliência              62%  █████████████████████████
+Lote 2  Trinity fundamental                65%  ██████████████████████████
+Lote 3  Production hardening               72%  █████████████████████████████
+Lote 4  Estado + segurança + gRPC          75%  ██████████████████████████████
+Lote 5  Anticorpo + SuperAGI adapters      78%  ███████████████████████████████
+```
 
-## Bloqueios reais restantes
+## Rendimento de engenharia desta sessão
 
-- execução CI verde comprovada no commit atual;
-- E2E real entre os seis núcleos e retorno de respostas;
-- health/readiness integrado à seleção de rota;
-- tracing distribuído entre processos;
-- SPIFFE/workload identity real;
-- backend GPU/NPU físico conectado e validado na máquina de execução;
-- Raft integrado ao estado/recovery do Orquestrador, não apenas como biblioteca;
-- treinamento LoRA de pesos do modelo em backend compatível;
-- fusão final e ativação das flags somente depois dos testes verdes.
+Métrica operacional por lote; mede mudanças efetivamente gravadas/validadas, não “qualidade subjetiva”.
 
-## Regra operacional
+```text
+Lote 1  correções estruturais + testes       ████████████████████  alto
+Lote 2  hardening + estado                   ███████████████████  alto
+Lote 3  transporte + segurança              █████████████████    alto
+Lote 4  auditoria cruzada + adapters        ████████████████████ alto
+Lote 5  CI / regressões                     ███████████████      médio* 
+```
 
-Toda área encontrada como incompleta deve entrar imediatamente no próximo lote de correção. Nenhuma área é promovida a 100% por possuir apenas tipos, stubs, interfaces ou documentação.
+`*` O rendimento cai quando o bloqueio é externo ao código (fila/execução do CI). Não é contado como estagnação do código; é um bloqueio de validação.
+
+## Correções deste ciclo
+
+- Subpacotes SuperAGI anteriormente README-only agora delegam ao Runtime canônico: `generator`, `inference`, `learning`, `memory`, `verifier`.
+- Removidos helpers de aparência “fake” do Runtime: classificação e seleção passaram a regras determinísticas; perfil mede custo local; digest tornou-se determinístico; retry passou a backoff com cancelamento.
+- Rollback do Orquestrador passou a persistir estados de forma síncrona e cancelar timers corretamente.
+- Documentação passou a refletir o estado real da linha de finalização.
+- Mantido o princípio de uma implementação canônica por responsabilidade; adapters não duplicam provider ou estado.
+
+## Pendências que ainda NÃO contam como 100%
+
+- prova E2E contra os seis runtimes N01-N06 ativos;
+- health/readiness participando do roteamento e fallback;
+- tracing distribuído exportado para backend externo;
+- provisionamento real de SPIFFE/workload identity;
+- conexão real de CUDA/ROCm/NPU ao executor;
+- treinamento de pesos LoRA em runtime compatível;
+- Raft integrado ao scheduler/recovery distribuído;
+- Security Scan verde no HEAD final;
+- fusão final e ativação completa.
+
+## Critério de 100%
+
+```text
+Código completo
++ contratos coerentes
++ ausência de duplicação desnecessária
++ build
++ vet
++ test
++ race
++ segurança
++ E2E
++ seis núcleos comunicando
++ recovery
++ observabilidade
++ transporte seguro
++ activation gate
+= 100%
+```
+
+Enquanto qualquer uma dessas provas falhar, o sistema permanece em finalização.
