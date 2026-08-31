@@ -42,10 +42,16 @@ func New(engine *core.Engine, catalog []models.PerformanceModel, mode string) (*
 }
 
 func (e *SimulatedExecutor) Estimate(ctx context.Context, wl core.Workload) (core.CostEstimate, error) {
+	if e == nil || e.Engine == nil {
+		return core.CostEstimate{}, errors.New("executor is not initialized")
+	}
 	return e.estimateWithStrategy(ctx, wl, "auto")
 }
 
 func (e *SimulatedExecutor) estimateWithStrategy(ctx context.Context, wl core.Workload, strategy string) (core.CostEstimate, error) {
+	if e == nil || e.Engine == nil {
+		return core.CostEstimate{}, errors.New("executor is not initialized")
+	}
 	if !e.Engine.Config.Enabled {
 		return core.CostEstimate{}, errors.New("transcendental compute engine is disabled")
 	}
@@ -63,6 +69,9 @@ func (e *SimulatedExecutor) estimateWithStrategy(ctx context.Context, wl core.Wo
 }
 
 func (e *SimulatedExecutor) EstimateCost(ctx context.Context, plan core.Plan) (core.CostEstimate, error) {
+	if e == nil || e.Engine == nil {
+		return core.CostEstimate{}, errors.New("executor is not initialized")
+	}
 	if err := ctxErr(ctx); err != nil {
 		return core.CostEstimate{}, err
 	}
@@ -100,6 +109,10 @@ func (e *SimulatedExecutor) EstimateCost(ctx context.Context, plan core.Plan) (c
 }
 
 func (e *SimulatedExecutor) Execute(ctx context.Context, wl core.Workload) (core.Result, error) {
+	if e == nil || e.Engine == nil {
+		err := errors.New("executor is not initialized")
+		return core.Result{WorkloadID: wl.ID, Error: err}, err
+	}
 	if !e.Engine.Config.Enabled {
 		err := errors.New("transcendental compute engine is disabled")
 		return core.Result{WorkloadID: wl.ID, Error: err}, err
@@ -133,6 +146,13 @@ func (e *SimulatedExecutor) ExecutePlan(ctx context.Context, workloads []core.Wo
 	if ctx == nil {
 		ctx = context.Background()
 	}
+	if e == nil || e.Engine == nil {
+		err := errors.New("executor is not initialized")
+		for i, workload := range workloads {
+			results[i] = core.Result{WorkloadID: workload.ID, Error: err}
+		}
+		return results
+	}
 	workers := e.Engine.Config.EffectiveParallelUnits()
 	if workers > len(workloads) {
 		workers = len(workloads)
@@ -155,13 +175,13 @@ func (e *SimulatedExecutor) ExecutePlan(ctx context.Context, workloads []core.Wo
 	for i := range workloads {
 		select {
 		case <-ctx.Done():
-			results[i] = core.Result{WorkloadID: workloads[i].ID, Error: ctx.Err()}
-		case jobs <- i:
-		}
-		if ctx.Err() != nil {
-			for j := i + 1; j < len(workloads); j++ {
+			for j := i; j < len(workloads); j++ {
 				results[j] = core.Result{WorkloadID: workloads[j].ID, Error: ctx.Err()}
 			}
+			i = len(workloads)
+		case jobs <- i:
+		}
+		if i >= len(workloads)-1 || ctx.Err() != nil {
 			break
 		}
 	}
@@ -171,6 +191,9 @@ func (e *SimulatedExecutor) ExecutePlan(ctx context.Context, workloads []core.Wo
 }
 
 func (e *SimulatedExecutor) GetLastMetrics() core.Metrics {
+	if e == nil {
+		return core.Metrics{}
+	}
 	e.mu.RLock()
 	defer e.mu.RUnlock()
 	if len(e.history) == 0 {
@@ -180,6 +203,9 @@ func (e *SimulatedExecutor) GetLastMetrics() core.Metrics {
 }
 
 func (e *SimulatedExecutor) GetMetricsHistory(limit int) []core.Metrics {
+	if e == nil {
+		return nil
+	}
 	e.mu.RLock()
 	defer e.mu.RUnlock()
 	if limit <= 0 || limit > len(e.history) {
