@@ -8,64 +8,77 @@ Recovery branch: `recovery/consolidation`
 
 Source baseline: `foundation/orchestrator-nexus-v1`
 
-## Actions completed in this pass
+## Actions completed
 
-1. Created `recovery/consolidation` directly from the foundation branch.
-2. Corrected the broken `core/cognitive` import to the actual canonical `core/neuralfabric` package.
-3. Corrected the integration test to use the canonical prefrontal API.
-4. Added a guard against a route selecting a device that is not present in the supplied device set.
-5. Fixed duplicate JSON tags in `internal/mesh.Message` and distinct CPU/GPU/NPU tags.
-6. Made the canonical `mesh.Registry` heartbeat/stale logic operational by tracking `LastHeartbeat`.
-7. Added focused tests for security boundaries and mesh stale/heartbeat behavior.
-8. Strengthened the security policy boundary with input validation and explicit authorization/audit extension points.
-9. Pinned the Gosec GitHub Action instead of following mutable `master`.
-10. Consolidated the duplicate prefrontal implementations into one canonical `Cortex`, preserving compatibility constructors and the useful behavior of both source files.
-11. Refactored `cmd/nexus` to use canonical `core/*` and `mesh` packages rather than the legacy `internal` runtime.
-12. Added a hardened, isolated experimental Gemini adapter with lazy credentials, authenticated HTTP access and generic provider errors.
-13. Updated README, architecture, status, security and contribution documentation and added `ISSUES.md`.
+1. Created `recovery/consolidation` directly from the foundation branch, preserving the foundation history.
+2. Corrected the broken `core/cognitive` import to the canonical `core/neuralfabric` package.
+3. Repaired the malformed compute runtime syntax.
+4. Consolidated duplicate prefrontal implementations into one canonical `core/prefrontal/Cortex`, preserving useful compatibility APIs.
+5. Updated the integration tests to target the canonical APIs.
+6. Fixed malformed Mesh JSON tags and made heartbeat/stale tracking operational in canonical `mesh`.
+7. Refactored `cmd/nexus` to consume canonical `core/*` and `mesh` packages instead of the legacy `internal` runtime.
+8. Strengthened the security policy boundary and added focused security tests.
+9. Pinned Gosec to `securego/gosec@v2.22.8`.
+10. Hardened the experimental Gemini adapter with lazy credentials, request authentication and generic provider errors.
+11. Added explicit `not implemented` errors to Super AGI learning/fine-tuning/replay boundaries and tests proving they cannot report false success.
+12. Added `tests/e2e_six_planes_test.go`, exercising Cortex → Orchestrator → Mesh → Neural Fabric → Super AGI → State.
+13. Moved CI, security scanning and benchmarks to the configured self-hosted runner and added manual dispatch for CI/security.
+14. Modernized GitHub Actions to current `checkout@v7` and `setup-go@v7` majors; the configured runner version 2.336.0 satisfies the documented runner requirements for these action generations.
+15. Added `docs/SELF_HOSTED_RUNNER.md` describing runner prerequisites, registration hygiene and verification commands.
+16. Updated README, ARCHITECTURE, STATUS, SECURITY and CONTRIBUTING documentation.
 
 ## Execution evidence
 
-GitHub Actions run **151** on commit `6c23dc35408d98323e4fa0126471d2f8264c68da` completed successfully. The Go job passed formatting normalization, `go vet ./...`, `go build ./...`, and `go test ./... -count=1 -race`. The Python adapter job also passed SDK installation and syntax validation. The Security workflow run **150** on the same commit also completed successfully.
+The recovery branch previously passed GitHub Actions CI and Security validation on hosted runners. The successful validation included `go vet ./...`, `go build ./...`, `go test ./... -count=1 -race`, Python adapter syntax validation, and a Gosec scan with zero reported issues.
 
-Earlier failing runs were retained as forensic evidence and exposed the actual defects that were then corrected: a malformed `compute/runtime.go` select statement, duplicate prefrontal declarations, legacy floating-point test precision, and a mesh snapshot bug.
+After switching the workflows to `runs-on: self-hosted` and modern action majors, fresh CI/Security runs are required and are tracked against the current recovery head. They are an explicit acceptance gate rather than an assumption.
 
-## Remaining engineering work
+## Canonical architecture
 
-- complete consumer-graph migration before deleting `internal/nexus`, `internal/mesh`, or `internal/state`;
-- real distributed Raft;
-- generated protobuf/gRPC bindings and runtime, if required;
-- production mTLS/SPIFFE and durable audit;
-- concrete model/GPU/NPU runtimes;
-- conversion of false-success learning/training boundaries to explicit `not implemented` errors where appropriate;
-- independent security review of the Gemini adapter before production exposure;
-- end-to-end runtime demonstration covering all six planes.
+- `core/orchestrator`: canonical workflow/execution engine and resilience primitives.
+- `core/prefrontal`: canonical executive reasoning/planning/decision layer.
+- `core/superagi`: canonical provider-neutral model and memory boundary.
+- `core/neuralfabric`: canonical routing/prediction/feedback layer.
+- `mesh`: canonical capability registry/discovery/health layer.
+- `state`: canonical versioned state/CAS layer.
+- `internal/nexus`, `internal/mesh`, `internal/state`: legacy implementations retained until a complete consumer-graph migration proves they are safe to remove.
 
-## Merge policy
+## Honest capability boundaries
 
-`main` has intentionally **not** been modified. The recovery PR remains open and draft so the original foundation is preserved and the remaining architectural migration can be reviewed before merge.
+The recovery does not claim production functionality that is not present. Real distributed Raft, generated/live gRPC bindings, production mTLS/SPIFFE, durable audit storage, physical GPU/NPU backends and concrete external model runtimes remain separate implementation layers.
+
+Neural Fabric `Update`, `Save` and `Load` remain explicit boundary operations. Super AGI training, LoRA and replay boundaries now fail explicitly with `not implemented` instead of returning false success.
+
+## Self-hosted runner
+
+Recovery validation, security scanning and benchmarks now run on the repository's self-hosted Actions runner. The runner must provide Linux/x64 execution, GitHub Actions runner compatibility, Go 1.23 availability through setup-go, Python 3 for the adapter checks and Docker for the Gosec container action.
+
+A single self-hosted runner serializes jobs when it is busy; multiple registered runners are required for parallel job execution.
 
 ## Acceptance status
 
 | Criterion | Status |
 |---|---|
 | Recovery branch created | DONE |
-| Known import/API inconsistencies corrected | DONE for identified findings |
-| `go build ./...` | VERIFIED GREEN in CI |
-| `go test ./...` | VERIFIED GREEN in CI |
-| `go test ./... -race` | VERIFIED GREEN in CI |
-| `go vet ./...` | VERIFIED GREEN in CI |
-| Python adapter syntax | VERIFIED GREEN in CI |
-| Security scan | VERIFIED GREEN in CI |
-| Architecture documented | DONE |
-| Prefrontal duplication consolidated | DONE |
-| Mesh stale detection implemented | DONE |
-| All duplicate packages removed | PENDING consumer migration |
+| Import/API inconsistencies identified and corrected | DONE for identified findings |
+| Canonical Prefrontal implementation | DONE |
+| Canonical Orchestrator executable path | DONE |
+| Canonical Mesh heartbeat/stale behavior | DONE |
+| False-success Super AGI learning boundaries removed | DONE |
+| Six-plane E2E test added | DONE |
+| Self-hosted CI configuration | DONE |
+| Self-hosted security workflow | DONE |
+| Self-hosted benchmark workflow | DONE |
+| `go build ./...` on current recovery head | PENDING fresh self-hosted run |
+| `go test ./... -race` on current recovery head | PENDING fresh self-hosted run |
+| `go vet ./...` on current recovery head | PENDING fresh self-hosted run |
+| Security scan on current recovery head | PENDING fresh self-hosted run |
+| Remaining legacy consumer migration | PENDING |
 | gRPC runtime | PENDING |
 | Production distributed consensus | PENDING |
-| `main` updated | PENDING explicit approval |
-| Release tag | PENDING explicit approval |
+| `main` update | PENDING explicit approval |
+| `v0.1.0-recovery` tag | PENDING explicit approval |
 
-## Recovery principle
+## Merge policy
 
-No destructive merge or deletion is performed merely to make the repository look clean. Every removal must follow a consumer migration and be justified by preserved behavior and passing tests.
+`main` remains intentionally untouched until the current self-hosted CI and security gates are green and the remaining legacy consumer graph has been reviewed. No destructive deletion is performed merely to make the tree look cleaner.
