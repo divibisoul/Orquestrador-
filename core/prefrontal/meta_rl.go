@@ -1,17 +1,48 @@
 package prefrontal
 
 import (
-	"math/rand"
 	"sync"
 	"time"
 
 	"github.com/divibisoul/Orquestrador-/core/trinity"
 )
 
+type deterministicRNG struct {
+	state uint64
+}
+
+func newDeterministicRNG(seed int64) *deterministicRNG {
+	s := uint64(seed)
+	if s == 0 {
+		s = 0x9e3779b97f4a7c15
+	}
+	return &deterministicRNG{state: s}
+}
+
+func (r *deterministicRNG) next() uint64 {
+	x := r.state
+	x ^= x >> 12
+	x ^= x << 25
+	x ^= x >> 27
+	r.state = x
+	return x * 2685821657736338717
+}
+
+func (r *deterministicRNG) float64() float64 {
+	return float64(r.next()>>11) * (1.0 / 9007199254740992.0)
+}
+
+func (r *deterministicRNG) intn(n int) int {
+	if n <= 0 {
+		return 0
+	}
+	return int(r.next() % uint64(n))
+}
+
 type MetaPolicy struct {
 	mu      sync.RWMutex
 	rngMu   sync.Mutex
-	rng     *rand.Rand
+	rng     *deterministicRNG
 	epsilon float64
 	values  map[string]float64
 	alpha   float64
@@ -28,7 +59,7 @@ func NewMetaPolicyWithSeed(epsilon float64, seed int64) *MetaPolicy {
 	if epsilon > 1 {
 		epsilon = 1
 	}
-	return &MetaPolicy{rng: rand.New(rand.NewSource(seed)), epsilon: epsilon, alpha: 0.1, values: map[string]float64{"precision": 0.5, "parallelism": 0.5}}
+	return &MetaPolicy{rng: newDeterministicRNG(seed), epsilon: epsilon, alpha: 0.1, values: map[string]float64{"precision": 0.5, "parallelism": 0.5}}
 }
 
 func (p *MetaPolicy) Choose() trinity.Strategy {
@@ -39,8 +70,8 @@ func (p *MetaPolicy) Choose() trinity.Strategy {
 	eps, precision, parallel := p.epsilon, p.values["precision"], p.values["parallelism"]
 	p.mu.RUnlock()
 	p.rngMu.Lock()
-	explore := p.rng != nil && p.rng.Float64() < eps
-	explorePrecision := p.rng != nil && p.rng.Intn(2) == 0
+	explore := p.rng != nil && p.rng.float64() < eps
+	explorePrecision := p.rng != nil && p.rng.intn(2) == 0
 	p.rngMu.Unlock()
 	if explore {
 		if explorePrecision {
