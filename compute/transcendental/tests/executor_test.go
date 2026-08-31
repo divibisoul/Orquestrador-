@@ -108,7 +108,7 @@ func TestExecuteRejectsNilContext(t *testing.T) {
 		t.Fatal(err)
 	}
 	_, err = ex.Execute(nil, core.Workload{ID: "nil-context", Operation: "matmul", Precision: core.FP8, MatrixSize: 1024, BatchSize: 1})
-	if !errors.Is(err, context.Canceled) && err == nil {
+	if err == nil {
 		t.Fatal("expected nil-context error")
 	}
 }
