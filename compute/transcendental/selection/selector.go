@@ -2,6 +2,7 @@ package selection
 
 import (
 	"errors"
+	"fmt"
 	"strings"
 
 	"github.com/divibisoul/Orquestrador-/compute/transcendental/core"
@@ -12,7 +13,7 @@ type Selection struct {
 	Model              models.PerformanceModel
 	EffectivePrecision core.Precision
 	FallbackUsed       bool
-	Penalty             float64
+	Penalty            float64
 }
 
 func Select(wl core.Workload, catalog []models.PerformanceModel, mode string, strategy string, fallback core.Precision) (Selection, error) {
@@ -25,6 +26,14 @@ func Select(wl core.Workload, catalog []models.PerformanceModel, mode string, st
 	if fallback == "" {
 		fallback = core.FP32
 	}
+	strategy = strings.ToLower(strings.TrimSpace(strategy))
+	if strategy == "" {
+		strategy = "auto"
+	}
+	if strategy != "auto" && strategy != "precision_first" && strategy != "latency_first" && strategy != "memory_first" {
+		return Selection{}, fmt.Errorf("unsupported strategy: %s", strategy)
+	}
+
 	candidates := make([]Selection, 0, len(catalog))
 	for _, model := range catalog {
 		if model == nil || model.GetMemoryCapacityGB() < wl.MemoryNeeded {
@@ -44,7 +53,7 @@ func Select(wl core.Workload, catalog []models.PerformanceModel, mode string, st
 			fallbackUsed = true
 			penalty = 0.25
 		}
-		if model.GetPFLOPS(precision) <= 0 {
+		if model.GetPFLOPS(precision) <= 0 || model.GetBandwidthGBs() <= 0 {
 			continue
 		}
 		candidates = append(candidates, Selection{Model: model, EffectivePrecision: precision, FallbackUsed: fallbackUsed, Penalty: penalty})
@@ -65,7 +74,7 @@ func Select(wl core.Workload, catalog []models.PerformanceModel, mode string, st
 
 func matchesMode(name, mode string) bool {
 	n := strings.ToLower(name)
-	switch strings.ToLower(mode) {
+	switch strings.ToLower(strings.TrimSpace(mode)) {
 	case "blackwell":
 		return strings.Contains(n, "blackwell")
 	case "vera_rubin":
@@ -103,11 +112,10 @@ func score(wl core.Workload, s Selection, strategy string) float64 {
 	case "memory_first":
 		return mem + base*1e-3*(1+s.Penalty)
 	case "precision_first":
-		precisionBonus := 0.0
-		if !s.FallbackUsed {
-			precisionBonus = -0.1
+		if s.FallbackUsed {
+			return penalized + 0.1 + mem*1e-6
 		}
-		return penalized + mem*1e-6 + precisionBonus
+		return penalized - 0.1 + mem*1e-6
 	}
 
 	if wl.MatrixSize < 1024 && strings.Contains(strings.ToLower(s.Model.Name()), "trillium") {
