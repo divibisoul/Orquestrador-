@@ -24,7 +24,7 @@ jobs:
           cache: true
       - name: Download dependencies
         run: go mod download
+      - name: Install gosec
+        run: go install github.com/securego/gosec/v2/cmd/gosec@v2.22.8
       - name: Go vulnerability scan
-        uses: securego/gosec@v2.22.8
-        with:
-          args: ./...
+        run: gosec ./...
