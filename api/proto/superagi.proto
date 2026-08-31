@@ -1,0 +1,9 @@
+syntax = "proto3";
+package nexus.v1;
+option go_package = "github.com/divibisoul/Orquestrador-/api/gen";
+message InferenceRequest { string model=1; string input=2; string precision=3; }
+message InferenceReply { string output=1; double confidence=2; double latency_ms=3; }
+message NodeAnnounce { string node_id=1; string status=2; repeated string capabilities=3; repeated string transport=4; ComputeResources compute=5; repeated string compatible_systems=6; map<string,string> metadata=7; }
+message ComputeResources { bool cpu=1; bool gpu=2; bool npu=3; int64 ram_mb=4; int64 vram_mb=5; int32 threads=6; int32 workers=7; }
+message EventEnvelope { string event_id=1; string event_type=2; string trace_id=3; string source=4; string target=5; bytes payload=6; int64 timestamp=7; repeated string compatible_systems=8; map<string,string> causal_vector=9; }
+service SuperAGI { rpc Inference(InferenceRequest) returns (InferenceReply); }

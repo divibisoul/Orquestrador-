@@ -1,0 +1,14 @@
+syntax = "proto3";
+package nexus.v1;
+option go_package = "github.com/divibisoul/Orquestrador-/api/gen/nexusv1";
+
+message ComputeResources { bool cpu=1; bool gpu=2; bool npu=3; int64 ram_mb=4; int64 vram_mb=5; int32 threads=6; int32 workers=7; }
+message TaskSpec { string task_id=1; string goal=2; repeated TaskSpec subtasks=3; int32 priority=4; string precision_required=5; double max_cost_ujoules=6; bool speculative_allowed=7; double confidence_threshold=8; map<string,string> metadata=9; repeated string compatible_with=10; }
+message NodeAnnounce { string node_id=1; string status=2; repeated string capabilities=3; repeated string transport=4; ComputeResources compute=5; repeated string compatible_systems=6; map<string,string> metadata=7; }
+message EventEnvelope { string event_id=1; string event_type=2; string trace_id=3; string source=4; string target=5; bytes payload=6; int64 timestamp=7; repeated string compatible_systems=8; map<string,string> causal_vector=9; }
+message Empty {}
+message PlanRequest { string goal=1; }
+message PlanResponse { string plan_id=1; repeated string steps=2; double confidence=3; double risk=4; }
+service Orchestrator { rpc CreateWorkflow(TaskSpec) returns (Empty); rpc ExecuteStep(TaskSpec) returns (Empty); }
+service Prefrontal { rpc GeneratePlan(PlanRequest) returns (PlanResponse); }
+service SuperAGI { rpc Inference(EventEnvelope) returns (EventEnvelope); }
