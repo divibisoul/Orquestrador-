@@ -67,7 +67,6 @@ func (e *Engine) Estimate(ctx context.Context, w trinity.Workload) (trinity.Cost
 	if w.MatrixSize < 0 || w.BatchSize < 0 || w.MemoryNeeded < 0 {
 		return trinity.CostEstimate{}, errors.New("invalid workload resource values")
 	}
-
 	matrix := w.MatrixSize
 	if matrix < 1 {
 		matrix = 1
@@ -76,22 +75,15 @@ func (e *Engine) Estimate(ctx context.Context, w trinity.Workload) (trinity.Cost
 	if batch < 1 {
 		batch = 1
 	}
-
 	e.mu.RLock()
 	efficiency := e.cfg.EfficiencyFactor
 	e.mu.RUnlock()
-
 	memory := w.MemoryNeeded
 	if memory <= 0 {
 		memory = float64(matrix) * float64(matrix) * 4 / (1024 * 1024)
 	}
 	latency := (float64(matrix)*float64(matrix)/10000 + float64(batch)*5) / efficiency
-	return trinity.CostEstimate{
-		LatencyMS:   latency,
-		Memory:      memory,
-		ComputeCost: latency / 1000,
-		Confidence:  0.8,
-	}, nil
+	return trinity.CostEstimate{LatencyMS: latency, Memory: memory, ComputeCost: latency / 1000, Confidence: 0.8}, nil
 }
 
 func (e *Engine) Execute(ctx context.Context, w trinity.Workload, r trinity.Route) (trinity.Result, error) {
@@ -110,23 +102,21 @@ func (e *Engine) Execute(ctx context.Context, w trinity.Workload, r trinity.Rout
 	if w.MatrixSize < 0 || w.BatchSize < 0 || w.MemoryNeeded < 0 {
 		return trinity.Result{}, errors.New("invalid workload resource values")
 	}
-
 	e.mu.RLock()
 	executor := e.executor
 	precisionFallback := e.cfg.PrecisionFallback
 	e.mu.RUnlock()
-
 	if r.Model == "" {
 		r.Model = "blackwell"
 	}
 	if r.Provider == "" {
 		r.Provider = "transcendental"
 	}
-	if r.Precision == "" {
-		r.Precision = precisionFallback
-	}
 	if executor == nil {
 		return trinity.Result{}, errors.New("compute executor unavailable")
+	}
+	if strings.TrimSpace(w.Precision) == "" {
+		w.Precision = precisionFallback
 	}
 	return executor.Execute(ctx, w, r)
 }
@@ -136,6 +126,9 @@ type CPUExecutor struct{}
 func (CPUExecutor) Execute(ctx context.Context, w trinity.Workload, r trinity.Route) (trinity.Result, error) {
 	if ctx == nil {
 		return trinity.Result{}, errors.New("nil context")
+	}
+	if err := ctx.Err(); err != nil {
+		return trinity.Result{}, err
 	}
 	start := time.Now()
 	payload := strings.TrimSpace(w.Payload)
@@ -149,9 +142,8 @@ func (CPUExecutor) Execute(ctx context.Context, w trinity.Workload, r trinity.Ro
 	if iterations > 4096 {
 		iterations = 4096
 	}
-
 	var digest [32]byte
-	input := []byte(fmt.Sprintf("%s|%s|%d|%d|%s", payload, w.Kind, w.MatrixSize, w.BatchSize, r.Precision))
+	input := []byte(fmt.Sprintf("%s|%s|%d|%d|%s", payload, w.Kind, w.MatrixSize, w.BatchSize, w.Precision))
 	for i := 0; i < iterations; i++ {
 		if err := ctx.Err(); err != nil {
 			return trinity.Result{}, err
@@ -160,7 +152,6 @@ func (CPUExecutor) Execute(ctx context.Context, w trinity.Workload, r trinity.Ro
 		digest = h
 		input = h[:]
 	}
-
 	metadata := map[string]string{
 		"backend":        "cpu",
 		"execution":      "deterministic",
@@ -170,11 +161,5 @@ func (CPUExecutor) Execute(ctx context.Context, w trinity.Workload, r trinity.Ro
 	if trace := trinity.TraceID(ctx); trace != "" {
 		metadata["trace_id"] = trace
 	}
-	return trinity.Result{
-		Output:    hex.EncodeToString(digest[:]),
-		Route:     r,
-		LatencyMS: float64(time.Since(start).Microseconds()) / 1000,
-		Success:   true,
-		Metadata:  metadata,
-	}, nil
+	return trinity.Result{Output: hex.EncodeToString(digest[:]), Route: r, LatencyMS: float64(time.Since(start).Microseconds()) / 1000, Success: true, Metadata: metadata}, nil
 }
