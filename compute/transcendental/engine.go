@@ -6,7 +6,9 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"math"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/divibisoul/Orquestrador-/core/trinity"
@@ -17,6 +19,7 @@ type Executor interface {
 }
 
 type Engine struct {
+	mu       sync.RWMutex
 	cfg      trinity.ComputeConfig
 	executor Executor
 }
@@ -31,7 +34,7 @@ func NewEngine(cfg trinity.ComputeConfig) *Engine {
 	if cfg.EfficiencyFactor <= 0 || cfg.EfficiencyFactor > 1 {
 		cfg.EfficiencyFactor = 0.7
 	}
-	if cfg.NoiseStd < 0 {
+	if cfg.NoiseStd < 0 || math.IsNaN(cfg.NoiseStd) || math.IsInf(cfg.NoiseStd, 0) {
 		cfg.NoiseStd = 0
 	}
 	return &Engine{cfg: cfg, executor: CPUExecutor{}}
@@ -41,6 +44,8 @@ func (e *Engine) WithExecutor(executor Executor) *Engine {
 	if e == nil {
 		return e
 	}
+	e.mu.Lock()
+	defer e.mu.Unlock()
 	if executor == nil {
 		e.executor = CPUExecutor{}
 	} else {
@@ -49,9 +54,6 @@ func (e *Engine) WithExecutor(executor Executor) *Engine {
 	return e
 }
 
-// Estimate supplies a concrete conservative cost model to the PFC. It does
-// not claim that a named GPU is physically present; availability belongs to
-// the provider/device executor.
 func (e *Engine) Estimate(ctx context.Context, w trinity.Workload) (trinity.CostEstimate, error) {
 	if e == nil {
 		return trinity.CostEstimate{}, errors.New("nil compute engine")
@@ -62,6 +64,10 @@ func (e *Engine) Estimate(ctx context.Context, w trinity.Workload) (trinity.Cost
 	if err := ctx.Err(); err != nil {
 		return trinity.CostEstimate{}, err
 	}
+	if w.MatrixSize < 0 || w.BatchSize < 0 || w.MemoryNeeded < 0 {
+		return trinity.CostEstimate{}, errors.New("invalid workload resource values")
+	}
+
 	matrix := w.MatrixSize
 	if matrix < 1 {
 		matrix = 1
@@ -70,11 +76,16 @@ func (e *Engine) Estimate(ctx context.Context, w trinity.Workload) (trinity.Cost
 	if batch < 1 {
 		batch = 1
 	}
+
+	e.mu.RLock()
+	efficiency := e.cfg.EfficiencyFactor
+	e.mu.RUnlock()
+
 	memory := w.MemoryNeeded
 	if memory <= 0 {
-		memory = float64(matrix*matrix) * 4 / (1024 * 1024)
+		memory = float64(matrix) * float64(matrix) * 4 / (1024 * 1024)
 	}
-	latency := (float64(matrix*matrix)/10000 + float64(batch)*5) / e.cfg.EfficiencyFactor
+	latency := (float64(matrix)*float64(matrix)/10000 + float64(batch)*5) / efficiency
 	return trinity.CostEstimate{
 		LatencyMS:   latency,
 		Memory:      memory,
@@ -93,9 +104,18 @@ func (e *Engine) Execute(ctx context.Context, w trinity.Workload, r trinity.Rout
 	if err := ctx.Err(); err != nil {
 		return trinity.Result{}, err
 	}
-	if w.ID == "" || w.Kind == "" {
+	if strings.TrimSpace(w.ID) == "" || strings.TrimSpace(w.Kind) == "" {
 		return trinity.Result{}, errors.New("invalid workload")
 	}
+	if w.MatrixSize < 0 || w.BatchSize < 0 || w.MemoryNeeded < 0 {
+		return trinity.Result{}, errors.New("invalid workload resource values")
+	}
+
+	e.mu.RLock()
+	executor := e.executor
+	precisionFallback := e.cfg.PrecisionFallback
+	e.mu.RUnlock()
+
 	if r.Model == "" {
 		r.Model = "blackwell"
 	}
@@ -103,12 +123,12 @@ func (e *Engine) Execute(ctx context.Context, w trinity.Workload, r trinity.Rout
 		r.Provider = "transcendental"
 	}
 	if r.Precision == "" {
-		r.Precision = e.cfg.PrecisionFallback
+		r.Precision = precisionFallback
 	}
-	if e.executor == nil {
+	if executor == nil {
 		return trinity.Result{}, errors.New("compute executor unavailable")
 	}
-	return e.executor.Execute(ctx, w, r)
+	return executor.Execute(ctx, w, r)
 }
 
 type CPUExecutor struct{}
