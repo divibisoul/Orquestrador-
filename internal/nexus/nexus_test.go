@@ -1,8 +1,8 @@
 package nexus
 
-import("context";"testing";"time")
+import("context";"math";"testing";"time")
 func TestWorkflowLifecycleAndDAG(t *testing.T){o:=NewOrchestrator(2);w:=Workflow{ID:"w1",Tasks:map[string]*Task{"a":{ID:"a",Goal:"first"},"b":{ID:"b",Goal:"second",Dependencies:[]string{"a"}}}};if err:=o.CreateWorkflow(context.Background(),w);err!=nil{t.Fatal(err)};if err:=o.ExecuteStep(context.Background(),"w1","a");err!=nil{t.Fatal(err)};if err:=o.ExecuteStep(context.Background(),"w1","b");err!=nil{t.Fatal(err)};s,_:=o.GetWorkflowStatus(context.Background(),"w1");if s!="Running"{t.Fatalf("status=%s",s)}}
 func TestCycleRejected(t *testing.T){o:=NewOrchestrator(1);w:=Workflow{ID:"cycle",Tasks:map[string]*Task{"a":{ID:"a",Dependencies:[]string{"b"}},"b":{ID:"b",Dependencies:[]string{"a"}}}};if err:=o.CreateWorkflow(context.Background(),w);err==nil{t.Fatal("expected cycle error")}}
-func TestPrefrontal(t *testing.T){p:=NewPrefrontal();plan:=p.GeneratePlan("build mesh");if len(plan)!=2{t.Fatal(len(plan))};d:=p.Decide("build mesh",plan,nil);if d.Confidence<=0{t.Fatal(d.Confidence)};if p.EvaluateOutcome(1,.8)!=.2{t.Fatal("prediction error")}}
+func TestPrefrontal(t *testing.T){p:=NewPrefrontal();plan:=p.GeneratePlan("build mesh");if len(plan)!=2{t.Fatal(len(plan))};d:=p.Decide("build mesh",plan,nil);if d.Confidence<=0{t.Fatal(d.Confidence)};if math.Abs(p.EvaluateOutcome(1,.8)-.2)>1e-12{t.Fatal("prediction error")}}
 func TestSuperAGI(t *testing.T){s:=NewSuperAGI(nil);v,_:=s.GenerateEmbedding(context.Background(),"hello");if len(v)!=32{t.Fatal(len(v))};r,_:=s.Inference(context.Background(),"hello");if r.Model!="deterministic-fallback"{t.Fatal(r.Model)};if s.EstimateCost(100)!=400{t.Fatal(s.EstimateCost(100))}}
 func TestRateLimiter(t *testing.T){o:=NewOrchestrator(1);allow:=o.RateLimiter(2);if !allow()||!allow()||allow(){t.Fatal("token bucket failed")};time.Sleep(1100*time.Millisecond);if !allow(){t.Fatal("bucket did not refill")}}
