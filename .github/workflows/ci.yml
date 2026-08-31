@@ -2,7 +2,12 @@ name: CI
 
 on:
   push:
-    branches: [main, recovery/consolidation, integration/soul-six-nuclei, feature/trinity-fundamental-v1]
+    branches:
+      - main
+      - recovery/consolidation
+      - integration/soul-six-nuclei
+      - feature/trinity-fundamental-v1
+      - feature/trinity-production-hardening-v1
   pull_request:
   workflow_dispatch:
 
