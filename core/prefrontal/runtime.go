@@ -7,6 +7,8 @@ type State struct{Goals []Goal; Context map[string]any; Constraints map[string]f
 type Plan struct{ID string; Steps []string; Score float64; Confidence float64; Risk float64}
 type Cortex struct{mu sync.RWMutex; state State; history []float64}
 func NewCortex()*Cortex{return &Cortex{state:State{Context:map[string]any{},Constraints:map[string]float64{}}}}
+// New is the canonical constructor; NewCortex is retained for compatibility.
+func New()*Cortex{return NewCortex()}
 func(c *Cortex)ReadGoals()[]Goal{c.mu.RLock();defer c.mu.RUnlock();return append([]Goal(nil),c.state.Goals...)}
 func(c *Cortex)ReadContext()map[string]any{c.mu.RLock();defer c.mu.RUnlock();o:=map[string]any{};for k,v:=range c.state.Context{o[k]=v};return o}
 func(c *Cortex)ReadConstraints()map[string]float64{c.mu.RLock();defer c.mu.RUnlock();o:=map[string]float64{};for k,v:=range c.state.Constraints{o[k]=v};return o}
