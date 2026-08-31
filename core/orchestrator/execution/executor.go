@@ -12,7 +12,7 @@ type Task func(context.Context) error
 type Executor struct {
 	Workers int
 	mu      sync.Mutex
-	cb      circuitState
+	cb      circuitBreaker
 	limits  map[string]*rateBucket
 }
 
@@ -44,32 +44,22 @@ type circuitBreaker struct {
 	halfOpenProbe bool
 }
 
-var defaultCircuit = func() circuitBreaker {
-	return circuitBreaker{
-		state:        CircuitClosed,
-		window:       10 * time.Second,
-		cooldown:     30 * time.Second,
-		minSamples:   4,
-		failureRatio: 0.5,
-	}
-}
-
 func New(workers int) *Executor {
 	if workers < 1 {
 		workers = 1
 	}
 	return &Executor{
 		Workers: workers,
-		cb:      cbStateFrom(defaultCircuit()),
-		limits:  map[string]*rateBucket{},
+		cb: circuitBreaker{
+			state:        CircuitClosed,
+			window:       10 * time.Second,
+			cooldown:     30 * time.Second,
+			minSamples:   4,
+			failureRatio: 0.5,
+		},
+		limits: map[string]*rateBucket{},
 	}
 }
-
-type cbState struct {
-	breaker circuitBreaker
-}
-
-func cbStateFrom(b circuitBreaker) cbState { return cbState{breaker: b} }
 
 func (e *Executor) ExecuteParallel(ctx context.Context, tasks []Task) []error {
 	if len(tasks) == 0 {
@@ -135,7 +125,7 @@ func collectErrors(errs <-chan error) []error {
 
 // ExecuteDistributed dispatches tasks through a caller-provided node dispatcher.
 // The dispatcher remains responsible for actual remote transport; this method
-// now respects cancellation and rejects nil dispatchers instead of panicking.
+// respects cancellation and rejects nil dispatchers instead of panicking.
 func (e *Executor) ExecuteDistributed(ctx context.Context, tasks []Task, dispatch func(context.Context, Task) error) []error {
 	if dispatch == nil {
 		return []error{errors.New("nil dispatcher")}
@@ -166,7 +156,7 @@ func (e *Executor) CircuitBreaker(success bool) bool {
 	defer e.mu.Unlock()
 
 	now := time.Now()
-	b := &e.cb.breaker
+	b := &e.cb
 	if b.windowStart.IsZero() {
 		b.windowStart = now
 	}
@@ -221,7 +211,7 @@ func (e *Executor) CircuitBreaker(success bool) bool {
 func (e *Executor) CircuitState() string {
 	e.mu.Lock()
 	defer e.mu.Unlock()
-	return string(e.cb.breaker.state)
+	return string(e.cb.state)
 }
 
 // Bulkhead isolates a workload to a bounded worker count.
