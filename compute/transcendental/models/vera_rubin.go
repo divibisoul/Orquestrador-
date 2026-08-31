@@ -1,6 +1,10 @@
 package models
 
-import "github.com/divibisoul/Orquestrador-/compute/transcendental/core"
+import (
+	"time"
+
+	"github.com/divibisoul/Orquestrador-/compute/transcendental/core"
+)
 
 // Vera Rubin figures are preliminary 2026 marketing/reference figures and must be updated when official specifications are published.
 type VeraRubin struct{ Efficiency float64 }
