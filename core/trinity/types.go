@@ -2,7 +2,6 @@ package trinity
 
 import (
 	"context"
-	"strings"
 
 	"github.com/divibisoul/Orquestrador-/observability"
 )
@@ -24,9 +23,7 @@ type TrinityConfig struct { PFCEnabled bool; FabricEnabled bool; ComputeEnabled 
 type PrefrontalConfig struct { WorkingMemoryLimit int; MetaRLEpsilon float64; ConflictSensitivity float64 }
 type FabricConfig struct { DecisionTreeDepth int; LearningRate float64; FeedbackDiscount float64 }
 type ComputeConfig struct { Mode string; PrecisionFallback string; EfficiencyFactor float64; UseSparsity bool; NoiseStd float64 }
-
 type TrinityOrchestrator struct { PFC Prefrontal; Fabric NeuralFabric; Compute ComputeEngine; Config TrinityConfig; Metrics *observability.Metrics }
 
-type traceKey struct{}
-func WithTraceID(ctx context.Context,id string)context.Context{if ctx==nil{return nil};return context.WithValue(ctx,traceKey{},strings.TrimSpace(id))}
-func TraceID(ctx context.Context)string{if ctx==nil{return ""};if v,ok:=ctx.Value(traceKey{}).(string);ok{return strings.TrimSpace(v)};return ""}
+func WithTraceID(ctx context.Context,id string)context.Context{return observability.WithTraceID(ctx,id)}
+func TraceID(ctx context.Context)string{return observability.TraceID(ctx)}
