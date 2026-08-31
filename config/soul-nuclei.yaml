@@ -1,0 +1,25 @@
+protocol: soul-mesh/1
+orchestrator: orquestrador
+nuclei:
+  - id: N01
+    repository: divibisoul/aeternum-core-29
+    endpoint_env: SOUL_MESH_N01_URL
+  - id: N02
+    repository: divibisoul/Eternium-
+    endpoint_env: SOUL_MESH_N02_URL
+  - id: N03
+    repository: divibisoul/nexus-aeternum-fusion
+    endpoint_env: SOUL_MESH_N03_URL
+  - id: N04
+    repository: divibisoul/nextjs-ai-chatbots
+    endpoint_env: SOUL_MESH_N04_URL
+  - id: N05
+    repository: divibisoul/nextjs-ai-chatbot
+    endpoint_env: SOUL_MESH_N05_URL
+  - id: N06
+    repository: divibisoul/nextjs-ai-chatbot-2000
+    endpoint_env: SOUL_MESH_N06_URL
+transport:
+  request_path: /api/soul-mesh
+  timeout_seconds: 15
+  authentication: bearer
