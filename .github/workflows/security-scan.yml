@@ -25,6 +25,8 @@ jobs:
       - name: Download dependencies
         run: go mod download
       - name: Install gosec
-        run: go install github.com/securego/gosec/v2/cmd/gosec@v2.22.8
+        run: go install github.com/securego/gosec/v2/cmd/gosec@v2.28.0
+      - name: Verify gosec version
+        run: gosec -version
       - name: Go vulnerability scan
         run: gosec ./...
