@@ -12,7 +12,13 @@ type deterministicRNG struct {
 }
 
 func newDeterministicRNG(seed int64) *deterministicRNG {
-	s := uint64(seed)
+	s := uint64(0)
+	if seed >= 0 {
+		s = uint64(seed)
+	} else {
+		// Preserve the complete int64 bit pattern without an arithmetic overflow.
+		s = ^uint64(^seed) + 1
+	}
 	if s == 0 {
 		s = 0x9e3779b97f4a7c15
 	}
@@ -32,11 +38,8 @@ func (r *deterministicRNG) float64() float64 {
 	return float64(r.next()>>11) * (1.0 / 9007199254740992.0)
 }
 
-func (r *deterministicRNG) intn(n int) int {
-	if n <= 0 {
-		return 0
-	}
-	return int(r.next() % uint64(n))
+func (r *deterministicRNG) bit() bool {
+	return r.next()&1 == 0
 }
 
 type MetaPolicy struct {
@@ -71,7 +74,7 @@ func (p *MetaPolicy) Choose() trinity.Strategy {
 	p.mu.RUnlock()
 	p.rngMu.Lock()
 	explore := p.rng != nil && p.rng.float64() < eps
-	explorePrecision := p.rng != nil && p.rng.intn(2) == 0
+	explorePrecision := p.rng != nil && p.rng.bit()
 	p.rngMu.Unlock()
 	if explore {
 		if explorePrecision {
