@@ -12,38 +12,38 @@ Source baseline: `foundation/orchestrator-nexus-v1`
 
 1. Created `recovery/consolidation` directly from the foundation branch.
 2. Corrected the broken `core/cognitive` import to the actual canonical `core/neuralfabric` package.
-3. Corrected the integration test to use the real `prefrontal.New()` API and an existing policy operation.
+3. Corrected the integration test to use the canonical prefrontal API.
 4. Added a guard against a route selecting a device that is not present in the supplied device set.
 5. Fixed duplicate JSON tags in `internal/mesh.Message` and distinct CPU/GPU/NPU tags.
 6. Made the canonical `mesh.Registry` heartbeat/stale logic operational by tracking `LastHeartbeat`.
 7. Added focused tests for security boundaries and mesh stale/heartbeat behavior.
 8. Strengthened the security policy boundary with input validation and explicit authorization/audit extension points.
 9. Pinned the Gosec GitHub Action instead of following mutable `master`.
-10. Rewrote architecture/status/contribution/security documentation so implemented behavior is separated from boundaries/stubs.
-11. Added `ISSUES.md` as the recovery issue register.
+10. Consolidated the duplicate prefrontal implementations into one canonical `Cortex`, preserving compatibility constructors and the useful behavior of both source files.
+11. Refactored `cmd/nexus` to use canonical `core/*` and `mesh` packages rather than the legacy `internal` runtime.
+12. Added a hardened, isolated experimental Gemini adapter with lazy credentials, authenticated HTTP access and generic provider errors.
+13. Updated README, architecture, status, security and contribution documentation and added `ISSUES.md`.
 
-## Evidence baseline
+## Execution evidence
 
-The foundation contains the Orchestrator, Neo-Cortex, Super AGI, Neural Fabric, Mesh, State, Compute, API/Protobuf, CI, security and benchmark structures. The recovery tree also confirms the presence of `cmd/nexus`, `compute`, `core`, `mesh`, `state`, `security`, `api/proto` and associated documentation/workflows.
+GitHub Actions run **151** on commit `6c23dc35408d98323e4fa0126471d2f8264c68da` completed successfully. The Go job passed formatting normalization, `go vet ./...`, `go build ./...`, and `go test ./... -count=1 -race`. The Python adapter job also passed SDK installation and syntax validation. The Security workflow run **150** on the same commit also completed successfully.
 
-## Known limitations
+Earlier failing runs were retained as forensic evidence and exposed the actual defects that were then corrected: a malformed `compute/runtime.go` select statement, duplicate prefrontal declarations, legacy floating-point test precision, and a mesh snapshot bug.
 
-The GitHub connector can inspect and modify repository files but cannot execute the repository's Go toolchain inside GitHub. Therefore this report deliberately does **not** claim that `go build ./...`, `go test ./...` or CI are green until an actual workflow run proves it.
+## Remaining engineering work
 
-The following remain open engineering work:
-
-- exhaustive compile/test execution;
-- complete migration/removal of duplicate `internal/*` implementations;
+- complete consumer-graph migration before deleting `internal/nexus`, `internal/mesh`, or `internal/state`;
 - real distributed Raft;
 - generated protobuf/gRPC bindings and runtime, if required;
 - production mTLS/SPIFFE and durable audit;
 - concrete model/GPU/NPU runtimes;
-- conversion of false-success learning/training stubs to explicit errors;
-- hardened Gemini adapter before promotion from experimental status.
+- conversion of false-success learning/training boundaries to explicit `not implemented` errors where appropriate;
+- independent security review of the Gemini adapter before production exposure;
+- end-to-end runtime demonstration covering all six planes.
 
 ## Merge policy
 
-Do not merge `recovery/consolidation` into `main` until the repository's CI has demonstrated build, vet, unit/integration tests and security scan success. A recovery branch is intentionally kept separate so the original foundation remains recoverable.
+`main` has intentionally **not** been modified. The recovery PR remains open and draft so the original foundation is preserved and the remaining architectural migration can be reviewed before merge.
 
 ## Acceptance status
 
@@ -51,17 +51,21 @@ Do not merge `recovery/consolidation` into `main` until the repository's CI has 
 |---|---|
 | Recovery branch created | DONE |
 | Known import/API inconsistencies corrected | DONE for identified findings |
-| Architecture decision documented | DONE, migration still required |
-| Security boundary hardened | PARTIAL |
+| `go build ./...` | VERIFIED GREEN in CI |
+| `go test ./...` | VERIFIED GREEN in CI |
+| `go test ./... -race` | VERIFIED GREEN in CI |
+| `go vet ./...` | VERIFIED GREEN in CI |
+| Python adapter syntax | VERIFIED GREEN in CI |
+| Security scan | VERIFIED GREEN in CI |
+| Architecture documented | DONE |
+| Prefrontal duplication consolidated | DONE |
 | Mesh stale detection implemented | DONE |
-| Tests added for recovery changes | DONE |
-| `go build ./...` verified | PENDING CI |
-| `go test ./...` verified | PENDING CI |
-| CI green | PENDING |
-| All duplicate packages removed | NOT YET — requires full consumer migration |
-| `main` updated | NOT YET |
-| Release tag | NOT YET |
+| All duplicate packages removed | PENDING consumer migration |
+| gRPC runtime | PENDING |
+| Production distributed consensus | PENDING |
+| `main` updated | PENDING explicit approval |
+| Release tag | PENDING explicit approval |
 
-## Next gate
+## Recovery principle
 
-The next engineering action is execution verification: run the Go build/test suite on `recovery/consolidation`, fix every compiler/test failure, then perform a consumer graph migration before deleting any legacy duplicate package.
+No destructive merge or deletion is performed merely to make the repository look clean. Every removal must follow a consumer migration and be justified by preserved behavior and passing tests.
