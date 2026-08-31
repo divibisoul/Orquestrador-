@@ -13,7 +13,7 @@ import (
 
 func TestCognitiveLoop(t *testing.T) {
 	ctx := context.Background()
-	d := compute.Device{ID: "local-gpu", Kind: compute.GPU, FLOPs: 1e12, MemoryMB: 16384, VRAMMB: 8192, Precisions: []compute.Precision{compute.FP16, compute.INT8}, Ready: true}
+	d := compute.Device{ID: "local-cpu", Kind: compute.CPU, FLOPs: 1e9, MemoryMB: 16384, Precisions: []compute.Precision{compute.FP32, compute.INT8}, Ready: true}
 	fabric := compute.NewLocalFabric([]compute.Device{d})
 	nf := neuralfabric.NewRuntime()
 	cx := prefrontal.New()
@@ -21,7 +21,7 @@ func TestCognitiveLoop(t *testing.T) {
 	r, err := nf.Route(ctx, neuralfabric.State{Goal: "test"}, []neuralfabric.Route{{NodeID: d.ID, DeviceID: d.ID, Precision: "int8", BatchSize: 1}})
 	if err != nil || r.DeviceID != d.ID { t.Fatalf("route failed: %v", err) }
 	res, err := fabric.Execute(ctx, compute.Job{ID: "test", Tokens: 1, Precision: compute.INT8}, d)
-	if err != nil || res.JobID != "test" { t.Fatalf("compute failed: %v", err) }
+	if err != nil || res.JobID != "test" || res.DeviceID != d.ID { t.Fatalf("compute failed: %v", err) }
 	cx.OptimizePolicy(0.1)
 	agi := superagi.NewRuntime().WithProvider(integrationProvider{})
 	if _, err := agi.GenerateEmbedding(ctx, "hello"); err != nil { t.Fatal(err) }
