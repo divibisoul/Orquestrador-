@@ -8,10 +8,9 @@ trinity:
 compute:
   mode: auto
   precision_fallback: fp32
-  simulation:
-    efficiency_factor: 0.7
-    use_sparsity: false
-    noise_std: 0.05
+  efficiency_factor: 0.7
+  use_sparsity: false
+  noise_std: 0.05
 prefrontal:
   meta_rl_epsilon: 0.1
   conflict_sensitivity: 0.5
