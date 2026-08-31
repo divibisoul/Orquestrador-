@@ -2,6 +2,7 @@ package core
 
 import (
 	"errors"
+	"fmt"
 	"strings"
 	"time"
 )
@@ -89,7 +90,7 @@ func (p Plan) Validate() error {
 	}
 	for i, w := range p.Workloads {
 		if err := w.Validate(); err != nil {
-			return errors.New("invalid workload at index " + string(rune('0'+i)) + ": " + err.Error())
+			return fmt.Errorf("invalid workload at index %d: %w", i, err)
 		}
 	}
 	return nil
