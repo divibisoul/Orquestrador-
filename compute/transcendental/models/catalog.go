@@ -6,7 +6,7 @@ func DefaultCatalog() []PerformanceModel {
 	return []PerformanceModel{
 		BlackwellB200{},
 		VeraRubin{},
-		CDNA5MI400{},
+		CDNA5{},
 		Trillium{},
 		Atlas950{ScaleFactor: 1},
 	}
