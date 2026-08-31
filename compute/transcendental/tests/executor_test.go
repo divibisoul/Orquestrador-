@@ -2,6 +2,7 @@ package tests
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/divibisoul/Orquestrador-/compute/transcendental/core"
@@ -92,5 +93,57 @@ func TestExecutePlanNilExecutorIsSafe(t *testing.T) {
 	results := ex.ExecutePlan(context.Background(), []core.Workload{{ID: "nil", Operation: "matmul", Precision: core.FP8, MatrixSize: 1, BatchSize: 1}})
 	if len(results) != 1 || results[0].Error == nil {
 		t.Fatalf("expected initialization error, got %#v", results)
+	}
+}
+
+func TestExecuteRejectsNilContext(t *testing.T) {
+	cfg := core.DefaultConfig()
+	cfg.Enabled = true
+	eng, err := core.NewEngine(cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ex, err := executor.New(eng, models.DefaultCatalog(cfg), "auto")
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = ex.Execute(nil, core.Workload{ID: "nil-context", Operation: "matmul", Precision: core.FP8, MatrixSize: 1024, BatchSize: 1})
+	if !errors.Is(err, context.Canceled) && err == nil {
+		t.Fatal("expected nil-context error")
+	}
+}
+
+func TestExecutePlanCanceledContextMarksPendingWork(t *testing.T) {
+	cfg := core.DefaultConfig()
+	cfg.Enabled = true
+	cfg.MaxParallelUnits = 1
+	eng, err := core.NewEngine(cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ex, err := executor.New(eng, models.DefaultCatalog(cfg), "auto")
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	results := ex.ExecutePlan(ctx, []core.Workload{{ID: "a", Operation: "matmul", Precision: core.FP8, MatrixSize: 1024, BatchSize: 1}, {ID: "b", Operation: "matmul", Precision: core.FP8, MatrixSize: 1024, BatchSize: 1}})
+	for _, result := range results {
+		if !errors.Is(result.Error, context.Canceled) {
+			t.Fatalf("expected context cancellation, got %#v", result)
+		}
+	}
+}
+
+func TestExecutePlanCapsWorkersAtSimulationLimit(t *testing.T) {
+	cfg := core.DefaultConfig()
+	cfg.Enabled = true
+	cfg.MaxParallelUnits = 8192
+	eng, err := core.NewEngine(cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if eng.Config.EffectiveParallelUnits() != core.MaxSimulationParallelUnits {
+		t.Fatalf("effective workers=%d want %d", eng.Config.EffectiveParallelUnits(), core.MaxSimulationParallelUnits)
 	}
 }
