@@ -18,15 +18,23 @@ permissions:
   contents: read
 
 jobs:
-  test:
+  quality:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version: '1.22'
-          cache: false
+          go-version: '1.26.7'
+          cache: true
+      - name: Format check
+        run: test -z "$(gofmt -l compute/transcendental)"
+      - name: Vet
+        run: go vet ./compute/transcendental/...
       - name: Test isolated package
         run: go test ./compute/transcendental/...
+      - name: Race test
+        run: go test -race ./compute/transcendental/...
       - name: Build all Go packages
         run: go build ./...
+      - name: Vulnerability scan
+        run: go run golang.org/x/vuln/cmd/govulncheck@latest ./...
