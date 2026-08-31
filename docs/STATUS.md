@@ -4,19 +4,24 @@ This document distinguishes source-level implementation from production capabili
 
 | Component | Current state | Notes |
 |---|---|---|
-| Go module / entrypoint | Implemented | Requires actual `go build ./...` verification after recovery changes. |
+| Go module / entrypoint | Implemented | Recovery CI validates formatting, vet, build and race tests. |
 | Orchestrator | Implemented primitives | Workflow execution, retry and resilience primitives exist. Canonical domain package: `core/orchestrator`. |
-| Neo-Cortex / Prefrontal | Implemented primitives | Context, fusion, reasoning, planning, policy feedback. |
-| Neural Fabric | Partial | Routing/encoding primitives exist; persistence and adaptive learning remain incomplete. |
-| Super AGI | Partial | Provider-neutral interfaces and memory/verification boundaries exist; concrete model/training runtimes are not complete. |
-| Mesh | Partial | Registration, discovery, heartbeat and stale marking exist; distributed transport is not complete. |
-| State | Partial | Versioned/cache boundaries exist; real distributed consensus is not complete. |
+| Neo-Cortex / Prefrontal | Implemented primitives | Single canonical Cortex implementation with context, fusion, reasoning, planning, policy feedback and compatibility API. |
+| Neural Fabric | Partial | Routing/encoding/feedback primitives exist; persistence and adaptive weight updates remain incomplete. |
+| Super AGI | Partial | Provider-neutral interfaces and memory/verification boundaries exist; concrete model/training runtimes are not complete. Learning/fine-tuning/replay boundaries now return explicit `not implemented` errors. |
+| Mesh | Partial | Canonical `mesh` package provides registration, discovery, heartbeat and stale marking; distributed transport remains incomplete. |
+| State | Partial | Canonical `state` package provides versioned storage/CAS; real distributed consensus is not complete. |
 | Security | Partial | Basic policy validation and explicit auth/audit boundaries exist; production identity, mTLS and durable audit are pending. |
-| Protobuf | Contract | `.proto` contracts exist; generated bindings/live gRPC runtime require separate verification/implementation. |
-| Gemini | Experimental | Kept isolated from canonical Go runtime until security and lifecycle hardening is complete. |
-| GPU/NPU | Boundary | Device abstractions exist; hardware backends are not claimed as implemented. |
-| CI | Configured | Gosec action is pinned; actual green status must be confirmed from workflow runs. |
+| Protobuf | Contract | `.proto` contracts exist; generated bindings/live gRPC runtime require separate implementation/verification. |
+| Gemini | Experimental | Isolated provider adapter; it must remain behind the hardened lifecycle/API boundary until promoted deliberately. |
+| GPU/NPU | Boundary | Device abstractions and simulated/local execution exist; physical accelerator backends are not claimed as implemented. |
+| CI | Operational | CI, security and benchmark workflows now target the self-hosted runner; manual dispatch is available for CI and security. |
+| E2E | Implemented test | Six-plane integration test covers Cortex → Orchestrator → Mesh → Neural Fabric → Super AGI → State. |
+
+## Self-hosted execution
+
+The repository expects a self-hosted GitHub Actions runner for recovery validation. See `docs/SELF_HOSTED_RUNNER.md`.
 
 ## Recovery rule
 
-No stub is allowed to return successful output that implies work happened when the operation is not implemented. Future stub conversions should return explicit `not implemented` errors and have tests.
+No stub is allowed to return successful output that implies work happened when the operation is not implemented. Boundary methods must either perform the real operation or return an explicit `not implemented` error, with tests.
