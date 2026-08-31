@@ -1,6 +1,9 @@
 package trinity
 
-import "context"
+import (
+	"context"
+	"strings"
+)
 
 type Workload struct {
 	ID           string
@@ -29,11 +32,11 @@ type Strategy struct {
 }
 
 type Decision struct {
-	Approved       bool
-	ConflictScore  float64
-	Strategy       Strategy
-	Estimate       CostEstimate
-	Reason         string
+	Approved      bool
+	ConflictScore float64
+	Strategy      Strategy
+	Estimate      CostEstimate
+	Reason        string
 }
 
 type Route struct {
@@ -46,12 +49,12 @@ type Route struct {
 }
 
 type Result struct {
-	Output     string
-	Route      Route
-	LatencyMS  float64
-	Success    bool
-	Error      string
-	Metadata   map[string]string
+	Output    string
+	Route     Route
+	LatencyMS float64
+	Success   bool
+	Error     string
+	Metadata  map[string]string
 }
 
 type Feedback struct {
@@ -93,8 +96,8 @@ type TrinityConfig struct {
 }
 
 type PrefrontalConfig struct {
-	WorkingMemoryLimit int
-	MetaRLEpsilon      float64
+	WorkingMemoryLimit  int
+	MetaRLEpsilon       float64
 	ConflictSensitivity float64
 }
 
@@ -105,11 +108,11 @@ type FabricConfig struct {
 }
 
 type ComputeConfig struct {
-	Mode             string
+	Mode              string
 	PrecisionFallback string
-	EfficiencyFactor float64
-	UseSparsity      bool
-	NoiseStd         float64
+	EfficiencyFactor  float64
+	UseSparsity       bool
+	NoiseStd          float64
 }
 
 type TrinityOrchestrator struct {
@@ -117,4 +120,23 @@ type TrinityOrchestrator struct {
 	Fabric  NeuralFabric
 	Compute ComputeEngine
 	Config  TrinityConfig
+}
+
+type traceKey struct{}
+
+func WithTraceID(ctx context.Context, id string) context.Context {
+	if ctx == nil {
+		return nil
+	}
+	return context.WithValue(ctx, traceKey{}, strings.TrimSpace(id))
+}
+
+func TraceID(ctx context.Context) string {
+	if ctx == nil {
+		return ""
+	}
+	if v, ok := ctx.Value(traceKey{}).(string); ok {
+		return strings.TrimSpace(v)
+	}
+	return ""
 }
