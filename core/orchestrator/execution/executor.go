@@ -62,6 +62,9 @@ func New(workers int) *Executor {
 }
 
 func (e *Executor) ExecuteParallel(ctx context.Context, tasks []Task) []error {
+	if ctx == nil {
+		ctx = context.Background()
+	}
 	if len(tasks) == 0 {
 		return nil
 	}
@@ -94,6 +97,9 @@ func (e *Executor) ExecuteParallel(ctx context.Context, tasks []Task) []error {
 	if workers < 1 {
 		workers = 1
 	}
+	if workers > len(tasks) {
+		workers = len(tasks)
+	}
 	wg.Add(workers)
 	for i := 0; i < workers; i++ {
 		go worker()
@@ -123,30 +129,28 @@ func collectErrors(errs <-chan error) []error {
 	return out
 }
 
-// ExecuteDistributed dispatches tasks through a caller-provided node dispatcher.
-// The dispatcher remains responsible for actual remote transport; this method
-// respects cancellation and rejects nil dispatchers instead of panicking.
+// ExecuteDistributed dispatches independent tasks concurrently through the
+// caller-provided node dispatcher. Workers bound fan-out while preserving
+// cancellation and error collection. The dispatcher owns remote transport.
 func (e *Executor) ExecuteDistributed(ctx context.Context, tasks []Task, dispatch func(context.Context, Task) error) []error {
 	if dispatch == nil {
 		return []error{errors.New("nil dispatcher")}
 	}
-	out := make([]error, 0)
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	wrapped := make([]Task, 0, len(tasks))
 	for _, t := range tasks {
-		select {
-		case <-ctx.Done():
-			out = append(out, ctx.Err())
-			return out
-		default:
-		}
 		if t == nil {
-			out = append(out, errors.New("nil task"))
+			wrapped = append(wrapped, func(context.Context) error { return errors.New("nil task") })
 			continue
 		}
-		if err := dispatch(ctx, t); err != nil {
-			out = append(out, err)
-		}
+		task := t
+		wrapped = append(wrapped, func(runCtx context.Context) error {
+			return dispatch(runCtx, task)
+		})
 	}
-	return out
+	return e.ExecuteParallel(ctx, wrapped)
 }
 
 // CircuitBreaker records real successes and failures in a rolling window.
@@ -214,7 +218,6 @@ func (e *Executor) CircuitState() string {
 	return string(e.cb.state)
 }
 
-// Bulkhead isolates a workload to a bounded worker count.
 func (e *Executor) Bulkhead(ctx context.Context, workers int, tasks []Task) []error {
 	if workers < 1 {
 		workers = 1
@@ -223,7 +226,6 @@ func (e *Executor) Bulkhead(ctx context.Context, workers int, tasks []Task) []er
 	return local.ExecuteParallel(ctx, tasks)
 }
 
-// RateLimiter implements a token bucket and returns whether a request is allowed.
 func (e *Executor) RateLimiter(key string, limit int) bool {
 	if limit <= 0 || key == "" {
 		return false
