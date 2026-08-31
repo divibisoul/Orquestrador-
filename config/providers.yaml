@@ -1,0 +1,11 @@
+gemini:
+  enabled: true
+  models:
+    - gemini-2.5-flash
+  rate_limit:
+    rpm: 10
+    rpd: 250
+  priority: 1
+  capabilities:
+    - text_generation
+    - function_calling
