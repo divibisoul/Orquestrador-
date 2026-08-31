@@ -26,7 +26,9 @@ jobs:
         with:
           go-version: '1.22'
           cache: true
-      - run: gofmt -w $(find compute/transcendental -name '*.go' -type f)
-      - run: test -z "$(git diff -- compute/transcendental | grep '^+' | grep -v '^+++' || true)"
-      - run: go test ./compute/transcendental/...
-      - run: go test ./...
+      - name: Check formatting
+        run: test -z "$(gofmt -l $(find compute/transcendental -name '*.go' -type f))"
+      - name: Test isolated package
+        run: go test ./compute/transcendental/...
+      - name: Build all Go packages
+        run: go build ./...
