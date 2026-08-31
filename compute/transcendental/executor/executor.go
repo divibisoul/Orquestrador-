@@ -35,7 +35,7 @@ func New(engine *core.Engine, catalog []models.PerformanceModel, mode string) (*
 
 func (e *SimulatedExecutor) Estimate(ctx context.Context, wl core.Workload) (core.CostEstimate, error) {
 	if !e.Engine.Config.Enabled { return core.CostEstimate{}, errors.New("transcendental compute engine is disabled") }
-	if ctx == nil { return core.CostEstimate{}, errors.New("context is nil") }
+	if err := ctxErr(ctx); err != nil { return core.CostEstimate{}, err }
 	sel, err := selection.Select(wl, e.Catalog, e.Mode, "auto", e.Engine.Config.PrecisionFallback)
 	if err != nil { return core.CostEstimate{}, err }
 	return e.Engine.Estimate(ctx, wl, sel.Model, sel.EffectivePrecision, sel.Penalty)
@@ -76,10 +76,11 @@ func (e *SimulatedExecutor) Execute(ctx context.Context, wl core.Workload) (core
 }
 
 // ExecutePlan runs independent simulated workloads in parallel using a bounded worker pool.
-// No more than MaxParallelUnits goroutines are created, even if configuration requests more.
+// No more than MaxSimulationParallelUnits goroutines are created, even if configuration requests more.
 func (e *SimulatedExecutor) ExecutePlan(ctx context.Context, workloads []core.Workload) []core.Result {
 	results := make([]core.Result, len(workloads))
 	if len(workloads) == 0 { return results }
+	if ctx == nil { ctx = context.Background() }
 	workers := e.Engine.Config.MaxParallelUnits
 	if workers < 1 { workers = 1 }
 	if workers > core.MaxSimulationParallelUnits { workers = core.MaxSimulationParallelUnits }
@@ -91,15 +92,20 @@ func (e *SimulatedExecutor) ExecutePlan(ctx context.Context, workloads []core.Wo
 		go func() {
 			defer wg.Done()
 			for idx := range jobs {
-				result, _ := e.Execute(ctx, workloads[idx])
-				if result.Error != nil { results[idx] = result } else { results[idx] = result }
+				results[idx], _ = e.Execute(ctx, workloads[idx])
 			}
 		}()
 	}
 	for i := range workloads {
 		select {
-		case <-ctx.Done(): results[i] = core.Result{WorkloadID: workloads[i].ID, Error: ctx.Err()}
-		case jobs <- i:
+		case <-ctx.Done():
+			results[i] = core.Result{WorkloadID: workloads[i].ID, Error: ctx.Err()}
+		default:
+			select {
+			case <-ctx.Done():
+				results[i] = core.Result{WorkloadID: workloads[i].ID, Error: ctx.Err()}
+			case jobs <- i:
+			}
 		}
 	}
 	close(jobs)
