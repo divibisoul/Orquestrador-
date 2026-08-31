@@ -21,11 +21,11 @@ func(r *Runtime)EpisodicMemory(event string){r.Memory.mu.Lock();defer r.Memory.m
 func(r *Runtime)SemanticMemory(k,v string){r.Memory.mu.Lock();defer r.Memory.mu.Unlock();r.Memory.semantic[k]=v}
 func(r *Runtime)ProceduralMemory(k,v string){r.Memory.mu.Lock();defer r.Memory.mu.Unlock();r.Memory.procedural[k]=v}
 func(r *Runtime)VectorMemory(k string,v []float64){r.Memory.mu.Lock();defer r.Memory.mu.Unlock();r.Memory.vectors[k]=append([]float64(nil),v...)}
-func(r *Runtime)TrainOnline(context.Context,[]string)error{return nil}
-func(r *Runtime)FineTuneLoRA(context.Context,string,string)error{return nil}
+func(r *Runtime)TrainOnline(ctx context.Context,_ []string)error{return notImplemented(ctx,"online training")}
+func(r *Runtime)FineTuneLoRA(ctx context.Context,_,_ string)error{return notImplemented(ctx,"LoRA fine-tuning")}
 func(r *Runtime)PredictLoRADemand(_ context.Context,history []string)string{if len(history)==0{return "default"};return history[len(history)-1]}
-func(r *Runtime)SwapLoRA(context.Context,string)error{return nil}
-func(r *Runtime)ReplayExperience(context.Context,[]string)error{return nil}
+func(r *Runtime)SwapLoRA(ctx context.Context,_ string)error{return notImplemented(ctx,"LoRA swapping")}
+func(r *Runtime)ReplayExperience(ctx context.Context,_ []string)error{return notImplemented(ctx,"experience replay")}
 func(r *Runtime)Inference(ctx context.Context,model,input string)(string,error){return r.GenerateText(ctx,model+": "+input)}
 func(r *Runtime)BatchInference(ctx context.Context,model string,inputs []string)([]string,error){out:=make([]string,len(inputs));for i,x:=range inputs{v,e:=r.Inference(ctx,model,x);if e!=nil{return nil,e};out[i]=v};return out,nil}
 func(r *Runtime)DynamicQuantization(model,precision string)string{return model+"@"+precision}
@@ -35,5 +35,6 @@ func(r *Runtime)ProfileModel(context.Context,string)map[string]float64{return ma
 func(r *Runtime)EstimateCost(tokens int)map[string]float64{return map[string]float64{"flops":float64(tokens)*1e6,"joules":float64(tokens)*.01}}
 func(r *Runtime)ExplainInference(_ context.Context,result string)string{return "inference result derived from configured model: "+result}
 func(r *Runtime)MonitorDrift(reference,current []float64)float64{n:=len(reference);if len(current)<n{n=len(current)};if n==0{return 0};var d float64;for i:=0;i<n;i++{x:=reference[i]-current[i];if x<0{x=-x};d+=x};return d/float64(n)}
-func(r *Runtime)AutoRetry(ctx context.Context,model,input string,minConfidence float64)(string,error){var out string;var err error;for i:=0;i<3;i++{out,err=r.Inference(ctx,model,input);if err==nil&&minConfidence<=.5{return out,nil}};return out,err}
+func(r *Runtime)AutoRetry(ctx context.Context,model,input string,minConfidence float64)(string,error){var out string;var err error;for i:=0;i<3;i++{out,err=r.Inference(ctx,model,input);if err==nil&&minConfidence<=.5{return out,nil}};if err==nil{return "",errors.New("confidence threshold not met")};return out,err}
 func(r *Runtime)Digest(text string)string{h:=sha256.Sum256([]byte(time.Now().String()+text));return hex.EncodeToString(h[:])}
+func notImplemented(ctx context.Context,feature string)error{if err:=ctx.Err();err!=nil{return err};return errors.New(feature+" not implemented")}
