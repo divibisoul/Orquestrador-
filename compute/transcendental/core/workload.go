@@ -1,12 +1,16 @@
 package core
 
-import "time"
+import (
+	"errors"
+	"strings"
+	"time"
+)
 
 type Precision string
 
 const (
-	FP4 Precision = "fp4"
-	FP8 Precision = "fp8"
+	FP4  Precision = "fp4"
+	FP8  Precision = "fp8"
 	FP16 Precision = "fp16"
 	BF16 Precision = "bf16"
 	FP32 Precision = "fp32"
@@ -55,4 +59,38 @@ type Result struct {
 type Plan struct {
 	Workloads []Workload
 	Strategy  string
+}
+
+func (w Workload) Validate() error {
+	if strings.TrimSpace(w.ID) == "" {
+		return errors.New("workload ID is required")
+	}
+	if strings.TrimSpace(w.Operation) == "" {
+		return errors.New("workload operation is required")
+	}
+	if w.Precision == "" {
+		return errors.New("workload precision is required")
+	}
+	if w.MatrixSize < 1 {
+		return errors.New("matrix size must be >= 1")
+	}
+	if w.BatchSize < 1 {
+		return errors.New("batch size must be >= 1")
+	}
+	if w.DataBytes < 0 || w.MemoryNeeded < 0 {
+		return errors.New("data and memory requirements must be non-negative")
+	}
+	return nil
+}
+
+func (p Plan) Validate() error {
+	if len(p.Workloads) == 0 {
+		return errors.New("plan contains no workloads")
+	}
+	for i, w := range p.Workloads {
+		if err := w.Validate(); err != nil {
+			return errors.New("invalid workload at index " + string(rune('0'+i)) + ": " + err.Error())
+		}
+	}
+	return nil
 }
