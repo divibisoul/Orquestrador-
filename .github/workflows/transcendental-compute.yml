@@ -1,0 +1,32 @@
+name: Transcendental Compute Engine
+
+on:
+  push:
+    paths:
+      - 'compute/transcendental/**'
+      - 'config/compute.yaml'
+      - 'go.mod'
+      - '.github/workflows/transcendental-compute.yml'
+  pull_request:
+    paths:
+      - 'compute/transcendental/**'
+      - 'config/compute.yaml'
+      - 'go.mod'
+      - '.github/workflows/transcendental-compute.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+          cache: true
+      - run: gofmt -w $(find compute/transcendental -name '*.go' -type f)
+      - run: test -z "$(git diff -- compute/transcendental | grep '^+' | grep -v '^+++' || true)"
+      - run: go test ./compute/transcendental/...
+      - run: go test ./...
