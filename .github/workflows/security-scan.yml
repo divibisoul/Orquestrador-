@@ -9,6 +9,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: orchestrator-security-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   gosec:
     runs-on: ubuntu-latest
@@ -18,6 +22,8 @@ jobs:
         with:
           go-version: '1.25'
           cache: true
+      - name: Download dependencies
+        run: go mod download
       - name: Go vulnerability scan
         uses: securego/gosec@v2.22.8
         with:
