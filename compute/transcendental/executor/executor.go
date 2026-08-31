@@ -124,6 +124,7 @@ func (e *SimulatedExecutor) Execute(ctx context.Context, wl core.Workload) (core
 
 // ExecutePlan runs independent simulated workloads in parallel using a bounded worker pool.
 // The configured value can describe a larger hardware model, but runtime workers are capped at 1000.
+// Individual execution errors are retained in each Result instead of being discarded.
 func (e *SimulatedExecutor) ExecutePlan(ctx context.Context, workloads []core.Workload) []core.Result {
 	results := make([]core.Result, len(workloads))
 	if len(workloads) == 0 {
@@ -143,7 +144,11 @@ func (e *SimulatedExecutor) ExecutePlan(ctx context.Context, workloads []core.Wo
 		go func() {
 			defer wg.Done()
 			for idx := range jobs {
-				results[idx], _ = e.Execute(ctx, workloads[idx])
+				result, err := e.Execute(ctx, workloads[idx])
+				if err != nil {
+					result.Error = err
+				}
+				results[idx] = result
 			}
 		}()
 	}
@@ -152,6 +157,12 @@ func (e *SimulatedExecutor) ExecutePlan(ctx context.Context, workloads []core.Wo
 		case <-ctx.Done():
 			results[i] = core.Result{WorkloadID: workloads[i].ID, Error: ctx.Err()}
 		case jobs <- i:
+		}
+		if ctx.Err() != nil {
+			for j := i + 1; j < len(workloads); j++ {
+				results[j] = core.Result{WorkloadID: workloads[j].ID, Error: ctx.Err()}
+			}
+			break
 		}
 	}
 	close(jobs)
