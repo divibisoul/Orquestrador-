@@ -1,5 +1,13 @@
 # ORCHESTRATOR-NEXUS — Architecture
 
+## Integrated cognitive loop
+
+```text
+Goal -> Neo-Cortex -> Neural Control Fabric -> Orchestrator -> Compute Fabric
+  ^                                                           |
+  |----------- SuperAGI / verification / memory / telemetry ---|
+```
+
 ## Six planes
 
 0. **State Fabric:** durable control-plane metadata, checkpoints, cache and future Raft/CRDT adapters.
@@ -8,6 +16,7 @@
 3. **Super AGI:** model-provider abstraction, verification, memory, learning and inference.
 4. **Mesh:** capability discovery, routing and transport adapters.
 5. **Cross-cutting:** security, observability, API and compatibility.
+6. **Compute + Neural Control:** heterogeneous CPU/GPU/NPU execution plus learned routing and prediction.
 
 ## Function registry
 
@@ -16,6 +25,14 @@
 **Neo Cortex 16–29:** ReadContext, FuseSignals, DetectAnomalies, CausalReason, ProbabilisticReason, GeneratePlan, SimulatePlan, PrioritizeGoals, Decide, Delegate, EvaluateOutcome, LearnFromFeedback, OptimizePolicy, ExplainDecision.
 
 **Super AGI 30–60:** GenerateText, GenerateEmbedding, GenerateImage, GenerateCode, Classify, Summarize, Translate, VerifyFact, VerifySafety, VerifyCoherence, VerifyCode, WorkingMemory, EpisodicMemory, SemanticMemory, ProceduralMemory, VectorMemory, TrainOnline, FineTuneLoRA, PredictLoRADemand, SwapLoRA, ReplayExperience, Inference, BatchInference, DynamicQuantization, SelectBestModel, CacheTensor, ProfileModel, EstimateCost, ExplainInference, MonitorDrift, AutoRetry.
+
+## Compute Fabric
+
+The Compute Fabric abstracts CPU/GPU/NPU capabilities, precision, memory, thermal state, power and utilization. Scheduling is capability-driven rather than hardware-coupled. Batching, microbatching, quantization, migration and telemetry are exposed as replaceable policies.
+
+## Neural Control Fabric
+
+The Neural Control Fabric contains state/task encoders, latency/cost/energy/quality/failure predictors, route selection and an experience-learning boundary. The repository starts with deterministic baselines so the system remains testable; learned models can be plugged in behind stable interfaces.
 
 ## Performance contracts
 
