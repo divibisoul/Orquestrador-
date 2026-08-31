@@ -1,14 +1,19 @@
 name: Benchmark
+
 on:
   workflow_dispatch:
   schedule:
     - cron: '0 3 * * 0'
+
+permissions:
+  contents: read
+
 jobs:
   benchmark:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
-        with:
-          go-version: '1.23'
-      - run: go test ./... -bench=. -run '^$'
+      - name: Verify Go runtime
+        run: go version
+      - name: Benchmark suite
+        run: go test ./... -bench=. -run '^$' -count=1
