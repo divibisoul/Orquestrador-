@@ -1,0 +1,12 @@
+name: Security
+on:
+  push:
+  pull_request:
+jobs:
+  gosec:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: securego/gosec@master
+        with:
+          args: ./...
