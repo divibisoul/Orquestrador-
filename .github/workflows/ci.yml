@@ -36,7 +36,8 @@ jobs:
           set -euo pipefail
           go version
           go mod tidy
-          gofmt -w .
+          test -z "$(gofmt -l .)"
+          git diff --exit-code -- go.mod go.sum
           go vet ./... | tee /tmp/vet.log
           go build ./... | tee /tmp/build.log
           go test ./... -count=1 -race | tee /tmp/test.log
