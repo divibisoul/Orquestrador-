@@ -1,0 +1,15 @@
+version: 1
+orchestrator:
+  fractal_queue_threshold: 100
+  circuit_failure_ratio: 0.5
+  circuit_window_seconds: 10
+  circuit_open_seconds: 30
+prefrontal:
+  anomaly_sigma: 3
+superagi:
+  default_precision: FP32
+performance:
+  decision_p95_ms: 15
+  reference_inference_rps: 1200
+  control_plane_availability: 0.9999
+  scale_nodes_target: 1000
