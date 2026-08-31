@@ -1,6 +1,9 @@
 package raft
 
-import "testing"
+import (
+	"testing"
+	"time"
+)
 
 type machine struct{ applied int }
 func (m *machine) Apply([]byte) error { m.applied++; return nil }
@@ -8,7 +11,7 @@ func (m *machine) Apply([]byte) error { m.applied++; return nil }
 func TestElectionAndAppend(t *testing.T) {
 	m := &machine{}
 	n := NewNode(1, 3, m)
-	req := n.StartElection(now())
+	req := n.StartElection(time.Now())
 	if req.Term != 1 { t.Fatalf("term=%d", req.Term) }
 	if !n.RecordVote(VoteResponse{Term:1, Granted:true}) { t.Fatal("expected majority with self + peer") }
 	entry, err := n.AppendLocal([]byte("cmd"))
@@ -24,5 +27,3 @@ func TestFollowerAppendAndCommit(t *testing.T) {
 	if err := n.ApplyCommitted(); err != nil { t.Fatal(err) }
 	if m.applied != 1 { t.Fatalf("applied=%d", m.applied) }
 }
-
-func now() (t time.Time) { return time.Now() }
