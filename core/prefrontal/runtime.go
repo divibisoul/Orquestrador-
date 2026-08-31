@@ -7,7 +7,6 @@ type State struct{Goals []Goal; Context map[string]any; Constraints map[string]f
 type Plan struct{ID string; Steps []string; Score float64; Confidence float64; Risk float64}
 type Cortex struct{mu sync.RWMutex; state State; history []float64}
 func NewCortex()*Cortex{return &Cortex{state:State{Context:map[string]any{},Constraints:map[string]float64{}}}}
-// New is the canonical constructor; NewCortex is retained for compatibility.
 func New()*Cortex{return NewCortex()}
 func(c *Cortex)ReadGoals()[]Goal{c.mu.RLock();defer c.mu.RUnlock();return append([]Goal(nil),c.state.Goals...)}
 func(c *Cortex)ReadContext()map[string]any{c.mu.RLock();defer c.mu.RUnlock();o:=map[string]any{};for k,v:=range c.state.Context{o[k]=v};return o}
@@ -15,7 +14,7 @@ func(c *Cortex)ReadConstraints()map[string]float64{c.mu.RLock();defer c.mu.RUnlo
 func(c *Cortex)ReadState()State{c.mu.RLock();defer c.mu.RUnlock();return c.state}
 func(c *Cortex)FuseSignals(signals map[string]float64,confidence map[string]float64)float64{var s,w float64;for k,v:=range signals{q:=confidence[k];s+=v*q;w+=q};if w==0{return 0};return s/w}
 func(c *Cortex)DetectAnomaly(x,mean,std float64)bool{return std>0&&abs(x-mean)>3*std}
-func(c *Cortex)ClassifyEvent(name string)string{switch name{case"failure","timeout","thermal":"risk";case"completed","healthy":"normal"};return "unknown"}
+func(c *Cortex)ClassifyEvent(name string)string{switch name{case"failure","timeout","thermal":return "risk";case"completed","healthy":return "normal";default:return "unknown"}}
 func(c *Cortex)ExtractFeatures(s string)[]float64{return []float64{float64(len(s)),float64(len([]rune(s)))}}
 func(c *Cortex)ValidateInput(s string)bool{return len(s)>0}
 func(c *Cortex)CausalInference(event string)[]string{if event=="node_failed"{return []string{"capacity_loss","route_degradation"}};return []string{"unknown"}}
