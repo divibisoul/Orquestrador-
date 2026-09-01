@@ -41,6 +41,24 @@ func TestRegisterDefaultsAndDispatch(t *testing.T) {
 	}
 }
 
+func TestRegisterDefaultsMarksUnavailableEndpointsRegistered(t *testing.T) {
+	registry := mesh.NewRegistry()
+	fabric := NewFabric(nil, registry, transport.Client{})
+	if err := fabric.RegisterDefaults(map[NucleusID]string{N01: ""}); err != nil {
+		t.Fatal(err)
+	}
+	nodes := registry.Snapshot()
+	for _, n := range nodes {
+		if n.ID == string(N01) {
+			if n.Status != "registered" {
+				t.Fatalf("N01 status=%q want registered", n.Status)
+			}
+			return
+		}
+	}
+	t.Fatal("N01 missing from mesh registry")
+}
+
 func TestValidateRejectsUnknownNucleus(t *testing.T) {
 	if err := validateNucleus(Nucleus{ID: "N07", Repository: "x"}); err == nil {
 		t.Fatal("expected rejection")
