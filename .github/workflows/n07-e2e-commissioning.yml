@@ -75,12 +75,24 @@ jobs:
           docker stop n07-commissioning || true
 
   configured-staging:
-    if: ${{ secrets.N07_APP_TOKEN != '' && secrets.WEB3_STORAGE_TOKEN != '' && secrets.SUPABASE_URL != '' && secrets.SUPABASE_SERVICE_ROLE_KEY != '' }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
       - name: Pull published image
         run: docker pull ghcr.io/divibisoul/soul-n07-orquestrador:latest
+      - name: Check required staging secrets
+        env:
+          N07_APP_TOKEN: ${{ secrets.N07_APP_TOKEN }}
+          WEB3_STORAGE_TOKEN: ${{ secrets.WEB3_STORAGE_TOKEN }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          set -euo pipefail
+          test -n "$N07_APP_TOKEN" || { echo 'missing secret: N07_APP_TOKEN'; exit 1; }
+          test -n "$WEB3_STORAGE_TOKEN" || { echo 'missing secret: WEB3_STORAGE_TOKEN'; exit 1; }
+          test -n "$SUPABASE_URL" || { echo 'missing secret: SUPABASE_URL'; exit 1; }
+          test -n "$SUPABASE_SERVICE_ROLE_KEY" || { echo 'missing secret: SUPABASE_SERVICE_ROLE_KEY'; exit 1; }
+          echo 'required staging secrets: present'
       - name: Start credentialed staging runtime
         env:
           N07_APP_TOKEN: ${{ secrets.N07_APP_TOKEN }}
