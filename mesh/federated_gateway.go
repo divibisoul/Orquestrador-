@@ -5,8 +5,10 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -36,6 +38,43 @@ func NewFederatedHTTPGateway(engine *orchestrator.Engine) *FederatedGateway {
 		peers = &PeerClient{peers: map[string]PeerInfo{}}
 	}
 	return &FederatedGateway{base: NewHTTPGateway(engine), peers: peers, engine: engine, catalog: VerifiedN01N06Catalog()}
+}
+
+func (g *FederatedGateway) PeersSnapshot() []PeerInfo {
+	if g == nil || g.peers == nil {
+		return nil
+	}
+	return g.peers.ConfiguredPeers()
+}
+
+func (g *FederatedGateway) DiscoverPeers(ctx context.Context) ([]PeerInfo, error) {
+	if g == nil || g.peers == nil {
+		return nil, errors.New("N07 federation unavailable")
+	}
+	peers := g.peers.ConfiguredPeers()
+	if len(peers) == 0 {
+		return peers, errors.New("no N01-N06 peers configured")
+	}
+	var wg sync.WaitGroup
+	var mu sync.Mutex
+	var firstErr error
+	for _, peer := range peers {
+		peer := peer
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			_, err := g.peers.Discover(ctx, peer.Nucleus)
+			if err != nil {
+				mu.Lock()
+				if firstErr == nil {
+					firstErr = fmt.Errorf("%s discovery failed: %w", peer.Nucleus, err)
+				}
+				mu.Unlock()
+			}
+		}()
+	}
+	wg.Wait()
+	return g.peers.ConfiguredPeers(), firstErr
 }
 
 func (g *FederatedGateway) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -279,59 +318,19 @@ func (g *FederatedGateway) handleParallel(w http.ResponseWriter, r *http.Request
 
 func (g *FederatedGateway) handleComposition(w http.ResponseWriter, r *http.Request, in protocol.MeshEnvelope) {
 	payload := in.NestedPayload()
-	if payload == nil {
-		payload = map[string]any{}
-	}
+	if payload == nil { payload = map[string]any{} }
 	raw, ok := payload["steps"].([]any)
-	if !ok || len(raw) == 0 {
-		g.base.respond(w, http.StatusBadRequest, in, "ERROR", map[string]any{"error": "fusion.execute requires payload.steps"})
-		return
-	}
+	if !ok || len(raw) == 0 { g.base.respond(w, http.StatusBadRequest, in, "ERROR", map[string]any{"error": "fusion.execute requires payload.steps"}); return }
 	results := make([]map[string]any, 0, len(raw))
 	for i, item := range raw {
-		step, ok := item.(map[string]any)
-		if !ok {
-			g.base.respond(w, http.StatusBadRequest, in, "ERROR", map[string]any{"error": "fusion step must be object"})
-			return
-		}
-		capability, _ := step["capability"].(string)
-		capability = strings.TrimSpace(capability)
-		if capability == "" {
-			g.base.respond(w, http.StatusBadRequest, in, "ERROR", map[string]any{"error": "fusion step capability is required"})
-			return
-		}
-		stepPayload, _ := step["payload"].(map[string]any)
-		if stepPayload == nil {
-			stepPayload = map[string]any{}
-		}
-		started := time.Now()
-		peer, err := g.selectPeer(r.Context(), capability)
-		entry := map[string]any{"index": i, "capability": capability, "duration_ms": time.Since(started).Milliseconds()}
-		if err != nil {
-			entry["status"] = "error"
-			entry["error"] = err.Error()
-			results = append(results, entry)
-			if required, _ := step["required"].(bool); required {
-				g.base.respond(w, http.StatusBadGateway, in, "ERROR", map[string]any{"steps": results})
-				return
-			}
-			continue
-		}
-		result, err := g.peers.CallWithCorrelation(r.Context(), peer, capability, stepPayload, in.CorrelationID)
-		entry["owner"] = peer
-		if err != nil {
-			entry["status"] = "error"
-			entry["error"] = err.Error()
-			results = append(results, entry)
-			if required, _ := step["required"].(bool); required {
-				g.base.respond(w, http.StatusBadGateway, in, "ERROR", map[string]any{"steps": results})
-				return
-			}
-			continue
-		}
-		entry["status"] = "ok"
-		entry["result"] = result["payload"]
-		results = append(results, entry)
+		step, ok := item.(map[string]any); if !ok { g.base.respond(w, http.StatusBadRequest, in, "ERROR", map[string]any{"error": "fusion step must be object"}); return }
+		capability, _ := step["capability"].(string); capability = strings.TrimSpace(capability); if capability == "" { g.base.respond(w, http.StatusBadRequest, in, "ERROR", map[string]any{"error": "fusion step capability is required"}); return }
+		stepPayload, _ := step["payload"].(map[string]any); if stepPayload == nil { stepPayload = map[string]any{} }
+		started := time.Now(); peer, err := g.selectPeer(r.Context(), capability); entry := map[string]any{"index": i, "capability": capability, "duration_ms": time.Since(started).Milliseconds()}
+		if err != nil { entry["status"] = "error"; entry["error"] = err.Error(); results = append(results, entry); if required, _ := step["required"].(bool); required { g.base.respond(w, http.StatusBadGateway, in, "ERROR", map[string]any{"steps": results}); return }; continue }
+		result, err := g.peers.CallWithCorrelation(r.Context(), peer, capability, stepPayload, in.CorrelationID); entry["owner"] = peer
+		if err != nil { entry["status"] = "error"; entry["error"] = err.Error(); results = append(results, entry); if required, _ := step["required"].(bool); required { g.base.respond(w, http.StatusBadGateway, in, "ERROR", map[string]any{"steps": results}); return }; continue }
+		entry["status"] = "ok"; entry["result"] = result["payload"]; results = append(results, entry)
 	}
 	g.base.respond(w, http.StatusOK, in, "TASK_RESULT", map[string]any{"execution": "federated-composition", "correlationId": in.CorrelationID, "steps": results})
 }
@@ -342,74 +341,35 @@ func (g *FederatedGateway) selectPeer(ctx context.Context, capability string) (s
 	var bestLatency time.Duration
 	var lastErr error
 	for _, peer := range configured {
-		if peer.Circuit == CircuitOpen && time.Now().Before(peer.RetryAfter) {
-			continue
-		}
+		if peer.Circuit == CircuitOpen && time.Now().Before(peer.RetryAfter) { continue }
 		desc, err := g.peers.Discover(ctx, peer.Nucleus)
-		if err != nil {
-			lastErr = err
-			continue
-		}
-		if !capabilityInDescription(desc, capability) {
-			continue
-		}
-		if known := KnownFusionOwner(capability); known != "" && known != peer.Nucleus {
-			continue
-		}
-		fresh, ok := g.peerSnapshot(peer.Nucleus)
-		if !ok {
-			continue
-		}
-		if best == "" || fresh.Latency < bestLatency {
-			best = fresh.Nucleus
-			bestLatency = fresh.Latency
-		}
+		if err != nil { lastErr = err; continue }
+		if !capabilityInDescription(desc, capability) { continue }
+		if known := KnownFusionOwner(capability); known != "" && known != peer.Nucleus { continue }
+		fresh, ok := g.peerSnapshot(peer.Nucleus); if !ok { continue }
+		if best == "" || fresh.Latency < bestLatency { best = fresh.Nucleus; bestLatency = fresh.Latency }
 	}
-	if best == "" {
-		if lastErr != nil {
-			return "", lastErr
-		}
-		return "", errors.New("capability not discovered on configured peers: " + capability)
-	}
+	if best == "" { if lastErr != nil { return "", lastErr }; return "", errors.New("capability not discovered on configured peers: " + capability) }
 	return best, nil
 }
 
 func (g *FederatedGateway) peerSnapshot(nucleus string) (PeerInfo, bool) {
-	for _, peer := range g.peers.ConfiguredPeers() {
-		if peer.Nucleus == nucleus {
-			return peer, true
-		}
-	}
+	for _, peer := range g.peers.ConfiguredPeers() { if peer.Nucleus == nucleus { return peer, true } }
 	return PeerInfo{}, false
 }
 
 func capabilityInDescription(desc map[string]any, target string) bool {
 	for _, key := range []string{"capabilities", "operations", "executableCapabilities"} {
-		items, ok := desc[key].([]any)
-		if !ok {
-			continue
-		}
-		for _, raw := range items {
-			if value, ok := raw.(string); ok && strings.TrimSpace(strings.SplitN(value, "@", 2)[0]) == target {
-				return true
-			}
-		}
+		items, ok := desc[key].([]any); if !ok { continue }
+		for _, raw := range items { if value, ok := raw.(string); ok && strings.TrimSpace(strings.SplitN(value, "@", 2)[0]) == target { return true } }
 	}
 	return false
 }
 
 func ioReadLimited(r io.Reader, max int64) ([]byte, error) {
-	if r == nil {
-		return nil, errors.New("request body is nil")
-	}
-	data, err := io.ReadAll(io.LimitReader(r, max+1))
-	if err != nil {
-		return nil, err
-	}
-	if int64(len(data)) > max {
-		return nil, errors.New("request body exceeds configured limit")
-	}
+	if r == nil { return nil, errors.New("request body is nil") }
+	data, err := io.ReadAll(io.LimitReader(r, max+1)); if err != nil { return nil, err }
+	if int64(len(data)) > max { return nil, errors.New("request body exceeds configured limit") }
 	return data, nil
 }
-
 func ioNopCloser(r io.Reader) io.ReadCloser { return io.NopCloser(r) }
