@@ -24,7 +24,9 @@ func main() {
 	defer stop()
 
 	workers := 4
-	if v, err := strconv.Atoi(os.Getenv("NEXUS_WORKERS")); err == nil && v > 0 { workers = v }
+	if v, err := strconv.Atoi(os.Getenv("NEXUS_WORKERS")); err == nil && v > 0 {
+		workers = v
+	}
 	orch := orchestrator.NewEngine(workers)
 	pf := prefrontal.New()
 	reg := mesh.NewRegistry()
@@ -33,28 +35,44 @@ func main() {
 	httpSrv := &http.Server{Addr: ":8080", Handler: restSrv.Handler(), ReadHeaderTimeout: 5 * time.Second}
 	go func() {
 		log.Printf("ORQUESTRADOR-NEXUS HTTP listening on %s", httpSrv.Addr)
-		if err := httpSrv.ListenAndServe(); err != nil && err != http.ErrServerClosed { log.Fatal(err) }
+		if err := httpSrv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatal(err)
+		}
 	}()
 
 	grpcAddr := os.Getenv("NEXUS_GRPC_ADDR")
-	if grpcAddr == "" { grpcAddr = ":9090" }
+	if grpcAddr == "" {
+		grpcAddr = ":9090"
+	}
 	grpcEnabled := true
-	if v, err := strconv.ParseBool(os.Getenv("NEXUS_GRPC_ENABLED")); err == nil { grpcEnabled = v }
+	if v, err := strconv.ParseBool(os.Getenv("NEXUS_GRPC_ENABLED")); err == nil {
+		grpcEnabled = v
+	}
 	var grpcSrv *grpc.Server
 	var grpcLis net.Listener
 	if grpcEnabled {
 		var err error
 		grpcLis, err = net.Listen("tcp", grpcAddr)
-		if err != nil { log.Fatalf("gRPC listen %s: %v", grpcAddr, err) }
+		if err != nil {
+			log.Printf("gRPC listener startup failed")
+			log.Fatal(err)
+		}
 		grpcSrv, err = grpcapi.Serve(grpcLis, orch)
-		if err != nil { log.Fatalf("gRPC startup: %v", err) }
-		log.Printf("ORQUESTRADOR-NEXUS gRPC listening on %s", grpcAddr)
+		if err != nil {
+			log.Printf("gRPC startup failed")
+			log.Fatal(err)
+		}
+		log.Printf("ORQUESTRADOR-NEXUS gRPC listener started")
 	}
 
 	<-ctx.Done()
 	shutdown, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	_ = httpSrv.Shutdown(shutdown)
-	if grpcSrv != nil { grpcSrv.GracefulStop() }
-	if grpcLis != nil { _ = grpcLis.Close() }
+	if grpcSrv != nil {
+		grpcSrv.GracefulStop()
+	}
+	if grpcLis != nil {
+		_ = grpcLis.Close()
+	}
 }
