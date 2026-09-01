@@ -1,6 +1,8 @@
 package prefrontal
 
 import (
+	"crypto/sha256"
+	"encoding/binary"
 	"sync"
 	"time"
 
@@ -12,13 +14,8 @@ type deterministicRNG struct {
 }
 
 func newDeterministicRNG(seed int64) *deterministicRNG {
-	s := uint64(0)
-	if seed >= 0 {
-		s = uint64(seed)
-	} else {
-		// Preserve the complete int64 bit pattern without an arithmetic overflow.
-		s = ^uint64(^seed) + 1
-	}
+	digest := sha256.Sum256([]byte(time.Unix(0, seed).UTC().Format(time.RFC3339Nano)))
+	s := binary.LittleEndian.Uint64(digest[:8])
 	if s == 0 {
 		s = 0x9e3779b97f4a7c15
 	}
