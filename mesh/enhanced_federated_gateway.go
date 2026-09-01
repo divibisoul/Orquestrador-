@@ -122,23 +122,22 @@ func (g *EnhancedFederatedGateway) ServeHTTP(w http.ResponseWriter, r *http.Requ
 	sem := make(chan struct{}, maxFederatedParallelTasks)
 	ctx := r.Context()
 	for i, item := range tasks {
-		i, item = i, item
 		wg.Add(1)
-		go func() {
+		go func(index int, current task) {
 			defer wg.Done()
 			select {
 			case sem <- struct{}{}:
 			case <-ctx.Done():
-				results[i] = result{ID: item.ID, Capability: item.Capability, Status: "cancelled", Error: ctx.Err().Error(), CorrelationID: envelope.CorrelationID + "/" + item.ID}
+				results[index] = result{ID: current.ID, Capability: current.Capability, Status: "cancelled", Error: ctx.Err().Error(), CorrelationID: envelope.CorrelationID + "/" + current.ID}
 				return
 			}
 			defer func() { <-sem }()
 			started := time.Now()
-			child := envelope.CorrelationID + "/" + item.ID
-			taskCtx, cancel := context.WithTimeout(ctx, item.Timeout)
+			child := envelope.CorrelationID + "/" + current.ID
+			taskCtx, cancel := context.WithTimeout(ctx, current.Timeout)
 			defer cancel()
-			remote, owner, e := g.base.peers.CallBestDynamic(taskCtx, item.Capability, item.Payload, child)
-			entry := result{ID: item.ID, Capability: item.Capability, Status: "error", DurationMs: time.Since(started).Milliseconds(), CorrelationID: child}
+			remote, owner, e := g.base.peers.CallBestDynamic(taskCtx, current.Capability, current.Payload, child)
+			entry := result{ID: current.ID, Capability: current.Capability, Status: "error", DurationMs: time.Since(started).Milliseconds(), CorrelationID: child}
 			if e != nil {
 				entry.Error = e.Error()
 				if taskCtx.Err() != nil {
@@ -150,8 +149,8 @@ func (g *EnhancedFederatedGateway) ServeHTTP(w http.ResponseWriter, r *http.Requ
 				entry.Owner = owner
 				entry.Payload = remote["payload"]
 			}
-			results[i] = entry
-		}()
+			results[index] = entry
+		}(i, item)
 	}
 	wg.Wait()
 	requiredFailed := false
