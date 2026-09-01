@@ -3,7 +3,6 @@ package web3storage
 import (
 	"context"
 	"io"
-	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -70,8 +69,4 @@ func TestUploadRequiresToken(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected configuration error")
 	}
-}
-
-func TestMultipartFormNameIsStable(t *testing.T) {
-	var _ *multipart.Writer
 }
