@@ -23,14 +23,32 @@ type peerReport struct {
 }
 
 type report struct {
-	ReadyForE2E      bool         `json:"readyForE2E"`
-	ConfiguredPeers   int          `json:"configuredPeers"`
-	ReachablePeers    int          `json:"reachablePeers"`
-	MissingNuclei     []string     `json:"missingNuclei,omitempty"`
-	HMACConfigured    bool         `json:"hmacConfigured"`
-	ContractVersion   string       `json:"contractVersion"`
-	GeneratedAt       string       `json:"generatedAt"`
-	Peers             []peerReport `json:"peers"`
+	ReadyForE2E     bool         `json:"readyForE2E"`
+	ConfiguredPeers int          `json:"configuredPeers"`
+	ReachablePeers  int          `json:"reachablePeers"`
+	MissingNuclei   []string     `json:"missingNuclei,omitempty"`
+	HMACConfigured  bool         `json:"hmacConfigured"`
+	ContractVersion string       `json:"contractVersion"`
+	GeneratedAt     string       `json:"generatedAt"`
+	Peers           []peerReport `json:"peers"`
+}
+
+func probePeer(ctx context.Context, client *http.Client, url string) (int, int64, error) {
+	started := time.Now()
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url+"/mesh/discovery", nil)
+	if err != nil {
+		return 0, time.Since(started).Milliseconds(), err
+	}
+	resp, err := client.Do(req)
+	latency := time.Since(started).Milliseconds()
+	if err != nil {
+		return 0, latency, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return resp.StatusCode, latency, fmt.Errorf("peer discovery returned HTTP %d", resp.StatusCode)
+	}
+	return resp.StatusCode, latency, nil
 }
 
 func main() {
@@ -42,6 +60,7 @@ func main() {
 	nuclei := []string{"N01", "N02", "N03", "N04", "N05", "N06"}
 	reports := make([]peerReport, 0, len(nuclei))
 	missing := make([]string, 0)
+	client := &http.Client{Timeout: *timeout}
 	for _, nucleus := range nuclei {
 		url := strings.TrimRight(strings.TrimSpace(os.Getenv("SOUL_MESH_"+nucleus+"_URL")), "/")
 		item := peerReport{Nucleus: nucleus, Configured: url != "", URL: url}
@@ -52,40 +71,43 @@ func main() {
 		}
 		if *probe {
 			ctx, cancel := context.WithTimeout(context.Background(), *timeout)
-			started := time.Now()
-			resp, err := (&http.Client{Timeout: *timeout}).Get(url + "/mesh/discovery")
-			item.LatencyMS = time.Since(started).Milliseconds()
+			status, latency, err := probePeer(ctx, client, url)
 			cancel()
+			item.Status = status
+			item.LatencyMS = latency
 			if err != nil {
 				item.Error = err.Error()
 			} else {
-				item.Reachable = resp.StatusCode >= 200 && resp.StatusCode < 300
-				item.Status = resp.StatusCode
-				resp.Body.Close()
+				item.Reachable = true
 			}
-			_ = ctx
 		}
 		reports = append(reports, item)
 	}
 	sort.Slice(reports, func(i, j int) bool { return reports[i].Nucleus < reports[j].Nucleus })
 	configured, reachable := 0, 0
 	for _, item := range reports {
-		if item.Configured { configured++ }
-		if item.Reachable { reachable++ }
+		if item.Configured {
+			configured++
+		}
+		if item.Reachable {
+			reachable++
+		}
 	}
 	out := report{
-		ReadyForE2E:    configured == len(nuclei) && (!*probe || reachable == len(nuclei)),
+		ReadyForE2E:     configured == len(nuclei) && (!*probe || reachable == len(nuclei)),
 		ConfiguredPeers: configured,
-		ReachablePeers: reachable,
-		MissingNuclei: missing,
-		HMACConfigured: strings.TrimSpace(os.Getenv("SOUL_MESH_HMAC_SECRET")) != "",
+		ReachablePeers:  reachable,
+		MissingNuclei:   missing,
+		HMACConfigured:  strings.TrimSpace(os.Getenv("SOUL_MESH_HMAC_SECRET")) != "",
 		ContractVersion: "1.1.0",
-		GeneratedAt: time.Now().UTC().Format(time.RFC3339),
-		Peers: reports,
+		GeneratedAt:     time.Now().UTC().Format(time.RFC3339),
+		Peers:           reports,
 	}
 	if *jsonOut {
 		data, err := json.MarshalIndent(out, "", "  ")
-		if err != nil { panic(err) }
+		if err != nil {
+			panic(err)
+		}
 		fmt.Println(string(data))
 		return
 	}
