@@ -93,12 +93,13 @@ func main() {
 			reachable++
 		}
 	}
+	hmacConfigured := strings.TrimSpace(os.Getenv("SOUL_MESH_HMAC_SECRET")) != ""
 	out := report{
-		ReadyForE2E:     configured == len(nuclei) && (!*probe || reachable == len(nuclei)),
+		ReadyForE2E:     hmacConfigured && configured == len(nuclei) && (!*probe || reachable == len(nuclei)),
 		ConfiguredPeers: configured,
 		ReachablePeers:  reachable,
 		MissingNuclei:   missing,
-		HMACConfigured:  strings.TrimSpace(os.Getenv("SOUL_MESH_HMAC_SECRET")) != "",
+		HMACConfigured:  hmacConfigured,
 		ContractVersion: "1.1.0",
 		GeneratedAt:     time.Now().UTC().Format(time.RFC3339),
 		Peers:           reports,
