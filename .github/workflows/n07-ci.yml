@@ -64,8 +64,7 @@ jobs:
       - name: Assert checkout source
         run: |
           set -euo pipefail
-          git rev-parse HEAD
-          test "$(git branch --show-current)" != ""
+          git rev-parse --verify HEAD
           git show HEAD:neural/network.go | sha256sum
           sed -n '24p' neural/network.go
           ! grep -nF '<- clip' neural/network.go
