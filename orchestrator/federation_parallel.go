@@ -47,7 +47,13 @@ func (f *Federation) ExecuteParallel(ctx context.Context, traceID string, tasks 
 			if result.ID == "" {
 				result.ID = fmt.Sprintf("task-%d", i)
 			}
-			payload, err := f.Delegate(ctx, traceID, task.Capability, task.Payload)
+			childTrace := traceID
+			if childTrace == "" {
+				childTrace = result.ID
+			} else {
+				childTrace = childTrace + "/" + result.ID
+			}
+			payload, err := f.Delegate(ctx, childTrace, task.Capability, task.Payload)
 			result.DurationMs = time.Since(start).Milliseconds()
 			if err != nil {
 				result.Error = err.Error()
