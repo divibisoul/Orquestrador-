@@ -14,8 +14,6 @@ const (
 	maxFederatedParallelism  = 32
 )
 
-// RemotePeer is the transport-neutral boundary used to expose the N07 neural
-// runtime to every nucleus without copying the neural implementation.
 type RemotePeer interface {
 	Invoke(ctx context.Context, nucleus, operation string, payload map[string]any, correlation string) (map[string]any, error)
 }
@@ -185,8 +183,11 @@ func (f *Fabric) ParallelContext(ctx context.Context, tasks []NeuralTask) []Fede
 					}
 					task := tasks[index]
 					target := task.Target
-					// Target is the canonical destination. Source identifies the
-					// origin and must never be used as an implicit destination.
+					// Preserve the historical Source-as-routing-hint behavior when
+					// Target is omitted; explicit Target always takes precedence.
+					if target == "" {
+						target = task.Source
+					}
 					if target == "" {
 						target = members[index%len(members)]
 					}
