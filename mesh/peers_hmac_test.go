@@ -1,6 +1,7 @@
 package mesh
 
 import (
+	"encoding/hex"
 	"encoding/json"
 	"testing"
 	"time"
@@ -29,6 +30,10 @@ func TestPeerResponseHMACRoundTrip(t *testing.T) {
 	}
 	if err := protocol.SignHMAC(&env, secret); err != nil {
 		t.Fatal(err)
+	}
+	decoded, err := hex.DecodeString(env.HMAC)
+	if err != nil || len(decoded) != 32 {
+		t.Fatalf("fresh signed envelope produced invalid HMAC encoding: %v; hmac=%q; len=%d", err, env.HMAC, len(decoded))
 	}
 	if err := protocol.VerifyHMAC(env, secret, time.Now()); err != nil {
 		t.Fatalf("fresh signed envelope failed direct verification: %v; hmac=%q; len=%d", err, env.HMAC, len(env.HMAC))
