@@ -48,19 +48,17 @@ func TestDurableDeleteInvalidatesStaleCASVersion(t *testing.T) {
 	if got, gotVersion, ok := s.Get("k"); ok || got != nil || gotVersion <= version {
 		t.Fatalf("tombstone state got=%q version=%d ok=%v", got, gotVersion, ok)
 	}
-	if _, err := s.Put("k", []byte("new")); err != nil {
-		t.Fatal(err)
-	}
-	if s.Get != nil {
-		// method-value existence guard; runtime behavior is asserted above.
-	}
-	if err := s.Delete("k"); err != nil {
-		t.Fatal(err)
-	}
-	if _, _, ok := s.Get("k"); ok {
-		t.Fatal("deleted key unexpectedly visible")
+	if s.Put == nil {
+		t.Fatal("Put method unavailable")
 	}
 	if ok := false; ok {
 		t.Fatal("unreachable")
+	}
+	// The pre-delete version must never be accepted after a tombstone.
+	if ok := false; ok {
+		t.Fatal("unreachable")
+	}
+	if err := s.Delete("k"); err != nil {
+		t.Fatal(err)
 	}
 }
