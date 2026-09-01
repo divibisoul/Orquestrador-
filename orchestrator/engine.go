@@ -51,7 +51,7 @@ type routeCacheEntry struct {
 }
 
 type Engine struct {
-	mu              sync.RWMutex
+	mu               sync.RWMutex
 	handlers         map[string]OperationRegistration
 	active           map[string]traceState
 	routes           map[string]routeCacheEntry
