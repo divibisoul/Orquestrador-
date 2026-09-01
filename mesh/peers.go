@@ -43,15 +43,15 @@ type discoveryCacheEntry struct {
 }
 
 type PeerClient struct {
-	mu                sync.RWMutex
-	peers             map[string]PeerInfo
-	client            *http.Client
-	secret            string
-	maxRetry          int
-	cooldown           time.Duration
-	discoveryMu        sync.RWMutex
-	discoveryCache     map[string]discoveryCacheEntry
-	discoveryCacheTTL  time.Duration
+	mu               sync.RWMutex
+	peers            map[string]PeerInfo
+	client           *http.Client
+	secret           string
+	maxRetry         int
+	cooldown          time.Duration
+	discoveryMu       sync.RWMutex
+	discoveryCache    map[string]discoveryCacheEntry
+	discoveryCacheTTL time.Duration
 }
 
 func NewPeerClient(client *http.Client) (*PeerClient, error) {
@@ -65,12 +65,12 @@ func NewPeerClient(client *http.Client) (*PeerClient, error) {
 		}
 	}
 	return &PeerClient{
-		peers:            peers,
-		client:           client,
-		secret:           strings.TrimSpace(os.Getenv("SOUL_MESH_HMAC_SECRET")),
-		maxRetry:         3,
-		cooldown:         30 * time.Second,
-		discoveryCache:   make(map[string]discoveryCacheEntry),
+		peers:             peers,
+		client:            client,
+		secret:            strings.TrimSpace(os.Getenv("SOUL_MESH_HMAC_SECRET")),
+		maxRetry:          3,
+		cooldown:          30 * time.Second,
+		discoveryCache:    make(map[string]discoveryCacheEntry),
 		discoveryCacheTTL: defaultDiscoveryCacheTTL,
 	}, nil
 }
@@ -171,7 +171,7 @@ func (p *PeerClient) CallBest(ctx context.Context, capability string, payload ma
 		discoveryCtx, cancel := context.WithTimeout(ctx, 2*time.Second)
 		description, err := p.Discover(discoveryCtx, peer.Nucleus)
 		cancel()
-		if err != nil || !supportsCapability(description, capability) {
+		if err != nil || !supportsExecutableCapability(description, capability) {
 			continue
 		}
 		result, err := p.CallWithCorrelation(ctx, peer.Nucleus, capability, payload, correlation)
@@ -182,27 +182,36 @@ func (p *PeerClient) CallBest(ctx context.Context, capability string, payload ma
 	return nil, "", fmt.Errorf("no healthy peer exposes executable capability: %s", capability)
 }
 
-func supportsCapability(description map[string]any, capability string) bool {
+func supportsExecutableCapability(description map[string]any, capability string) bool {
 	capability = strings.TrimSpace(capability)
-	for _, key := range []string{"capabilities", "operations", "executableCapabilities"} {
-		raw, ok := description[key]
+	raw, ok := description["executableCapabilities"]
+	if !ok {
+		return false
+	}
+	items, ok := raw.([]any)
+	if !ok {
+		return false
+	}
+	requestedName, requestedVersion := splitCapabilityVersion(capability)
+	for _, item := range items {
+		value, ok := item.(string)
 		if !ok {
 			continue
 		}
-		items, ok := raw.([]any)
-		if !ok {
-			continue
-		}
-		for _, item := range items {
-			if s, ok := item.(string); ok {
-				name := strings.TrimSpace(strings.SplitN(s, "@", 2)[0])
-				if name == capability {
-					return true
-				}
-			}
+		name, version := splitCapabilityVersion(strings.TrimSpace(value))
+		if name == requestedName && (requestedVersion == "" || requestedVersion == version) {
+			return true
 		}
 	}
 	return false
+}
+
+func splitCapabilityVersion(value string) (string, string) {
+	parts := strings.SplitN(strings.TrimSpace(value), "@", 2)
+	if len(parts) == 1 {
+		return parts[0], ""
+	}
+	return parts[0], parts[1]
 }
 
 func (p *PeerClient) call(ctx context.Context, nucleus, capability string, payload map[string]any, correlation string) (map[string]any, error) {
