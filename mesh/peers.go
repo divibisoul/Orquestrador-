@@ -36,13 +36,20 @@ type PeerInfo struct {
 	RetryAfter time.Time
 }
 
+type discoveryCacheEntry struct {
+	value     map[string]any
+	expiresAt time.Time
+}
+
 type PeerClient struct {
-	mu       sync.RWMutex
-	peers    map[string]PeerInfo
-	client   *http.Client
-	secret   string
-	maxRetry int
-	cooldown time.Duration
+	mu             sync.RWMutex
+	peers          map[string]PeerInfo
+	client         *http.Client
+	secret         string
+	maxRetry       int
+	cooldown       time.Duration
+	discoveryTTL   time.Duration
+	discoveryCache map[string]discoveryCacheEntry
 }
 
 func NewPeerClient(client *http.Client) (*PeerClient, error) {
@@ -55,7 +62,15 @@ func NewPeerClient(client *http.Client) (*PeerClient, error) {
 			peers[n] = PeerInfo{Nucleus: n, URL: u, Circuit: CircuitClosed}
 		}
 	}
-	return &PeerClient{peers: peers, client: client, secret: strings.TrimSpace(os.Getenv("SOUL_MESH_HMAC_SECRET")), maxRetry: 3, cooldown: 30 * time.Second}, nil
+	return &PeerClient{
+		peers:          peers,
+		client:         client,
+		secret:         strings.TrimSpace(os.Getenv("SOUL_MESH_HMAC_SECRET")),
+		maxRetry:       3,
+		cooldown:       30 * time.Second,
+		discoveryTTL:   10 * time.Second,
+		discoveryCache: make(map[string]discoveryCacheEntry),
+	}, nil
 }
 
 func (p *PeerClient) Discover(ctx context.Context, nucleus string) (map[string]any, error) {
@@ -63,14 +78,72 @@ func (p *PeerClient) Discover(ctx context.Context, nucleus string) (map[string]a
 	if nucleus == protocol.N07 {
 		return nil, errors.New("N07 cannot discover itself through peer transport")
 	}
+	if cached, ok := p.discoveryCached(nucleus, time.Now()); ok {
+		return cached, nil
+	}
 	result, err := p.CallWithCorrelation(ctx, nucleus, "mesh.discovery", map[string]any{"from": protocol.N07}, protocol.NewTraceID())
 	if err == nil {
+		p.putDiscovery(nucleus, result, time.Now())
 		return result, nil
 	}
 	if ctx.Err() != nil {
 		return nil, ctx.Err()
 	}
-	return p.CallWithCorrelation(ctx, nucleus, "mesh.describe", map[string]any{"from": protocol.N07}, protocol.NewTraceID())
+	result, err = p.CallWithCorrelation(ctx, nucleus, "mesh.describe", map[string]any{"from": protocol.N07}, protocol.NewTraceID())
+	if err == nil {
+		p.putDiscovery(nucleus, result, time.Now())
+	}
+	return result, err
+}
+
+func (p *PeerClient) InvalidateDiscovery(nucleus string) {
+	p.mu.Lock()
+	if nucleus == "" {
+		p.discoveryCache = make(map[string]discoveryCacheEntry)
+	} else {
+		delete(p.discoveryCache, strings.TrimSpace(nucleus))
+	}
+	p.mu.Unlock()
+}
+
+func (p *PeerClient) discoveryCached(nucleus string, now time.Time) (map[string]any, bool) {
+	p.mu.RLock()
+	entry, ok := p.discoveryCache[nucleus]
+	p.mu.RUnlock()
+	if !ok || now.After(entry.expiresAt) {
+		if ok {
+			p.InvalidateDiscovery(nucleus)
+		}
+		return nil, false
+	}
+	return cloneJSONMap(entry.value), true
+}
+
+func (p *PeerClient) putDiscovery(nucleus string, value map[string]any, now time.Time) {
+	if value == nil {
+		return
+	}
+	p.mu.Lock()
+	if p.discoveryCache == nil {
+		p.discoveryCache = make(map[string]discoveryCacheEntry)
+	}
+	p.discoveryCache[nucleus] = discoveryCacheEntry{value: cloneJSONMap(value), expiresAt: now.Add(p.discoveryTTL)}
+	p.mu.Unlock()
+}
+
+func cloneJSONMap(in map[string]any) map[string]any {
+	if in == nil {
+		return nil
+	}
+	b, err := json.Marshal(in)
+	if err != nil {
+		return nil
+	}
+	var out map[string]any
+	if err := json.Unmarshal(b, &out); err != nil {
+		return nil
+	}
+	return out
 }
 
 func (p *PeerClient) Call(ctx context.Context, nucleus, capability string, payload map[string]any) (map[string]any, error) {
@@ -78,44 +151,71 @@ func (p *PeerClient) Call(ctx context.Context, nucleus, capability string, paylo
 }
 
 func (p *PeerClient) CallWithCorrelation(ctx context.Context, nucleus, capability string, payload map[string]any, correlation string) (map[string]any, error) {
-	if ctx == nil { return nil, errors.New("context is nil") }
+	if ctx == nil {
+		return nil, errors.New("context is nil")
+	}
 	nucleus = strings.TrimSpace(nucleus)
 	capability = strings.TrimSpace(capability)
 	correlation = strings.TrimSpace(correlation)
-	if nucleus == protocol.N07 { return nil, errors.New("N07 cannot call itself through peer transport") }
-	if capability == "" { return nil, errors.New("capability is required") }
-	if correlation == "" { return nil, errors.New("correlation is required") }
+	if nucleus == protocol.N07 {
+		return nil, errors.New("N07 cannot call itself through peer transport")
+	}
+	if capability == "" {
+		return nil, errors.New("capability is required")
+	}
+	if correlation == "" {
+		return nil, errors.New("correlation is required")
+	}
 	return p.call(ctx, nucleus, capability, payload, correlation)
 }
 
 func (p *PeerClient) CallBest(ctx context.Context, capability string, payload map[string]any, correlation string) (map[string]any, string, error) {
-	if ctx == nil { return nil, "", errors.New("context is nil") }
-	type candidate struct { peer PeerInfo; score float64 }
+	if ctx == nil {
+		return nil, "", errors.New("context is nil")
+	}
+	type candidate struct {
+		peer  PeerInfo
+		score float64
+	}
 	candidates := make([]candidate, 0)
 	for _, peer := range p.ConfiguredPeers() {
-		if peer.Circuit == CircuitOpen && time.Now().Before(peer.RetryAfter) { continue }
+		if peer.Circuit == CircuitOpen && time.Now().Before(peer.RetryAfter) {
+			continue
+		}
 		discoveryCtx, cancel := context.WithTimeout(ctx, 2*time.Second)
 		description, err := p.Discover(discoveryCtx, peer.Nucleus)
 		cancel()
-		if err != nil || !supportsCapability(description, capability) { continue }
+		if err != nil || !supportsCapability(description, capability) {
+			continue
+		}
 		latencyMs := float64(peer.Latency) / float64(time.Millisecond)
 		latencyScore := 1.0
-		if latencyMs > 0 { latencyScore = 1 / (1 + latencyMs/100) }
+		if latencyMs > 0 {
+			latencyScore = 1 / (1 + latencyMs/100)
+		}
 		failureScore := 1 / float64(1+peer.Failures)
 		healthScore := 0.0
-		if peer.Healthy || peer.Latency == 0 { healthScore = 1 }
+		if peer.Healthy || peer.Latency == 0 {
+			healthScore = 1
+		}
 		score := .55*healthScore + .30*latencyScore + .15*failureScore
 		candidates = append(candidates, candidate{peer: peer, score: score})
 	}
-	if len(candidates) == 0 { return nil, "", fmt.Errorf("no healthy peer exposes executable capability: %s", capability) }
+	if len(candidates) == 0 {
+		return nil, "", fmt.Errorf("no healthy peer exposes executable capability: %s", capability)
+	}
 	sort.Slice(candidates, func(i, j int) bool {
-		if candidates[i].score == candidates[j].score { return candidates[i].peer.Nucleus < candidates[j].peer.Nucleus }
+		if candidates[i].score == candidates[j].score {
+			return candidates[i].peer.Nucleus < candidates[j].peer.Nucleus
+		}
 		return candidates[i].score > candidates[j].score
 	})
 	var lastErr error
 	for _, item := range candidates {
 		result, err := p.CallWithCorrelation(ctx, item.peer.Nucleus, capability, payload, correlation)
-		if err == nil { return result, item.peer.Nucleus, nil }
+		if err == nil {
+			return result, item.peer.Nucleus, nil
+		}
 		lastErr = err
 	}
 	return nil, "", lastErr
@@ -125,11 +225,17 @@ func supportsCapability(description map[string]any, capability string) bool {
 	capability = strings.TrimSpace(capability)
 	for _, key := range []string{"capabilities", "operations", "executableCapabilities"} {
 		raw, ok := description[key]
-		if !ok { continue }
+		if !ok {
+			continue
+		}
 		items, ok := raw.([]any)
-		if !ok { continue }
+		if !ok {
+			continue
+		}
 		for _, item := range items {
-			if s, ok := item.(string); ok && strings.TrimSpace(strings.SplitN(s, "@", 2)[0]) == capability { return true }
+			if s, ok := item.(string); ok && strings.TrimSpace(strings.SplitN(s, "@", 2)[0]) == capability {
+				return true
+			}
 		}
 	}
 	return false
@@ -139,28 +245,96 @@ func (p *PeerClient) call(ctx context.Context, nucleus, capability string, paylo
 	p.mu.RLock()
 	peer, ok := p.peers[nucleus]
 	p.mu.RUnlock()
-	if !ok { return nil, errors.New("peer not configured: " + nucleus) }
-	if peer.Circuit == CircuitOpen {
-		if time.Now().Before(peer.RetryAfter) { return nil, fmt.Errorf("peer circuit open: %s", nucleus) }
-		p.mu.Lock(); peer = p.peers[nucleus]; peer.Circuit = CircuitHalfOpen; p.peers[nucleus] = peer; p.mu.Unlock()
+	if !ok {
+		return nil, errors.New("peer not configured: " + nucleus)
 	}
-	if p.secret == "" { return nil, errors.New("SOUL_MESH_HMAC_SECRET is not configured") }
+	if peer.Circuit == CircuitOpen {
+		if time.Now().Before(peer.RetryAfter) {
+			return nil, fmt.Errorf("peer circuit open: %s", nucleus)
+		}
+		p.mu.Lock()
+		peer = p.peers[nucleus]
+		peer.Circuit = CircuitHalfOpen
+		p.peers[nucleus] = peer
+		p.mu.Unlock()
+	}
+	if p.secret == "" {
+		return nil, errors.New("SOUL_MESH_HMAC_SECRET is not configured")
+	}
 	var lastErr error
 	for attempt := 1; attempt <= p.maxRetry; attempt++ {
-		if err := ctx.Err(); err != nil { return nil, err }
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
 		env := protocol.MeshEnvelope{Version: protocol.SoulMeshVersion, ContractVersion: protocol.SoulMeshContractVersion, MessageID: protocol.NewTraceID(), Source: protocol.N07, Target: nucleus, Timestamp: time.Now().UnixMilli(), Nonce: protocol.NewTraceID(), CorrelationID: correlation, Type: "CAPABILITY_REQUEST", Payload: map[string]any{"capability": capability, "payload": payload}}
-		if err := protocol.SignHMAC(&env, p.secret); err != nil { return nil, err }
-		body, err := protocol.EncodeMesh(env); if err != nil { return nil, err }
-		req, err := http.NewRequestWithContext(ctx, http.MethodPost, peer.URL+"/api/soul-mesh", bytes.NewReader(body)); if err != nil { return nil, err }
-		req.Header.Set("Content-Type", "application/json"); req.Header.Set("X-Soul-Contract-Version", protocol.SoulMeshContractVersion); req.Header.Set("X-Soul-Correlation-Id", correlation)
-		started := time.Now(); resp, err := p.client.Do(req); latency := time.Since(started)
-		if err != nil { lastErr = err; p.recordFailure(nucleus, latency, err.Error()); if attempt < p.maxRetry { if err := waitBackoff(ctx, attempt); err != nil { return nil, err }; continue }; return nil, err }
-		var result map[string]any; decodeErr := jsonDecodeLimited(resp, &result); resp.Body.Close()
-		if decodeErr != nil { lastErr = decodeErr; p.recordFailure(nucleus, latency, decodeErr.Error()); if attempt < p.maxRetry { if err := waitBackoff(ctx, attempt); err != nil { return nil, err }; continue }; return nil, decodeErr }
-		if resp.StatusCode < 200 || resp.StatusCode >= 300 { lastErr = fmt.Errorf("peer request failed: %s", resp.Status); p.recordFailure(nucleus, latency, lastErr.Error()); if attempt < p.maxRetry && (resp.StatusCode == 408 || resp.StatusCode == 429 || resp.StatusCode >= 500) { if err := waitBackoff(ctx, attempt); err != nil { return nil, err }; continue }; return result, lastErr }
-		if result["contractVersion"] != protocol.SoulMeshContractVersion { lastErr = errors.New("mesh response contract version mismatch"); p.recordFailure(nucleus, latency, lastErr.Error()); return nil, lastErr }
-		if result["correlationId"] != correlation { lastErr = errors.New("peer correlation mismatch"); p.recordFailure(nucleus, latency, lastErr.Error()); return nil, lastErr }
-		if err := verifyResponseHMAC(result, p.secret); err != nil { lastErr = err; p.recordFailure(nucleus, latency, err.Error()); return nil, err }
+		if err := protocol.SignHMAC(&env, p.secret); err != nil {
+			return nil, err
+		}
+		body, err := protocol.EncodeMesh(env)
+		if err != nil {
+			return nil, err
+		}
+		req, err := http.NewRequestWithContext(ctx, http.MethodPost, peer.URL+"/api/soul-mesh", bytes.NewReader(body))
+		if err != nil {
+			return nil, err
+		}
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("X-Soul-Contract-Version", protocol.SoulMeshContractVersion)
+		req.Header.Set("X-Soul-Correlation-Id", correlation)
+		started := time.Now()
+		resp, err := p.client.Do(req)
+		latency := time.Since(started)
+		if err != nil {
+			lastErr = err
+			p.recordFailure(nucleus, latency, err.Error())
+			if attempt < p.maxRetry {
+				if err := waitBackoff(ctx, attempt); err != nil {
+					return nil, err
+				}
+				continue
+			}
+			return nil, err
+		}
+		var result map[string]any
+		decodeErr := jsonDecodeLimited(resp, &result)
+		resp.Body.Close()
+		if decodeErr != nil {
+			lastErr = decodeErr
+			p.recordFailure(nucleus, latency, decodeErr.Error())
+			if attempt < p.maxRetry {
+				if err := waitBackoff(ctx, attempt); err != nil {
+					return nil, err
+				}
+				continue
+			}
+			return nil, decodeErr
+		}
+		if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+			lastErr = fmt.Errorf("peer request failed: %s", resp.Status)
+			p.recordFailure(nucleus, latency, lastErr.Error())
+			if attempt < p.maxRetry && (resp.StatusCode == 408 || resp.StatusCode == 429 || resp.StatusCode >= 500) {
+				if err := waitBackoff(ctx, attempt); err != nil {
+					return nil, err
+				}
+				continue
+			}
+			return result, lastErr
+		}
+		if result["contractVersion"] != protocol.SoulMeshContractVersion {
+			lastErr = errors.New("mesh response contract version mismatch")
+			p.recordFailure(nucleus, latency, lastErr.Error())
+			return nil, lastErr
+		}
+		if result["correlationId"] != correlation {
+			lastErr = errors.New("peer correlation mismatch")
+			p.recordFailure(nucleus, latency, lastErr.Error())
+			return nil, lastErr
+		}
+		if err := verifyResponseHMAC(result, p.secret); err != nil {
+			lastErr = err
+			p.recordFailure(nucleus, latency, err.Error())
+			return nil, err
+		}
 		p.recordSuccess(nucleus, latency)
 		return result, nil
 	}
@@ -168,12 +342,97 @@ func (p *PeerClient) call(ctx context.Context, nucleus, capability string, paylo
 }
 
 func jsonDecodeLimited(resp *http.Response, out *map[string]any) error {
-	if resp == nil || resp.Body == nil { return errors.New("empty peer response") }
-	if resp.ContentLength > 1<<20 { return errors.New("peer response exceeds configured limit") }
+	if resp == nil || resp.Body == nil {
+		return errors.New("empty peer response")
+	}
+	if resp.ContentLength > 1<<20 {
+		return errors.New("peer response exceeds configured limit")
+	}
 	return json.NewDecoder(io.LimitReader(resp.Body, 1<<20)).Decode(out)
 }
-func waitBackoff(ctx context.Context, attempt int) error { delay := time.Duration(1<<uint(attempt-1))*250*time.Millisecond; timer:=time.NewTimer(delay); defer timer.Stop(); select { case <-ctx.Done(): return ctx.Err(); case <-timer.C: return nil } }
-func (p *PeerClient) recordSuccess(nucleus string, latency time.Duration){p.mu.Lock();defer p.mu.Unlock();peer,ok:=p.peers[nucleus];if !ok{return};peer.Healthy=true;peer.Latency=latency;peer.LastError="";peer.Failures=0;peer.Circuit=CircuitClosed;peer.RetryAfter=time.Time{};p.peers[nucleus]=peer}
-func (p *PeerClient) recordFailure(nucleus string, latency time.Duration, lastError string){p.mu.Lock();defer p.mu.Unlock();peer,ok:=p.peers[nucleus];if !ok{return};peer.Healthy=false;peer.Latency=latency;peer.LastError=lastError;peer.Failures++;if peer.Failures>=3{peer.Circuit=CircuitOpen;peer.RetryAfter=time.Now().Add(p.cooldown)};p.peers[nucleus]=peer}
-func verifyResponseHMAC(result map[string]any, secret string) error {hmacValue,_:=result["hmac"].(string);nonce,_:=result["nonce"].(string);if hmacValue==""||nonce==""{return errors.New("peer response HMAC credentials are missing")};timestamp,ok:=result["timestamp"].(float64);if !ok{return errors.New("peer response timestamp is invalid")};id,_:=result["id"].(string);source,_:=result["source"].(string);target,_:=result["target"].(string);correlation,_:=result["correlationId"].(string);capability,_:=result["capability"].(string);kind,_:=result["kind"].(string);typ:="TASK_RESULT";if kind=="error"{typ="ERROR"};payload:=map[string]any{};if value,ok:=result["payload"].(map[string]any);ok{payload=value};env:=protocol.MeshEnvelope{Version:protocol.SoulMeshVersion,ContractVersion:protocol.SoulMeshContractVersion,MessageID:id,Source:source,Target:target,Timestamp:int64(timestamp),Nonce:nonce,CorrelationID:correlation,Type:typ,Payload:map[string]any{"capability":capability,"payload":payload}};return protocol.VerifyHMAC(env,secret,time.Now())}
-func (p *PeerClient) ConfiguredPeers() []PeerInfo {p.mu.RLock();defer p.mu.RUnlock();out:=make([]PeerInfo,0,len(p.peers));for _,peer:=range p.peers{out=append(out,peer)};sort.Slice(out,func(i,j int)bool{return out[i].Nucleus<out[j].Nucleus});return out}
+
+func waitBackoff(ctx context.Context, attempt int) error {
+	delay := time.Duration(1<<uint(attempt-1)) * 250 * time.Millisecond
+	timer := time.NewTimer(delay)
+	defer timer.Stop()
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case <-timer.C:
+		return nil
+	}
+}
+
+func (p *PeerClient) recordSuccess(nucleus string, latency time.Duration) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	peer, ok := p.peers[nucleus]
+	if !ok {
+		return
+	}
+	peer.Healthy = true
+	peer.Latency = latency
+	peer.LastError = ""
+	peer.Failures = 0
+	peer.Circuit = CircuitClosed
+	peer.RetryAfter = time.Time{}
+	p.peers[nucleus] = peer
+}
+
+func (p *PeerClient) recordFailure(nucleus string, latency time.Duration, lastError string) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	peer, ok := p.peers[nucleus]
+	if !ok {
+		return
+	}
+	peer.Healthy = false
+	peer.Latency = latency
+	peer.LastError = lastError
+	peer.Failures++
+	if peer.Failures >= 3 {
+		peer.Circuit = CircuitOpen
+		peer.RetryAfter = time.Now().Add(p.cooldown)
+	}
+	p.peers[nucleus] = peer
+	delete(p.discoveryCache, nucleus)
+}
+
+func verifyResponseHMAC(result map[string]any, secret string) error {
+	hmacValue, _ := result["hmac"].(string)
+	nonce, _ := result["nonce"].(string)
+	if hmacValue == "" || nonce == "" {
+		return errors.New("peer response HMAC credentials are missing")
+	}
+	timestamp, ok := result["timestamp"].(float64)
+	if !ok {
+		return errors.New("peer response timestamp is invalid")
+	}
+	id, _ := result["id"].(string)
+	source, _ := result["source"].(string)
+	target, _ := result["target"].(string)
+	correlation, _ := result["correlationId"].(string)
+	capability, _ := result["capability"].(string)
+	kind, _ := result["kind"].(string)
+	typ := "TASK_RESULT"
+	if kind == "error" {
+		typ = "ERROR"
+	}
+	payload := map[string]any{}
+	if value, ok := result["payload"].(map[string]any); ok {
+		payload = value
+	}
+	env := protocol.MeshEnvelope{Version: protocol.SoulMeshVersion, ContractVersion: protocol.SoulMeshContractVersion, MessageID: id, Source: source, Target: target, Timestamp: int64(timestamp), Nonce: nonce, CorrelationID: correlation, Type: typ, Payload: map[string]any{"capability": capability, "payload": payload}, HMAC: hmacValue}
+	return protocol.VerifyHMAC(env, secret, time.Now())
+}
+
+func (p *PeerClient) ConfiguredPeers() []PeerInfo {
+	p.mu.RLock()
+	defer p.mu.RUnlock()
+	out := make([]PeerInfo, 0, len(p.peers))
+	for _, peer := range p.peers {
+		out = append(out, peer)
+	}
+	sort.Slice(out, func(i, j int) bool { return out[i].Nucleus < out[j].Nucleus })
+	return out
+}
