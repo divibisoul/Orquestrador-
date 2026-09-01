@@ -125,12 +125,11 @@ func (f *Fabric) Broadcast(task NeuralTask) []FederatedResult {
 }
 
 // BroadcastContext fans a task out to all registered nuclei while respecting
-// the caller's cancellation and the global federation concurrency bound.
+// caller cancellation and the global federation concurrency bound.
 func (f *Fabric) BroadcastContext(ctx context.Context, task NeuralTask) []FederatedResult {
 	members := f.Members()
-	results := make([]FederatedResult, len(members))
 	if len(members) == 0 {
-		return results
+		return []FederatedResult{}
 	}
 	return f.parallelMembers(ctx, task, members)
 }
@@ -139,9 +138,10 @@ func (f *Fabric) Parallel(tasks []NeuralTask) []FederatedResult {
 	return f.ParallelContext(context.Background(), tasks)
 }
 
-// ParallelContext executes independent neural tasks concurrently, but caps
-// admission to protect the N07 process from unbounded resource use. Result
-// ordering remains identical to input ordering for deterministic callers.
+// ParallelContext executes independent neural tasks with a fixed worker pool.
+// Admission is therefore bounded by maxFederatedParallelism rather than merely
+// limiting active peer calls while creating one goroutine per submitted task.
+// Result ordering remains identical to input ordering.
 func (f *Fabric) ParallelContext(ctx context.Context, tasks []NeuralTask) []FederatedResult {
 	results := make([]FederatedResult, len(tasks))
 	if len(tasks) == 0 {
@@ -157,38 +157,66 @@ func (f *Fabric) ParallelContext(ctx context.Context, tasks []NeuralTask) []Fede
 	members := f.Members()
 	if len(members) == 0 {
 		for i := range results {
-			results[i] = FederatedResult{Error: "no neural members available"}
+			results[i].Error = "no neural members available"
 		}
 		return results
 	}
 
-	var wg sync.WaitGroup
-	sem := make(chan struct{}, maxFederatedParallelism)
-	wg.Add(len(tasks))
-	for i, task := range tasks {
-		go func(i int, task NeuralTask) {
-			defer wg.Done()
-			select {
-			case sem <- struct{}{}:
-				defer func() { <-sem }()
-			case <-ctx.Done():
-				results[i] = FederatedResult{Error: ctx.Err().Error()}
-				return
-			}
-
-			target := task.Target
-		// Source was historically used as the routing hint. Preserve that
-		// compatibility while making Target the canonical routing field.
-		if target == "" {
-			target = task.Source
-		}
-		if target == "" {
-			target = members[i%len(members)]
-		}
-		results[i], _ = f.assignContext(ctx, task, target)
-		}(i, task)
+	workerCount := len(tasks)
+	if workerCount > maxFederatedParallelism {
+		workerCount = maxFederatedParallelism
 	}
+
+	jobs := make(chan int)
+	var wg sync.WaitGroup
+	wg.Add(workerCount)
+	for worker := 0; worker < workerCount; worker++ {
+		go func() {
+			defer wg.Done()
+			for {
+				select {
+				case <-ctx.Done():
+					return
+				case index, ok := <-jobs:
+					if !ok {
+						return
+					}
+					task := tasks[index]
+					target := task.Target
+					// Source was historically used as the routing hint. Preserve
+					// that compatibility while Target remains canonical.
+					if target == "" {
+						target = task.Source
+					}
+					if target == "" {
+						target = members[index%len(members)]
+					}
+					results[index], _ = f.assignContext(ctx, task, target)
+				}
+			}
+		}()
+	}
+
+	for index := range tasks {
+		select {
+		case jobs <- index:
+		case <-ctx.Done():
+			break
+		}
+		if ctx.Err() != nil {
+			break
+		}
+	}
+	close(jobs)
 	wg.Wait()
+
+	if err := ctx.Err(); err != nil {
+		for i := range results {
+			if results[i].Nucleus == "" && results[i].Error == "" {
+				results[i].Error = err.Error()
+			}
+		}
+	}
 	return results
 }
 
@@ -203,21 +231,50 @@ func (f *Fabric) parallelMembers(ctx context.Context, task NeuralTask, members [
 	}
 
 	var wg sync.WaitGroup
-	sem := make(chan struct{}, maxFederatedParallelism)
-	wg.Add(len(members))
-	for i, nucleus := range members {
-		go func(i int, nucleus string) {
-			defer wg.Done()
-			select {
-			case sem <- struct{}{}:
-				defer func() { <-sem }()
-			case <-ctx.Done():
-				results[i] = FederatedResult{Nucleus: nucleus, Error: ctx.Err().Error()}
-				return
-			}
-			results[i], _ = f.assignContext(ctx, task, nucleus)
-		}(i, nucleus)
+	workerCount := len(members)
+	if workerCount > maxFederatedParallelism {
+		workerCount = maxFederatedParallelism
 	}
+	jobs := make(chan int)
+	wg.Add(workerCount)
+	for worker := 0; worker < workerCount; worker++ {
+		go func() {
+			defer wg.Done()
+			for {
+				select {
+				case <-ctx.Done():
+					return
+				case index, ok := <-jobs:
+					if !ok {
+						return
+					}
+					results[index], _ = f.assignContext(ctx, task, members[index])
+				}
+			}
+		}()
+	}
+	for index := range members {
+		select {
+		case jobs <- index:
+		case <-ctx.Done():
+			break
+		}
+		if ctx.Err() != nil {
+			break
+		}
+	}
+	close(jobs)
 	wg.Wait()
+
+	if err := ctx.Err(); err != nil {
+		for i := range results {
+			if results[i].Nucleus == "" {
+				results[i].Nucleus = members[i]
+			}
+			if results[i].Error == "" && results[i].Result == nil {
+				results[i].Error = err.Error()
+			}
+		}
+	}
 	return results
 }
