@@ -10,8 +10,9 @@ import (
 )
 
 type recordingPeer struct {
-	mu    sync.Mutex
-	calls []string
+	mu       sync.Mutex
+	calls    []string
+	payloads []map[string]any
 }
 
 func (p *recordingPeer) Invoke(ctx context.Context, nucleus, operation string, payload map[string]any, correlation string) (map[string]any, error) {
@@ -20,6 +21,7 @@ func (p *recordingPeer) Invoke(ctx context.Context, nucleus, operation string, p
 	}
 	p.mu.Lock()
 	p.calls = append(p.calls, nucleus+":"+operation+":"+correlation)
+	p.payloads = append(p.payloads, payload)
 	p.mu.Unlock()
 	return map[string]any{"nucleus": nucleus, "operation": operation}, nil
 }
@@ -39,7 +41,7 @@ func TestAssignRoutesAndPropagatesCorrelation(t *testing.T) {
 
 	result, err := fabric.Assign(NeuralTask{
 		ID:            "task-1",
-		Operation:     "neural.forward",
+		Operation:     "neural.forward@1.0.0",
 		Payload:       []float64{1, 2, 3},
 		Source:        "N07",
 		CorrelationID: "corr-1",
@@ -50,8 +52,11 @@ func TestAssignRoutesAndPropagatesCorrelation(t *testing.T) {
 	if result.Nucleus != "N03" || result.Error != "" {
 		t.Fatalf("unexpected result: %+v", result)
 	}
-	if len(peer.calls) != 1 || peer.calls[0] != "N03:neural.forward:corr-1" {
+	if len(peer.calls) != 1 || peer.calls[0] != "N03:neural.forward@1.0.0:corr-1" {
 		t.Fatalf("unexpected peer calls: %#v", peer.calls)
+	}
+	if got, ok := peer.payloads[0]["payload.values"].([]float64); !ok || len(got) != 3 || got[0] != 1 || got[2] != 3 {
+		t.Fatalf("canonical payload.values missing or incorrect: %#v", peer.payloads[0])
 	}
 }
 
@@ -62,7 +67,7 @@ func TestAssignRejectsNonFinitePayload(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, value := range []float64{math.NaN(), math.Inf(1)} {
-		_, err := fabric.Assign(NeuralTask{ID: "t", Operation: "neural.forward", Payload: []float64{value}, CorrelationID: "c"}, "N01")
+		_, err := fabric.Assign(NeuralTask{ID: "t", Operation: "neural.forward@1.0.0", Payload: []float64{value}, CorrelationID: "c"}, "N01")
 		if err == nil {
 			t.Fatal("expected non-finite payload to be rejected")
 		}
@@ -76,8 +81,8 @@ func TestParallelHonorsExplicitTargetAndLegacySourceHint(t *testing.T) {
 		t.Fatal(err)
 	}
 	results := fabric.Parallel([]NeuralTask{
-		{ID: "a", Operation: "neural.forward", CorrelationID: "ca", Target: "N06"},
-		{ID: "b", Operation: "neural.forward", CorrelationID: "cb", Source: "N05"},
+		{ID: "a", Operation: "neural.forward@1.0.0", CorrelationID: "ca", Target: "N06"},
+		{ID: "b", Operation: "neural.forward@1.0.0", CorrelationID: "cb", Source: "N05"},
 	})
 	if len(results) != 2 {
 		t.Fatalf("expected two results, got %d", len(results))
@@ -105,7 +110,7 @@ func TestAssignDeadlineIsEnforced(t *testing.T) {
 		t.Fatal(err)
 	}
 	result, err := fabric.Assign(NeuralTask{
-		ID: "deadline", Operation: "neural.forward", CorrelationID: "deadline-c", Deadline: time.Now().Add(5 * time.Millisecond),
+		ID: "deadline", Operation: "neural.forward@1.0.0", CorrelationID: "deadline-c", Deadline: time.Now().Add(5 * time.Millisecond),
 	}, "N01")
 	if err == nil || result.Error == "" {
 		t.Fatalf("expected deadline failure, result=%+v err=%v", result, err)
@@ -121,8 +126,8 @@ func TestParallelContextPropagatesCancellation(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 	results := fabric.ParallelContext(ctx, []NeuralTask{
-		{ID: "a", Operation: "neural.forward", CorrelationID: "ca", Target: "N01"},
-		{ID: "b", Operation: "neural.forward", CorrelationID: "cb", Target: "N02"},
+		{ID: "a", Operation: "neural.forward@1.0.0", CorrelationID: "ca", Target: "N01"},
+		{ID: "b", Operation: "neural.forward@1.0.0", CorrelationID: "cb", Target: "N02"},
 	})
 	for i, result := range results {
 		if result.Error != context.Canceled.Error() {
@@ -140,7 +145,7 @@ func TestParallelContextPreservesInputOrderUnderBoundedAdmission(t *testing.T) {
 	const taskCount = maxFederatedParallelism + 8
 	tasks := make([]NeuralTask, taskCount)
 	for i := range tasks {
-		tasks[i] = NeuralTask{ID: string(rune('a' + i%26)), Operation: "neural.forward", CorrelationID: "corr", Target: "N01"}
+		tasks[i] = NeuralTask{ID: string(rune('a' + i%26)), Operation: "neural.forward@1.0.0", CorrelationID: "corr", Target: "N01"}
 	}
 	results := fabric.ParallelContext(context.Background(), tasks)
 	if len(results) != taskCount {
@@ -161,7 +166,7 @@ func TestBroadcastContextCancellationPreservesMembers(t *testing.T) {
 	}
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
-	results := fabric.BroadcastContext(ctx, NeuralTask{ID: "b", Operation: "neural.forward", CorrelationID: "bc"})
+	results := fabric.BroadcastContext(ctx, NeuralTask{ID: "b", Operation: "neural.forward@1.0.0", CorrelationID: "bc"})
 	if len(results) != len(fabric.Members()) {
 		t.Fatalf("expected one result per member, got %d", len(results))
 	}
@@ -179,9 +184,7 @@ func (*deadlinePeer) Invoke(ctx context.Context, nucleus, operation string, payl
 	return nil, errors.New(ctx.Err().Error())
 }
 
-type blockingPeer struct {
-	mu sync.Mutex
-}
+type blockingPeer struct{}
 
 func (*blockingPeer) Invoke(ctx context.Context, nucleus, operation string, payload map[string]any, correlation string) (map[string]any, error) {
 	if err := ctx.Err(); err != nil {
