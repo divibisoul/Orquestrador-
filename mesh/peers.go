@@ -43,12 +43,12 @@ type discoveryCacheEntry struct {
 }
 
 type PeerClient struct {
-	mu                sync.RWMutex
-	peers             map[string]PeerInfo
-	client            *http.Client
-	secret            string
-	maxRetry          int
-	cooldown          time.Duration
+	mu               sync.RWMutex
+	peers            map[string]PeerInfo
+	client           *http.Client
+	secret           string
+	maxRetry         int
+	cooldown         time.Duration
 	discoveryMu       sync.RWMutex
 	discoveryCache    map[string]discoveryCacheEntry
 	discoveryCacheTTL time.Duration
@@ -75,7 +75,7 @@ func NewPeerClient(client *http.Client) (*PeerClient, error) {
 	}, nil
 }
 
-func cloneMap(value map[string]any) map[string]any {
+func clonePeerMap(value map[string]any) map[string]any {
 	if value == nil {
 		return nil
 	}
@@ -97,7 +97,7 @@ func (p *PeerClient) Discover(ctx context.Context, nucleus string) (map[string]a
 	result, err := p.CallWithCorrelation(ctx, nucleus, "mesh.discovery", map[string]any{"from": protocol.N07}, protocol.NewTraceID())
 	if err == nil {
 		p.storeDiscovery(nucleus, result)
-		return cloneMap(result), nil
+		return clonePeerMap(result), nil
 	}
 	if ctx.Err() != nil {
 		return nil, ctx.Err()
@@ -107,7 +107,7 @@ func (p *PeerClient) Discover(ctx context.Context, nucleus string) (map[string]a
 		return nil, err
 	}
 	p.storeDiscovery(nucleus, result)
-	return cloneMap(result), nil
+	return clonePeerMap(result), nil
 }
 
 func (p *PeerClient) discoveryFromCache(nucleus string) (map[string]any, bool) {
@@ -122,12 +122,12 @@ func (p *PeerClient) discoveryFromCache(nucleus string) (map[string]any, bool) {
 		}
 		return nil, false
 	}
-	return cloneMap(entry.value), true
+	return clonePeerMap(entry.value), true
 }
 
 func (p *PeerClient) storeDiscovery(nucleus string, value map[string]any) {
 	p.discoveryMu.Lock()
-	p.discoveryCache[nucleus] = discoveryCacheEntry{value: cloneMap(value), expiresAt: time.Now().Add(p.discoveryCacheTTL)}
+	p.discoveryCache[nucleus] = discoveryCacheEntry{value: clonePeerMap(value), expiresAt: time.Now().Add(p.discoveryCacheTTL)}
 	p.discoveryMu.Unlock()
 }
 
@@ -192,13 +192,13 @@ func supportsExecutableCapability(description map[string]any, capability string)
 	if !ok {
 		return false
 	}
-	requestedName, requestedVersion := splitCapabilityVersion(capability)
+	requestedName, requestedVersion := splitPeerCapabilityVersion(capability)
 	for _, item := range items {
 		value, ok := item.(string)
 		if !ok {
 			continue
 		}
-		name, version := splitCapabilityVersion(strings.TrimSpace(value))
+		name, version := splitPeerCapabilityVersion(strings.TrimSpace(value))
 		if name == requestedName && (requestedVersion == "" || requestedVersion == version) {
 			return true
 		}
@@ -206,7 +206,7 @@ func supportsExecutableCapability(description map[string]any, capability string)
 	return false
 }
 
-func splitCapabilityVersion(value string) (string, string) {
+func splitPeerCapabilityVersion(value string) (string, string) {
 	parts := strings.SplitN(strings.TrimSpace(value), "@", 2)
 	if len(parts) == 1 {
 		return parts[0], ""
@@ -247,7 +247,7 @@ func (p *PeerClient) call(ctx context.Context, nucleus, capability string, paylo
 			Source:          protocol.N07,
 			Target:          nucleus,
 			Timestamp:       time.Now().UnixMilli(),
-			Nonce:           protocol.NewTraceID(),
+			Nonce:            protocol.NewTraceID(),
 			CorrelationID:   correlation,
 			Type:            "CAPABILITY_REQUEST",
 			Payload:         map[string]any{"capability": capability, "payload": payload},
