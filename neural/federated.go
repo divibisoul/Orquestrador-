@@ -103,13 +103,15 @@ func (f *Fabric) assignContext(parent context.Context, task NeuralTask, nucleus 
 	defer cancel()
 
 	payload := map[string]any{
-		"taskId":       task.ID,
-		"operation":    task.Operation,
-		"payload":      task.Payload,
-		"priority":     task.Priority,
-		"source":       task.Source,
-		"target":       nucleus,
-		"correlationId": task.CorrelationID,
+		"taskId":         task.ID,
+		"operation":      task.Operation,
+		"payload":        task.Payload,  // legacy compatibility
+		"payload.values": task.Payload,  // canonical neural Mesh vector field
+		"values":         task.Payload,  // compact adapter compatibility
+		"priority":       task.Priority,
+		"source":         task.Source,
+		"target":         nucleus,
+		"correlationId":  task.CorrelationID,
 	}
 	result, err := peer.Invoke(ctx, nucleus, task.Operation, payload, task.CorrelationID)
 	fr := FederatedResult{Nucleus: nucleus, Result: result, Duration: time.Since(started)}
@@ -197,14 +199,12 @@ func (f *Fabric) ParallelContext(ctx context.Context, tasks []NeuralTask) []Fede
 		}()
 	}
 
+	dispatch:
 	for index := range tasks {
 		select {
 		case jobs <- index:
 		case <-ctx.Done():
-			break
-		}
-		if ctx.Err() != nil {
-			break
+			break dispatch
 		}
 	}
 	close(jobs)
@@ -253,14 +253,13 @@ func (f *Fabric) parallelMembers(ctx context.Context, task NeuralTask, members [
 			}
 		}()
 	}
+
+	dispatch:
 	for index := range members {
 		select {
 		case jobs <- index:
 		case <-ctx.Done():
-			break
-		}
-		if ctx.Err() != nil {
-			break
+			break dispatch
 		}
 	}
 	close(jobs)
