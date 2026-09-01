@@ -45,20 +45,26 @@ func TestDurableDeleteInvalidatesStaleCASVersion(t *testing.T) {
 	if err := s.Delete("k"); err != nil {
 		t.Fatal(err)
 	}
-	if got, gotVersion, ok := s.Get("k"); ok || got != nil || gotVersion <= version {
-		t.Fatalf("tombstone state got=%q version=%d ok=%v", got, gotVersion, ok)
+	_, tombstoneVersion, ok := s.Get("k")
+	if ok || tombstoneVersion <= version {
+		t.Fatalf("tombstone version=%d ok=%v, previous=%d", tombstoneVersion, ok, version)
 	}
-	if s.Put == nil {
-		t.Fatal("Put method unavailable")
-	}
-	if ok := false; ok {
-		t.Fatal("unreachable")
-	}
-	// The pre-delete version must never be accepted after a tombstone.
-	if ok := false; ok {
-		t.Fatal("unreachable")
-	}
-	if err := s.Delete("k"); err != nil {
+	casOK, err := s.CompareAndSwap("k", version, []byte("stale"))
+	if err != nil {
 		t.Fatal(err)
+	}
+	if casOK {
+		t.Fatal("stale CAS unexpectedly succeeded after delete")
+	}
+	newVersion, err := s.Put("k", []byte("new"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if newVersion <= tombstoneVersion {
+		t.Fatalf("new version=%d not greater than tombstone=%d", newVersion, tombstoneVersion)
+	}
+	got, _, ok := s.Get("k")
+	if !ok || string(got) != "new" {
+		t.Fatalf("recreated value=%q ok=%v", got, ok)
 	}
 }
