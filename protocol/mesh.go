@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"strings"
 	"sync"
 	"time"
@@ -88,18 +89,21 @@ func (m MeshEnvelope) Validate() error {
 	}
 	return nil
 }
+
 func (m MeshEnvelope) Capability() string {
 	if v, ok := m.Payload["capability"].(string); ok {
 		return strings.TrimSpace(v)
 	}
 	return ""
 }
+
 func (m MeshEnvelope) NestedPayload() map[string]any {
 	if p, ok := m.Payload["payload"].(map[string]any); ok {
 		return p
 	}
 	return m.Payload
 }
+
 func (m MeshEnvelope) NestedMetadata() map[string]string {
 	if metadata, ok := m.Payload["metadata"].(map[string]any); ok {
 		out := make(map[string]string, len(metadata))
@@ -112,6 +116,7 @@ func (m MeshEnvelope) NestedMetadata() map[string]string {
 	}
 	return m.Metadata
 }
+
 func canonicalUnsignedEnvelope(m MeshEnvelope) ([]byte, error) {
 	return json.Marshal(struct {
 		Version         string            `json:"version"`
@@ -129,6 +134,7 @@ func canonicalUnsignedEnvelope(m MeshEnvelope) ([]byte, error) {
 		Metadata        map[string]string `json:"metadata,omitempty"`
 	}{m.Version, m.ContractVersion, m.MessageID, m.Source, m.Target, m.Timestamp, m.Nonce, m.CorrelationID, m.Type, m.TTL, m.Payload, m.Operation, m.Metadata})
 }
+
 func SignHMAC(m *MeshEnvelope, secret string) error {
 	if m == nil {
 		return errors.New("Mesh envelope is nil")
@@ -151,6 +157,7 @@ func SignHMAC(m *MeshEnvelope, secret string) error {
 	m.HMAC = hex.EncodeToString(mac.Sum(nil))
 	return nil
 }
+
 func VerifyHMAC(m MeshEnvelope, secret string, now time.Time) error {
 	if strings.TrimSpace(secret) == "" {
 		return errors.New("Mesh HMAC secret is not configured")
@@ -171,8 +178,11 @@ func VerifyHMAC(m MeshEnvelope, secret string, now time.Time) error {
 	mac := hmac.New(sha256.New, []byte(secret))
 	_, _ = mac.Write(unsigned)
 	expected, err := hex.DecodeString(m.HMAC)
-	if err != nil || len(expected) != sha256.Size {
-		return errors.New("invalid HMAC-SHA256 value")
+	if err != nil {
+		return fmt.Errorf("invalid HMAC-SHA256 encoding: %w", err)
+	}
+	if len(expected) != sha256.Size {
+		return fmt.Errorf("invalid HMAC-SHA256 value: expected %d bytes, got %d", sha256.Size, len(expected))
 	}
 	if !hmac.Equal(mac.Sum(nil), expected) {
 		return errors.New("invalid Mesh HMAC")
@@ -192,12 +202,14 @@ func VerifyHMAC(m MeshEnvelope, secret string, now time.Time) error {
 	seenNonces[key] = nowMS + 120000
 	return nil
 }
+
 func EncodeMesh(m MeshEnvelope) ([]byte, error) {
 	if err := m.Validate(); err != nil {
 		return nil, err
 	}
 	return json.Marshal(m)
 }
+
 func DecodeMesh(b []byte) (MeshEnvelope, error) {
 	var m MeshEnvelope
 	if err := json.Unmarshal(b, &m); err != nil {

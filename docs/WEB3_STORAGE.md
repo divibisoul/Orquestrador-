@@ -1,58 +1,62 @@
-# Web3 Storage integration
+# N07 content-addressed storage
 
-N07 exposes Web3 Storage as a provider capability without embedding credentials or coupling the Mesh to a storage vendor.
+N07 exposes a provider-neutral storage capability while using the current Storacha/w3up architecture when it is configured. The legacy Web3.Storage HTTP path remains available only as an explicit compatibility mode.
 
 ## Runtime configuration
 
-Set these values in the deployment environment:
+Preferred production configuration:
 
 ```text
-WEB3_STORAGE_TOKEN=<provider credential>
-WEB3_STORAGE_API_URL=https://api.web3.storage
-WEB3_STORAGE_TIMEOUT=60s
-WEB3_STORAGE_MAX_UPLOAD_BYTES=104857600
+STORACHA_MODE=storacha
+STORACHA_GUPPY_BIN=/usr/local/bin/guppy
+STORACHA_SPACE=did:key:...
+STORACHA_DATA_DIR=/var/lib/n07/storacha
+STORACHA_GATEWAY_URL=https://storacha.link/ipfs
+STORACHA_TIMEOUT=30s
+N07_MAX_UPLOAD_BYTES=104857600
 N07_APP_TOKEN=<N07 application bearer token>
 ```
 
-`WEB3_STORAGE_TOKEN` is never committed to Git. The adapter returns `ErrNotConfigured` when it is absent, allowing N07 to start without falsely claiming provider connectivity.
+Guppy uses a local agent and UCAN authorization state. The `STORACHA_DATA_DIR` therefore must be persistent in production and must contain an authorized Guppy identity/space before uploads are attempted. Credentials and UCAN material are deployment secrets and must never be committed to Git.
+
+The current Storacha Guppy documentation specifies `guppy upload source add <space> <path>` followed by `guppy upload <space>`. N07 uses those same commands behind the provider boundary. The Storacha client calculates content identifiers locally and uploads through the w3up/UCAN service.
 
 ## Provider boundary
 
-The adapter implements:
+The backend provider implements:
 
-- upload → CID;
-- CID status;
-- authenticated upload listing / health check;
-- bounded request size;
-- context cancellation and timeout;
-- source-byte integrity checking;
-- provider error propagation;
-- configurable API endpoint for controlled migration to another compatible endpoint;
-- deterministic IPFS gateway URL generation from the returned CID.
+- bounded uploads with byte-count enforcement;
+- safe temporary staging for modern Storacha uploads;
+- filename sanitization before staging;
+- context cancellation and configurable HTTP timeout propagation;
+- CID validation before returning or constructing gateway URLs;
+- modern Storacha uploads through Guppy;
+- legacy Web3.Storage-compatible raw HTTP uploads when explicitly selected;
+- CID status through the Storacha gateway in modern mode;
+- deterministic IPFS gateway URL generation.
 
-N07 routes the capability surface as:
-
-```text
-storage.web3.upload@1.0.0
-storage.web3.status@1.0.0
-```
-
-HTTP control endpoints are protected by `N07_APP_TOKEN`:
+N07 HTTP endpoints are:
 
 ```text
-POST /storage/web3/upload
-GET  /storage/web3/status?cid=<CID>
-GET  /storage/web3/health
+POST /v1/storage/upload
+GET  /v1/storage/status/<CID>
+GET  /v1/storage/object/<CID>
 ```
 
-The N07 upload endpoint accepts a multipart field named `file`, while the provider adapter forwards the file bytes as the documented raw `POST /upload` body and returns the resulting CID.
+All N07 routes are protected by the application bearer token.
 
-## Security
+## Provider selection
 
-Web3 Storage content is content-addressed and retrievable through IPFS. Do not upload unencrypted private or sensitive information. Provider credentials remain deployment secrets. N07 only exposes the resulting CID and provider status to authenticated application callers.
+`STORACHA_MODE=auto` selects Storacha only when both `STORACHA_SPACE` and `STORACHA_GUPPY_BIN` are configured. `STORACHA_MODE=storacha` forces the current provider. `STORACHA_MODE=legacy` or `web3.storage` forces the compatibility path.
 
-## Operational validation
+The legacy endpoint is retained because the repository already contains a provider boundary, but the project should not treat `https://api.web3.storage` as the preferred production integration. The active Storacha implementation is based on the current w3up/UCAN architecture and its Go tooling.
 
-A configured provider is not considered connected merely because an environment variable exists. `/storage/web3/health` performs an authenticated provider request. Successful upload is proven only when the provider returns a CID.
+## Security and data handling
 
-The implementation uses the documented Web3 Storage HTTP API boundary. Web3 Storage has also introduced the newer w3up/UCAN architecture; `WEB3_STORAGE_API_URL` keeps the provider boundary replaceable so migration can occur without changing Mesh or N07 capability contracts.
+Data uploaded to w3up/Storacha is publicly retrievable when its CID is known, and the network is designed for content-addressed persistence. Private or sensitive material must therefore be encrypted before upload.
+
+N07 never logs provider credentials. The application token protects N07's control plane; Storacha authorization remains in the provider's agent state.
+
+## Operational commissioning
+
+A configured provider is not proof of a live connection. Structural tests can prove request construction and error handling, but real commissioning requires an authorized Storacha space and a live upload that returns a CID. The repository intentionally does not fabricate that evidence when the deployment environment does not provide the required authorization state.

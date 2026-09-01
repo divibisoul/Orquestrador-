@@ -6,6 +6,8 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -87,6 +89,59 @@ func TestWeb3StorageHonorsCancellation(t *testing.T) {
 	_, _, err := s.Upload(ctx, strings.NewReader("x"), "x")
 	if err == nil || !errors.Is(err, context.Canceled) {
 		t.Fatalf("expected context cancellation, got %v", err)
+	}
+}
+
+func TestStorachaUploadUsesConfiguredSpaceAndFilename(t *testing.T) {
+	bin := filepath.Join(t.TempDir(), "guppy")
+	cid := testCID
+	script := "#!/bin/sh\nprintf '%s\\n' '" + cid + "'\n"
+	if err := os.WriteFile(bin, []byte(script), 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	t.Setenv("STORACHA_MODE", "storacha")
+	t.Setenv("STORACHA_GUPPY_BIN", bin)
+	t.Setenv("STORACHA_SPACE", "did:key:z6Mkhfake-space")
+	t.Setenv("STORACHA_DATA_DIR", filepath.Join(t.TempDir(), "state"))
+	t.Setenv("STORACHA_GATEWAY_URL", "https://storacha.link/ipfs")
+
+	s := NewWeb3Storage(Config{MaxUploadBytes: 1024})
+	gotCID, size, err := s.Upload(context.Background(), strings.NewReader("hello"), "nested/artifact.bin")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if gotCID != cid || size != 5 {
+		t.Fatalf("unexpected Storacha upload cid=%q size=%d", gotCID, size)
+	}
+	if got := s.ObjectURL(cid); got != "https://storacha.link/ipfs/"+cid {
+		t.Fatalf("unexpected Storacha object URL: %q", got)
+	}
+}
+
+func TestStorachaUploadEnforcesConfiguredLimit(t *testing.T) {
+	bin := filepath.Join(t.TempDir(), "guppy")
+	if err := os.WriteFile(bin, []byte("#!/bin/sh\nexit 0\n"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("STORACHA_MODE", "storacha")
+	t.Setenv("STORACHA_GUPPY_BIN", bin)
+	t.Setenv("STORACHA_SPACE", "did:key:z6Mkhfake-space")
+
+	s := NewWeb3Storage(Config{MaxUploadBytes: 4})
+	if _, _, err := s.Upload(context.Background(), strings.NewReader("hello"), "x"); err == nil || !strings.Contains(err.Error(), "maximum size") {
+		t.Fatalf("expected size limit error, got %v", err)
+	}
+}
+
+func TestCIDValidationRejectsUnsafeValues(t *testing.T) {
+	for _, cid := range []string{"", "../secret", "https://example.com/ipfs/" + testCID, "bafy-invalid"} {
+		if validCID(cid) {
+			t.Fatalf("expected invalid CID: %q", cid)
+		}
+	}
+	if !validCID(testCID) {
+		t.Fatal("expected fixture CID to be valid")
 	}
 }
 
