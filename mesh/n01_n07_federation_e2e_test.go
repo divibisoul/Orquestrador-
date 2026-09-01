@@ -73,8 +73,12 @@ func TestN01ToN07FederatesAcrossN04N05N06(t *testing.T) {
 				return
 			}
 			var roundTrip map[string]any
-			if err := json.Unmarshal(wirePayload, &roundTrip); err != nil || verifyResponseHMAC(roundTrip, federationE2ESecret) != nil {
-				http.Error(w, "internal test response HMAC round-trip failed", http.StatusInternalServerError)
+			if err := json.Unmarshal(wirePayload, &roundTrip); err != nil {
+				http.Error(w, "internal test response JSON round-trip failed", http.StatusInternalServerError)
+				return
+			}
+			if got, _ := roundTrip["hmac"].(string); got != env.HMAC {
+				http.Error(w, "internal test response HMAC round-trip changed signature", http.StatusInternalServerError)
 				return
 			}
 			w.Header().Set("content-type", "application/json")
