@@ -57,22 +57,22 @@ func TestN01ToN07FederatesAcrossN04N05N06(t *testing.T) {
 			}
 			responseID := protocol.NewTraceID()
 			responseNonce := protocol.NewTraceID()
-			response := map[string]any{"protocol": "soul-mesh/1", "contractVersion": protocol.SoulMeshContractVersion, "id": responseID, "correlationId": in.CorrelationID, "source": nucleus, "target": protocol.N07, "kind": "response", "capability": capability, "payload": payload, "timestamp": time.Now().UnixMilli(), "nonce": responseNonce}
-			if capability == "mesh.discovery" || capability == "mesh.describe" {
-				response["executableCapabilities"] = payload["executableCapabilities"]
-			}
-			env := protocol.MeshEnvelope{Version: protocol.SoulMeshVersion, ContractVersion: protocol.SoulMeshContractVersion, MessageID: responseID, Source: nucleus, Target: protocol.N07, Timestamp: response["timestamp"].(int64), Nonce: responseNonce, CorrelationID: in.CorrelationID, Type: "TASK_RESULT", Payload: map[string]any{"capability": capability, "payload": payload}}
+			responseTimestamp := time.Now().UnixMilli()
+			envType := "TASK_RESULT"
 			if _, ok := payload["error"]; ok {
-				env.Type = "ERROR"
+				envType = "ERROR"
 			}
+			env := protocol.MeshEnvelope{Version: protocol.SoulMeshVersion, ContractVersion: protocol.SoulMeshContractVersion, MessageID: responseID, Source: nucleus, Target: protocol.N07, Timestamp: responseTimestamp, Nonce: responseNonce, CorrelationID: in.CorrelationID, Type: envType, Payload: map[string]any{"capability": capability, "payload": payload}}
 			if err := protocol.SignHMAC(&env, federationE2ESecret); err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
-			response["hmac"] = env.HMAC
+			if len(env.HMAC) != sha256.Size*2 {
+				http.Error(w, "internal test HMAC generation error", http.StatusInternalServerError)
+				return
+			}
+			response := map[string]any{"protocol": "soul-mesh/1", "contractVersion": protocol.SoulMeshContractVersion, "id": responseID, "correlationId": in.CorrelationID, "source": nucleus, "target": protocol.N07, "kind": "response", "capability": capability, "payload": payload, "timestamp": responseTimestamp, "nonce": responseNonce, "hmac": env.HMAC}
 			w.Header().Set("content-type", "application/json")
-			w.Header().Set("x-soul-mesh-nonce", env.Nonce)
-			w.Header().Set("x-soul-mesh-hmac", env.HMAC)
 			_ = json.NewEncoder(w).Encode(response)
 		}))
 	}
