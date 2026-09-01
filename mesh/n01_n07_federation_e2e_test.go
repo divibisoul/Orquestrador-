@@ -47,6 +47,32 @@ func verifyCanonicalPeerRequest(w canonicalWireEnvelope, secret string, now time
 	return nil
 }
 
+func verifySignedResponseWithoutReplay(value map[string]any, secret string) error {
+	hmacValue, _ := value["hmac"].(string)
+	nonce, _ := value["nonce"].(string)
+	if hmacValue == "" || nonce == "" {
+		return errors.New("response HMAC credentials are missing")
+	}
+	timestamp, ok := value["timestamp"].(float64)
+	if !ok {
+		return errors.New("response timestamp is invalid")
+	}
+	id, _ := value["id"].(string)
+	source, _ := value["source"].(string)
+	target, _ := value["target"].(string)
+	correlation, _ := value["correlationId"].(string)
+	capability, _ := value["capability"].(string)
+	payload, _ := value["payload"].(map[string]any)
+	env := protocol.MeshEnvelope{Version: protocol.SoulMeshVersion, ContractVersion: protocol.SoulMeshContractVersion, MessageID: id, Source: source, Target: target, Timestamp: int64(timestamp), Nonce: nonce, CorrelationID: correlation, Type: "TASK_RESULT", Payload: map[string]any{"capability": capability, "payload": payload}}
+	if err := protocol.SignHMAC(&env, secret); err != nil {
+		return err
+	}
+	if !hmac.Equal([]byte(env.HMAC), []byte(hmacValue)) {
+		return errors.New("response HMAC mismatch after JSON round-trip")
+	}
+	return nil
+}
+
 func TestN01ToN07FederatesAcrossN04N05N06(t *testing.T) {
 	for _, key := range []string{"SOUL_MESH_N04_URL", "SOUL_MESH_N05_URL", "SOUL_MESH_N06_URL", "SOUL_MESH_HMAC_SECRET", "N07_MESH_ALLOW_UNAUTH_LOCAL"} {
 		t.Setenv(key, "")
@@ -97,7 +123,7 @@ func TestN01ToN07FederatesAcrossN04N05N06(t *testing.T) {
 				return
 			}
 			var roundTrip map[string]any
-			if err := json.Unmarshal(wirePayload, &roundTrip); err != nil || verifyResponseHMAC(roundTrip, federationE2ESecret) != nil {
+			if err := json.Unmarshal(wirePayload, &roundTrip); err != nil || verifySignedResponseWithoutReplay(roundTrip, federationE2ESecret) != nil {
 				http.Error(w, "internal test response HMAC round-trip failed", http.StatusInternalServerError)
 				return
 			}
