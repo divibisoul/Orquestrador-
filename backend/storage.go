@@ -10,9 +10,11 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 )
 
 var cidPattern = regexp.MustCompile(`^(?:b[a-z2-7][a-z0-9]{20,}|Qm[1-9A-HJ-NP-Za-km-z]{40,}|bafk[a-z0-9]{20,})$`)
@@ -33,18 +35,26 @@ type Web3Storage struct {
 func NewWeb3Storage(cfg Config) *Web3Storage {
 	legacyURL := strings.TrimRight(cfg.Web3StorageURL, "/")
 	legacyGateway := strings.TrimRight(cfg.IPFSGatewayURL, "/")
-	modernGateway := strings.TrimRight(strings.TrimSpace(os.Getenv("STORACHA_GATEWAY_URL")), "/")
-	if modernGateway == "" {
-		modernGateway = "https://storacha.link/ipfs"
-	}
 	mode := strings.ToLower(strings.TrimSpace(os.Getenv("STORACHA_MODE")))
 	if mode == "" {
 		mode = "auto"
 	}
-	maxBytes := int64(100 << 20)
+	maxBytes := cfg.MaxUploadBytes
+	if maxBytes <= 0 {
+		maxBytes = 100 << 20
+	}
 	if raw := strings.TrimSpace(os.Getenv("N07_MAX_UPLOAD_BYTES")); raw != "" {
 		if parsed, err := strconv.ParseInt(raw, 10, 64); err == nil && parsed > 0 {
 			maxBytes = parsed
+		}
+	}
+	timeout := cfg.RequestTimeout
+	if timeout <= 0 {
+		timeout = 30 * time.Second
+	}
+	if raw := strings.TrimSpace(os.Getenv("STORACHA_TIMEOUT")); raw != "" {
+		if parsed, err := time.ParseDuration(raw); err == nil && parsed > 0 {
+			timeout = parsed
 		}
 	}
 	bin := strings.TrimSpace(os.Getenv("STORACHA_GUPPY_BIN"))
@@ -53,9 +63,6 @@ func NewWeb3Storage(cfg Config) *Web3Storage {
 	}
 	space := strings.TrimSpace(os.Getenv("STORACHA_SPACE"))
 	dataDir := strings.TrimSpace(os.Getenv("STORACHA_DATA_DIR"))
-	if legacyGateway == "" || strings.HasSuffix(legacyGateway, "/ipfs") == false {
-		// Preserve the configured gateway exactly for legacy mode; modern mode has its own default above.
-	}
 	return &Web3Storage{
 		baseURL:         legacyURL,
 		token:           cfg.Web3StorageToken,
@@ -65,7 +72,7 @@ func NewWeb3Storage(cfg Config) *Web3Storage {
 		storachaSpace:   space,
 		storachaDataDir: dataDir,
 		maxBytes:        maxBytes,
-		client:          &http.Client{},
+		client:          &http.Client{Timeout: timeout},
 	}
 }
 
@@ -152,30 +159,35 @@ func (s *Web3Storage) uploadStoracha(ctx context.Context, body io.Reader, filena
 	if !s.modernConfigured() {
 		return "", 0, errors.New("Storacha credentials/space are not configured")
 	}
-	tmp, err := os.CreateTemp("", "n07-storacha-upload-*")
+
+	tmpDir, err := os.MkdirTemp("", "n07-storacha-upload-")
 	if err != nil {
 		return "", 0, err
 	}
-	tmpPath := tmp.Name()
-	defer os.Remove(tmpPath)
-	if _, err := copyLimited(tmp, body, s.maxBytes); err != nil {
-		_ = tmp.Close()
-		return "", 0, err
+	defer os.RemoveAll(tmpDir)
+
+	name := filepath.Base(strings.TrimSpace(filename))
+	if name == "" || name == "." || name == string(filepath.Separator) {
+		name = "upload.bin"
 	}
-	info, err := tmp.Stat()
+	path := filepath.Join(tmpDir, name)
+	tmp, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0600)
 	if err != nil {
-		_ = tmp.Close()
-		return "", 0, err
+		return "", 0, fmt.Errorf("create upload staging file: %w", err)
 	}
-	if info.Size() == 0 {
-		_ = tmp.Close()
+	written, copyErr := copyLimited(tmp, body, s.maxBytes)
+	closeErr := tmp.Close()
+	if copyErr != nil {
+		return "", written, copyErr
+	}
+	if closeErr != nil {
+		return "", written, closeErr
+	}
+	if written == 0 {
 		return "", 0, errors.New("empty upload")
 	}
-	if err := tmp.Close(); err != nil {
-		return "", 0, err
-	}
 
-	addArgs := []string{"upload", "source", "add", s.storachaSpace, tmpPath}
+	addArgs := []string{"upload", "source", "add", s.storachaSpace, path}
 	uploadArgs := []string{"upload", s.storachaSpace}
 	if s.storachaDataDir != "" {
 		addArgs = append([]string{"--data-dir", s.storachaDataDir}, addArgs...)
@@ -183,21 +195,20 @@ func (s *Web3Storage) uploadStoracha(ctx context.Context, body io.Reader, filena
 	}
 	addOutput, err := runCommand(ctx, s.storachaBin, addArgs...)
 	if err != nil {
-		return "", info.Size(), fmt.Errorf("Storacha source registration failed: %w", err)
+		return "", written, fmt.Errorf("Storacha source registration failed: %w", err)
 	}
 	uploadOutput, err := runCommand(ctx, s.storachaBin, uploadArgs...)
 	if err != nil {
-		return "", info.Size(), fmt.Errorf("Storacha upload failed: %w", err)
+		return "", written, fmt.Errorf("Storacha upload failed: %w", err)
 	}
 	cid := firstCID(uploadOutput)
 	if cid == "" {
 		cid = firstCID(addOutput)
 	}
 	if !validCID(cid) {
-		return "", info.Size(), errors.New("Storacha upload completed without a valid root cid")
+		return "", written, errors.New("Storacha upload completed without a valid root cid")
 	}
-	_ = filename // Guppy derives the UnixFS name from the uploaded source path.
-	return cid, info.Size(), nil
+	return cid, written, nil
 }
 
 func (s *Web3Storage) Status(ctx context.Context, cid string) (map[string]any, error) {
