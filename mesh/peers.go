@@ -51,7 +51,7 @@ type PeerClient struct {
 	client            *http.Client
 	secret            string
 	maxRetry          int
-	cooldown           time.Duration
+	cooldown          time.Duration
 	discoveryMu       sync.RWMutex
 	discoveryCache    map[string]discoveryCacheEntry
 	discoveryCacheTTL time.Duration
