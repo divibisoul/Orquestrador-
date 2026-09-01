@@ -50,12 +50,24 @@ This document is an evidence map, not a substitute for executable code. A functi
 39 Health — device/reservation/discovery health.
 40 Shutdown — stop admission, clear reservations and drain executions.
 
+## Backend and storage integration
+
+- Unified HTTP backend exposes health, capabilities, execution, intent and storage endpoints.
+- Supabase persistence is server-side only and uses `service_role`; client roles cannot directly access N07 run/artifact tables.
+- Current Storacha path uses the Guppy client with a configured Space and persistent `--data-dir`; legacy Web3.Storage-compatible support remains explicit compatibility behavior.
+- Upload size limits, CID validation, cancellation handling and HTTP error propagation are tested.
+- Production container build is validated in CI; container publication to GHCR is automated on main/tag pushes.
+
 ## Cross-cutting verification
+
 - Mesh protocol recognizes N01..N07.
 - Neural bridges exist for N01..N06 and target N07.
 - N07 exposes identity and bidirectional topology metadata.
 - N07 provides canonical Mesh ingress plus direct control-plane endpoints.
 - Federated parallel execution has parent/child correlation and required-task semantics.
-- Current-head CI is the acceptance gate; live six-runtime E2E is separate and environment-dependent.
-- Active backend/storage front now has isolated regression coverage for Web3 Storage and Supabase adapters: upload/status/auth/error/cancellation and REST insert/validation paths are green on GitHub Actions run #310 / verify job.
-- The backend/storage branch must remain a candidate integration until its PR is rebased/retargeted to the current main and its exact merge-base CI is green.
+- Current-head CI is an acceptance gate; live seven-runtime E2E remains separate and requires concurrently deployed runtimes.
+- Legacy artifacts are removed only after dependency analysis proves they are outside the active execution graph.
+
+## Release boundary
+
+N07 source, backend, Supabase persistence, storage adapters and production packaging are structurally implemented and automated-tested. Final ONLINE status still requires actual deployed runtime endpoints, configured secrets/Space credentials and a real non-ping seven-nucleus capability transaction.
