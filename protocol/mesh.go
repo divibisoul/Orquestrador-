@@ -1,17 +1,8 @@
 package protocol
 
-import (
- "crypto/hmac"
- "crypto/sha256"
- "encoding/hex"
- "encoding/json"
- "errors"
- "strings"
- "sync"
- "time"
-)
-const (SoulMeshVersion="1.0"; SoulMeshContractVersion="1.1.0")
-type MeshEnvelope struct {Version string `json:"version"`;ContractVersion string `json:"contractVersion"`;MessageID string `json:"messageId"`;Source string `json:"source"`;Target string `json:"target"`;Timestamp int64 `json:"timestamp"`;Nonce string `json:"nonce"`;CorrelationID string `json:"correlationId"`;Type string `json:"type"`;TTL *int64 `json:"ttl,omitempty"`;HMAC string `json:"hmac"`;Payload map[string]any `json:"payload"`;Operation string `json:"operation,omitempty"`;Metadata map[string]string `json:"metadata,omitempty"`}
+import("crypto/hmac";"crypto/sha256";"encoding/hex";"encoding/json";"errors";"strings";"sync";"time")
+const(SoulMeshVersion="1.0";SoulMeshContractVersion="1.2")
+type MeshEnvelope struct{Version string `json:"version"`;ContractVersion string `json:"contractVersion"`;MessageID string `json:"messageId"`;Source string `json:"source"`;Target string `json:"target"`;Timestamp int64 `json:"timestamp"`;Nonce string `json:"nonce"`;CorrelationID string `json:"correlationId"`;Type string `json:"type"`;TTL *int64 `json:"ttl,omitempty"`;HMAC string `json:"hmac"`;Payload map[string]any `json:"payload"`;Operation string `json:"operation,omitempty"`;Metadata map[string]string `json:"metadata,omitempty"`}
 var nonceMu sync.Mutex
 var seenNonces=map[string]int64{}
 func(m MeshEnvelope)Validate()error{if m.Version!=SoulMeshVersion{return errors.New("unsupported Mesh envelope version")};if m.ContractVersion!=SoulMeshContractVersion{return errors.New("unsupported Mesh contract version")};if strings.TrimSpace(m.MessageID)==""{return errors.New("messageId is required")};if strings.TrimSpace(m.CorrelationID)==""{return errors.New("correlationId is required")};if strings.TrimSpace(m.Source)==""||strings.TrimSpace(m.Target)==""{return errors.New("source and target are required")};if m.Source==m.Target&&m.Target!="BROADCAST"{return errors.New("source and target cannot be identical")};if strings.TrimSpace(m.Nonce)==""{return errors.New("nonce is required")};if m.Timestamp<=0{return errors.New("timestamp is required")};if strings.TrimSpace(m.Type)==""{return errors.New("type is required")};if m.Payload==nil{return errors.New("payload is required")};if m.TTL!=nil&&*m.TTL<0{return errors.New("ttl cannot be negative")};return nil}
