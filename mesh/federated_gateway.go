@@ -1,6 +1,6 @@
 package mesh
 
-import("bytes";"context";"encoding/json";"errors";"io";"net/http";"strings";"time";"github.com/divibisoul/Orquestrador-/orchestrator";"github.com/divibisoul/Orquestrador-/protocol")
+import("bytes";"context";"encoding/json";"errors";"io";"net/http";"strings";"time";"github.com/divibisoul/Orquestrador-/orchestrator")
 
 type FederatedGateway struct{base *HTTPGateway;peers *PeerClient;engine *orchestrator.Engine}
 
