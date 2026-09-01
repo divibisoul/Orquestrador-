@@ -1,11 +1,7 @@
 package mesh
 
 import (
-	"bytes"
 	"context"
-	"crypto/hmac"
-	"crypto/sha256"
-	"encoding/hex"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -67,18 +63,21 @@ func TestN01ToN07FederatesAcrossN04N05N06(t *testing.T) {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
-			wirePayload, err := json.Marshal(map[string]any{"protocol": "soul-mesh/1", "contractVersion": protocol.SoulMeshContractVersion, "id": responseID, "correlationId": in.CorrelationID, "source": nucleus, "target": protocol.N07, "kind": "response", "capability": capability, "payload": payload, "timestamp": responseTimestamp, "nonce": responseNonce, "hmac": env.HMAC})
+			wirePayload, err := json.Marshal(env)
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
-			var roundTrip map[string]any
+			var roundTrip protocol.MeshEnvelope
 			if err := json.Unmarshal(wirePayload, &roundTrip); err != nil {
 				http.Error(w, "internal test response JSON round-trip failed", http.StatusInternalServerError)
 				return
 			}
-			if got, _ := roundTrip["hmac"].(string); got != env.HMAC {
-				http.Error(w, "internal test response HMAC round-trip changed signature", http.StatusInternalServerError)
+			if err := protocol.VerifyHMAC(roundTrip, federationE2ESecret, time.Now()); err == nil {
+				http.Error(w, "internal test response replay validation unexpectedly succeeded", http.StatusInternalServerError)
+				return
+			} else if !strings.Contains(err.Error(), "replay detected") {
+				http.Error(w, "internal test response HMAC round-trip validation failed: "+err.Error(), http.StatusInternalServerError)
 				return
 			}
 			w.Header().Set("content-type", "application/json")
@@ -125,24 +124,17 @@ func TestN01ToN07FederatesAcrossN04N05N06(t *testing.T) {
 		map[string]any{"id": "n06", "capability": "e2e.n06", "payload": map[string]any{"values": []any{6, 6}}, "required": true},
 	}}
 	correlation := "e2e-n01-to-n07"
-	wire := canonicalRequest("request", "supergpu.parallel", correlation, nil)
-	wire["payload"] = payload
-	raw := wire["payload"].(map[string]any)
-	raw["capability"] = "supergpu.parallel"
-	canonical, err := canonicalN01Bytes(canonicalWireEnvelope{Protocol: "soul-mesh/1", ContractVersion: protocol.SoulMeshContractVersion, ID: wire["id"].(string), CorrelationID: correlation, Source: "N01", Target: "N07", Kind: "request", Capability: "supergpu.parallel", Payload: raw, Timestamp: wire["timestamp"].(int64), Nonce: wire["nonce"].(string)}, wire["nonce"].(string))
+	request := protocol.MeshEnvelope{Version: protocol.SoulMeshVersion, ContractVersion: protocol.SoulMeshContractVersion, MessageID: protocol.NewTraceID(), Source: "N01", Target: protocol.N07, Timestamp: time.Now().UnixMilli(), Nonce: protocol.NewTraceID(), CorrelationID: correlation, Type: "request", Payload: map[string]any{"capability": "supergpu.parallel", "payload": payload}}
+	if err := protocol.SignHMAC(&request, federationE2ESecret); err != nil {
+		t.Fatal(err)
+	}
+	body, err := json.Marshal(request)
 	if err != nil {
 		t.Fatal(err)
 	}
-	mac := hmac.New(sha256.New, []byte(federationE2ESecret))
-	_, _ = mac.Write(canonical)
-	wire["hmac"] = hex.EncodeToString(mac.Sum(nil))
-	body, err := json.Marshal(wire)
-	if err != nil {
-		t.Fatal(err)
-	}
-	req := httptest.NewRequest(http.MethodPost, "/api/soul-mesh", bytes.NewReader(body))
-	req.Header.Set("x-soul-mesh-nonce", wire["nonce"].(string))
-	req.Header.Set("x-soul-mesh-hmac", wire["hmac"].(string))
+	req := httptest.NewRequest(http.MethodPost, "/api/soul-mesh", strings.NewReader(string(body)))
+	req.Header.Set("x-soul-mesh-nonce", request.Nonce)
+	req.Header.Set("x-soul-mesh-hmac", request.HMAC)
 	rec := httptest.NewRecorder()
 	gateway.ServeHTTP(rec, req)
 	if rec.Code != http.StatusOK {
