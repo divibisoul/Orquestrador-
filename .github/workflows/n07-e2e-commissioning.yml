@@ -67,9 +67,74 @@ jobs:
           curl -i -H 'Authorization: Bearer commissioning-local-token' \
             -H 'Content-Type: application/json' \
             -X POST http://127.0.0.1:18080/execute \
-            -d '{"operation":"neural.forward@1.0.0","payload":[0.1,0.2],"metadata":{"source":"commissioning"}}'
+            -d '{"operation":"neural.forward@1.0.0","payload":[0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8],"metadata":{"source":"commissioning"}}'
       - name: Stop runtime and emit logs
         if: always()
         run: |
           docker logs n07-commissioning || true
           docker stop n07-commissioning || true
+
+  configured-staging:
+    if: ${{ secrets.N07_APP_TOKEN != '' && secrets.WEB3_STORAGE_TOKEN != '' && secrets.SUPABASE_URL != '' && secrets.SUPABASE_SERVICE_ROLE_KEY != '' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Pull published image
+        run: docker pull ghcr.io/divibisoul/soul-n07-orquestrador:latest
+      - name: Start credentialed staging runtime
+        env:
+          N07_APP_TOKEN: ${{ secrets.N07_APP_TOKEN }}
+          WEB3_STORAGE_TOKEN: ${{ secrets.WEB3_STORAGE_TOKEN }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          SUPABASE_RUNS_TABLE: n07_runs
+          SUPABASE_ARTIFACTS_TABLE: n07_artifacts
+          N07_BACKEND_TIMEOUT: 30s
+        run: |
+          set -euo pipefail
+          docker run -d --rm --name n07-real-staging \
+            -p 18081:8080 \
+            -e N07_APP_TOKEN="$N07_APP_TOKEN" \
+            -e WEB3_STORAGE_TOKEN="$WEB3_STORAGE_TOKEN" \
+            -e SUPABASE_URL="$SUPABASE_URL" \
+            -e SUPABASE_SERVICE_ROLE_KEY="$SUPABASE_SERVICE_ROLE_KEY" \
+            -e SUPABASE_RUNS_TABLE="$SUPABASE_RUNS_TABLE" \
+            -e SUPABASE_ARTIFACTS_TABLE="$SUPABASE_ARTIFACTS_TABLE" \
+            -e N07_BACKEND_TIMEOUT="$N07_BACKEND_TIMEOUT" \
+            -e N07_HTTP_ADDR=:8080 \
+            ghcr.io/divibisoul/soul-n07-orquestrador:latest
+          for i in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:18081/health >/tmp/health.json; then break; fi
+            sleep 2
+          done
+          cat /tmp/health.json
+      - name: Real staging health and execution
+        env:
+          N07_APP_TOKEN: ${{ secrets.N07_APP_TOKEN }}
+        run: |
+          set -euo pipefail
+          curl -i http://127.0.0.1:18081/health
+          curl -i -H "Authorization: Bearer $N07_APP_TOKEN" http://127.0.0.1:18081/v1/health
+          curl -i -H "Authorization: Bearer $N07_APP_TOKEN" \
+            -H 'Content-Type: application/json' \
+            -X POST http://127.0.0.1:18081/v1/execute \
+            -d '{"operation":"neural.forward@1.0.0","payload":[0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8],"metadata":{"source":"real-staging"}}'
+      - name: Real Web3 storage round trip
+        env:
+          N07_APP_TOKEN: ${{ secrets.N07_APP_TOKEN }}
+        run: |
+          set -euo pipefail
+          printf 'SOUL N07 real staging commissioning\n' > /tmp/n07-commissioning.txt
+          upload=$(curl -sS -i -H "Authorization: Bearer $N07_APP_TOKEN" \
+            -F 'file=@/tmp/n07-commissioning.txt;filename=n07-commissioning.txt' \
+            -X POST http://127.0.0.1:18081/v1/storage/upload)
+          printf '%s\n' "$upload"
+          cid=$(printf '%s\n' "$upload" | sed -n 's/.*"cid":"\([^"]*\)".*/\1/p' | head -n1)
+          test -n "$cid"
+          curl -i -H "Authorization: Bearer $N07_APP_TOKEN" "http://127.0.0.1:18081/v1/storage/status/$cid"
+          curl -i -H "Authorization: Bearer $N07_APP_TOKEN" "http://127.0.0.1:18081/v1/storage/object/$cid"
+      - name: Stop credentialed staging and emit logs
+        if: always()
+        run: |
+          docker logs n07-real-staging || true
+          docker stop n07-real-staging || true
