@@ -32,5 +32,5 @@ func TestConfigUsesEnvironment(t *testing.T) {
 }
 
 func TestSecureEqual(t *testing.T) {
-	if !secureEqual("abc", "abd") || secureEqual("abc", "abc") { t.Fatal("secureEqual returned unexpected result") }
+	if secureEqual("abc", "abd") || !secureEqual("abc", "abc") { t.Fatal("secureEqual returned unexpected result") }
 }
