@@ -7,6 +7,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -23,6 +24,29 @@ import (
 
 const federationE2ESecret = "n07-e2e-secret-0123456789abcdef"
 
+func verifyCanonicalPeerRequest(w canonicalWireEnvelope, secret string, now time.Time) error {
+	if w.Protocol != "soul-mesh/1" || w.ContractVersion != protocol.SoulMeshContractVersion || w.Kind != "request" {
+		return errors.New("canonical Mesh request identity mismatch")
+	}
+	if w.Source != protocol.N07 || w.Target == "" || w.ID == "" || w.CorrelationID == "" || w.Timestamp <= 0 || w.Nonce == "" || w.HMAC == "" {
+		return errors.New("canonical Mesh request fields missing")
+	}
+	if delta := now.UnixMilli() - w.Timestamp; delta > 30000 || delta < -30000 {
+		return errors.New("canonical Mesh request timestamp outside accepted clock skew")
+	}
+	unsigned, err := canonicalN01Bytes(w, w.Nonce)
+	if err != nil {
+		return err
+	}
+	mac := hmac.New(sha256.New, []byte(secret))
+	_, _ = mac.Write(unsigned)
+	actual, err := hex.DecodeString(w.HMAC)
+	if err != nil || !hmac.Equal(mac.Sum(nil), actual) {
+		return errors.New("invalid canonical Mesh request HMAC")
+	}
+	return nil
+}
+
 func TestN01ToN07FederatesAcrossN04N05N06(t *testing.T) {
 	for _, key := range []string{"SOUL_MESH_N04_URL", "SOUL_MESH_N05_URL", "SOUL_MESH_N06_URL", "SOUL_MESH_HMAC_SECRET", "N07_MESH_ALLOW_UNAUTH_LOCAL"} {
 		t.Setenv(key, "")
@@ -34,18 +58,18 @@ func TestN01ToN07FederatesAcrossN04N05N06(t *testing.T) {
 	for _, nucleus := range []string{"N04", "N05", "N06"} {
 		nucleus := nucleus
 		servers[nucleus] = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			var in protocol.MeshEnvelope
+			var in canonicalWireEnvelope
 			if err := json.NewDecoder(r.Body).Decode(&in); err != nil {
 				http.Error(w, err.Error(), http.StatusBadRequest)
 				return
 			}
-			if err := protocol.VerifyHMAC(in, federationE2ESecret, time.Now()); err != nil {
+			if err := verifyCanonicalPeerRequest(in, federationE2ESecret, time.Now()); err != nil {
 				http.Error(w, err.Error(), http.StatusUnauthorized)
 				return
 			}
 			mu.Lock()
 			defer mu.Unlock()
-			capability := in.Capability()
+			capability := strings.TrimSpace(in.Capability)
 			payload := map[string]any{}
 			switch capability {
 			case "mesh.discovery", "mesh.describe":
