@@ -19,15 +19,15 @@ var cidPattern = regexp.MustCompile(`^(?:b[a-z2-7][a-z0-9]{20,}|Qm[1-9A-HJ-NP-Za
 var cidFinder = regexp.MustCompile(`(?:https?://[^/]+/ipfs/)?(b[a-z2-7][a-z0-9]{20,}|Qm[1-9A-HJ-NP-Za-km-z]{40,}|bafk[a-z0-9]{20,})`)
 
 type Web3Storage struct {
-	baseURL        string
-	token          string
-	client         *http.Client
-	gateway        string
-	mode           string
-	storachaBin    string
-	storachaSpace  string
+	baseURL         string
+	token           string
+	client          *http.Client
+	gateway         string
+	mode            string
+	storachaBin     string
+	storachaSpace   string
 	storachaDataDir string
-	maxBytes       int64
+	maxBytes        int64
 }
 
 func NewWeb3Storage(cfg Config) *Web3Storage {
