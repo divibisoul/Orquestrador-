@@ -6,12 +6,16 @@ on:
       - '**/*.go'
       - 'go.mod'
       - 'go.sum'
+      - 'Dockerfile'
+      - 'supabase/migrations/**'
       - '.github/workflows/n07-ci.yml'
   pull_request:
     paths:
       - '**/*.go'
       - 'go.mod'
       - 'go.sum'
+      - 'Dockerfile'
+      - 'supabase/migrations/**'
       - '.github/workflows/n07-ci.yml'
   workflow_dispatch:
 
@@ -51,7 +55,6 @@ jobs:
           git push origin HEAD:main
 
   verify:
-    if: true
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -87,3 +90,20 @@ jobs:
         run: go test -race ./...
       - name: Build
         run: go build ./...
+      - name: Backend regression
+        run: go test ./backend -run 'Test(Web3Storage|Supabase|Server|Intent)' -count=1
+
+  container:
+    needs: verify
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build production image
+        run: docker build --pull --tag n07-orquestrador:ci .
+      - name: Inspect image
+        run: |
+          set -euo pipefail
+          docker image inspect n07-orquestrador:ci >/dev/null
+          docker run --rm n07-orquestrador:ci /app/n07 -h >/dev/null 2>&1 || true
