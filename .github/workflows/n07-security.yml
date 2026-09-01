@@ -1,0 +1,40 @@
+name: N07 Orquestrador Security
+
+on:
+  push:
+    paths:
+      - '**.go'
+      - 'go.mod'
+      - 'go.sum'
+      - '.github/workflows/n07-security.yml'
+  pull_request:
+    paths:
+      - '**.go'
+      - 'go.mod'
+      - 'go.sum'
+      - '.github/workflows/n07-security.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  gosec:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.25.x'
+          cache: true
+      - name: Download modules
+        run: go mod download
+      - name: Verify format
+        run: test -z "$(gofmt -l .)"
+      - name: Vet
+        run: go vet ./...
+      - name: Build
+        run: go build ./...
+      - name: Install gosec
+        run: go install github.com/securego/gosec/v2/cmd/gosec@v2.28.0
+      - name: Security scan
+        run: gosec -no-fail ./...
