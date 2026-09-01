@@ -6,28 +6,28 @@
 
 Branch: `upgrade/n07-production-v7`
 
-Último commit verificado nesta rodada: `3c7edd33235c93244f326a1895aedc30bb80cb43`
+Último commit verificado nesta rodada: `3e08c01b1fb3552d280ae60460c14ec79821cfa7`
 
 ### Gráfico operacional
 
 ```text
 Implementação das 40 funções    ████████████████████ 100% declaradas/implementadas
-Testes das 40 funções           █████████████████░░░  ~85% evidência direta ou por fluxo
-Integração Mesh/N07             ██████████████░░░░░░  70% contrato + ponte executável
-N01–N06 externo real             █████░░░░░░░░░░░░░░  25% ainda não demonstrado
-Ferramentas/funções fusionadas  ████░░░░░░░░░░░░░░░░  20% contrato preparado; fusão final pendente
-Produção/activation gate        ████░░░░░░░░░░░░░░░░  20% dependente das provas externas
+Evidência executável             ████████████████████ 40/40 por teste direto/fluxo
+Integração Mesh/N07              ███████████████░░░░░ 75% contrato + ponte executável
+N01–N06 externo real             █████░░░░░░░░░░░░░░ 25% ainda não demonstrado
+Ferramentas/funções fusionadas   █████░░░░░░░░░░░░░  25% contrato preparado; fusão final pendente
+Produção/activation gate         █████░░░░░░░░░░░░░  25% dependente das provas externas
 ```
 
 ## Matriz por núcleo
 
-| Núcleo | Funções | Implementação | Evidência de teste | Integração |
+| Núcleo | Funções | Implementação | Evidência executável | Integração |
 |---|---:|---:|---:|---:|
-| Orchestrator | 10 | 10/10 | 9/10 | 8/10 |
-| Neural | 10 | 10/10 | 9/10 | 6/10 |
+| Orchestrator | 10 | 10/10 | 10/10 | 8/10 |
+| Neural | 10 | 10/10 | 10/10 | 6/10 |
 | Prefrontal | 10 | 10/10 | 10/10 | 7/10 |
-| SuperGPU | 10 | 10/10 | 9/10 | 6/10 |
-| **Total** | **40** | **40/40** | **37/40** | **27/40** |
+| SuperGPU | 10 | 10/10 | 10/10 | 6/10 |
+| **Total** | **40** | **40/40** | **40/40** | **27/40** |
 
 ## Pontes que já existem
 
