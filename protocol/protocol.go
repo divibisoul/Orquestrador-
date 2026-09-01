@@ -49,24 +49,42 @@ func NewMessage(source, target, kind, operation string, payload []float64) Messa
 }
 
 func (m Message) Validate() error {
-	if m.Version != Version { return errors.New("unsupported protocol version") }
-	if strings.TrimSpace(m.TraceID) == "" { return errors.New("trace_id is required") }
-	if strings.TrimSpace(m.Source) == "" || strings.TrimSpace(m.Target) == "" { return errors.New("source and target are required") }
-	if strings.TrimSpace(m.Kind) == "" || strings.TrimSpace(m.Operation) == "" { return errors.New("kind and operation are required") }
-	if m.Priority < 0 || m.Priority > 100 { return errors.New("priority must be between 0 and 100") }
-	if !m.Deadline.IsZero() && time.Now().After(m.Deadline) { return contextDeadlineError{} }
+	if m.Version != Version {
+		return errors.New("unsupported protocol version")
+	}
+	if strings.TrimSpace(m.TraceID) == "" {
+		return errors.New("trace_id is required")
+	}
+	if strings.TrimSpace(m.Source) == "" || strings.TrimSpace(m.Target) == "" {
+		return errors.New("source and target are required")
+	}
+	if strings.TrimSpace(m.Kind) == "" || strings.TrimSpace(m.Operation) == "" {
+		return errors.New("kind and operation are required")
+	}
+	if m.Priority < 0 || m.Priority > 100 {
+		return errors.New("priority must be between 0 and 100")
+	}
+	if !m.Deadline.IsZero() && time.Now().After(m.Deadline) {
+		return contextDeadlineError{}
+	}
 	return nil
 }
 
 func Encode(m Message) ([]byte, error) {
-	if err := m.Validate(); err != nil { return nil, err }
+	if err := m.Validate(); err != nil {
+		return nil, err
+	}
 	return json.Marshal(m)
 }
 
 func Decode(data []byte) (Message, error) {
 	var m Message
-	if err := json.Unmarshal(data, &m); err != nil { return Message{}, err }
-	if err := m.Validate(); err != nil { return Message{}, err }
+	if err := json.Unmarshal(data, &m); err != nil {
+		return Message{}, err
+	}
+	if err := m.Validate(); err != nil {
+		return Message{}, err
+	}
 	return m, nil
 }
 
@@ -79,4 +97,5 @@ func Propagate(parent Message, source, target, operation string, payload []float
 }
 
 type contextDeadlineError struct{}
+
 func (contextDeadlineError) Error() string { return "message deadline exceeded" }

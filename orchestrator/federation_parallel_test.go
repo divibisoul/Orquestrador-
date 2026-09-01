@@ -23,9 +23,9 @@ func TestFederationDelegatePreservesArbitraryPayload(t *testing.T) {
 		}
 		_ = json.NewEncoder(w).Encode(map[string]any{
 			"correlationId": in["correlationId"],
-			"source": "N01",
-			"target": "N07",
-			"payload": map[string]any{"document": "validated"},
+			"source":        "N01",
+			"target":        "N07",
+			"payload":       map[string]any{"document": "validated"},
 		})
 	}))
 	defer server.Close()
@@ -54,9 +54,9 @@ func TestFederationExecuteParallelAggregatesIndependentTasks(t *testing.T) {
 		}
 		_ = json.NewEncoder(w).Encode(map[string]any{
 			"correlationId": in["correlationId"],
-			"source": "N02",
-			"target": "N07",
-			"payload": map[string]any{"ok": true},
+			"source":        "N02",
+			"target":        "N07",
+			"payload":       map[string]any{"ok": true},
 		})
 	}))
 	defer server.Close()

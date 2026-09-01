@@ -13,12 +13,12 @@ import (
 )
 
 type CapabilityStep struct {
-	ID           string
-	Capability   string
-	Payload      map[string]any
-	DependsOn    []string
-	Parallel     bool
-	Required     bool
+	ID         string
+	Capability string
+	Payload    map[string]any
+	DependsOn  []string
+	Parallel   bool
+	Required   bool
 }
 
 type CapabilityPlan struct {
