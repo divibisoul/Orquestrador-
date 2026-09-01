@@ -91,18 +91,28 @@ func TestN01ToN07FederatesAcrossN04N05N06(t *testing.T) {
 	t.Setenv("SOUL_MESH_N06_URL", servers["N06"].URL)
 
 	n, err := neural.New(8, .05)
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	c, err := prefrontal.New(.10, 32)
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	g := supergpu.New(nil)
 	g.Discover()
 	e, err := orchestrator.New(n, c, g)
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	gateway := NewEnhancedFederatedHTTPGateway(e)
 	for _, nucleus := range []string{"N04", "N05", "N06"} {
 		discovery, discoveryErr := gateway.base.peers.Discover(context.Background(), nucleus)
-		if discoveryErr != nil { t.Fatalf("discovery %s failed: %v", nucleus, discoveryErr) }
-		if !supportsExecutableCapability(discovery, "e2e."+strings.ToLower(nucleus)) { t.Fatalf("discovery %s omitted executable capability: %#v", nucleus, discovery) }
+		if discoveryErr != nil {
+			t.Fatalf("discovery %s failed: %v", nucleus, discoveryErr)
+		}
+		if !supportsExecutableCapability(discovery, "e2e."+strings.ToLower(nucleus)) {
+			t.Fatalf("discovery %s omitted executable capability: %#v", nucleus, discovery)
+		}
 	}
 
 	payload := map[string]any{"tasks": []any{
@@ -116,30 +126,50 @@ func TestN01ToN07FederatesAcrossN04N05N06(t *testing.T) {
 	raw := wire["payload"].(map[string]any)
 	raw["capability"] = "supergpu.parallel"
 	canonical, err := canonicalN01Bytes(canonicalWireEnvelope{Protocol: "soul-mesh/1", ContractVersion: protocol.SoulMeshContractVersion, ID: wire["id"].(string), CorrelationID: correlation, Source: "N01", Target: "N07", Kind: "request", Capability: "supergpu.parallel", Payload: raw, Timestamp: wire["timestamp"].(int64), Nonce: wire["nonce"].(string)}, wire["nonce"].(string))
-	if err != nil { t.Fatal(err) }
-	mac := hmac.New(sha256.New, []byte(federationE2ESecret)); _, _ = mac.Write(canonical)
+	if err != nil {
+		t.Fatal(err)
+	}
+	mac := hmac.New(sha256.New, []byte(federationE2ESecret))
+	_, _ = mac.Write(canonical)
 	wire["hmac"] = hex.EncodeToString(mac.Sum(nil))
 	body, err := json.Marshal(wire)
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	req := httptest.NewRequest(http.MethodPost, "/api/soul-mesh", bytes.NewReader(body))
 	req.Header.Set("x-soul-mesh-nonce", wire["nonce"].(string))
 	req.Header.Set("x-soul-mesh-hmac", wire["hmac"].(string))
 	rec := httptest.NewRecorder()
 	gateway.ServeHTTP(rec, req)
-	if rec.Code != http.StatusOK { t.Fatalf("N01->N07 federation failed: code=%d body=%s", rec.Code, rec.Body.String()) }
+	if rec.Code != http.StatusOK {
+		t.Fatalf("N01->N07 federation failed: code=%d body=%s", rec.Code, rec.Body.String())
+	}
 	var out map[string]any
-	if err := json.NewDecoder(rec.Body).Decode(&out); err != nil { t.Fatal(err) }
-	if out["correlationId"] != correlation || out["kind"] != "response" { t.Fatalf("unexpected final envelope: %#v", out) }
+	if err := json.NewDecoder(rec.Body).Decode(&out); err != nil {
+		t.Fatal(err)
+	}
+	if out["correlationId"] != correlation || out["kind"] != "response" {
+		t.Fatalf("unexpected final envelope: %#v", out)
+	}
 	result, ok := out["payload"].(map[string]any)
-	if !ok || result["requiredFailure"] != false { t.Fatalf("federation reported required failure: %#v", result) }
+	if !ok || result["requiredFailure"] != false {
+		t.Fatalf("federation reported required failure: %#v", result)
+	}
 	tasks, ok := result["tasks"].([]any)
-	if !ok || len(tasks) != 3 { t.Fatalf("expected three federated tasks: %#v", result["tasks"]) }
+	if !ok || len(tasks) != 3 {
+		t.Fatalf("expected three federated tasks: %#v", result["tasks"])
+	}
 	for _, taskID := range []string{"n04", "n05", "n06"} {
 		found := false
 		for _, item := range tasks {
 			row := item.(map[string]any)
-			if row["id"] == taskID && row["status"] == "ok" { found = true; break }
+			if row["id"] == taskID && row["status"] == "ok" {
+				found = true
+				break
+			}
 		}
-		if !found { t.Fatalf("task %s did not complete successfully: %#v", taskID, tasks) }
+		if !found {
+			t.Fatalf("task %s did not complete successfully: %#v", taskID, tasks)
+		}
 	}
 }
