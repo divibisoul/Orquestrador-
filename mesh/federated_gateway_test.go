@@ -1,6 +1,9 @@
 package mesh
 
-import "testing"
+import (
+	"strings"
+	"testing"
+)
 
 func TestCapabilityInDescriptionAcceptsExecutableOperations(t *testing.T) {
 	description := map[string]any{
@@ -27,18 +30,7 @@ func TestCapabilityInDescriptionAcceptsExecutableCapabilities(t *testing.T) {
 }
 
 func TestIOReadLimitedRejectsOversizePayload(t *testing.T) {
-	if _, err := ioReadLimited(stringReader("12345"), 4); err == nil {
+	if _, err := ioReadLimited(strings.NewReader("12345"), 4); err == nil {
 		t.Fatal("expected oversized payload to be rejected")
 	}
-}
-
-type stringReader string
-
-func (s stringReader) Read(p []byte) (int, error) {
-	if len(s) == 0 {
-		return 0, nil
-	}
-	n := copy(p, []byte(s))
-	s = s[n:]
-	return n, nil
 }
