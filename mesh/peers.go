@@ -43,11 +43,11 @@ type discoveryCacheEntry struct {
 }
 
 type PeerClient struct {
-	mu               sync.RWMutex
-	peers            map[string]PeerInfo
-	client           *http.Client
-	secret           string
-	maxRetry         int
+	mu                sync.RWMutex
+	peers             map[string]PeerInfo
+	client            *http.Client
+	secret            string
+	maxRetry          int
 	cooldown          time.Duration
 	discoveryMu       sync.RWMutex
 	discoveryCache    map[string]discoveryCacheEntry

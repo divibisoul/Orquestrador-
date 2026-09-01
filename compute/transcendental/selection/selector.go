@@ -13,7 +13,7 @@ type Selection struct {
 	Model              models.PerformanceModel
 	EffectivePrecision core.Precision
 	FallbackUsed       bool
-	Penalty             float64
+	Penalty            float64
 }
 
 func Select(wl core.Workload, catalog []models.PerformanceModel, mode string, strategy string, fallback core.Precision) (Selection, error) {

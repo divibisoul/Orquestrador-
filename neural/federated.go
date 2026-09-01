@@ -105,9 +105,9 @@ func (f *Fabric) assignContext(parent context.Context, task NeuralTask, nucleus 
 	payload := map[string]any{
 		"taskId":         task.ID,
 		"operation":      task.Operation,
-		"payload":        task.Payload,  // legacy compatibility
-		"payload.values": task.Payload,  // canonical neural Mesh vector field
-		"values":         task.Payload,  // compact adapter compatibility
+		"payload":        task.Payload, // legacy compatibility
+		"payload.values": task.Payload, // canonical neural Mesh vector field
+		"values":         task.Payload, // compact adapter compatibility
 		"priority":       task.Priority,
 		"source":         task.Source,
 		"target":         nucleus,
@@ -199,7 +199,7 @@ func (f *Fabric) ParallelContext(ctx context.Context, tasks []NeuralTask) []Fede
 		}()
 	}
 
-	dispatch:
+dispatch:
 	for index := range tasks {
 		select {
 		case jobs <- index:
@@ -254,7 +254,7 @@ func (f *Fabric) parallelMembers(ctx context.Context, task NeuralTask, members [
 		}()
 	}
 
-	dispatch:
+dispatch:
 	for index := range members {
 		select {
 		case jobs <- index:

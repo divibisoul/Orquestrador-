@@ -99,10 +99,10 @@ func (g *FederatedGateway) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	g.base.respond(w, http.StatusOK, envelope, "TASK_RESULT", map[string]any{
-		"delegated":  true,
-		"peer":       peer,
-		"capability": capability,
-		"result":     result["payload"],
+		"delegated":   true,
+		"peer":        peer,
+		"capability":  capability,
+		"result":      result["payload"],
 		"completedAt": time.Now().UnixMilli(),
 	})
 }

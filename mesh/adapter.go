@@ -1,10 +1,138 @@
 package mesh
 
-import("bytes";"context";"encoding/json";"errors";"fmt";"net/http";"os";"strings";"time";"github.com/divibisoul/Orquestrador-/protocol")
+import (
+	"bytes"
+	"context"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"github.com/divibisoul/Orquestrador-/protocol"
+	"net/http"
+	"os"
+	"strings"
+	"time"
+)
 
-type Adapter struct{BaseURL string;Nucleus string;Client *http.Client;ContractVersion string;Secret string;AllowUnauthenticatedLocal bool}
-func New(baseURL string)(*Adapter,error){baseURL=strings.TrimRight(strings.TrimSpace(baseURL),"/");if baseURL==""{return nil,errors.New("mesh base URL is required")};return &Adapter{BaseURL:baseURL,Nucleus:"N07",Client:&http.Client{Timeout:15*time.Second},ContractVersion:protocol.SoulMeshContractVersion,Secret:strings.TrimSpace(os.Getenv("SOUL_MESH_HMAC_SECRET")),AllowUnauthenticatedLocal:strings.EqualFold(strings.TrimSpace(os.Getenv("N07_MESH_ALLOW_UNAUTH_LOCAL")),"true")},nil}
-func(a *Adapter)Envelope(operation,correlation,target string,payload map[string]any)(protocol.MeshEnvelope,error){now:=time.Now().UnixMilli();m:=protocol.MeshEnvelope{Version:protocol.SoulMeshVersion,ContractVersion:protocol.SoulMeshContractVersion,MessageID:protocol.NewTraceID(),Source:a.Nucleus,Target:target,Timestamp:now,Nonce:protocol.NewTraceID(),CorrelationID:correlation,Type:"CAPABILITY_REQUEST",Payload:map[string]any{"capability":operation,"payload":payload}};if a.Secret==""&&!a.AllowUnauthenticatedLocal{return m,errors.New("Mesh HMAC secret is not configured")};if a.Secret!=""{if err:=protocol.SignHMAC(&m,a.Secret);err!=nil{return m,err}};return m,m.Validate()}
-func(a *Adapter)Send(ctx context.Context,targetURL string,m protocol.MeshEnvelope)(map[string]any,error){if ctx==nil{return nil,errors.New("context is nil")};if err:=m.Validate();err!=nil{return nil,err};if a.Secret!=""{if err:=protocol.SignHMAC(&m,a.Secret);err!=nil{return nil,err}}else if !a.AllowUnauthenticatedLocal{return nil,errors.New("Mesh HMAC secret is not configured")};b,err:=protocol.EncodeMesh(m);if err!=nil{return nil,err};req,err:=http.NewRequestWithContext(ctx,http.MethodPost,strings.TrimRight(targetURL,"/"),bytes.NewReader(b));if err!=nil{return nil,err};req.Header.Set("Content-Type","application/json");req.Header.Set("X-Soul-Contract-Version",protocol.SoulMeshContractVersion);resp,err:=a.Client.Do(req);if err!=nil{return nil,err};defer resp.Body.Close();var envelope protocol.MeshEnvelope;if err:=json.NewDecoder(resp.Body).Decode(&envelope);err!=nil{return nil,err};if resp.StatusCode<200||resp.StatusCode>=300{return map[string]any{"status":resp.StatusCode,"payload":envelope.Payload},fmt.Errorf("mesh target returned HTTP %d",resp.StatusCode)};if envelope.ContractVersion!=protocol.SoulMeshContractVersion{return nil,errors.New("mesh response contract version mismatch")};if envelope.CorrelationID!=m.CorrelationID{return nil,errors.New("mesh response correlation mismatch")};if a.Secret!=""{if err:=protocol.VerifyHMAC(envelope,a.Secret,time.Now());err!=nil{return nil,err}};return map[string]any{"contractVersion":envelope.ContractVersion,"correlationId":envelope.CorrelationID,"source":envelope.Source,"target":envelope.Target,"type":envelope.Type,"payload":envelope.Payload},nil}
-func(a *Adapter)Health(ctx context.Context)(map[string]any,error){req,err:=http.NewRequestWithContext(ctx,http.MethodGet,a.BaseURL+"/health",nil);if err!=nil{return nil,err};resp,err:=a.Client.Do(req);if err!=nil{return nil,err};defer resp.Body.Close();var out map[string]any;if err:=json.NewDecoder(resp.Body).Decode(&out);err!=nil{return nil,err};if resp.StatusCode<200||resp.StatusCode>=300{return out,fmt.Errorf("mesh health returned HTTP %d",resp.StatusCode)};return out,nil}
-func(a *Adapter)Register(ctx context.Context,registryURL string,capabilities []string)(map[string]any,error){if registryURL==""{return nil,errors.New("registry URL is required")};body:=map[string]any{"nucleus":a.Nucleus,"contractVersion":protocol.SoulMeshContractVersion,"capabilities":capabilities,"transports":[]string{"LOOPBACK_HTTP","HTTP"}};b,err:=json.Marshal(body);if err!=nil{return nil,err};req,err:=http.NewRequestWithContext(ctx,http.MethodPost,strings.TrimRight(registryURL,"/")+"/registry/nodes",bytes.NewReader(b));if err!=nil{return nil,err};req.Header.Set("Content-Type","application/json");resp,err:=a.Client.Do(req);if err!=nil{return nil,err};defer resp.Body.Close();var out map[string]any;_ = json.NewDecoder(resp.Body).Decode(&out);if resp.StatusCode<200||resp.StatusCode>=300{return out,fmt.Errorf("mesh registry returned HTTP %d",resp.StatusCode)};return out,nil}
+type Adapter struct {
+	BaseURL                   string
+	Nucleus                   string
+	Client                    *http.Client
+	ContractVersion           string
+	Secret                    string
+	AllowUnauthenticatedLocal bool
+}
+
+func New(baseURL string) (*Adapter, error) {
+	baseURL = strings.TrimRight(strings.TrimSpace(baseURL), "/")
+	if baseURL == "" {
+		return nil, errors.New("mesh base URL is required")
+	}
+	return &Adapter{BaseURL: baseURL, Nucleus: "N07", Client: &http.Client{Timeout: 15 * time.Second}, ContractVersion: protocol.SoulMeshContractVersion, Secret: strings.TrimSpace(os.Getenv("SOUL_MESH_HMAC_SECRET")), AllowUnauthenticatedLocal: strings.EqualFold(strings.TrimSpace(os.Getenv("N07_MESH_ALLOW_UNAUTH_LOCAL")), "true")}, nil
+}
+func (a *Adapter) Envelope(operation, correlation, target string, payload map[string]any) (protocol.MeshEnvelope, error) {
+	now := time.Now().UnixMilli()
+	m := protocol.MeshEnvelope{Version: protocol.SoulMeshVersion, ContractVersion: protocol.SoulMeshContractVersion, MessageID: protocol.NewTraceID(), Source: a.Nucleus, Target: target, Timestamp: now, Nonce: protocol.NewTraceID(), CorrelationID: correlation, Type: "CAPABILITY_REQUEST", Payload: map[string]any{"capability": operation, "payload": payload}}
+	if a.Secret == "" && !a.AllowUnauthenticatedLocal {
+		return m, errors.New("Mesh HMAC secret is not configured")
+	}
+	if a.Secret != "" {
+		if err := protocol.SignHMAC(&m, a.Secret); err != nil {
+			return m, err
+		}
+	}
+	return m, m.Validate()
+}
+func (a *Adapter) Send(ctx context.Context, targetURL string, m protocol.MeshEnvelope) (map[string]any, error) {
+	if ctx == nil {
+		return nil, errors.New("context is nil")
+	}
+	if err := m.Validate(); err != nil {
+		return nil, err
+	}
+	if a.Secret != "" {
+		if err := protocol.SignHMAC(&m, a.Secret); err != nil {
+			return nil, err
+		}
+	} else if !a.AllowUnauthenticatedLocal {
+		return nil, errors.New("Mesh HMAC secret is not configured")
+	}
+	b, err := protocol.EncodeMesh(m)
+	if err != nil {
+		return nil, err
+	}
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, strings.TrimRight(targetURL, "/"), bytes.NewReader(b))
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-Soul-Contract-Version", protocol.SoulMeshContractVersion)
+	resp, err := a.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	var envelope protocol.MeshEnvelope
+	if err := json.NewDecoder(resp.Body).Decode(&envelope); err != nil {
+		return nil, err
+	}
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return map[string]any{"status": resp.StatusCode, "payload": envelope.Payload}, fmt.Errorf("mesh target returned HTTP %d", resp.StatusCode)
+	}
+	if envelope.ContractVersion != protocol.SoulMeshContractVersion {
+		return nil, errors.New("mesh response contract version mismatch")
+	}
+	if envelope.CorrelationID != m.CorrelationID {
+		return nil, errors.New("mesh response correlation mismatch")
+	}
+	if a.Secret != "" {
+		if err := protocol.VerifyHMAC(envelope, a.Secret, time.Now()); err != nil {
+			return nil, err
+		}
+	}
+	return map[string]any{"contractVersion": envelope.ContractVersion, "correlationId": envelope.CorrelationID, "source": envelope.Source, "target": envelope.Target, "type": envelope.Type, "payload": envelope.Payload}, nil
+}
+func (a *Adapter) Health(ctx context.Context) (map[string]any, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, a.BaseURL+"/health", nil)
+	if err != nil {
+		return nil, err
+	}
+	resp, err := a.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	var out map[string]any
+	if err := json.NewDecoder(resp.Body).Decode(&out); err != nil {
+		return nil, err
+	}
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return out, fmt.Errorf("mesh health returned HTTP %d", resp.StatusCode)
+	}
+	return out, nil
+}
+func (a *Adapter) Register(ctx context.Context, registryURL string, capabilities []string) (map[string]any, error) {
+	if registryURL == "" {
+		return nil, errors.New("registry URL is required")
+	}
+	body := map[string]any{"nucleus": a.Nucleus, "contractVersion": protocol.SoulMeshContractVersion, "capabilities": capabilities, "transports": []string{"LOOPBACK_HTTP", "HTTP"}}
+	b, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, strings.TrimRight(registryURL, "/")+"/registry/nodes", bytes.NewReader(b))
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := a.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	var out map[string]any
+	_ = json.NewDecoder(resp.Body).Decode(&out)
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return out, fmt.Errorf("mesh registry returned HTTP %d", resp.StatusCode)
+	}
+	return out, nil
+}

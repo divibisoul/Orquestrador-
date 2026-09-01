@@ -134,12 +134,12 @@ func (e *SimulatedExecutor) Execute(ctx context.Context, wl core.Workload) (core
 	}
 	e.push(metrics)
 	artifact, marshalErr := json.Marshal(map[string]any{
-		"workloadId":  wl.ID,
-		"operation":   wl.Operation,
+		"workloadId":   wl.ID,
+		"operation":    wl.Operation,
 		"architecture": sel.Model.Name(),
-		"precision":   sel.EffectivePrecision,
-		"metrics":     metrics,
-		"executedAt":  metrics.Timestamp.UTC().Format(time.RFC3339Nano),
+		"precision":    sel.EffectivePrecision,
+		"metrics":      metrics,
+		"executedAt":   metrics.Timestamp.UTC().Format(time.RFC3339Nano),
 	})
 	if marshalErr != nil {
 		return core.Result{WorkloadID: wl.ID, Metrics: metrics, Error: marshalErr}, marshalErr
@@ -183,7 +183,7 @@ func (e *SimulatedExecutor) ExecutePlan(ctx context.Context, workloads []core.Wo
 			}
 		}()
 	}
-	dispatch:
+dispatch:
 	for i := range workloads {
 		select {
 		case <-ctx.Done():

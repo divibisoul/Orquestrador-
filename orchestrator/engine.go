@@ -1,31 +1,506 @@
 package orchestrator
 
-import("context";"encoding/json";"errors";"math";"regexp";"sort";"strings";"sync";"sync/atomic";"time";"github.com/divibisoul/Orquestrador-/neural";"github.com/divibisoul/Orquestrador-/observability";"github.com/divibisoul/Orquestrador-/prefrontal";"github.com/divibisoul/Orquestrador-/protocol";"github.com/divibisoul/Orquestrador-/supergpu")
-type Handler func(context.Context,protocol.Message)(protocol.Result,error)
-type OperationRegistration struct{Name string;Version string;Handler Handler;Timeout time.Duration;RateLimit int;Schema json.RawMessage;Metadata map[string]string}
-type traceState struct{cancel context.CancelFunc;stage string;device string;started time.Time}
-type rateState struct{window time.Time;count int}
-type routeCacheEntry struct{handler Handler;expires time.Time;operation string;version string}
-type Engine struct{mu sync.RWMutex;handlers map[string]OperationRegistration;active map[string]traceState;routes map[string]routeCacheEntry;rates map[string]rateState;neural *neural.Network;cortex *prefrontal.Cortex;compute *supergpu.Runtime;running atomic.Bool;sequence atomic.Uint64;failures atomic.Uint64;metrics *observability.Metrics;logger *observability.Logger;rateLimit int;routeTTL time.Duration;failureThreshold uint64;breakerUntil time.Time;breakerMu sync.Mutex}
-var semverRx=regexp.MustCompile(`^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(?:-[0-9A-Za-z.-]+)?$`)
-func splitOperation(operation string)(string,string,error){operation=strings.TrimSpace(operation);if operation==""{return "","",errors.New("operation is required")};name,version:=operation,"";if i:=strings.LastIndex(operation,"@");i>0{name,version=operation[:i],operation[i+1:]};if version!=""&&!semverRx.MatchString(version){return "","",errors.New("operation version must semantic version")};return name,version,nil}
-func semverGreater(a,b string)bool{ap:=strings.SplitN(strings.SplitN(a,"-",2)[0],".",3);bp:=strings.SplitN(strings.SplitN(b,"-",2)[0],".",3);for i:=0;i<3;i++{ai,bi:=0,0;for _,ch:=range ap[i]{ai=ai*10+int(ch-'0')};for _,ch:=range bp[i]{bi=bi*10+int(ch-'0')};if ai!=bi{return ai>bi}};return a>b}
-func New(n *neural.Network,c *prefrontal.Cortex,g *supergpu.Runtime)(*Engine,error){if n==nil||c==nil||g==nil{return nil,errors.New("all nucleus services are required")};e:=&Engine{handlers:map[string]OperationRegistration{},active:map[string]traceState{},routes:map[string]routeCacheEntry{},rates:map[string]rateState{},neural:n,cortex:c,compute:g,metrics:&observability.Metrics{},logger:observability.NewLogger("N07.orchestrator"),rateLimit:60,routeTTL:30*time.Second,failureThreshold:5};e.running.Store(true);if err:=e.registerBuiltins();err!=nil{return nil,err};return e,nil}
-func(e *Engine)Register(operation string,handler Handler)error{name,version,err:=splitOperation(operation);if err!=nil{return err};if handler==nil{return errors.New("handler is required")};if version==""{version="1.0.0"};key:=name+"@"+version;e.mu.Lock();defer e.mu.Unlock();if _,ok:=e.handlers[key];ok{return errors.New("operation/version already registered")};e.handlers[key]=OperationRegistration{Name:name,Version:version,Handler:handler,Timeout:15*time.Second,RateLimit:e.rateLimit,Metadata:map[string]string{"capability":name}};for cacheKey:=range e.routes{if strings.HasPrefix(cacheKey,name+"@"){delete(e.routes,cacheKey)}};return nil}
-func(e *Engine)Operations()[]string{e.mu.RLock();ops:=make([]string,0,len(e.handlers));for key,reg:=range e.handlers{if reg.Handler!=nil{ops=append(ops,key)}};e.mu.RUnlock();sort.Strings(ops);return ops}
-func(e *Engine)Route(m protocol.Message)(Handler,error){if err:=m.Validate();err!=nil{return nil,err};name,version,err:=splitOperation(m.Operation);if err!=nil{return nil,err};now:=time.Now();cacheKey:=name+"@"+version;e.mu.RLock();if r,ok:=e.routes[cacheKey];ok&&now.Before(r.expires){e.mu.RUnlock();return r.handler,nil};var reg OperationRegistration;var ok bool;if version!=""{reg,ok=e.handlers[cacheKey]}else{for _,candidate:=range e.handlers{if candidate.Name!=name{continue};if !ok||semverGreater(candidate.Version,reg.Version){reg,ok=candidate,true}}};e.mu.RUnlock();if !ok{return nil,errors.New("no route for operation: "+m.Operation)};if reg.Handler==nil{return nil,errors.New("route handler is nil")};e.mu.Lock();e.routes[cacheKey]=routeCacheEntry{handler:reg.Handler,expires:now.Add(e.routeTTL),operation:reg.Name,version:reg.Version};e.mu.Unlock();return reg.Handler,nil}
-func(e *Engine)allow(source string)bool{e.mu.Lock();defer e.mu.Unlock();now:=time.Now();r:=e.rates[source];if r.window.IsZero()||now.Sub(r.window)>=time.Second{r=rateState{window:now}};r.count++;e.rates[source]=r;return r.count<=e.rateLimit}
-func(e *Engine)breakerOpen()bool{e.breakerMu.Lock();defer e.breakerMu.Unlock();return time.Now().Before(e.breakerUntil)}
-func(e *Engine)recordFailure(){n:=e.failures.Add(1);if n>=e.failureThreshold{e.breakerMu.Lock();e.breakerUntil=time.Now().Add(10*time.Second);e.breakerMu.Unlock()}}
-func(e *Engine)recordSuccess(){e.failures.Store(0)}
-func(e *Engine)Submit(ctx context.Context,m protocol.Message)(protocol.Result,error){start:=time.Now();e.metrics.Requests.Add(1);e.metrics.InFlight.Add(1);defer e.metrics.InFlight.Add(-1);if !e.running.Load(){err:=errors.New("orchestrator stopped");e.metrics.Observe(start,err,false);return protocol.Result{TraceID:m.TraceID,CorrelationID:m.CorrelationID,Source:"N07",Target:m.Source,Status:"rejected",Error:err.Error()},err};if ctx==nil{err:=errors.New("context is nil");e.metrics.Observe(start,err,false);return protocol.Result{},err};if e.breakerOpen(){err:=errors.New("circuit breaker open");e.metrics.Observe(start,err,false);return protocol.Result{TraceID:m.TraceID,CorrelationID:m.CorrelationID,Source:"N07",Target:m.Source,Status:"busy",Error:err.Error()},err};if err:=m.Validate();err!=nil{e.metrics.Observe(start,err,false);return protocol.Result{TraceID:m.TraceID,CorrelationID:m.CorrelationID,Source:"N07",Target:m.Source,Status:"rejected",Error:err.Error()},err};if !e.allow(m.Source){err:=errors.New("rate limit exceeded");e.metrics.Observe(start,err,false);return protocol.Result{TraceID:m.TraceID,CorrelationID:m.CorrelationID,Source:"N07",Target:m.Source,Status:"rate_limited",Error:err.Error()},err};h,err:=e.Route(m);if err!=nil{e.recordFailure();e.metrics.Observe(start,err,false);return protocol.Result{TraceID:m.TraceID,CorrelationID:m.CorrelationID,Source:"N07",Target:m.Source,Status:"rejected",Error:err.Error()},err};name,version,_:=splitOperation(m.Operation);reg,ok:=e.handlers[name+"@"+version];if version==""{for _,candidate:=range e.handlers{if candidate.Name==name&&(!ok||semverGreater(candidate.Version,reg.Version)){reg,ok=candidate,true}}};e.mu.RLock();reg=e.handlers[reg.Name+"@"+reg.Version];e.mu.RUnlock();if !ok||reg.Handler==nil{return protocol.Result{TraceID:m.TraceID,CorrelationID:m.CorrelationID,Source:"N07",Target:m.Source,Status:"rejected",Error:"registered operation unavailable"},errors.New("registered operation unavailable")};timeout:=reg.Timeout;if timeout<=0{timeout=15*time.Second};runCtx,cancel:=context.WithTimeout(ctx,timeout);if !m.Deadline.IsZero(){if deadline,ok:=runCtx.Deadline();!ok||m.Deadline.Before(deadline){var deadlineCancel context.CancelFunc;runCtx,deadlineCancel=context.WithDeadline(runCtx,m.Deadline);defer deadlineCancel()}};runCtx,span:=observability.Start(runCtx,m.Operation,m.TraceID,len(m.Payload));e.mu.Lock();if _,exists:=e.active[m.TraceID];exists{e.mu.Unlock();cancel();err=errors.New("duplicate active trace id");observability.End(span,err);e.metrics.Observe(start,err,false);return protocol.Result{TraceID:m.TraceID,CorrelationID:m.CorrelationID,Source:"N07",Target:m.Source,Status:"rejected",Error:err.Error()},err};e.active[m.TraceID]=traceState{cancel:cancel,stage:"routed",started:start};e.mu.Unlock();defer func(){cancel();e.mu.Lock();delete(e.active,m.TraceID);e.mu.Unlock()}();e.logger.Info(m.Operation,m.TraceID,map[string]any{"payload_size":len(m.Payload),"operation_version":reg.Version,"correlation_id":m.CorrelationID});result,err:=h(runCtx,m);result.TraceID=m.TraceID;result.CorrelationID=m.CorrelationID;if result.Source==""{result.Source="N07"};if result.Target==""{result.Target=m.Source};cancelled:=errors.Is(err,context.Canceled)||errors.Is(err,context.DeadlineExceeded);observability.End(span,err);e.metrics.Observe(start,err,cancelled);if err!=nil{e.recordFailure();if cancelled{e.logger.Error(m.Operation,m.TraceID,err,map[string]any{"cancelled":true})}else{e.logger.Error(m.Operation,m.TraceID,err,nil)}}else{e.recordSuccess()};return result,err}
-func(e *Engine)Execute(ctx context.Context,operation string,payload []float64,metadata map[string]string)(protocol.Result,error){m:=protocol.NewMessage("N07","N07","command",operation,payload);m.Metadata=metadata;if metadata!=nil{if s:=metadata["schema"];s!=""{if err:=validateSchema(s,payload);err!=nil{return protocol.Result{TraceID:m.TraceID,CorrelationID:m.CorrelationID,Source:"N07",Target:"N07",Status:"rejected",Error:err.Error()},err}}};return e.Submit(ctx,m)}
-func(e *Engine)Cancel(traceID string)error{if traceID==""{return errors.New("trace id is required")};e.mu.RLock();t,ok:=e.active[traceID];e.mu.RUnlock();if !ok{return errors.New("trace id is not active")};t.cancel();return nil}
-func(e *Engine)Status()string{if e.running.Load(){return "ready"};return "stopped"}
-func(e *Engine)Health()map[string]any{e.mu.RLock();handlers,active:=len(e.handlers),len(e.active);e.mu.RUnlock();circuit:="closed";if e.breakerOpen(){circuit="open"};return map[string]any{"nucleus":"N07","status":e.Status(),"handlers":handlers,"active_traces":active,"metrics":e.metrics.Snapshot(),"circuit":map[string]any{"state":circuit},"neural":e.neural.Health(),"prefrontal":e.cortex.Health(),"compute":e.compute.Health()}}
-func(e *Engine)Stats()map[string]any{h:=e.Health();return map[string]any{"sequence":e.sequence.Load(),"status":e.Status(),"active_traces":h["active_traces"],"circuit":h["circuit"],"metrics":h["metrics"],"timestamp":time.Now().UTC()}}
-func(e *Engine)Shutdown(ctx context.Context)error{if ctx==nil{return errors.New("context is nil")};e.running.Store(false);e.mu.Lock();for id,t:=range e.active{t.cancel();delete(e.active,id)};e.mu.Unlock();select{case<-ctx.Done():return ctx.Err();default:};return e.compute.Shutdown()}
-func(e *Engine)registerBuiltins()error{if err:=e.Register("neural.forward@1.0.0",func(ctx context.Context,m protocol.Message)(protocol.Result,error){e.setStage(m.TraceID,"neural","");v,err:=e.neural.Forward(ctx,m.Payload);return protocol.Result{TraceID:m.TraceID,CorrelationID:m.CorrelationID,Source:"N07.neural",Target:m.Source,Status:status(err),Payload:v,Error:errorText(err)},err});err!=nil{return err};if err:=e.Register("neural.learn@1.0.0",func(ctx context.Context,m protocol.Message)(protocol.Result,error){e.setStage(m.TraceID,"neural.learn","");select{case<-ctx.Done():return protocol.Result{},ctx.Err();default:};half:=len(m.Payload)/2;if half==0||half*2!=len(m.Payload){return protocol.Result{},errors.New("learn payload must contain input and target halves")};err:=e.neural.Learn(m.Payload[:half],m.Payload[half:]);return protocol.Result{TraceID:m.TraceID,CorrelationID:m.CorrelationID,Source:"N07.neural",Target:m.Source,Status:status(err),Error:errorText(err)},err});err!=nil{return err};if err:=e.Register("compute.execute@1.0.0",func(ctx context.Context,m protocol.Message)(protocol.Result,error){d,err:=e.compute.Select(m.Metadata["device"]);if err!=nil{return protocol.Result{},err};if err=e.compute.Reserve(d.ID,m.TraceID);err!=nil{return protocol.Result{},err};defer e.compute.Release(d.ID,m.TraceID);e.setStage(m.TraceID,"compute",d.ID);op:=m.Metadata["operation"];if op==""{return protocol.Result{},errors.New("metadata.operation is required")};v,err:=e.compute.Execute(ctx,d,op,m.Payload);return protocol.Result{TraceID:m.TraceID,CorrelationID:m.CorrelationID,Source:"N07.compute",Target:m.Source,Status:status(err),Payload:v,Error:errorText(err)},err});err!=nil{return err};if err:=e.Register("cognitive.execute@1.0.0",func(ctx context.Context,m protocol.Message)(protocol.Result,error){e.setStage(m.TraceID,"neural","");encoded,err:=e.neural.Forward(ctx,m.Payload);if err!=nil{return protocol.Result{},err};energy:=0.0;for _,v:=range encoded{energy+=math.Abs(v)};utility:=energy/float64(len(encoded));candidate:=prefrontal.Candidate{ID:m.TraceID,Utility:utility,Cost:.05,Risk:.02};e.setStage(m.TraceID,"prefrontal","");selected,err:=e.cortex.Select([]prefrontal.Candidate{candidate});if err!=nil{return protocol.Result{},err};if _,err=e.cortex.Commit(selected,"neural-output-approved");err!=nil{return protocol.Result{},err};d,err:=e.compute.Select(m.Metadata["device"]);if err!=nil{return protocol.Result{},err};if err=e.compute.Reserve(d.ID,m.TraceID);err!=nil{return protocol.Result{},err};defer e.compute.Release(d.ID,m.TraceID);e.setStage(m.TraceID,"compute",d.ID);op:=m.Metadata["operation"];if op==""{op="identity"};out,err:=e.compute.Execute(ctx,d,op,encoded);return protocol.Result{TraceID:m.TraceID,CorrelationID:m.CorrelationID,Source:"N07.pipeline",Target:m.Source,Status:status(err),Payload:out,Metadata:map[string]string{"decision":"approved","device":d.ID},Error:errorText(err)},err});err!=nil{return err};return nil}
-func(e *Engine)setStage(traceID,stage,device string){e.mu.Lock();defer e.mu.Unlock();if t,ok:=e.active[traceID];ok{t.stage,t.device=stage,device;e.active[traceID]=t}}
-func validateSchema(raw string,payload []float64)error{var s struct{MinItems int `json:"minItems"`;MaxItems int `json:"maxItems"`;Type string `json:"type"`};if err:=json.Unmarshal([]byte(raw),&s);err!=nil{return err};if s.Type!=""&&s.Type!="array"{return errors.New("payload schema type must be array")};if s.MinItems>0&&len(payload)<s.MinItems{return errors.New("payload violates minItems")};if s.MaxItems>0&&len(payload)>s.MaxItems{return errors.New("payload violates maxItems")};for _,v:=range payload{if math.IsNaN(v)||math.IsInf(v,0){return errors.New("payload contains non-finite number")}};return nil}
-func status(err error)string{if err!=nil{return "error"};return "ok"};func errorText(err error)string{if err!=nil{return err.Error()};return ""}
+import (
+	"context"
+	"encoding/json"
+	"errors"
+	"github.com/divibisoul/Orquestrador-/neural"
+	"github.com/divibisoul/Orquestrador-/observability"
+	"github.com/divibisoul/Orquestrador-/prefrontal"
+	"github.com/divibisoul/Orquestrador-/protocol"
+	"github.com/divibisoul/Orquestrador-/supergpu"
+	"math"
+	"regexp"
+	"sort"
+	"strings"
+	"sync"
+	"sync/atomic"
+	"time"
+)
+
+type Handler func(context.Context, protocol.Message) (protocol.Result, error)
+type OperationRegistration struct {
+	Name      string
+	Version   string
+	Handler   Handler
+	Timeout   time.Duration
+	RateLimit int
+	Schema    json.RawMessage
+	Metadata  map[string]string
+}
+type traceState struct {
+	cancel  context.CancelFunc
+	stage   string
+	device  string
+	started time.Time
+}
+type rateState struct {
+	window time.Time
+	count  int
+}
+type routeCacheEntry struct {
+	handler   Handler
+	expires   time.Time
+	operation string
+	version   string
+}
+type Engine struct {
+	mu               sync.RWMutex
+	handlers         map[string]OperationRegistration
+	active           map[string]traceState
+	routes           map[string]routeCacheEntry
+	rates            map[string]rateState
+	neural           *neural.Network
+	cortex           *prefrontal.Cortex
+	compute          *supergpu.Runtime
+	running          atomic.Bool
+	sequence         atomic.Uint64
+	failures         atomic.Uint64
+	metrics          *observability.Metrics
+	logger           *observability.Logger
+	rateLimit        int
+	routeTTL         time.Duration
+	failureThreshold uint64
+	breakerUntil     time.Time
+	breakerMu        sync.Mutex
+}
+
+var semverRx = regexp.MustCompile(`^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(?:-[0-9A-Za-z.-]+)?$`)
+
+func splitOperation(operation string) (string, string, error) {
+	operation = strings.TrimSpace(operation)
+	if operation == "" {
+		return "", "", errors.New("operation is required")
+	}
+	name, version := operation, ""
+	if i := strings.LastIndex(operation, "@"); i > 0 {
+		name, version = operation[:i], operation[i+1:]
+	}
+	if version != "" && !semverRx.MatchString(version) {
+		return "", "", errors.New("operation version must semantic version")
+	}
+	return name, version, nil
+}
+func semverGreater(a, b string) bool {
+	ap := strings.SplitN(strings.SplitN(a, "-", 2)[0], ".", 3)
+	bp := strings.SplitN(strings.SplitN(b, "-", 2)[0], ".", 3)
+	for i := 0; i < 3; i++ {
+		ai, bi := 0, 0
+		for _, ch := range ap[i] {
+			ai = ai*10 + int(ch-'0')
+		}
+		for _, ch := range bp[i] {
+			bi = bi*10 + int(ch-'0')
+		}
+		if ai != bi {
+			return ai > bi
+		}
+	}
+	return a > b
+}
+func New(n *neural.Network, c *prefrontal.Cortex, g *supergpu.Runtime) (*Engine, error) {
+	if n == nil || c == nil || g == nil {
+		return nil, errors.New("all nucleus services are required")
+	}
+	e := &Engine{handlers: map[string]OperationRegistration{}, active: map[string]traceState{}, routes: map[string]routeCacheEntry{}, rates: map[string]rateState{}, neural: n, cortex: c, compute: g, metrics: &observability.Metrics{}, logger: observability.NewLogger("N07.orchestrator"), rateLimit: 60, routeTTL: 30 * time.Second, failureThreshold: 5}
+	e.running.Store(true)
+	if err := e.registerBuiltins(); err != nil {
+		return nil, err
+	}
+	return e, nil
+}
+func (e *Engine) Register(operation string, handler Handler) error {
+	name, version, err := splitOperation(operation)
+	if err != nil {
+		return err
+	}
+	if handler == nil {
+		return errors.New("handler is required")
+	}
+	if version == "" {
+		version = "1.0.0"
+	}
+	key := name + "@" + version
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	if _, ok := e.handlers[key]; ok {
+		return errors.New("operation/version already registered")
+	}
+	e.handlers[key] = OperationRegistration{Name: name, Version: version, Handler: handler, Timeout: 15 * time.Second, RateLimit: e.rateLimit, Metadata: map[string]string{"capability": name}}
+	for cacheKey := range e.routes {
+		if strings.HasPrefix(cacheKey, name+"@") {
+			delete(e.routes, cacheKey)
+		}
+	}
+	return nil
+}
+func (e *Engine) Operations() []string {
+	e.mu.RLock()
+	ops := make([]string, 0, len(e.handlers))
+	for key, reg := range e.handlers {
+		if reg.Handler != nil {
+			ops = append(ops, key)
+		}
+	}
+	e.mu.RUnlock()
+	sort.Strings(ops)
+	return ops
+}
+func (e *Engine) Route(m protocol.Message) (Handler, error) {
+	if err := m.Validate(); err != nil {
+		return nil, err
+	}
+	name, version, err := splitOperation(m.Operation)
+	if err != nil {
+		return nil, err
+	}
+	now := time.Now()
+	cacheKey := name + "@" + version
+	e.mu.RLock()
+	if r, ok := e.routes[cacheKey]; ok && now.Before(r.expires) {
+		e.mu.RUnlock()
+		return r.handler, nil
+	}
+	var reg OperationRegistration
+	var ok bool
+	if version != "" {
+		reg, ok = e.handlers[cacheKey]
+	} else {
+		for _, candidate := range e.handlers {
+			if candidate.Name != name {
+				continue
+			}
+			if !ok || semverGreater(candidate.Version, reg.Version) {
+				reg, ok = candidate, true
+			}
+		}
+	}
+	e.mu.RUnlock()
+	if !ok {
+		return nil, errors.New("no route for operation: " + m.Operation)
+	}
+	if reg.Handler == nil {
+		return nil, errors.New("route handler is nil")
+	}
+	e.mu.Lock()
+	e.routes[cacheKey] = routeCacheEntry{handler: reg.Handler, expires: now.Add(e.routeTTL), operation: reg.Name, version: reg.Version}
+	e.mu.Unlock()
+	return reg.Handler, nil
+}
+func (e *Engine) allow(source string) bool {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	now := time.Now()
+	r := e.rates[source]
+	if r.window.IsZero() || now.Sub(r.window) >= time.Second {
+		r = rateState{window: now}
+	}
+	r.count++
+	e.rates[source] = r
+	return r.count <= e.rateLimit
+}
+func (e *Engine) breakerOpen() bool {
+	e.breakerMu.Lock()
+	defer e.breakerMu.Unlock()
+	return time.Now().Before(e.breakerUntil)
+}
+func (e *Engine) recordFailure() {
+	n := e.failures.Add(1)
+	if n >= e.failureThreshold {
+		e.breakerMu.Lock()
+		e.breakerUntil = time.Now().Add(10 * time.Second)
+		e.breakerMu.Unlock()
+	}
+}
+func (e *Engine) recordSuccess() { e.failures.Store(0) }
+func (e *Engine) Submit(ctx context.Context, m protocol.Message) (protocol.Result, error) {
+	start := time.Now()
+	e.metrics.Requests.Add(1)
+	e.metrics.InFlight.Add(1)
+	defer e.metrics.InFlight.Add(-1)
+	if !e.running.Load() {
+		err := errors.New("orchestrator stopped")
+		e.metrics.Observe(start, err, false)
+		return protocol.Result{TraceID: m.TraceID, CorrelationID: m.CorrelationID, Source: "N07", Target: m.Source, Status: "rejected", Error: err.Error()}, err
+	}
+	if ctx == nil {
+		err := errors.New("context is nil")
+		e.metrics.Observe(start, err, false)
+		return protocol.Result{}, err
+	}
+	if e.breakerOpen() {
+		err := errors.New("circuit breaker open")
+		e.metrics.Observe(start, err, false)
+		return protocol.Result{TraceID: m.TraceID, CorrelationID: m.CorrelationID, Source: "N07", Target: m.Source, Status: "busy", Error: err.Error()}, err
+	}
+	if err := m.Validate(); err != nil {
+		e.metrics.Observe(start, err, false)
+		return protocol.Result{TraceID: m.TraceID, CorrelationID: m.CorrelationID, Source: "N07", Target: m.Source, Status: "rejected", Error: err.Error()}, err
+	}
+	if !e.allow(m.Source) {
+		err := errors.New("rate limit exceeded")
+		e.metrics.Observe(start, err, false)
+		return protocol.Result{TraceID: m.TraceID, CorrelationID: m.CorrelationID, Source: "N07", Target: m.Source, Status: "rate_limited", Error: err.Error()}, err
+	}
+	h, err := e.Route(m)
+	if err != nil {
+		e.recordFailure()
+		e.metrics.Observe(start, err, false)
+		return protocol.Result{TraceID: m.TraceID, CorrelationID: m.CorrelationID, Source: "N07", Target: m.Source, Status: "rejected", Error: err.Error()}, err
+	}
+	name, version, _ := splitOperation(m.Operation)
+	reg, ok := e.handlers[name+"@"+version]
+	if version == "" {
+		for _, candidate := range e.handlers {
+			if candidate.Name == name && (!ok || semverGreater(candidate.Version, reg.Version)) {
+				reg, ok = candidate, true
+			}
+		}
+	}
+	e.mu.RLock()
+	reg = e.handlers[reg.Name+"@"+reg.Version]
+	e.mu.RUnlock()
+	if !ok || reg.Handler == nil {
+		return protocol.Result{TraceID: m.TraceID, CorrelationID: m.CorrelationID, Source: "N07", Target: m.Source, Status: "rejected", Error: "registered operation unavailable"}, errors.New("registered operation unavailable")
+	}
+	timeout := reg.Timeout
+	if timeout <= 0 {
+		timeout = 15 * time.Second
+	}
+	runCtx, cancel := context.WithTimeout(ctx, timeout)
+	if !m.Deadline.IsZero() {
+		if deadline, ok := runCtx.Deadline(); !ok || m.Deadline.Before(deadline) {
+			var deadlineCancel context.CancelFunc
+			runCtx, deadlineCancel = context.WithDeadline(runCtx, m.Deadline)
+			defer deadlineCancel()
+		}
+	}
+	runCtx, span := observability.Start(runCtx, m.Operation, m.TraceID, len(m.Payload))
+	e.mu.Lock()
+	if _, exists := e.active[m.TraceID]; exists {
+		e.mu.Unlock()
+		cancel()
+		err = errors.New("duplicate active trace id")
+		observability.End(span, err)
+		e.metrics.Observe(start, err, false)
+		return protocol.Result{TraceID: m.TraceID, CorrelationID: m.CorrelationID, Source: "N07", Target: m.Source, Status: "rejected", Error: err.Error()}, err
+	}
+	e.active[m.TraceID] = traceState{cancel: cancel, stage: "routed", started: start}
+	e.mu.Unlock()
+	defer func() { cancel(); e.mu.Lock(); delete(e.active, m.TraceID); e.mu.Unlock() }()
+	e.logger.Info(m.Operation, m.TraceID, map[string]any{"payload_size": len(m.Payload), "operation_version": reg.Version, "correlation_id": m.CorrelationID})
+	result, err := h(runCtx, m)
+	result.TraceID = m.TraceID
+	result.CorrelationID = m.CorrelationID
+	if result.Source == "" {
+		result.Source = "N07"
+	}
+	if result.Target == "" {
+		result.Target = m.Source
+	}
+	cancelled := errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded)
+	observability.End(span, err)
+	e.metrics.Observe(start, err, cancelled)
+	if err != nil {
+		e.recordFailure()
+		if cancelled {
+			e.logger.Error(m.Operation, m.TraceID, err, map[string]any{"cancelled": true})
+		} else {
+			e.logger.Error(m.Operation, m.TraceID, err, nil)
+		}
+	} else {
+		e.recordSuccess()
+	}
+	return result, err
+}
+func (e *Engine) Execute(ctx context.Context, operation string, payload []float64, metadata map[string]string) (protocol.Result, error) {
+	m := protocol.NewMessage("N07", "N07", "command", operation, payload)
+	m.Metadata = metadata
+	if metadata != nil {
+		if s := metadata["schema"]; s != "" {
+			if err := validateSchema(s, payload); err != nil {
+				return protocol.Result{TraceID: m.TraceID, CorrelationID: m.CorrelationID, Source: "N07", Target: "N07", Status: "rejected", Error: err.Error()}, err
+			}
+		}
+	}
+	return e.Submit(ctx, m)
+}
+func (e *Engine) Cancel(traceID string) error {
+	if traceID == "" {
+		return errors.New("trace id is required")
+	}
+	e.mu.RLock()
+	t, ok := e.active[traceID]
+	e.mu.RUnlock()
+	if !ok {
+		return errors.New("trace id is not active")
+	}
+	t.cancel()
+	return nil
+}
+func (e *Engine) Status() string {
+	if e.running.Load() {
+		return "ready"
+	}
+	return "stopped"
+}
+func (e *Engine) Health() map[string]any {
+	e.mu.RLock()
+	handlers, active := len(e.handlers), len(e.active)
+	e.mu.RUnlock()
+	circuit := "closed"
+	if e.breakerOpen() {
+		circuit = "open"
+	}
+	return map[string]any{"nucleus": "N07", "status": e.Status(), "handlers": handlers, "active_traces": active, "metrics": e.metrics.Snapshot(), "circuit": map[string]any{"state": circuit}, "neural": e.neural.Health(), "prefrontal": e.cortex.Health(), "compute": e.compute.Health()}
+}
+func (e *Engine) Stats() map[string]any {
+	h := e.Health()
+	return map[string]any{"sequence": e.sequence.Load(), "status": e.Status(), "active_traces": h["active_traces"], "circuit": h["circuit"], "metrics": h["metrics"], "timestamp": time.Now().UTC()}
+}
+func (e *Engine) Shutdown(ctx context.Context) error {
+	if ctx == nil {
+		return errors.New("context is nil")
+	}
+	e.running.Store(false)
+	e.mu.Lock()
+	for id, t := range e.active {
+		t.cancel()
+		delete(e.active, id)
+	}
+	e.mu.Unlock()
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	default:
+	}
+	return e.compute.Shutdown()
+}
+func (e *Engine) registerBuiltins() error {
+	if err := e.Register("neural.forward@1.0.0", func(ctx context.Context, m protocol.Message) (protocol.Result, error) {
+		e.setStage(m.TraceID, "neural", "")
+		v, err := e.neural.Forward(ctx, m.Payload)
+		return protocol.Result{TraceID: m.TraceID, CorrelationID: m.CorrelationID, Source: "N07.neural", Target: m.Source, Status: status(err), Payload: v, Error: errorText(err)}, err
+	}); err != nil {
+		return err
+	}
+	if err := e.Register("neural.learn@1.0.0", func(ctx context.Context, m protocol.Message) (protocol.Result, error) {
+		e.setStage(m.TraceID, "neural.learn", "")
+		select {
+		case <-ctx.Done():
+			return protocol.Result{}, ctx.Err()
+		default:
+		}
+		half := len(m.Payload) / 2
+		if half == 0 || half*2 != len(m.Payload) {
+			return protocol.Result{}, errors.New("learn payload must contain input and target halves")
+		}
+		err := e.neural.Learn(m.Payload[:half], m.Payload[half:])
+		return protocol.Result{TraceID: m.TraceID, CorrelationID: m.CorrelationID, Source: "N07.neural", Target: m.Source, Status: status(err), Error: errorText(err)}, err
+	}); err != nil {
+		return err
+	}
+	if err := e.Register("compute.execute@1.0.0", func(ctx context.Context, m protocol.Message) (protocol.Result, error) {
+		d, err := e.compute.Select(m.Metadata["device"])
+		if err != nil {
+			return protocol.Result{}, err
+		}
+		if err = e.compute.Reserve(d.ID, m.TraceID); err != nil {
+			return protocol.Result{}, err
+		}
+		defer e.compute.Release(d.ID, m.TraceID)
+		e.setStage(m.TraceID, "compute", d.ID)
+		op := m.Metadata["operation"]
+		if op == "" {
+			return protocol.Result{}, errors.New("metadata.operation is required")
+		}
+		v, err := e.compute.Execute(ctx, d, op, m.Payload)
+		return protocol.Result{TraceID: m.TraceID, CorrelationID: m.CorrelationID, Source: "N07.compute", Target: m.Source, Status: status(err), Payload: v, Error: errorText(err)}, err
+	}); err != nil {
+		return err
+	}
+	if err := e.Register("cognitive.execute@1.0.0", func(ctx context.Context, m protocol.Message) (protocol.Result, error) {
+		e.setStage(m.TraceID, "neural", "")
+		encoded, err := e.neural.Forward(ctx, m.Payload)
+		if err != nil {
+			return protocol.Result{}, err
+		}
+		energy := 0.0
+		for _, v := range encoded {
+			energy += math.Abs(v)
+		}
+		utility := energy / float64(len(encoded))
+		candidate := prefrontal.Candidate{ID: m.TraceID, Utility: utility, Cost: .05, Risk: .02}
+		e.setStage(m.TraceID, "prefrontal", "")
+		selected, err := e.cortex.Select([]prefrontal.Candidate{candidate})
+		if err != nil {
+			return protocol.Result{}, err
+		}
+		if _, err = e.cortex.Commit(selected, "neural-output-approved"); err != nil {
+			return protocol.Result{}, err
+		}
+		d, err := e.compute.Select(m.Metadata["device"])
+		if err != nil {
+			return protocol.Result{}, err
+		}
+		if err = e.compute.Reserve(d.ID, m.TraceID); err != nil {
+			return protocol.Result{}, err
+		}
+		defer e.compute.Release(d.ID, m.TraceID)
+		e.setStage(m.TraceID, "compute", d.ID)
+		op := m.Metadata["operation"]
+		if op == "" {
+			op = "identity"
+		}
+		out, err := e.compute.Execute(ctx, d, op, encoded)
+		return protocol.Result{TraceID: m.TraceID, CorrelationID: m.CorrelationID, Source: "N07.pipeline", Target: m.Source, Status: status(err), Payload: out, Metadata: map[string]string{"decision": "approved", "device": d.ID}, Error: errorText(err)}, err
+	}); err != nil {
+		return err
+	}
+	return nil
+}
+func (e *Engine) setStage(traceID, stage, device string) {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	if t, ok := e.active[traceID]; ok {
+		t.stage, t.device = stage, device
+		e.active[traceID] = t
+	}
+}
+func validateSchema(raw string, payload []float64) error {
+	var s struct {
+		MinItems int    `json:"minItems"`
+		MaxItems int    `json:"maxItems"`
+		Type     string `json:"type"`
+	}
+	if err := json.Unmarshal([]byte(raw), &s); err != nil {
+		return err
+	}
+	if s.Type != "" && s.Type != "array" {
+		return errors.New("payload schema type must be array")
+	}
+	if s.MinItems > 0 && len(payload) < s.MinItems {
+		return errors.New("payload violates minItems")
+	}
+	if s.MaxItems > 0 && len(payload) > s.MaxItems {
+		return errors.New("payload violates maxItems")
+	}
+	for _, v := range payload {
+		if math.IsNaN(v) || math.IsInf(v, 0) {
+			return errors.New("payload contains non-finite number")
+		}
+	}
+	return nil
+}
+func status(err error) string {
+	if err != nil {
+		return "error"
+	}
+	return "ok"
+}
+func errorText(err error) string {
+	if err != nil {
+		return err.Error()
+	}
+	return ""
+}
