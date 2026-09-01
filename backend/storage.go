@@ -17,6 +17,8 @@ import (
 	"time"
 )
 
+const defaultStorachaTimeout = 30 * time.Second
+
 var cidPattern = regexp.MustCompile(`^(?:b[a-z2-7][a-z0-9]{20,}|Qm[1-9A-HJ-NP-Za-km-z]{40,}|bafk[a-z0-9]{20,})$`)
 var cidFinder = regexp.MustCompile(`(?:https?://[^/]+/ipfs/)?(b[a-z2-7][a-z0-9]{20,}|Qm[1-9A-HJ-NP-Za-km-z]{40,}|bafk[a-z0-9]{20,})`)
 
@@ -50,7 +52,7 @@ func NewWeb3Storage(cfg Config) *Web3Storage {
 	}
 	timeout := cfg.RequestTimeout
 	if timeout <= 0 {
-		timeout = 30 * time.Second
+		timeout = defaultStorachaTimeout
 	}
 	if raw := strings.TrimSpace(os.Getenv("STORACHA_TIMEOUT")); raw != "" {
 		if parsed, err := time.ParseDuration(raw); err == nil && parsed > 0 {
