@@ -1,12 +1,12 @@
 # N07 system state
 
 ## Current phase
-RELEASE CLOSURE / CROSS-FRONT RECONCILIATION
+FINAL RELEASE RECONCILIATION
 
 ## Ownership
-N07 owns orchestration, neural federation, routing, capability composition and SuperGPU control-plane surfaces. N01-N06 remain independent runtimes and expose adapters into the common Mesh.
+N07 owns orchestration, neural federation, routing, capability composition and the SuperGPU control plane. N01-N06 remain independent runtimes and expose adapters into the common Mesh.
 
-## Completed structural areas
+## Completed structural and integrated areas
 - Canonical Mesh ingress/egress and N01..N07 identity handling.
 - Discovery, executable capability routing, semantic-version routing and TTL cache.
 - Delegation with correlation, HMAC, replay protection, timeout/deadline and circuit handling.
@@ -15,23 +15,29 @@ N07 owns orchestration, neural federation, routing, capability composition and S
 - Observability for peers, latency, failures, in-flight work and correlation.
 - Unified authenticated backend with Supabase run/artifact persistence and Web3 Storage upload/status/object access.
 - SuperGPU backend operation registration and production release migration.
-- Backend regression suite passed Format, Vet, Test, Race Test and Build on exact integration head `7441c8b00204133ffcf5c16163d2e349f2714354`.
+- Backend regression suite previously passed Format, Vet, Test, Race Test and Build on integration head `7441c8b00204133ffcf5c16163d2e349f2714354`.
 - Backend integration PR #19 was merged into `main` as `8124ec399e669347450d710e3d44e586b9df863a`.
-- Android integration contract documented for downstream app/APK work.
+- N07 multi-peer federation E2E coverage is present in `mesh/n01_n07_federation_e2e_test.go` and is executed against N04/N05/N06 federation paths with canonical correlation/HMAC assertions.
+- Android integration contract remains documented for downstream HTTPS/APK integration.
 
-## Current evidence
-- `main` is at `8124ec399e669347450d710e3d44e586b9df863a`.
-- N02 current Mesh client explicitly supports peers N01, N03, N04, N05, N06 and N07 with protocol `soul-mesh/1`, contract `1.1.0`, correlation validation, HMAC/Bearer auth, retry and capability discovery.
-- N01 current README documents Mesh health, discovery, registration, ingress/egress and N01<->N06 correlation-verified probing.
-- Live six-runtime success is not claimed until the runtimes are concurrently reachable.
+## Current cross-front evidence
+- Current N07 `main` at release-reconciliation commit `00cb3f88da7a2f20a66f6a493b763243c92585d5` immediately before this state commit; the prior auto-format action normalized the new federation E2E test.
+- N02 Mesh endpoint contract uses `soul-mesh/1`, contract `1.1.0`, seven-nucleus identity, correlation validation, HMAC/Bearer authentication, retry and capability discovery.
+- N04 Mesh CI completed successfully with dependency installation, Mesh typecheck and 17/17 contract/runtime tests passing.
+- N06 Channel Contract CI completed successfully on the seven-nucleus canonical manifest.
+- N01 Mesh regression run at `831658443c06c80893220a8ba63ad0c0db61050e` failed without persisted job steps/log blob; a retry reproduced the same failure mode.
+- N02 Mesh CI run at `e0d9fce60daec2cc046e32a15056f144c52f31b6` failed without persisted job steps/log blob; a retry reproduced the same failure mode.
+- N03 Mesh CI is blocked by the current `main` dependency state: the workflow requires `npm ci`, while the current `main` did not contain `package-lock.json`. PR #9 was opened to generate a lockfile from the exact package manifest, but its Actions job also failed before step logs were persisted.
+- N05 Mesh CI is currently failing on the latest main revisions; the latest retry has not produced persisted job-step logs, so no unsupported code-level root cause is asserted.
 
-## Next finite gates
-1. Reconcile latest N01-N06 response signatures, health semantics and executable capability inventories against N07 contract.
-2. Execute six-peer live E2E when the six runtimes are concurrently reachable; otherwise retain structural/integrated evidence and record the environment blocker.
-3. Run release smoke/deploy and hand off the validated HTTPS boundary to Android/APK stage.
+## Live E2E closure boundary
+- The repository contains real federation execution and E2E validation code, but no proof is recorded here of a simultaneously reachable, externally deployed N01+N02+N03+N04+N05+N06 runtime set. The live deployment endpoints/secrets are not present in repository configuration and cannot be inferred safely.
+- Structural/integrated E2E is therefore validated; external six-runtime commissioning remains environment-gated and must fail closed rather than be represented as simulated success.
 
-## Closure condition
-When the finite gates above pass, mark SOUL v1 RELEASE-CLOSED. Do not restart full-system re-audit or add optional scope after closure. A defect found during a gate is corrected and that gate is revalidated once; unrelated completed gates remain closed.
+## Release decision
+- N07 structural release surfaces are complete and the finite E2E test harness is committed.
+- Overall SOUL v1 is not marked ONLINE while N01/N02/N03/N05 CI and the external six-runtime commissioning gate remain unresolved.
+- No optional feature scope is opened while these finite blockers remain.
 
 ## Rule
-A failure in one area triggers correction and revalidation; it does not cancel remaining release work. Optional features do not enter v1 before the finite release gates are closed.
+A detected failure is corrected and revalidated when the environment provides the required evidence. Missing external runtime configuration is never replaced by mocks, placeholders or fabricated green status.
