@@ -72,19 +72,29 @@ func TestN01ToN07FederatesAcrossN04N05N06(t *testing.T) {
 			_ = json.NewEncoder(w).Encode(response)
 		}))
 	}
-	defer func() { for _, server := range servers { server.Close() } }()
+	defer func() {
+		for _, server := range servers {
+			server.Close()
+		}
+	}()
 	t.Setenv("SOUL_MESH_N04_URL", servers["N04"].URL)
 	t.Setenv("SOUL_MESH_N05_URL", servers["N05"].URL)
 	t.Setenv("SOUL_MESH_N06_URL", servers["N06"].URL)
 
 	n, err := neural.New(8, .05)
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	c, err := prefrontal.New(.10, 32)
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	g := supergpu.New(nil)
 	g.Discover()
 	e, err := orchestrator.New(n, c, g)
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	gateway := NewEnhancedFederatedHTTPGateway(e)
 
 	payload := map[string]any{"tasks": []any{
@@ -96,10 +106,14 @@ func TestN01ToN07FederatesAcrossN04N05N06(t *testing.T) {
 	wire := canonicalRequest("request", "supergpu.parallel", correlation, nil)
 	wire["payload"] = payload
 	raw, ok := wire["payload"].(map[string]any)
-	if !ok { t.Fatal("test payload was not constructed") }
+	if !ok {
+		t.Fatal("test payload was not constructed")
+	}
 	raw["capability"] = "supergpu.parallel"
 	canonical, err := canonicalN01Bytes(canonicalWireEnvelope{Protocol: wire["protocol"].(string), ContractVersion: wire["contractVersion"].(string), ID: wire["id"].(string), CorrelationID: correlation, Source: "N01", Target: "N07", Kind: "request", Capability: "supergpu.parallel", Payload: raw, Timestamp: wire["timestamp"].(int64), Nonce: wire["nonce"].(string)}, wire["nonce"].(string))
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	mac := protocol.NewMessage("N01", "N07", "command", "supergpu.parallel", nil)
 	_ = mac
 	_ = context.Background()
@@ -108,25 +122,40 @@ func TestN01ToN07FederatesAcrossN04N05N06(t *testing.T) {
 	hmacValue := signHeaderTest(canonical, federationE2ESecret)
 	wire["hmac"] = hmacValue
 	body, err := json.Marshal(wire)
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	req := httptest.NewRequest(http.MethodPost, "/api/soul-mesh", bytes.NewReader(body))
 	req.Header.Set("x-soul-mesh-nonce", wire["nonce"].(string))
 	req.Header.Set("x-soul-mesh-hmac", hmacValue)
 	rec := httptest.NewRecorder()
 	gateway.ServeHTTP(rec, req)
-	if rec.Code != http.StatusOK { t.Fatalf("N01->N07 federation failed: code=%d body=%s", rec.Code, rec.Body.String()) }
+	if rec.Code != http.StatusOK {
+		t.Fatalf("N01->N07 federation failed: code=%d body=%s", rec.Code, rec.Body.String())
+	}
 	var out map[string]any
-	if err := json.NewDecoder(rec.Body).Decode(&out); err != nil { t.Fatal(err) }
-	if out["correlationId"] != correlation || out["kind"] != "response" { t.Fatalf("unexpected final envelope: %#v", out) }
+	if err := json.NewDecoder(rec.Body).Decode(&out); err != nil {
+		t.Fatal(err)
+	}
+	if out["correlationId"] != correlation || out["kind"] != "response" {
+		t.Fatalf("unexpected final envelope: %#v", out)
+	}
 	result, ok := out["payload"].(map[string]any)
-	if !ok || result["requiredFailure"] != false { t.Fatalf("federation reported required failure: %#v", result) }
+	if !ok || result["requiredFailure"] != false {
+		t.Fatalf("federation reported required failure: %#v", result)
+	}
 	for _, task := range []string{"n04", "n05", "n06"} {
 		found := false
 		for _, item := range result["tasks"].([]any) {
 			row := item.(map[string]any)
-			if row["id"] == task && row["status"] == "ok" { found = true; break }
+			if row["id"] == task && row["status"] == "ok" {
+				found = true
+				break
+			}
 		}
-		if !found { t.Fatalf("task %s did not complete successfully: %#v", task, result["tasks"]) }
+		if !found {
+			t.Fatalf("task %s did not complete successfully: %#v", task, result["tasks"])
+		}
 	}
 }
 
