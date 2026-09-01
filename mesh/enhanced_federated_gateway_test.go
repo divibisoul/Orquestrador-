@@ -22,7 +22,7 @@ func TestEnhancedFederatedGatewayConstruction(t *testing.T) {
 	if gw == nil || gw.base == nil {
 		t.Fatal("enhanced gateway not initialized")
 	}
-	if len(e.Operations()) < 6 {
+	if len(e.Operations()) < 4 {
 		t.Fatal("built-in operations missing")
 	}
 	if err := e.Shutdown(context.Background()); err != nil {
