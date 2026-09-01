@@ -40,14 +40,14 @@ func DefaultConfig() Config {
 		CORSOrigins:            splitCSV(getenv("N07_CORS_ORIGINS")),
 		MaxRequestBytes:        envInt64("N07_MAX_REQUEST_BYTES", maxRequest),
 		MaxUploadBytes:         envInt64("N07_MAX_UPLOAD_BYTES", maxUpload),
-		SupabaseURL:             strings.TrimRight(strings.TrimSpace(getenv("SUPABASE_URL")), "/"),
-		SupabaseServiceKey:      strings.TrimSpace(getenv("SUPABASE_SERVICE_ROLE_KEY")),
-		SupabaseRunsTable:       envString("SUPABASE_RUNS_TABLE", "n07_runs"),
-		SupabaseArtifactsTable:  envString("SUPABASE_ARTIFACTS_TABLE", "n07_artifacts"),
-		Web3StorageURL:          strings.TrimRight(envString("WEB3_STORAGE_API_URL", "https://api.web3.storage"), "/"),
-		Web3StorageToken:        strings.TrimSpace(getenv("WEB3_STORAGE_TOKEN")),
-		IPFSGatewayURL:          strings.TrimRight(envString("N07_IPFS_GATEWAY_URL", "https://dweb.link/ipfs"), "/"),
-		RequestTimeout:          envDuration("N07_BACKEND_TIMEOUT", 30*time.Second),
+		SupabaseURL:            strings.TrimRight(strings.TrimSpace(getenv("SUPABASE_URL")), "/"),
+		SupabaseServiceKey:     strings.TrimSpace(getenv("SUPABASE_SERVICE_ROLE_KEY")),
+		SupabaseRunsTable:      envString("SUPABASE_RUNS_TABLE", "n07_runs"),
+		SupabaseArtifactsTable: envString("SUPABASE_ARTIFACTS_TABLE", "n07_artifacts"),
+		Web3StorageURL:         strings.TrimRight(envString("WEB3_STORAGE_API_URL", "https://api.web3.storage"), "/"),
+		Web3StorageToken:       strings.TrimSpace(getenv("WEB3_STORAGE_TOKEN")),
+		IPFSGatewayURL:         strings.TrimRight(envString("N07_IPFS_GATEWAY_URL", "https://dweb.link/ipfs"), "/"),
+		RequestTimeout:         envDuration("N07_BACKEND_TIMEOUT", 30*time.Second),
 	}
 }
 
