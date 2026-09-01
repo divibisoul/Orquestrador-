@@ -22,8 +22,11 @@ jobs:
         with:
           go-version: '1.25'
           cache: true
-      - name: Download dependencies
-        run: go mod download
+      - name: Resolve module dependencies
+        run: |
+          set -euo pipefail
+          go mod download
+          go mod tidy
       - name: Compile before security analysis
         run: |
           set -euo pipefail
@@ -55,9 +58,7 @@ jobs:
               raise SystemExit(1)
 
           errors = report.get("Golang errors") or {}
-          allowed = (
-              "could not import google.golang.org/grpc",
-          )
+          allowed = ("could not import google.golang.org/grpc",)
           unknown = []
           for package_errors in errors.values():
               for error in package_errors:
