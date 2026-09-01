@@ -108,7 +108,8 @@ func TestN01ToN07FederatesAcrossN04N05N06(t *testing.T) {
 	for _, nucleus := range []string{"N04", "N05", "N06"} {
 		discovery, discoveryErr := gateway.base.peers.Discover(context.Background(), nucleus)
 		if discoveryErr != nil {
-			t.Fatalf("discovery %s failed: %v", nucleus, discoveryErr)
+			peers := gateway.base.peers.ConfiguredPeers()
+			t.Fatalf("discovery %s failed: %v; peerState=%#v", nucleus, discoveryErr, peers)
 		}
 		if !supportsExecutableCapability(discovery, "e2e."+strings.ToLower(nucleus)) {
 			t.Fatalf("discovery %s omitted executable capability: %#v", nucleus, discovery)
