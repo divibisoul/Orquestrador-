@@ -63,6 +63,26 @@ func (s *DurableStore) Put(key string, value []byte) (uint64, error) {
 	return s.versions[key], nil
 }
 
+func (s *DurableStore) CompareAndSwap(key string, version uint64, value []byte) (bool, error) {
+	if s == nil {
+		return false, errors.New("nil durable store")
+	}
+	if key == "" {
+		return false, errors.New("key required")
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.versions[key] != version {
+		return false, nil
+	}
+	s.values[key] = append([]byte(nil), value...)
+	s.versions[key]++
+	if err := s.flushLocked(); err != nil {
+		return false, err
+	}
+	return true, nil
+}
+
 func (s *DurableStore) Get(key string) ([]byte, uint64, bool) {
 	if s == nil {
 		return nil, 0, false
