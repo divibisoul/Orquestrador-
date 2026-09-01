@@ -45,29 +45,28 @@ func (p *PeerClient) CallBestDynamic(ctx context.Context, capability string, pay
 	candidates := make([]DynamicRouteCandidate, len(peers))
 	var wg sync.WaitGroup
 	for i, peer := range peers {
-		i, peer = i, peer
 		wg.Add(1)
-		go func() {
+		go func(index int, candidatePeer PeerInfo) {
 			defer wg.Done()
 			candidate := DynamicRouteCandidate{
-				Nucleus:  peer.Nucleus,
-				Latency:  peer.Latency,
-				Healthy:  peer.Healthy,
-				Failures: peer.Failures,
+				Nucleus:  candidatePeer.Nucleus,
+				Latency:  candidatePeer.Latency,
+				Healthy:  candidatePeer.Healthy,
+				Failures: candidatePeer.Failures,
 			}
-			if peer.Circuit == CircuitOpen && time.Now().Before(peer.RetryAfter) {
-				candidates[i] = candidate
+			if candidatePeer.Circuit == CircuitOpen && time.Now().Before(candidatePeer.RetryAfter) {
+				candidates[index] = candidate
 				return
 			}
 			discoveryCtx, cancel := context.WithTimeout(ctx, 2*time.Second)
-			description, err := p.Discover(discoveryCtx, peer.Nucleus)
+			description, err := p.Discover(discoveryCtx, candidatePeer.Nucleus)
 			cancel()
 			if err == nil && supportsExecutableCapability(description, capability) {
 				candidate.Capability = true
 				candidate.Score = routeScore(candidate)
 			}
-			candidates[i] = candidate
-		}()
+			candidates[index] = candidate
+		}(i, peer)
 	}
 	wg.Wait()
 
