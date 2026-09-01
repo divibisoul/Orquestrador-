@@ -37,7 +37,14 @@ func (e *Engine) SubmitMesh(ctx context.Context, env protocol.MeshEnvelope) (pro
 		Payload:   append([]float64(nil), result.Payload...),
 		Metadata:  cloneStringMap(result.Metadata),
 	}
-	return protocol.MeshFromMessage(response)
+	meshResponse, convErr := protocol.MeshFromMessage(response)
+	if convErr != nil {
+		return protocol.MeshEnvelope{}, convErr
+	}
+	if execErr != nil {
+		return meshResponse, execErr
+	}
+	return meshResponse, nil
 }
 
 func cloneStringMap(in map[string]string) map[string]string {
