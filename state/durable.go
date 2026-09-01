@@ -83,7 +83,8 @@ func (s *DurableStore) Delete(key string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	delete(s.values, key)
-	delete(s.versions, key)
+	// Retain a monotonic tombstone version so an old CAS token cannot be reused.
+	s.versions[key]++
 	return s.flushLocked()
 }
 
