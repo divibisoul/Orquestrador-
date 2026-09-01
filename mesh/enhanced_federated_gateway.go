@@ -137,7 +137,7 @@ func (g *EnhancedFederatedGateway) ServeHTTP(w http.ResponseWriter, r *http.Requ
 			child := envelope.CorrelationID + "/" + item.ID
 			taskCtx, cancel := context.WithTimeout(ctx, item.Timeout)
 			defer cancel()
-			remote, owner, e := g.base.peers.CallBest(taskCtx, item.Capability, item.Payload, child)
+			remote, owner, e := g.base.peers.CallBestDynamic(taskCtx, item.Capability, item.Payload, child)
 			entry := result{ID: item.ID, Capability: item.Capability, Status: "error", DurationMs: time.Since(started).Milliseconds(), CorrelationID: child}
 			if e != nil {
 				entry.Error = e.Error()
