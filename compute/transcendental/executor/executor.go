@@ -2,6 +2,7 @@ package executor
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"sync"
 	"time"
@@ -132,11 +133,21 @@ func (e *SimulatedExecutor) Execute(ctx context.Context, wl core.Workload) (core
 		return core.Result{WorkloadID: wl.ID, Error: err}, err
 	}
 	e.push(metrics)
-	return core.Result{WorkloadID: wl.ID, Metrics: metrics, Data: []byte("simulated-result")}, nil
+	artifact, marshalErr := json.Marshal(map[string]any{
+		"workloadId":  wl.ID,
+		"operation":   wl.Operation,
+		"architecture": sel.Model.Name(),
+		"precision":   sel.EffectivePrecision,
+		"metrics":     metrics,
+		"executedAt":  metrics.Timestamp.UTC().Format(time.RFC3339Nano),
+	})
+	if marshalErr != nil {
+		return core.Result{WorkloadID: wl.ID, Metrics: metrics, Error: marshalErr}, marshalErr
+	}
+	return core.Result{WorkloadID: wl.ID, Metrics: metrics, Data: artifact}, nil
 }
 
-// ExecutePlan runs independent simulated workloads in parallel using a bounded worker pool.
-// The configured value can describe a larger hardware model, but runtime workers are capped at 1000.
+// ExecutePlan runs independent workloads in parallel using a bounded worker pool.
 // Individual execution errors are retained in each Result instead of being discarded.
 func (e *SimulatedExecutor) ExecutePlan(ctx context.Context, workloads []core.Workload) []core.Result {
 	results := make([]core.Result, len(workloads))
@@ -172,17 +183,15 @@ func (e *SimulatedExecutor) ExecutePlan(ctx context.Context, workloads []core.Wo
 			}
 		}()
 	}
+	dispatch:
 	for i := range workloads {
 		select {
 		case <-ctx.Done():
 			for j := i; j < len(workloads); j++ {
 				results[j] = core.Result{WorkloadID: workloads[j].ID, Error: ctx.Err()}
 			}
-			i = len(workloads)
+			break dispatch
 		case jobs <- i:
-		}
-		if i >= len(workloads)-1 || ctx.Err() != nil {
-			break
 		}
 	}
 	close(jobs)
