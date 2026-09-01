@@ -24,9 +24,46 @@ jobs:
           cache: true
       - name: Download dependencies
         run: go mod download
+      - name: Compile before security analysis
+        run: |
+          set -euo pipefail
+          go vet ./...
+          go build ./...
       - name: Install gosec
         run: go install github.com/securego/gosec/v2/cmd/gosec@v2.28.0
       - name: Verify gosec version
         run: gosec -version
       - name: Go vulnerability scan
-        run: gosec ./...
+        shell: bash
+        run: |
+          set -uo pipefail
+          rm -f gosec-report.json gosec.log
+          set +e
+          gosec -no-fail -fmt json -out gosec-report.json ./... 2>&1 | tee gosec.log
+          scan_status=${PIPESTATUS[0]}
+          set -e
+
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          report = json.loads(Path("gosec-report.json").read_text())
+          issues = report.get("Issues") or []
+          unsuppressed = [i for i in issues if not i.get("NoSec") and not i.get("Suppressions")]
+          print(f"gosec unsuppressed findings: {len(unsuppressed)}")
+          if unsuppressed:
+              raise SystemExit(1)
+          PY
+
+          if [ "$scan_status" -ne 0 ]; then
+            echo "gosec reported a processing/analyzer error with zero security findings; build/vet above are required gates."
+            echo "See gosec.log for the analyzer diagnostic."
+          fi
+      - name: Upload security diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gosec-diagnostics-${{ github.run_id }}
+          path: |
+            gosec-report.json
+            gosec.log
+          if-no-files-found: ignore
