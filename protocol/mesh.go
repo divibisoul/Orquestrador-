@@ -17,19 +17,19 @@ const (
 )
 
 type MeshEnvelope struct {
-	Version         string         `json:"version"`
-	ContractVersion string         `json:"contractVersion"`
-	MessageID       string         `json:"messageId"`
-	Source          string         `json:"source"`
-	Target          string         `json:"target"`
-	Timestamp       int64          `json:"timestamp"`
-	Nonce           string         `json:"nonce"`
-	CorrelationID   string         `json:"correlationId"`
-	Type            string         `json:"type"`
-	TTL             *int64         `json:"ttl,omitempty"`
-	HMAC            string         `json:"hmac"`
-	Payload         map[string]any `json:"payload"`
-	Operation       string         `json:"operation,omitempty"`
+	Version         string            `json:"version"`
+	ContractVersion string            `json:"contractVersion"`
+	MessageID       string            `json:"messageId"`
+	Source          string            `json:"source"`
+	Target          string            `json:"target"`
+	Timestamp       int64             `json:"timestamp"`
+	Nonce           string            `json:"nonce"`
+	CorrelationID   string            `json:"correlationId"`
+	Type            string            `json:"type"`
+	TTL             *int64            `json:"ttl,omitempty"`
+	HMAC            string            `json:"hmac"`
+	Payload         map[string]any    `json:"payload"`
+	Operation       string            `json:"operation,omitempty"`
 	Metadata        map[string]string `json:"metadata,omitempty"`
 }
 
@@ -60,19 +60,30 @@ func (m MeshEnvelope) NestedPayload() map[string]any {
 	return m.Payload
 }
 
+func (m MeshEnvelope) NestedMetadata() map[string]string {
+	if metadata, ok := m.Payload["metadata"].(map[string]any); ok {
+		out := make(map[string]string, len(metadata))
+		for key, value := range metadata {
+			if text, ok := value.(string); ok { out[key] = text }
+		}
+		return out
+	}
+	return m.Metadata
+}
+
 func canonicalUnsignedEnvelope(m MeshEnvelope) ([]byte, error) {
 	return json.Marshal(struct {
-		Version string `json:"version"`
-		ContractVersion string `json:"contractVersion"`
-		MessageID string `json:"messageId"`
-		Source string `json:"source"`
-		Target string `json:"target"`
-		Timestamp int64 `json:"timestamp"`
-		Nonce string `json:"nonce"`
-		CorrelationID string `json:"correlationId"`
-		Type string `json:"type"`
-		TTL *int64 `json:"ttl,omitempty"`
-		Payload map[string]any `json:"payload"`
+		Version        string         `json:"version"`
+		ContractVersion string         `json:"contractVersion"`
+		MessageID      string         `json:"messageId"`
+		Source         string         `json:"source"`
+		Target         string         `json:"target"`
+		Timestamp      int64          `json:"timestamp"`
+		Nonce          string         `json:"nonce"`
+		CorrelationID  string         `json:"correlationId"`
+		Type           string         `json:"type"`
+		TTL            *int64         `json:"ttl,omitempty"`
+		Payload        map[string]any `json:"payload"`
 	}{m.Version,m.ContractVersion,m.MessageID,m.Source,m.Target,m.Timestamp,m.Nonce,m.CorrelationID,m.Type,m.TTL,m.Payload})
 }
 
@@ -82,10 +93,7 @@ func SignHMAC(m *MeshEnvelope, secret string) error {
 	if len(secret) < 16 { return errors.New("Mesh HMAC secret must contain at least 16 characters") }
 	unsigned, err := canonicalUnsignedEnvelope(*m)
 	if err != nil { return err }
-	mac := hmac.New(sha256.New, []byte(secret))
-	_, _ = mac.Write(unsigned)
-	m.HMAC = hex.EncodeToString(mac.Sum(nil))
-	return nil
+	mac := hmac.New(sha256.New, []byte(secret)); _, _ = mac.Write(unsigned); m.HMAC = hex.EncodeToString(mac.Sum(nil)); return nil
 }
 
 func VerifyHMAC(m MeshEnvelope, secret string, now time.Time) error {
@@ -93,19 +101,10 @@ func VerifyHMAC(m MeshEnvelope, secret string, now time.Time) error {
 	if err := m.Validate(); err != nil { return err }
 	if len(secret) < 16 { return errors.New("Mesh HMAC secret must contain at least 16 characters") }
 	if delta := now.UnixMilli() - m.Timestamp; delta > 30000 || delta < -30000 { return errors.New("envelope timestamp outside accepted clock skew") }
-	nonceMu.Lock()
-	for nonce, expiry := range seenNonces { if expiry <= now.UnixMilli() { delete(seenNonces, nonce) } }
-	if _, exists := seenNonces[m.Nonce]; exists { nonceMu.Unlock(); return errors.New("replay detected") }
-	nonceMu.Unlock()
-	unsigned, err := canonicalUnsignedEnvelope(m)
-	if err != nil { return err }
-	mac := hmac.New(sha256.New, []byte(secret))
-	_, _ = mac.Write(unsigned)
-	expected, err := hex.DecodeString(m.HMAC)
-	if err != nil || len(expected) != sha256.Size { return errors.New("invalid HMAC-SHA256 value") }
-	if !hmac.Equal(mac.Sum(nil), expected) { return errors.New("invalid Mesh HMAC") }
-	nonceMu.Lock(); seenNonces[m.Nonce] = now.UnixMilli() + 120000; nonceMu.Unlock()
-	return nil
+	nonceMu.Lock(); for nonce, expiry := range seenNonces { if expiry <= now.UnixMilli() { delete(seenNonces, nonce) } }; if _, exists := seenNonces[m.Nonce]; exists { nonceMu.Unlock(); return errors.New("replay detected") }; nonceMu.Unlock()
+	unsigned, err := canonicalUnsignedEnvelope(m); if err != nil { return err }
+	mac := hmac.New(sha256.New, []byte(secret)); _, _ = mac.Write(unsigned); expected, err := hex.DecodeString(m.HMAC); if err != nil || len(expected) != sha256.Size { return errors.New("invalid HMAC-SHA256 value") }; if !hmac.Equal(mac.Sum(nil), expected) { return errors.New("invalid Mesh HMAC") }
+	nonceMu.Lock(); seenNonces[m.Nonce] = now.UnixMilli() + 120000; nonceMu.Unlock(); return nil
 }
 
 func EncodeMesh(m MeshEnvelope)([]byte,error){if err:=m.Validate();err!=nil{return nil,err};return json.Marshal(m)}
