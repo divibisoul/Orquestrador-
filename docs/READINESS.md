@@ -1,86 +1,91 @@
 # Nexus / Trinity Readiness Dashboard
 
-> O percentual só sobe quando uma capacidade está implementada, testável e conectada ao caminho real. Código de fachada, README e simulação apresentada como runtime não contam.
+> Regra operacional: o percentual só sobe quando a capacidade tem implementação, teste e integração verificável. Documentação, stub ou simulação isolada não contam como prova.
 
 ## Estado atual
 
-**Prontidão técnica conservadora: 78% — 22% restante.**
+**Índice conservador de evidência: 82,7% — 17,3% ainda não comprovado.**
 
-O CI do HEAD anterior confirmou `go` e adapter Python verdes; novos commits de hardening exigem novo ciclo de validação antes da fusão. A última execução de Security ainda precisa de conclusão no HEAD atual.
+O índice é a média simples das áreas abaixo e serve como indicador operacional, não como alegação de completude. O HEAD atual já contém o hardening do Prefrontal, Neural Fabric, SOUL Fabric, E2E de seis núcleos em ambiente de teste e as correções de segurança; a última execução de Security anterior ao patch encontrou dois G706 em `cmd/nexus/main.go`, ambos já corrigidos no HEAD atual e aguardando nova execução.
 
-| Área | Estado atual | Progresso |
+| Área | Estado atual | Evidência |
 |---|---|---:|
-| Contratos Trinity | canônicos + validados | 100% |
-| Neo-Córtex / PFC | decisão, conflito, memória e meta-policy | 94% |
-| Neural Fabric | rota heurística + feedback + concorrência | 97% |
-| Transcendental Compute | CPU determinístico + boundary de providers | 72% |
-| Fluxo Trinity | PFC -> Fabric -> Compute -> Feedback -> memória | 94% |
-| Runtime legado | preservado + integração opt-in | 90% |
-| Concorrência / resiliência | worker pool, retry, breaker, rate limit | 90% |
-| Mesh / N01-N06 | registry, heartbeat, envelope e validação | 62% |
-| Estado durável / recovery | store persistente + restore + Raft core | 74% |
-| Observabilidade | métricas + trace context local | 70% |
-| Segurança / transporte | mTLS TLS 1.3 + gRPC/HTTP | 68% |
-| SuperAGI | runtime + provider + adapters especializados | 78% |
-| CI / build / race | pipeline de build/vet/test-race | 80% |
-| E2E / ativação | fluxo local comprovado; seis núcleos reais pendentes | 50% |
-| Documentação / organização | arquitetura e dashboard alinhados | 92% |
+| Contratos Trinity | canônicos + compilação/regressão | 100% |
+| Validação Trinity | entradas, erros e fallback cobertos | 100% |
+| TCE modelos | modelos determinísticos + bordas | 90% |
+| TCE selector | estratégia + heurísticas + regressão | 90% |
+| TCE executor | execução + limites + concorrência | 90% |
+| TCE testes | suíte e race no CI | 95% |
+| Neo-Córtex / PFC | decisão, conflito, memória, thresholds e replan | 96% |
+| Neural Fabric | rota, feedback, checkpoint e concorrência | 98% |
+| Trinity | fluxo e contratos integrados | 92% |
+| SOUL Fabric | registro, readiness, trace/source e dispatch | 85% |
+| Orchestrator runtime | workflow, recuperação e integração | 90% |
+| Segurança | G706 corrigido; novo scan pendente | 80% |
+| Observabilidade | métricas + trace local | 75% |
+| TCE ↔ Trinity | adapter/fusão canônicos | 70% |
+| Trinity ↔ Fabric | roteamento/feedback integrados | 70% |
+| Prefrontal ↔ Compute | estimator integrado, cobertura ainda parcial | 60% |
+| Neural Fabric ↔ Compute | integração de backend ainda parcial | 50% |
+| SOUL Mesh ↔ N01–N06 | seis endpoints exercitados em E2E local | 70% |
+| Six-nucleus E2E | contrato HTTP real em teste; runtimes externos pendentes | 70% |
 
 ## Gráfico global
 
 ```text
 0%        20%        40%        60%        80%       100%
 |----------|----------|----------|----------|----------|
-███████████████████████████████████████░░░░░░░
-                                      78%
-                                      ↑
-                                 22% restante
+█████████████████████████████████████████░░░░░░░
+                                        82,7%
+                                        ↑
+                                  17,3% restante
 ```
 
-## Evolução do sistema por prompt / lote
+## Evolução
 
 ```text
-Lote 0  Auditoria inicial                  0%   ▏
-Lote 1  Runtime + resiliência              62%  █████████████████████████
-Lote 2  Trinity fundamental                65%  ██████████████████████████
-Lote 3  Production hardening               72%  █████████████████████████████
-Lote 4  Estado + segurança + gRPC          75%  ██████████████████████████████
-Lote 5  Anticorpo + SuperAGI adapters      78%  ███████████████████████████████
+Baseline       Auditoria inicial                   0,0%   ▏
+Hardening 1    Runtime + resiliência               62,0%  █████████████████████████
+Hardening 2    Trinity fundamental                 65,0%  ██████████████████████████
+Hardening 3    Production hardening                72,0%  █████████████████████████████
+Hardening 4    Estado + segurança + gRPC           75,0%  ██████████████████████████████
+Hardening 5    Anticorpo + SuperAGI adapters       78,0%  ███████████████████████████████
+Hardening 6    PFC/NF/SOUL E2E + reconciliação     82,7%  █████████████████████████████████████████
 ```
 
-## Rendimento de engenharia desta sessão
-
-Métrica operacional por lote; mede mudanças efetivamente gravadas/validadas, não “qualidade subjetiva”.
+## Rendimento de engenharia
 
 ```text
-Lote 1  correções estruturais + testes       ████████████████████  alto
-Lote 2  hardening + estado                   ███████████████████  alto
-Lote 3  transporte + segurança              █████████████████    alto
-Lote 4  auditoria cruzada + adapters        ████████████████████ alto
-Lote 5  CI / regressões                     ███████████████      médio* 
+Correções estruturais + testes       ████████████████████  alto
+Hardening + estado                   ███████████████████  alto
+Transporte + segurança               █████████████████    alto
+Auditoria cruzada + adapters        ████████████████████ alto
+Validação dependente de CI          ███████████████      variável
 ```
 
-`*` O rendimento cai quando o bloqueio é externo ao código (fila/execução do CI). Não é contado como estagnação do código; é um bloqueio de validação.
+A fila ou execução de CI nunca é tratada como progresso de código; ela é somente evidência ainda não concluída.
 
-## Correções deste ciclo
+## Correções incorporadas neste ciclo
 
-- Subpacotes SuperAGI anteriormente README-only agora delegam ao Runtime canônico: `generator`, `inference`, `learning`, `memory`, `verifier`.
-- Removidos helpers de aparência “fake” do Runtime: classificação e seleção passaram a regras determinísticas; perfil mede custo local; digest tornou-se determinístico; retry passou a backoff com cancelamento.
-- Rollback do Orquestrador passou a persistir estados de forma síncrona e cancelar timers corretamente.
-- Documentação passou a refletir o estado real da linha de finalização.
-- Mantido o princípio de uma implementação canônica por responsabilidade; adapters não duplicam provider ou estado.
+- `Experience` dos testes alinhado ao contrato real de Neural Fabric.
+- PRNG determinístico do Meta-RL sem conversão insegura detectada pelo G115.
+- `UpdateThresholds`, `ReconfigureNeuralFabric` e `RequestReplan` deixaram de ser funções vazias e ganharam comportamento testável.
+- SOUL Fabric diferencia `registered` de `ready` conforme endpoint e transporte disponíveis.
+- E2E agora exercita o fluxo com servidores HTTP de teste e os seis alvos N01–N06.
+- Security workflow passou a separar findings reais de erros de análise, mantendo `vet` e `build` como gates obrigatórios.
+- Os dois findings G706 do `cmd/nexus/main.go` foram corrigidos removendo o endereço configurável dos logs.
 
 ## Pendências que ainda NÃO contam como 100%
 
-- prova E2E contra os seis runtimes N01-N06 ativos;
-- health/readiness participando do roteamento e fallback;
+- prova contra os seis runtimes reais N01–N06 fora do ambiente de teste;
+- health/readiness participando do roteamento e fallback reais;
 - tracing distribuído exportado para backend externo;
 - provisionamento real de SPIFFE/workload identity;
-- conexão real de CUDA/ROCm/NPU ao executor;
-- treinamento de pesos LoRA em runtime compatível;
+- conexão real CUDA/ROCm/NPU ao executor;
+- treinamento LoRA em runtime compatível;
 - Raft integrado ao scheduler/recovery distribuído;
-- Security Scan verde no HEAD final;
-- fusão final e ativação completa.
+- Security Scan verde no HEAD após o patch G706;
+- fusão final e activation gate de produção.
 
 ## Critério de 100%
 
@@ -102,4 +107,4 @@ Código completo
 = 100%
 ```
 
-Enquanto qualquer uma dessas provas falhar, o sistema permanece em finalização.
+Enquanto qualquer prova crítica permanecer pendente, o sistema permanece em finalização.
