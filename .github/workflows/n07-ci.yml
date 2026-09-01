@@ -102,8 +102,8 @@ jobs:
       - uses: actions/checkout@v4
       - name: Build production image
         run: docker build --pull --tag n07-orquestrador:ci .
-      - name: Inspect image
+      - name: Inspect image without starting the server
         run: |
           set -euo pipefail
           docker image inspect n07-orquestrador:ci >/dev/null
-          docker run --rm n07-orquestrador:ci /app/n07 -h >/dev/null 2>&1 || true
+          test "$(docker run --rm --entrypoint /bin/sh n07-orquestrador:ci -c 'test -x /app/n07 && test -x /usr/local/bin/guppy && echo ok')" = ok
