@@ -62,7 +62,7 @@ func (g *HTTPGateway) Handler(w http.ResponseWriter, r *http.Request) {
 		writeMeshJSON(w, http.StatusBadRequest, gatewayError(envelope, err.Error()))
 		return
 	}
-	result, err := g.Engine.Execute(r.Context(), envelope.Operation, values, envelope.Metadata)
+	result, err := g.Engine.ExecuteWithTrace(r.Context(), envelope.CorrelationID, envelope.Source, envelope.Operation, values, envelope.Metadata)
 	status := http.StatusOK
 	if err != nil {
 		status = http.StatusBadRequest
