@@ -118,20 +118,38 @@ func (g *FederatedGateway) handleControl(w http.ResponseWriter, in protocol.Mesh
 			basePayload[key] = value
 		}
 	case "mesh.capability.resolve":
-		requested := strings.TrimSpace(in.NestedPayload()["capability"].(string))
+		requestedPayload := in.NestedPayload()
+		requested, ok := requestedPayload["capability"].(string)
+		if !ok || strings.TrimSpace(requested) == "" {
+			g.base.respond(w, http.StatusBadRequest, in, "ERROR", map[string]any{"error": "mesh.capability.resolve requires payload.capability"})
+			return
+		}
+		requested = strings.TrimSpace(requested)
 		owner := ""
 		local := isLocalOperation(g.engine, requested)
 		if local {
 			owner = protocol.N07
 		} else if known := KnownFusionOwner(requested); known != "" {
 			owner = known
+		} else {
+			for _, candidate := range g.peers.ConfiguredPeers() {
+				if candidate.Circuit == CircuitOpen && time.Now().Before(candidate.RetryAfter) {
+					continue
+				}
+				description, err := g.peers.Discover(rContextOrBackground(in), candidate.Nucleus)
+				if err == nil && capabilityInDescription(description, requested) {
+					owner = candidate.Nucleus
+					break
+				}
+			}
 		}
 		basePayload["capability"] = requested
 		basePayload["local"] = local
 		basePayload["owner"] = owner
 		basePayload["executable"] = local || owner != ""
 	case "mesh.supergpu.describe":
-		basePayload["superGPU"] = map[string]any{"available": true, "local": true, "parallel": true, "federated": true}
+		health := g.engine.Health()
+		basePayload["superGPU"] = map[string]any{"local": true, "parallel": true, "federated": true, "health": health["compute"]}
 	case "mesh.describe", "mesh.discovery", "mesh.capabilities", "mesh.fusion.describe":
 		g.catalogMu.RLock()
 		catalog := append([]FusionCapability(nil), g.catalog...)
@@ -142,6 +160,11 @@ func (g *FederatedGateway) handleControl(w http.ResponseWriter, in protocol.Mesh
 		basePayload["transports"] = []string{"IN_PROCESS", "LOOPBACK_HTTP", "HTTP", "REALTIME", "EVENT"}
 	}
 	g.base.respond(w, http.StatusOK, in, "TASK_RESULT", basePayload)
+}
+
+func rContextOrBackground(in protocol.MeshEnvelope) context.Context {
+	_ = in
+	return context.Background()
 }
 
 func (g *FederatedGateway) handleComposition(w http.ResponseWriter, r *http.Request, in protocol.MeshEnvelope) {
