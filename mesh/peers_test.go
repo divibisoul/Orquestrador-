@@ -67,3 +67,40 @@ func TestPeerClientDoesNotUseLegacySelfRoute(t *testing.T) {
 		t.Fatal("expected N07 self-call to be rejected")
 	}
 }
+
+func TestDiscoveryCacheReturnsCopyAndInvalidates(t *testing.T) {
+	p, err := NewPeerClient(nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	p.discoveryCacheTTL = time.Minute
+	original := map[string]any{"executableCapabilities": []any{"neural.forward@1.0.0"}}
+	p.storeDiscovery(protocol.N01, original)
+	original["mutated"] = true
+
+	cached, ok := p.discoveryFromCache(protocol.N01)
+	if !ok {
+		t.Fatal("expected fresh discovery cache entry")
+	}
+	if _, exists := cached["mutated"]; exists {
+		t.Fatal("cache returned aliased map data")
+	}
+
+	p.invalidateDiscovery(protocol.N01)
+	if _, ok := p.discoveryFromCache(protocol.N01); ok {
+		t.Fatal("expected discovery cache entry to be invalidated")
+	}
+}
+
+func TestDiscoveryCacheExpires(t *testing.T) {
+	p, err := NewPeerClient(nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	p.discoveryCacheTTL = time.Nanosecond
+	p.storeDiscovery(protocol.N01, map[string]any{"status": "healthy"})
+	time.Sleep(2 * time.Millisecond)
+	if _, ok := p.discoveryFromCache(protocol.N01); ok {
+		t.Fatal("expected expired discovery cache entry")
+	}
+}
