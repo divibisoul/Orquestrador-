@@ -17,6 +17,7 @@ import (
 	"github.com/divibisoul/Orquestrador-/neural"
 	"github.com/divibisoul/Orquestrador-/orchestrator"
 	"github.com/divibisoul/Orquestrador-/prefrontal"
+	"github.com/divibisoul/Orquestrador-/storage/web3storage"
 	"github.com/divibisoul/Orquestrador-/supergpu"
 )
 
@@ -43,6 +44,12 @@ func main() {
 		log.Fatal(err)
 	}
 
+	web3, web3Err := web3storage.NewFromEnv()
+	if web3Err != nil && !errors.Is(web3Err, web3storage.ErrNotConfigured) {
+		log.Printf("web3.storage adapter disabled: %v", web3Err)
+		web3 = nil
+	}
+
 	mux := http.NewServeMux()
 	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusOK, e.Health())
@@ -64,6 +71,80 @@ func main() {
 		writeJSON(w, http.StatusOK, orchestrator.SOULTopology())
 	})
 	mux.Handle("/api/soul-mesh", mesh.NewEnhancedFederatedHTTPGateway(e))
+	mux.HandleFunc("/storage/web3/health", func(w http.ResponseWriter, r *http.Request) {
+		if err := requireAppBearer(r); err != nil {
+			writeJSON(w, http.StatusUnauthorized, map[string]string{"error": err.Error()})
+			return
+		}
+		if web3 == nil {
+			writeJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "web3.storage is not configured"})
+			return
+		}
+		ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
+		defer cancel()
+		if err := web3.Healthy(ctx); err != nil {
+			writeJSON(w, http.StatusBadGateway, map[string]string{"provider": "web3.storage", "healthy": "false", "error": err.Error()})
+			return
+		}
+		writeJSON(w, http.StatusOK, map[string]any{"provider": "web3.storage", "healthy": true})
+	})
+	mux.HandleFunc("/storage/web3/upload", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "POST required"})
+			return
+		}
+		if err := requireAppBearer(r); err != nil {
+			writeJSON(w, http.StatusUnauthorized, map[string]string{"error": err.Error()})
+			return
+		}
+		if web3 == nil {
+			writeJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "web3.storage is not configured"})
+			return
+		}
+		maxUpload := web3storage.ConfigFromEnv().MaxUpload
+		r.Body = http.MaxBytesReader(w, r.Body, maxUpload+1<<20)
+		if err := r.ParseMultipartForm(maxUpload + 1<<20); err != nil {
+			writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid multipart upload: " + err.Error()})
+			return
+		}
+		file, header, err := r.FormFile("file")
+		if err != nil {
+			writeJSON(w, http.StatusBadRequest, map[string]string{"error": "file field is required"})
+			return
+		}
+		defer file.Close()
+		ctx, cancel := context.WithTimeout(r.Context(), web3storage.ConfigFromEnv().Timeout)
+		defer cancel()
+		cid, err := web3.Upload(ctx, header.Filename, header.Size, file)
+		if err != nil {
+			writeJSON(w, http.StatusBadGateway, map[string]string{"provider": "web3.storage", "error": err.Error()})
+			return
+		}
+		writeJSON(w, http.StatusOK, map[string]any{"provider": "web3.storage", "cid": cid, "name": header.Filename})
+	})
+	mux.HandleFunc("/storage/web3/status", func(w http.ResponseWriter, r *http.Request) {
+		if err := requireAppBearer(r); err != nil {
+			writeJSON(w, http.StatusUnauthorized, map[string]string{"error": err.Error()})
+			return
+		}
+		if web3 == nil {
+			writeJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "web3.storage is not configured"})
+			return
+		}
+		cid := strings.TrimSpace(r.URL.Query().Get("cid"))
+		if cid == "" {
+			writeJSON(w, http.StatusBadRequest, map[string]string{"error": "cid query parameter is required"})
+			return
+		}
+		ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
+		defer cancel()
+		status, err := web3.Status(ctx, cid)
+		if err != nil {
+			writeJSON(w, http.StatusBadGateway, map[string]string{"provider": "web3.storage", "error": err.Error()})
+			return
+		}
+		writeJSON(w, http.StatusOK, status)
+	})
 	mux.HandleFunc("/execute", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "POST required"})
@@ -94,7 +175,7 @@ func main() {
 	if addr == "" {
 		addr = ":8080"
 	}
-	srv := &http.Server{Addr: addr, Handler: mux, ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 15 * time.Second, WriteTimeout: 15 * time.Second, IdleTimeout: 60 * time.Second}
+	srv := &http.Server{Addr: addr, Handler: mux, ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 15 * time.Minute, WriteTimeout: 15 * time.Minute, IdleTimeout: 60 * time.Second}
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 	if registry := strings.TrimSpace(os.Getenv("N07_MESH_REGISTRY_URL")); registry != "" {
@@ -106,7 +187,7 @@ func main() {
 			}
 			regCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
 			defer cancel()
-			if _, err := a.Register(regCtx, registry, []string{"neural.forward@1.0.0", "neural.learn@1.0.0", "compute.execute@1.0.0", "cognitive.execute@1.0.0", "mesh.ping", "mesh.describe", "mesh.supergpu.describe", "mesh.supergpu.execute", "mesh.supergpu.parallel"}); err != nil {
+			if _, err := a.Register(regCtx, registry, []string{"neural.forward@1.0.0", "neural.learn@1.0.0", "compute.execute@1.0.0", "cognitive.execute@1.0.0", "mesh.ping", "mesh.describe", "mesh.supergpu.describe", "mesh.supergpu.execute", "mesh.supergpu.parallel", "storage.web3.upload@1.0.0", "storage.web3.status@1.0.0"}); err != nil {
 				log.Printf("mesh registration failed: %v", err)
 			}
 		}()
