@@ -19,15 +19,7 @@ import (
 )
 
 type Handler func(context.Context, protocol.Message) (protocol.Result, error)
-type OperationRegistration struct {
-	Name string
-	Version string
-	Handler Handler
-	Timeout time.Duration
-	RateLimit int
-	Schema json.RawMessage
-	Metadata map[string]string
-}
+type OperationRegistration struct { Name string; Version string; Handler Handler; Timeout time.Duration; RateLimit int; Schema json.RawMessage; Metadata map[string]string }
 type traceState struct { cancel context.CancelFunc; stage string; device string; started time.Time }
 type rateState struct { window time.Time; count int }
 type routeCacheEntry struct { handler Handler; expires time.Time; operation string; version string }
