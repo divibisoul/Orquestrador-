@@ -6,17 +6,17 @@
 
 Branch: `upgrade/n07-production-v7`
 
-Último commit verificado nesta rodada: `3e08c01b1fb3552d280ae60460c14ec79821cfa7`
+Último commit verificado nesta rodada: `a833133292799759d578cffba59182942ba64c14`
 
 ### Gráfico operacional
 
 ```text
 Implementação das 40 funções    ████████████████████ 100% declaradas/implementadas
 Evidência executável             ████████████████████ 40/40 por teste direto/fluxo
-Integração Mesh/N07              ███████████████░░░░░ 75% contrato + ponte executável
+Integração Mesh/N07              ████████████████░░░░ 80% contrato + ponte executável + erros propagados
 N01–N06 externo real             █████░░░░░░░░░░░░░░ 25% ainda não demonstrado
-Ferramentas/funções fusionadas   █████░░░░░░░░░░░░░  25% contrato preparado; fusão final pendente
-Produção/activation gate         █████░░░░░░░░░░░░░  25% dependente das provas externas
+Ferramentas/funções fusionadas   ██████░░░░░░░░░░░░ 30% contrato preparado + bridge executável; fusão final pendente
+Produção/activation gate         █████░░░░░░░░░░░░░ 25% dependente das provas externas
 ```
 
 ## Matriz por núcleo
@@ -53,7 +53,7 @@ MeshFromMessage
 SOUL Mesh response
 ```
 
-A ponte preserva `correlationId/trace_id`, origem/destino, payload numérico legado e payload JSON genérico.
+A ponte preserva `correlationId/trace_id`, origem/destino, payload numérico legado e payload JSON genérico. Erros de execução também retornam ao chamador como erro, sem falso sucesso.
 
 ## Gaps que continuam ativos
 
