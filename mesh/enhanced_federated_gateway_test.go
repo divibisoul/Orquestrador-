@@ -12,7 +12,7 @@ import (
 	"github.com/divibisoul/Orquestrador-/orchestrator"
 	"github.com/divibisoul/Orquestrador-/prefrontal"
 	"github.com/divibisoul/Orquestrador-/protocol"
-	"github.com/divibisoul/Orquestrador-/supergpu"
+	sg "github.com/divibisoul/Orquestrador-/supergpu"
 )
 
 func TestEnhancedFederatedGatewayParallelExecution(t *testing.T) {
@@ -76,7 +76,7 @@ func TestEnhancedFederatedGatewayParallelExecution(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	engine, err := orchestrator.New(n, c, supergpu.New(nil))
+	engine, err := orchestrator.New(n, c, sg.New(nil))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -92,7 +92,7 @@ func TestEnhancedFederatedGatewayParallelExecution(t *testing.T) {
 		Source:          protocol.N01,
 		Target:          protocol.N07,
 		Timestamp:       time.Now().UnixMilli(),
-		Nonce:           protocol.NewTraceID(),
+		Nonce:            protocol.NewTraceID(),
 		CorrelationID:   "trace-supergpu",
 		Type:            "CAPABILITY_REQUEST",
 		Payload: map[string]any{
