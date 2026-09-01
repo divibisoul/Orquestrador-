@@ -9,7 +9,10 @@ import (
 	"time"
 )
 
-const defaultNeuralTaskTimeout = 15 * time.Second
+const (
+	defaultNeuralTaskTimeout = 15 * time.Second
+	maxFederatedParallelism  = 32
+)
 
 // RemotePeer is the transport-neutral boundary used to expose the N07 neural
 // runtime to every nucleus without copying the neural implementation.
@@ -62,6 +65,13 @@ func (f *Fabric) Members() []string {
 }
 
 func (f *Fabric) Assign(task NeuralTask, nucleus string) (FederatedResult, error) {
+	return f.assignContext(context.Background(), task, nucleus)
+}
+
+func (f *Fabric) assignContext(parent context.Context, task NeuralTask, nucleus string) (FederatedResult, error) {
+	if parent == nil {
+		return FederatedResult{}, errors.New("neural parent context is required")
+	}
 	if task.ID == "" || task.Operation == "" || task.CorrelationID == "" {
 		return FederatedResult{}, errors.New("task id, operation and correlation are required")
 	}
@@ -83,7 +93,7 @@ func (f *Fabric) Assign(task NeuralTask, nucleus string) (FederatedResult, error
 	}
 
 	started := time.Now()
-	ctx := context.Background()
+	ctx := parent
 	var cancel context.CancelFunc
 	if task.Deadline.IsZero() {
 		ctx, cancel = context.WithTimeout(ctx, defaultNeuralTaskTimeout)
@@ -111,25 +121,39 @@ func (f *Fabric) Assign(task NeuralTask, nucleus string) (FederatedResult, error
 }
 
 func (f *Fabric) Broadcast(task NeuralTask) []FederatedResult {
+	return f.BroadcastContext(context.Background(), task)
+}
+
+// BroadcastContext fans a task out to all registered nuclei while respecting
+// the caller's cancellation and the global federation concurrency bound.
+func (f *Fabric) BroadcastContext(ctx context.Context, task NeuralTask) []FederatedResult {
 	members := f.Members()
 	results := make([]FederatedResult, len(members))
-	var wg sync.WaitGroup
-	wg.Add(len(members))
-	for i, nucleus := range members {
-		go func(i int, nucleus string) {
-			defer wg.Done()
-			results[i], _ = f.Assign(task, nucleus)
-		}(i, nucleus)
+	if len(members) == 0 {
+		return results
 	}
-	wg.Wait()
-	return results
+	return f.parallelMembers(ctx, task, members)
 }
 
 func (f *Fabric) Parallel(tasks []NeuralTask) []FederatedResult {
+	return f.ParallelContext(context.Background(), tasks)
+}
+
+// ParallelContext executes independent neural tasks concurrently, but caps
+// admission to protect the N07 process from unbounded resource use. Result
+// ordering remains identical to input ordering for deterministic callers.
+func (f *Fabric) ParallelContext(ctx context.Context, tasks []NeuralTask) []FederatedResult {
 	results := make([]FederatedResult, len(tasks))
 	if len(tasks) == 0 {
 		return results
 	}
+	if ctx == nil {
+		for i := range results {
+			results[i].Error = "neural parent context is required"
+		}
+		return results
+	}
+
 	members := f.Members()
 	if len(members) == 0 {
 		for i := range results {
@@ -139,21 +163,60 @@ func (f *Fabric) Parallel(tasks []NeuralTask) []FederatedResult {
 	}
 
 	var wg sync.WaitGroup
+	sem := make(chan struct{}, maxFederatedParallelism)
 	wg.Add(len(tasks))
 	for i, task := range tasks {
 		go func(i int, task NeuralTask) {
 			defer wg.Done()
+			select {
+			case sem <- struct{}{}:
+				defer func() { <-sem }()
+			case <-ctx.Done():
+				results[i] = FederatedResult{Error: ctx.Err().Error()}
+				return
+			}
+
 			target := task.Target
-			// Source was historically used as the routing hint. Preserve that
-			// compatibility while making Target the canonical routing field.
-			if target == "" {
-				target = task.Source
-			}
-			if target == "" {
-				target = members[i%len(members)]
-			}
-			results[i], _ = f.Assign(task, target)
+		// Source was historically used as the routing hint. Preserve that
+		// compatibility while making Target the canonical routing field.
+		if target == "" {
+			target = task.Source
+		}
+		if target == "" {
+			target = members[i%len(members)]
+		}
+		results[i], _ = f.assignContext(ctx, task, target)
 		}(i, task)
+	}
+	wg.Wait()
+	return results
+}
+
+func (f *Fabric) parallelMembers(ctx context.Context, task NeuralTask, members []string) []FederatedResult {
+	results := make([]FederatedResult, len(members))
+	if ctx == nil {
+		for i := range results {
+			results[i].Nucleus = members[i]
+			results[i].Error = "neural parent context is required"
+		}
+		return results
+	}
+
+	var wg sync.WaitGroup
+	sem := make(chan struct{}, maxFederatedParallelism)
+	wg.Add(len(members))
+	for i, nucleus := range members {
+		go func(i int, nucleus string) {
+			defer wg.Done()
+			select {
+			case sem <- struct{}{}:
+				defer func() { <-sem }()
+			case <-ctx.Done():
+				results[i] = FederatedResult{Nucleus: nucleus, Error: ctx.Err().Error()}
+				return
+			}
+			results[i], _ = f.assignContext(ctx, task, nucleus)
+		}(i, nucleus)
 	}
 	wg.Wait()
 	return results
