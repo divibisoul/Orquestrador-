@@ -55,3 +55,23 @@ func TestPFCUsesEstimator(t *testing.T) {
 		t.Fatalf("estimate not used: %+v %v", d, err)
 	}
 }
+
+func TestCortexOperationalControls(t *testing.T) {
+	c := NewCortex()
+	c.EvaluateOutcome(2, 3)
+	c.UpdateThresholds()
+	state := c.ReadState()
+	threshold, ok := state.Constraints["risk_threshold"]
+	if !ok || threshold < .25 || threshold > .9 {
+		t.Fatalf("invalid risk threshold: %v %v", threshold, ok)
+	}
+	c.ReconfigureNeuralFabric()
+	c.RequestReplan()
+	state = c.ReadState()
+	if state.Context["neural_fabric.reconfigure_requested"] != true {
+		t.Fatal("neural fabric reconfiguration request not recorded")
+	}
+	if state.Context["orchestrator.replan_requested"] != true {
+		t.Fatal("replan request not recorded")
+	}
+}
