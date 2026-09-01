@@ -2,11 +2,12 @@ package mesh
 
 import (
 	"bytes"
-	"context"
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"strings"
 	"sync"
 	"testing"
@@ -22,13 +23,12 @@ import (
 const federationE2ESecret = "n07-e2e-secret-0123456789abcdef"
 
 func TestN01ToN07FederatesAcrossN04N05N06(t *testing.T) {
-	for _, key := range []string{"SOUL_MESH_N04_URL", "SOUL_MESH_N05_URL", "SOUL_MESH_N06_URL", "SOUL_MESH_HMAC_SECRET", "N07_MESH_HMAC_SECRET", "N07_MESH_ALLOW_UNAUTH_LOCAL"} {
+	for _, key := range []string{"SOUL_MESH_N04_URL", "SOUL_MESH_N05_URL", "SOUL_MESH_N06_URL", "SOUL_MESH_HMAC_SECRET", "N07_MESH_ALLOW_UNAUTH_LOCAL"} {
 		t.Setenv(key, "")
 	}
 	t.Setenv("SOUL_MESH_HMAC_SECRET", federationE2ESecret)
-	t.Setenv("N07_MESH_HMAC_SECRET", federationE2ESecret)
 
-	servers := map[string]*httptest.Server{}
+	servers := make(map[string]*httptest.Server, 3)
 	var mu sync.Mutex
 	for _, nucleus := range []string{"N04", "N05", "N06"} {
 		nucleus := nucleus
@@ -46,29 +46,32 @@ func TestN01ToN07FederatesAcrossN04N05N06(t *testing.T) {
 			defer mu.Unlock()
 			capability := in.Capability()
 			payload := map[string]any{}
-			status := "ok"
 			switch capability {
 			case "mesh.discovery", "mesh.describe":
 				payload = map[string]any{"executableCapabilities": []string{"e2e." + strings.ToLower(nucleus)}}
 			case "e2e.n04", "e2e.n05", "e2e.n06":
 				payload = map[string]any{"values": []any{float64(len(nucleus)), float64(len(in.Payload))}, "status": "ok"}
 			default:
-				status = "error"
 				payload = map[string]any{"error": "unsupported test capability"}
 			}
-			response := map[string]any{"protocol": "soul-mesh/1", "contractVersion": protocol.SoulMeshContractVersion, "id": protocol.NewTraceID(), "correlationId": in.CorrelationID, "source": nucleus, "target": protocol.N07, "kind": "response", "capability": capability, "payload": payload, "timestamp": time.Now().UnixMilli(), "nonce": protocol.NewTraceID()}
-			env := protocol.MeshEnvelope{Version: protocol.SoulMeshVersion, ContractVersion: protocol.SoulMeshContractVersion, MessageID: response["id"].(string), Source: nucleus, Target: protocol.N07, Timestamp: response["timestamp"].(int64), Nonce: response["nonce"].(string), CorrelationID: in.CorrelationID, Type: "TASK_RESULT", Payload: map[string]any{"capability": capability, "payload": payload}}
-			if status != "ok" {
+			responseID := protocol.NewTraceID()
+			responseNonce := protocol.NewTraceID()
+			response := map[string]any{"protocol": "soul-mesh/1", "contractVersion": protocol.SoulMeshContractVersion, "id": responseID, "correlationId": in.CorrelationID, "source": nucleus, "target": protocol.N07, "kind": "response", "capability": capability, "payload": payload, "timestamp": time.Now().UnixMilli(), "nonce": responseNonce}
+			if capability == "mesh.discovery" || capability == "mesh.describe" {
+				response["executableCapabilities"] = payload["executableCapabilities"]
+			}
+			env := protocol.MeshEnvelope{Version: protocol.SoulMeshVersion, ContractVersion: protocol.SoulMeshContractVersion, MessageID: responseID, Source: nucleus, Target: protocol.N07, Timestamp: response["timestamp"].(int64), Nonce: responseNonce, CorrelationID: in.CorrelationID, Type: "TASK_RESULT", Payload: map[string]any{"capability": capability, "payload": payload}}
+			if _, ok := payload["error"]; ok {
 				env.Type = "ERROR"
 			}
 			if err := protocol.SignHMAC(&env, federationE2ESecret); err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
-			response["nonce"] = env.Nonce
 			response["hmac"] = env.HMAC
 			w.Header().Set("content-type", "application/json")
-			w.WriteHeader(http.StatusOK)
+			w.Header().Set("x-soul-mesh-nonce", env.Nonce)
+			w.Header().Set("x-soul-mesh-hmac", env.HMAC)
 			_ = json.NewEncoder(w).Encode(response)
 		}))
 	}
@@ -105,21 +108,15 @@ func TestN01ToN07FederatesAcrossN04N05N06(t *testing.T) {
 	correlation := "e2e-n01-to-n07"
 	wire := canonicalRequest("request", "supergpu.parallel", correlation, nil)
 	wire["payload"] = payload
-	raw, ok := wire["payload"].(map[string]any)
-	if !ok {
-		t.Fatal("test payload was not constructed")
-	}
+	raw := wire["payload"].(map[string]any)
 	raw["capability"] = "supergpu.parallel"
-	canonical, err := canonicalN01Bytes(canonicalWireEnvelope{Protocol: wire["protocol"].(string), ContractVersion: wire["contractVersion"].(string), ID: wire["id"].(string), CorrelationID: correlation, Source: "N01", Target: "N07", Kind: "request", Capability: "supergpu.parallel", Payload: raw, Timestamp: wire["timestamp"].(int64), Nonce: wire["nonce"].(string)}, wire["nonce"].(string))
+	canonical, err := canonicalN01Bytes(canonicalWireEnvelope{Protocol: "soul-mesh/1", ContractVersion: protocol.SoulMeshContractVersion, ID: wire["id"].(string), CorrelationID: correlation, Source: "N01", Target: "N07", Kind: "request", Capability: "supergpu.parallel", Payload: raw, Timestamp: wire["timestamp"].(int64), Nonce: wire["nonce"].(string)}, wire["nonce"].(string))
 	if err != nil {
 		t.Fatal(err)
 	}
-	mac := protocol.NewMessage("N01", "N07", "command", "supergpu.parallel", nil)
-	_ = mac
-	_ = context.Background()
-	_ = bytes.NewBuffer(nil)
-	_ = os.Getenv("N07_MESH_HMAC_SECRET")
-	hmacValue := signHeaderTest(canonical, federationE2ESecret)
+	mac := hmac.New(sha256.New, []byte(federationE2ESecret))
+	_, _ = mac.Write(canonical)
+	hmacValue := hex.EncodeToString(mac.Sum(nil))
 	wire["hmac"] = hmacValue
 	body, err := json.Marshal(wire)
 	if err != nil {
@@ -144,21 +141,21 @@ func TestN01ToN07FederatesAcrossN04N05N06(t *testing.T) {
 	if !ok || result["requiredFailure"] != false {
 		t.Fatalf("federation reported required failure: %#v", result)
 	}
-	for _, task := range []string{"n04", "n05", "n06"} {
+	tasks, ok := result["tasks"].([]any)
+	if !ok || len(tasks) != 3 {
+		t.Fatalf("expected three federated tasks: %#v", result["tasks"])
+	}
+	for _, taskID := range []string{"n04", "n05", "n06"} {
 		found := false
-		for _, item := range result["tasks"].([]any) {
+		for _, item := range tasks {
 			row := item.(map[string]any)
-			if row["id"] == task && row["status"] == "ok" {
+			if row["id"] == taskID && row["status"] == "ok" {
 				found = true
 				break
 			}
 		}
 		if !found {
-			t.Fatalf("task %s did not complete successfully: %#v", task, result["tasks"])
+			t.Fatalf("task %s did not complete successfully: %#v", taskID, tasks)
 		}
 	}
-}
-
-func signHeaderTest(data []byte, secret string) string {
-	return hexHMACForTest(data, secret)
 }
