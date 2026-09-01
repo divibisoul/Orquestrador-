@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
-	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -77,36 +76,31 @@ func TestEnhancedFederatedGatewayParallelExecution(t *testing.T) {
 	gateway.base.peers.peers[protocol.N01] = PeerInfo{Nucleus: protocol.N01, URL: peer.URL, Circuit: CircuitClosed}
 	gateway.base.peers.mu.Unlock()
 
-	makeRequest := func(trace, taskID string) protocol.MeshEnvelope {
-		request := protocol.MeshEnvelope{
-			Version:         protocol.SoulMeshVersion,
-			ContractVersion: protocol.SoulMeshContractVersion,
-			MessageID:       protocol.NewTraceID(),
-			Source:          protocol.N01,
-			Target:          protocol.N07,
-			Timestamp:       time.Now().UnixMilli(),
-			Nonce:            protocol.NewTraceID(),
-			CorrelationID:   trace,
-			Type:            "CAPABILITY_REQUEST",
-			Payload: map[string]any{
-				"capability": "mesh.supergpu.parallel",
-				"payload": map[string]any{
-					"tasks": []map[string]any{{
-						"id":         taskID,
-						"capability": "task.alpha",
-						"payload":    map[string]any{"document": taskID},
-						"required":   true,
-					}},
-				},
+	request := protocol.MeshEnvelope{
+		Version:         protocol.SoulMeshVersion,
+		ContractVersion: protocol.SoulMeshContractVersion,
+		MessageID:       protocol.NewTraceID(),
+		Source:          protocol.N01,
+		Target:          protocol.N07,
+		Timestamp:       time.Now().UnixMilli(),
+		Nonce:            protocol.NewTraceID(),
+		CorrelationID:   "trace-supergpu",
+		Type:            "CAPABILITY_REQUEST",
+		Payload: map[string]any{
+			"capability": "mesh.supergpu.parallel",
+			"payload": map[string]any{
+				"tasks": []map[string]any{{
+					"id":         "task-alpha",
+					"capability": "task.alpha",
+					"payload":    map[string]any{"document": "alpha"},
+					"required":   true,
+				}},
 			},
-		}
-		if err := protocol.SignHMAC(&request, secret); err != nil {
-			t.Fatal(err)
-		}
-		return request
+		},
 	}
-
-	request := makeRequest("trace-supergpu", "task-alpha")
+	if err := protocol.SignHMAC(&request, secret); err != nil {
+		t.Fatal(err)
+	}
 	body, err := json.Marshal(request)
 	if err != nil {
 		t.Fatal(err)
@@ -138,11 +132,17 @@ func TestEnhancedFederatedGatewayRejectsDuplicateTaskIDs(t *testing.T) {
 	t.Setenv("SOUL_MESH_HMAC_SECRET", secret)
 	t.Setenv("N07_MESH_ALLOW_UNAUTH_LOCAL", "false")
 	n, err := neural.New(8, 0.05)
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	c, err := prefrontal.New(0.10, 32)
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	engine, err := orchestrator.New(n, c, sg.New(nil))
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	gateway := NewEnhancedFederatedHTTPGateway(engine)
 	request := protocol.MeshEnvelope{
 		Version:         protocol.SoulMeshVersion,
@@ -164,9 +164,13 @@ func TestEnhancedFederatedGatewayRejectsDuplicateTaskIDs(t *testing.T) {
 			},
 		},
 	}
-	if err := protocol.SignHMAC(&request, secret); err != nil { t.Fatal(err) }
+	if err := protocol.SignHMAC(&request, secret); err != nil {
+		t.Fatal(err)
+	}
 	body, err := json.Marshal(request)
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	req := httptest.NewRequest(http.MethodPost, "/api/soul-mesh", bytes.NewReader(body))
 	rec := httptest.NewRecorder()
 	gateway.ServeHTTP(rec, req)
@@ -174,5 +178,3 @@ func TestEnhancedFederatedGatewayRejectsDuplicateTaskIDs(t *testing.T) {
 		t.Fatalf("expected duplicate IDs to be rejected, got %d: %s", rec.Code, rec.Body.String())
 	}
 }
-
-var _ = sync.Once{}
