@@ -1,0 +1,20 @@
+trinity:
+  pfc_enabled: false
+  fabric_enabled: false
+  compute_enabled: false
+  risk_threshold: 0.75
+  working_memory_limit: 16
+  fallback_mode: legacy
+compute:
+  mode: auto
+  precision_fallback: fp32
+  efficiency_factor: 0.7
+  use_sparsity: false
+  noise_std: 0.05
+prefrontal:
+  meta_rl_epsilon: 0.1
+  conflict_sensitivity: 0.5
+fabric:
+  decision_tree_depth: 6
+  learning_rate: 0.01
+  feedback_discount: 0.9

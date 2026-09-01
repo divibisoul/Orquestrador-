@@ -1,0 +1,70 @@
+package state
+
+import (
+	"os"
+	"path/filepath"
+	"testing"
+)
+
+func TestDurableStoreSurvivesReopen(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "state.json")
+	s, err := OpenDurable(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	v, err := s.Put("k", []byte("value"))
+	if err != nil || v != 1 {
+		t.Fatalf("v=%d err=%v", v, err)
+	}
+	if err := s.Delete("missing"); err != nil {
+		t.Fatal(err)
+	}
+	s2, err := OpenDurable(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got, ver, ok := s2.Get("k")
+	if !ok || string(got) != "value" || ver != 1 {
+		t.Fatalf("got=%q ver=%d ok=%v", got, ver, ok)
+	}
+	if _, err := os.Stat(path); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestDurableDeleteInvalidatesStaleCASVersion(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "state.json")
+	s, err := OpenDurable(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	version, err := s.Put("k", []byte("value"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := s.Delete("k"); err != nil {
+		t.Fatal(err)
+	}
+	_, tombstoneVersion, ok := s.Get("k")
+	if ok || tombstoneVersion <= version {
+		t.Fatalf("tombstone version=%d ok=%v, previous=%d", tombstoneVersion, ok, version)
+	}
+	casOK, err := s.CompareAndSwap("k", version, []byte("stale"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if casOK {
+		t.Fatal("stale CAS unexpectedly succeeded after delete")
+	}
+	newVersion, err := s.Put("k", []byte("new"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if newVersion <= tombstoneVersion {
+		t.Fatalf("new version=%d not greater than tombstone=%d", newVersion, tombstoneVersion)
+	}
+	got, _, ok := s.Get("k")
+	if !ok || string(got) != "new" {
+		t.Fatalf("recreated value=%q ok=%v", got, ok)
+	}
+}

@@ -2,7 +2,15 @@ name: CI
 
 on:
   push:
-    branches: [main, recovery/consolidation, integration/soul-six-nuclei]
+    branches:
+      - main
+      - recovery/consolidation
+      - integration/soul-six-nuclei
+      - feature/trinity-fundamental-v1
+      - feature/trinity-production-hardening-v1
+      - feature/nexus-runtime-hardening-batch1
+      - feature/nexus-finalization-v1
+      - feature/readiness-dashboard
   pull_request:
   workflow_dispatch:
 
@@ -15,42 +23,42 @@ concurrency:
 
 jobs:
   go:
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-go@v7
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
         with:
-          go-version: '1.23'
+          go-version: '1.25'
           cache: true
-      - name: Environment diagnostics
-        run: |
-          go version
-          go env
-          git --version
-          uname -a
       - name: Go diagnostics and validation
         shell: bash
         run: |
           set -euo pipefail
-          gofmt -l . | tee /tmp/gofmt.log
-          test ! -s /tmp/gofmt.log
+          go version
+          go mod tidy
+          gofmt -w .
           go vet ./... | tee /tmp/vet.log
           go build ./... | tee /tmp/build.log
           go test ./... -count=1 -race | tee /tmp/test.log
-      - name: Upload Go diagnostics
+          test -s go.sum
+      - name: Upload Go diagnostics and resolved modules
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: go-recovery-diagnostics-${{ github.run_id }}
-          path: /tmp/*.log
+          name: go-diagnostics-${{ github.run_id }}
+          path: |
+            /tmp/*.log
+            go.mod
+            go.sum
           if-no-files-found: ignore
 
   python-adapter:
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
-      - name: Verify Python runtime
-        run: python3 --version
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
       - name: Install Gemini SDK
         run: python3 -m pip install --disable-pip-version-check 'google-genai>=1.0.0,<2.0.0'
       - name: Python adapter syntax check
