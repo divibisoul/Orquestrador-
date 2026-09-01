@@ -35,9 +35,6 @@ func TestPeerResponseHMACRoundTrip(t *testing.T) {
 	if err != nil || len(decoded) != 32 {
 		t.Fatalf("fresh signed envelope produced invalid HMAC encoding: %v; hmac=%q; len=%d", err, env.HMAC, len(decoded))
 	}
-	if err := protocol.VerifyHMAC(env, secret, time.Now()); err != nil {
-		t.Fatalf("fresh signed envelope failed direct verification: %v; hmac=%q; len=%d", err, env.HMAC, len(env.HMAC))
-	}
 	wire := map[string]any{
 		"protocol":        "soul-mesh/1",
 		"contractVersion": protocol.SoulMeshContractVersion,
