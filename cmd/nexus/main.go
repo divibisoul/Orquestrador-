@@ -53,10 +53,7 @@ func main() {
 	mux.HandleFunc("/topology", func(w http.ResponseWriter, _ *http.Request) {
 		writeJSON(w, http.StatusOK, orchestrator.SOULTopology())
 	})
-	mux.HandleFunc("/metrics", func(w http.ResponseWriter, _ *http.Request) {
-		writeMetrics(w, engine.Stats())
-	})
-	mux.Handle("/api/soul-mesh", mesh.NewEnhancedFederatedHTTPGateway(engine))
+	mux.Handle("/api/soul-mesh", mesh.NewFederatedHTTPGateway(engine))
 	mux.HandleFunc("/execute", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "POST required"})
@@ -78,35 +75,36 @@ func main() {
 		}
 		writeJSON(w, http.StatusOK, result)
 	})
+	mux.HandleFunc("/federation/peers", func(w http.ResponseWriter, _ *http.Request) {
+		gateway := mesh.NewFederatedHTTPGateway(engine)
+		writeJSON(w, http.StatusOK, map[string]any{"nucleus": "N07", "peers": gateway.PeersSnapshot()})
+	})
+	mux.HandleFunc("/federation/discovery", func(w http.ResponseWriter, r *http.Request) {
+		gateway := mesh.NewFederatedHTTPGateway(engine)
+		ctx, cancel := context.WithTimeout(r.Context(), 15*time.Second)
+		defer cancel()
+		peers, err := gateway.DiscoverPeers(ctx)
+		status := http.StatusOK
+		if err != nil {
+			status = http.StatusBadGateway
+		}
+		writeJSON(w, status, map[string]any{"nucleus": "N07", "peers": peers, "error": errorText(err)})
+	})
+	mux.HandleFunc("/metrics", func(w http.ResponseWriter, _ *http.Request) {
+		writeMetrics(w, engine.Stats())
+	})
 
 	addr := os.Getenv("N07_HTTP_ADDR")
 	if addr == "" {
 		addr = ":8080"
 	}
-	srv := &http.Server{Addr: addr, Handler: mux, ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 15 * time.Second, WriteTimeout: 15 * time.Second, IdleTimeout: 60 * time.Second}
+	server := &http.Server{Addr: addr, Handler: mux, ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 15 * time.Second, WriteTimeout: 15 * time.Second, IdleTimeout: 60 * time.Second}
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
-	if registry := strings.TrimSpace(os.Getenv("N07_MESH_REGISTRY_URL")); registry != "" {
-		go func() {
-			a, err := mesh.New(registry)
-			if err != nil {
-				log.Printf("mesh adapter init failed: %v", err)
-				return
-			}
-			regCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
-			defer cancel()
-			operations := append([]string{}, engine.Operations()...)
-			operations = append(operations, "mesh.ping", "mesh.discovery", "mesh.capabilities", "mesh.describe", "mesh.fusion.describe", "mesh.fusion.execute", "mesh.supergpu.describe", "mesh.supergpu.execute", "mesh.supergpu.parallel")
-			if _, err := a.Register(regCtx, registry, unique(operations)); err != nil {
-				log.Printf("mesh registration failed: %v", err)
-			}
-		}()
-	}
-
 	go func() {
 		log.Printf("N07 Orquestrador listening on %s", addr)
-		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+		if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			log.Printf("server error: %v", err)
 		}
 	}()
@@ -115,7 +113,7 @@ func main() {
 	shutdown, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	_ = engine.Shutdown(shutdown)
-	_ = srv.Shutdown(shutdown)
+	_ = server.Shutdown(shutdown)
 }
 
 func syncMeshSecretAlias() {
@@ -149,19 +147,9 @@ func writeMetrics(w http.ResponseWriter, stats map[string]any) {
 	}
 }
 
-func unique(values []string) []string {
-	seen := make(map[string]struct{}, len(values))
-	out := make([]string, 0, len(values))
-	for _, value := range values {
-		value = strings.TrimSpace(value)
-		if value == "" {
-			continue
-		}
-		if _, exists := seen[value]; exists {
-			continue
-		}
-		seen[value] = struct{}{}
-		out = append(out, value)
+func errorText(err error) string {
+	if err == nil {
+		return ""
 	}
-	return out
+	return err.Error()
 }
