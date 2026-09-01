@@ -17,6 +17,8 @@ import (
 
 func newTestGateway(t *testing.T) *HTTPGateway {
 	t.Helper()
+	t.Setenv("N07_MESH_ALLOW_UNAUTH_LOCAL", "true")
+	t.Setenv("N07_MESH_SHARED_TOKEN", "")
 	n, err := neural.New(8, 0.05)
 	if err != nil {
 		t.Fatal(err)
@@ -86,12 +88,33 @@ func TestHTTPGatewayExecutesRealNeuralCapability(t *testing.T) {
 	}
 }
 
+func TestHTTPGatewayPreservesTraceIdentity(t *testing.T) {
+	h := newTestGateway(t)
+	envelope := protocol.MeshEnvelope{ContractVersion: "1.2", Operation: "neural.forward", CorrelationID: "trace-preserved", Source: "N01", Target: "N07", Payload: map[string]any{"values": []float64{1, 2, 3, 4, 5, 6, 7, 8}}}
+	got, code := postEnvelope(t, h.Handler, envelope)
+	if code != http.StatusOK || got.CorrelationID != "trace-preserved" {
+		t.Fatalf("correlation identity was not preserved: code=%d envelope=%+v", code, got)
+	}
+}
+
 func TestHTTPGatewayRejectsWrongContract(t *testing.T) {
 	h := newTestGateway(t)
 	envelope := protocol.MeshEnvelope{ContractVersion: "9.9", Operation: "mesh.ping", CorrelationID: "trace-bad", Source: "N01", Target: "N07"}
 	got, code := postEnvelope(t, h.Handler, envelope)
 	if code != http.StatusBadRequest || got.Metadata["status"] != "error" {
 		t.Fatalf("expected contract rejection, code=%d envelope=%+v", code, got)
+	}
+}
+
+func TestHTTPGatewayRejectsUnauthenticatedWhenLocalModeDisabled(t *testing.T) {
+	t.Setenv("N07_MESH_ALLOW_UNAUTH_LOCAL", "false")
+	t.Setenv("N07_MESH_SHARED_TOKEN", "")
+	h := newTestGateway(t)
+	h.AllowUnauthenticatedLocal = false
+	envelope := protocol.MeshEnvelope{ContractVersion: "1.2", Operation: "mesh.ping", CorrelationID: "trace-auth", Source: "N01", Target: "N07"}
+	_, code := postEnvelope(t, h.Handler, envelope)
+	if code != http.StatusUnauthorized {
+		t.Fatalf("expected unauthorized response, got %d", code)
 	}
 }
 
