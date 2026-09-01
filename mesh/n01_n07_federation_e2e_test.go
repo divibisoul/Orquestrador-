@@ -99,6 +99,15 @@ func TestN01ToN07FederatesAcrossN04N05N06(t *testing.T) {
 		t.Fatal(err)
 	}
 	gateway := NewEnhancedFederatedHTTPGateway(e)
+	for _, nucleus := range []string{"N04", "N05", "N06"} {
+		discovery, discoveryErr := gateway.base.peers.Discover(context.Background(), nucleus)
+		if discoveryErr != nil {
+			t.Fatalf("discovery %s failed: %v", nucleus, discoveryErr)
+		}
+		if !supportsExecutableCapability(discovery, "e2e."+strings.ToLower(nucleus)) {
+			t.Fatalf("discovery %s omitted executable capability: %#v", nucleus, discovery)
+		}
+	}
 
 	payload := map[string]any{"tasks": []any{
 		map[string]any{"id": "n04", "capability": "e2e.n04", "payload": map[string]any{"values": []any{4, 4}}, "required": true},
