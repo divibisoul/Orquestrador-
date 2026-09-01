@@ -24,6 +24,8 @@ const (
 	CircuitHalfOpen CircuitState = "half-open"
 )
 
+const defaultDiscoveryCacheTTL = 15 * time.Second
+
 type PeerInfo struct {
 	Nucleus    string
 	URL        string
@@ -35,13 +37,21 @@ type PeerInfo struct {
 	RetryAfter time.Time
 }
 
+type discoveryCacheEntry struct {
+	value     map[string]any
+	expiresAt time.Time
+}
+
 type PeerClient struct {
-	mu       sync.RWMutex
-	peers    map[string]PeerInfo
-	client   *http.Client
-	secret   string
-	maxRetry int
-	cooldown time.Duration
+	mu                sync.RWMutex
+	peers             map[string]PeerInfo
+	client            *http.Client
+	secret            string
+	maxRetry          int
+	cooldown           time.Duration
+	discoveryMu        sync.RWMutex
+	discoveryCache     map[string]discoveryCacheEntry
+	discoveryCacheTTL  time.Duration
 }
 
 func NewPeerClient(client *http.Client) (*PeerClient, error) {
@@ -55,12 +65,25 @@ func NewPeerClient(client *http.Client) (*PeerClient, error) {
 		}
 	}
 	return &PeerClient{
-		peers:    peers,
-		client:   client,
-		secret:   strings.TrimSpace(os.Getenv("SOUL_MESH_HMAC_SECRET")),
-		maxRetry: 3,
-		cooldown: 30 * time.Second,
+		peers:            peers,
+		client:           client,
+		secret:           strings.TrimSpace(os.Getenv("SOUL_MESH_HMAC_SECRET")),
+		maxRetry:         3,
+		cooldown:         30 * time.Second,
+		discoveryCache:   make(map[string]discoveryCacheEntry),
+		discoveryCacheTTL: defaultDiscoveryCacheTTL,
 	}, nil
+}
+
+func cloneMap(value map[string]any) map[string]any {
+	if value == nil {
+		return nil
+	}
+	copy := make(map[string]any, len(value))
+	for key, item := range value {
+		copy[key] = item
+	}
+	return copy
 }
 
 func (p *PeerClient) Discover(ctx context.Context, nucleus string) (map[string]any, error) {
@@ -68,14 +91,50 @@ func (p *PeerClient) Discover(ctx context.Context, nucleus string) (map[string]a
 	if nucleus == protocol.N07 {
 		return nil, errors.New("N07 cannot discover itself through peer transport")
 	}
+	if cached, ok := p.discoveryFromCache(nucleus); ok {
+		return cached, nil
+	}
 	result, err := p.CallWithCorrelation(ctx, nucleus, "mesh.discovery", map[string]any{"from": protocol.N07}, protocol.NewTraceID())
 	if err == nil {
-		return result, nil
+		p.storeDiscovery(nucleus, result)
+		return cloneMap(result), nil
 	}
 	if ctx.Err() != nil {
 		return nil, ctx.Err()
 	}
-	return p.CallWithCorrelation(ctx, nucleus, "mesh.describe", map[string]any{"from": protocol.N07}, protocol.NewTraceID())
+	result, err = p.CallWithCorrelation(ctx, nucleus, "mesh.describe", map[string]any{"from": protocol.N07}, protocol.NewTraceID())
+	if err != nil {
+		return nil, err
+	}
+	p.storeDiscovery(nucleus, result)
+	return cloneMap(result), nil
+}
+
+func (p *PeerClient) discoveryFromCache(nucleus string) (map[string]any, bool) {
+	p.discoveryMu.RLock()
+	entry, ok := p.discoveryCache[nucleus]
+	p.discoveryMu.RUnlock()
+	if !ok || time.Now().After(entry.expiresAt) {
+		if ok {
+			p.discoveryMu.Lock()
+			delete(p.discoveryCache, nucleus)
+			p.discoveryMu.Unlock()
+		}
+		return nil, false
+	}
+	return cloneMap(entry.value), true
+}
+
+func (p *PeerClient) storeDiscovery(nucleus string, value map[string]any) {
+	p.discoveryMu.Lock()
+	p.discoveryCache[nucleus] = discoveryCacheEntry{value: cloneMap(value), expiresAt: time.Now().Add(p.discoveryCacheTTL)}
+	p.discoveryMu.Unlock()
+}
+
+func (p *PeerClient) invalidateDiscovery(nucleus string) {
+	p.discoveryMu.Lock()
+	delete(p.discoveryCache, nucleus)
+	p.discoveryMu.Unlock()
 }
 
 func (p *PeerClient) Call(ctx context.Context, nucleus, capability string, payload map[string]any) (map[string]any, error) {
@@ -301,6 +360,7 @@ func (p *PeerClient) recordSuccess(nucleus string, latency time.Duration) {
 }
 
 func (p *PeerClient) recordFailure(nucleus string, latency time.Duration, lastError string) {
+	p.invalidateDiscovery(nucleus)
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	peer, ok := p.peers[nucleus]
