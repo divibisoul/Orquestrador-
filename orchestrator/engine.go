@@ -3,6 +3,7 @@ package orchestrator
 import (
 	"context"
 	"errors"
+	"math"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -40,6 +41,13 @@ func (e *Engine) registerBuiltins() error {
 	if err:=e.Register("neural.forward",func(ctx context.Context,m protocol.Message)(protocol.Result,error){v,err:=e.neural.Forward(ctx,m.Payload);return protocol.Result{TraceID:m.TraceID,Source:"N07.neural",Target:m.Source,Status:status(err),Payload:v,Error:errorText(err)},err});err!=nil{return err}
 	if err:=e.Register("neural.learn",func(_ context.Context,m protocol.Message)(protocol.Result,error){half:=len(m.Payload)/2;if half==0||half*2!=len(m.Payload){return protocol.Result{},errors.New("learn payload must contain input and target halves")};err:=e.neural.Learn(m.Payload[:half],m.Payload[half:]);return protocol.Result{TraceID:m.TraceID,Source:"N07.neural",Target:m.Source,Status:status(err),Error:errorText(err)},err});err!=nil{return err}
 	if err:=e.Register("compute.execute",func(ctx context.Context,m protocol.Message)(protocol.Result,error){d,err:=e.compute.Select(m.Metadata["device"]);if err!=nil{return protocol.Result{},err};op:=m.Metadata["operation"];if op==""{return protocol.Result{},errors.New("metadata.operation is required")};v,err:=e.compute.Execute(ctx,d,op,m.Payload);return protocol.Result{TraceID:m.TraceID,Source:"N07.gpu",Target:m.Source,Status:status(err),Payload:v,Error:errorText(err)},err});err!=nil{return err}
+	if err:=e.Register("cognitive.execute",func(ctx context.Context,m protocol.Message)(protocol.Result,error){
+		encoded,err:=e.neural.Forward(ctx,m.Payload);if err!=nil{return protocol.Result{TraceID:m.TraceID,Source:"N07",Target:m.Source,Status:"error",Error:err.Error()},err}
+		energy:=0.0;for _,v:=range encoded{energy+=math.Abs(v)};utility:=energy/float64(len(encoded));candidate:=prefrontal.Candidate{ID:m.TraceID,Utility:utility,Cost:0.05,Risk:0.02}
+		selected,err:=e.cortex.Select([]prefrontal.Candidate{candidate});if err!=nil{return protocol.Result{TraceID:m.TraceID,Source:"N07.prefrontal",Target:m.Source,Status:"rejected",Error:err.Error()},err}
+		if _,err=e.cortex.Commit(selected,"neural-output-approved");err!=nil{return protocol.Result{TraceID:m.TraceID,Source:"N07.prefrontal",Target:m.Source,Status:"rejected",Error:err.Error()},err}
+		d,err:=e.compute.Select(m.Metadata["device"]);if err!=nil{return protocol.Result{TraceID:m.TraceID,Source:"N07.gpu",Target:m.Source,Status:"error",Error:err.Error()},err};op:=m.Metadata["operation"];if op==""{op="identity"};out,err:=e.compute.Execute(ctx,d,op,encoded);return protocol.Result{TraceID:m.TraceID,Source:"N07.pipeline",Target:m.Source,Status:status(err),Payload:out,Metadata:map[string]string{"decision":"approved","device":d.ID},Error:errorText(err)},err
+	});err!=nil{return err}
 	return nil
 }
 
