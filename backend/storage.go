@@ -9,7 +9,6 @@ import (
 	"io"
 	"net/http"
 	"strings"
-	"time"
 )
 
 type Web3Storage struct {
@@ -25,11 +24,15 @@ func NewWeb3Storage(cfg Config) *Web3Storage {
 	if maxBytes <= 0 {
 		maxBytes = 100 << 20
 	}
+	timeout := cfg.RequestTimeout
+	if timeout <= 0 {
+		timeout = 30 * time.Second
+	}
 	return &Web3Storage{
 		baseURL:  strings.TrimRight(cfg.Web3StorageURL, "/"),
 		token:    cfg.Web3StorageToken,
 		gateway:  strings.TrimRight(cfg.IPFSGatewayURL, "/"),
-		client:   &http.Client{Timeout: cfg.RequestTimeout},
+		client:   &http.Client{Timeout: timeout},
 		maxBytes: maxBytes,
 	}
 }
@@ -131,5 +134,3 @@ func (s *Web3Storage) ObjectURL(cid string) string {
 	}
 	return s.gateway + "/" + cid
 }
-
-var _ = time.Second
