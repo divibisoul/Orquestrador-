@@ -13,6 +13,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/divibisoul/Orquestrador-/backend"
 	"github.com/divibisoul/Orquestrador-/mesh"
 	"github.com/divibisoul/Orquestrador-/neural"
 	"github.com/divibisoul/Orquestrador-/orchestrator"
@@ -42,6 +43,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	unifiedBackend := backend.NewUnified(e, backend.DefaultConfig())
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
@@ -63,6 +65,7 @@ func main() {
 	mux.HandleFunc("/topology", func(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusOK, orchestrator.SOULTopology())
 	})
+	mux.Handle("/v1/", unifiedBackend.Handler())
 	mux.Handle("/api/soul-mesh", mesh.NewEnhancedFederatedHTTPGateway(e))
 	mux.HandleFunc("/execute", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
@@ -106,7 +109,7 @@ func main() {
 			}
 			regCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
 			defer cancel()
-			if _, err := a.Register(regCtx, registry, []string{"neural.forward@1.0.0", "neural.learn@1.0.0", "compute.execute@1.0.0", "cognitive.execute@1.0.0", "mesh.ping", "mesh.describe", "mesh.supergpu.describe", "mesh.supergpu.execute", "mesh.supergpu.parallel"}); err != nil {
+			if _, err := a.Register(regCtx, registry, []string{"neural.forward@1.0.0", "neural.learn@1.0.0", "compute.execute@1.0.0", "cognitive.execute@1.0.0", "supergpu.describe@1.0.0", "supergpu.execute@1.0.0", "supergpu.parallel@1.0.0", "supergpu.memory@1.0.0", "mesh.ping", "mesh.describe", "mesh.supergpu.describe", "mesh.supergpu.execute", "mesh.supergpu.parallel"}); err != nil {
 				log.Printf("mesh registration failed: %v", err)
 			}
 		}()
