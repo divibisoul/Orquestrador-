@@ -3,6 +3,9 @@ package mesh
 import (
 	"bytes"
 	"context"
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -48,7 +51,7 @@ type PeerClient struct {
 	client            *http.Client
 	secret            string
 	maxRetry          int
-	cooldown          time.Duration
+	cooldown           time.Duration
 	discoveryMu       sync.RWMutex
 	discoveryCache    map[string]discoveryCacheEntry
 	discoveryCacheTTL time.Duration
@@ -252,13 +255,33 @@ func (p *PeerClient) call(ctx context.Context, nucleus, capability string, paylo
 		if err := ctx.Err(); err != nil {
 			return nil, err
 		}
-		env := protocol.MeshEnvelope{
-			Version: protocol.SoulMeshVersion, ContractVersion: protocol.SoulMeshContractVersion, MessageID: protocol.NewTraceID(), Source: protocol.N07, Target: nucleus, Timestamp: time.Now().UnixMilli(), Nonce: protocol.NewTraceID(), CorrelationID: correlation, Type: "CAPABILITY_REQUEST", Payload: map[string]any{"capability": capability, "payload": payload},
+		messageID := protocol.NewTraceID()
+		nonce := protocol.NewTraceID()
+		wirePayload := payload
+		if wirePayload == nil {
+			wirePayload = map[string]any{}
 		}
-		if err := protocol.SignHMAC(&env, p.secret); err != nil {
+		wire := canonicalWireEnvelope{
+			Protocol:        "soul-mesh/1",
+			ContractVersion: protocol.SoulMeshContractVersion,
+			ID:              messageID,
+			CorrelationID:   correlation,
+			Source:          protocol.N07,
+			Target:          nucleus,
+			Kind:            "request",
+			Capability:      capability,
+			Payload:         wirePayload,
+			Timestamp:       time.Now().UnixMilli(),
+			Nonce:           nonce,
+		}
+		unsigned, err := canonicalN01Bytes(wire, nonce)
+		if err != nil {
 			return nil, err
 		}
-		body, err := protocol.EncodeMesh(env)
+		mac := hmac.New(sha256.New, []byte(p.secret))
+		_, _ = mac.Write(unsigned)
+		wire.HMAC = hex.EncodeToString(mac.Sum(nil))
+		body, err := json.Marshal(wire)
 		if err != nil {
 			return nil, err
 		}
@@ -269,6 +292,8 @@ func (p *PeerClient) call(ctx context.Context, nucleus, capability string, paylo
 		req.Header.Set("Content-Type", "application/json")
 		req.Header.Set("X-Soul-Contract-Version", protocol.SoulMeshContractVersion)
 		req.Header.Set("X-Soul-Correlation-Id", correlation)
+		req.Header.Set("X-Soul-Mesh-Nonce", nonce)
+		req.Header.Set("X-Soul-Mesh-HMAC", wire.HMAC)
 		started := time.Now()
 		resp, err := p.client.Do(req)
 		latency := time.Since(started)
@@ -313,8 +338,18 @@ func (p *PeerClient) call(ctx context.Context, nucleus, capability string, paylo
 			p.recordFailure(nucleus, latency, lastErr.Error())
 			return nil, lastErr
 		}
+		if result["protocol"] != "soul-mesh/1" {
+			lastErr = errors.New("mesh response protocol mismatch")
+			p.recordFailure(nucleus, latency, lastErr.Error())
+			return nil, lastErr
+		}
 		if result["correlationId"] != correlation {
 			lastErr = errors.New("peer correlation mismatch")
+			p.recordFailure(nucleus, latency, lastErr.Error())
+			return nil, lastErr
+		}
+		if result["kind"] != "response" && result["kind"] != "error" {
+			lastErr = errors.New("mesh response kind mismatch")
 			p.recordFailure(nucleus, latency, lastErr.Error())
 			return nil, lastErr
 		}
@@ -369,6 +404,7 @@ func (p *PeerClient) recordSuccess(nucleus string, latency time.Duration) {
 	peer.RetryAfter = time.Time{}
 	p.peers[nucleus] = peer
 }
+
 func (p *PeerClient) recordFailure(nucleus string, latency time.Duration, lastError string) {
 	p.invalidateDiscovery(nucleus)
 	p.mu.Lock()
