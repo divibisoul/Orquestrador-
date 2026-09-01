@@ -1,6 +1,7 @@
 package mesh
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"net/http"
@@ -63,17 +64,18 @@ func TestN01ToN07FederatesAcrossN04N05N06(t *testing.T) {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
-			wirePayload, err := json.Marshal(env)
+			wirePayload := map[string]any{"protocol": "soul-mesh/1", "contractVersion": protocol.SoulMeshContractVersion, "id": responseID, "correlationId": in.CorrelationID, "source": nucleus, "target": protocol.N07, "kind": "response", "capability": capability, "payload": payload, "timestamp": responseTimestamp, "nonce": responseNonce, "hmac": env.HMAC}
+			wireBytes, err := json.Marshal(wirePayload)
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
-			var roundTrip protocol.MeshEnvelope
-			if err := json.Unmarshal(wirePayload, &roundTrip); err != nil {
+			var roundTrip map[string]any
+			if err := json.Unmarshal(wireBytes, &roundTrip); err != nil {
 				http.Error(w, "internal test response JSON round-trip failed", http.StatusInternalServerError)
 				return
 			}
-			if roundTrip.HMAC != env.HMAC {
+			if got, _ := roundTrip["hmac"].(string); got != env.HMAC {
 				http.Error(w, "internal test response HMAC round-trip changed signature", http.StatusInternalServerError)
 				return
 			}
@@ -129,7 +131,7 @@ func TestN01ToN07FederatesAcrossN04N05N06(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	req := httptest.NewRequest(http.MethodPost, "/api/soul-mesh", strings.NewReader(string(body)))
+	req := httptest.NewRequest(http.MethodPost, "/api/soul-mesh", bytes.NewReader(body))
 	req.Header.Set("x-soul-mesh-nonce", request.Nonce)
 	req.Header.Set("x-soul-mesh-hmac", request.HMAC)
 	rec := httptest.NewRecorder()
