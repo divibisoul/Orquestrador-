@@ -14,8 +14,6 @@ import (
 	"github.com/divibisoul/Orquestrador-/protocol"
 )
 
-// Peer describes one external SOUL nucleus reachable through the canonical Mesh.
-// Capabilities are evidence cached from the most recent discovery call.
 type Peer struct {
 	Nucleus      string
 	URL          string
@@ -37,7 +35,6 @@ type peerState struct {
 	latency   time.Duration
 }
 
-// Candidate is the scored result of capability discovery/routing.
 type Candidate struct {
 	Nucleus     string
 	Capability  string
@@ -48,16 +45,13 @@ type Candidate struct {
 	InFlight    int
 }
 
-// Federation adds peer discovery, dynamic routing and bounded delegation to N07.
-// It is intentionally additive: the existing Engine and canonical Mesh remain the
-// execution and transport layers instead of being duplicated.
 type Federation struct {
-	mu              sync.RWMutex
-	peers           map[string]*peerState
-	failureThreshold int
-	breakerWindow   time.Duration
-	maxRetries      int
-	baseBackoff     time.Duration
+	mu               sync.RWMutex
+	peers             map[string]*peerState
+	failureThreshold  int
+	breakerWindow     time.Duration
+	maxRetries        int
+	baseBackoff       time.Duration
 }
 
 func NewFederation() *Federation {
@@ -87,7 +81,6 @@ func (f *Federation) RegisterPeer(nucleus, baseURL string, capabilities []string
 		return err
 	}
 	caps := append([]string(nil), capabilities...)
-	sort.Strings(caps)
 	f.mu.Lock()
 	f.peers[nucleus] = &peerState{Peer: Peer{
 		Nucleus: nucleus, URL: baseURL, Capabilities: uniqueStrings(caps), Healthy: true,
@@ -109,7 +102,7 @@ func (f *Federation) Snapshot() []Peer {
 	out := make([]Peer, 0, len(f.peers))
 	for _, state := range f.peers {
 		p := state.Peer
-		p.Capabilities = append([]string(nil), p.Capabilities...)
+		p.Capabilities = append([]string(nil), state.Capabilities...)
 		out = append(out, p)
 	}
 	f.mu.RUnlock()
@@ -117,9 +110,6 @@ func (f *Federation) Snapshot() []Peer {
 	return out
 }
 
-// DiscoverLive asks every registered peer for mesh.describe. A peer only gains
-// capability evidence from an actual response; stale catalog declarations remain
-// visible but are not promoted by this method.
 func (f *Federation) DiscoverLive(ctx context.Context) ([]Peer, error) {
 	if ctx == nil {
 		return nil, errors.New("context is nil")
@@ -171,11 +161,11 @@ func (f *Federation) DiscoverLive(ctx context.Context) ([]Peer, error) {
 }
 
 func (f *Federation) Discover(capability string) []Candidate {
-	capability = strings.TrimSpace(capability)
+	capability = normalizeCapability(capability)
 	f.mu.RLock()
 	candidates := make([]Candidate, 0, len(f.peers))
 	for _, state := range f.peers {
-		if capability != "" && !contains(state.Capabilities, capability) {
+		if capability != "" && !hasCapability(state.Capabilities, capability) {
 			continue
 		}
 		success := state.SuccessRate
@@ -199,8 +189,6 @@ func (f *Federation) Discover(capability string) []Candidate {
 	return candidates
 }
 
-// Delegate discovers a suitable peer and invokes the capability using the same
-// canonical Mesh envelope. Retries are bounded and circuit-aware.
 func (f *Federation) Delegate(ctx context.Context, traceID, capability string, payload map[string]any) (map[string]any, error) {
 	if ctx == nil {
 		return nil, errors.New("context is nil")
@@ -253,6 +241,7 @@ func (f *Federation) getPeer(nucleus string) (Peer, bool) {
 		return Peer{}, false
 	}
 	p := state.Peer
+	p.Capabilities = append([]string(nil), state.Capabilities...)
 	f.mu.RUnlock()
 	return p, true
 }
@@ -360,14 +349,28 @@ func extractOperations(payload map[string]any) []string {
 	out := make([]string, 0, len(values))
 	for _, item := range values {
 		if text, ok := item.(string); ok && strings.TrimSpace(text) != "" {
-			name := text
-			if i := strings.LastIndex(name, "@"); i > 0 {
-				name = name[:i]
-			}
-			out = append(out, name)
+			out = append(out, normalizeCapability(text))
 		}
 	}
 	return out
+}
+
+func normalizeCapability(value string) string {
+	value = strings.TrimSpace(value)
+	if i := strings.LastIndex(value, "@"); i > 0 {
+		return strings.TrimSpace(value[:i])
+	}
+	return value
+}
+
+func hasCapability(values []string, target string) bool {
+	target = normalizeCapability(target)
+	for _, value := range values {
+		if normalizeCapability(value) == target {
+			return true
+		}
+	}
+	return false
 }
 
 func isBaseNucleus(n string) bool {
