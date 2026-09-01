@@ -3,6 +3,7 @@ package neural
 import (
 	"context"
 	"errors"
+	"math"
 	"sync"
 	"testing"
 	"time"
@@ -60,7 +61,7 @@ func TestAssignRejectsNonFinitePayload(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, value := range []float64{0.0 / 0.0, 1.0e309} {
+	for _, value := range []float64{math.NaN(), math.Inf(1)} {
 		_, err := fabric.Assign(NeuralTask{ID: "t", Operation: "neural.forward", Payload: []float64{value}, CorrelationID: "c"}, "N01")
 		if err == nil {
 			t.Fatal("expected non-finite payload to be rejected")
