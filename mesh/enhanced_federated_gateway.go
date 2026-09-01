@@ -52,8 +52,8 @@ func (g *EnhancedFederatedGateway) ServeHTTP(w http.ResponseWriter, r *http.Requ
 		writeMeshJSON(w, http.StatusBadRequest, gatewayError(envelope, err.Error()))
 		return
 	}
-	if err := g.base.authenticateWire(wire, r, envelope); err != nil {
-		g.base.respond(w, http.StatusUnauthorized, envelope, "ERROR", map[string]any{"error": "mesh authentication failed"})
+	if err := g.base.base.authenticateWire(wire, r, envelope); err != nil {
+		g.base.base.respond(w, http.StatusUnauthorized, envelope, "ERROR", map[string]any{"error": "mesh authentication failed"})
 		return
 	}
 
@@ -63,7 +63,7 @@ func (g *EnhancedFederatedGateway) ServeHTTP(w http.ResponseWriter, r *http.Requ
 	}
 	rawTasks, ok := payload["tasks"].([]any)
 	if !ok || len(rawTasks) == 0 {
-		g.base.respond(w, http.StatusBadRequest, envelope, "ERROR", map[string]any{"error": "supergpu.parallel requires payload.tasks"})
+		g.base.base.respond(w, http.StatusBadRequest, envelope, "ERROR", map[string]any{"error": "supergpu.parallel requires payload.tasks"})
 		return
 	}
 
@@ -78,13 +78,13 @@ func (g *EnhancedFederatedGateway) ServeHTTP(w http.ResponseWriter, r *http.Requ
 	for index, raw := range rawTasks {
 		item, ok := raw.(map[string]any)
 		if !ok {
-			g.base.respond(w, http.StatusBadRequest, envelope, "ERROR", map[string]any{"error": "each task must be an object", "index": index})
+			g.base.base.respond(w, http.StatusBadRequest, envelope, "ERROR", map[string]any{"error": "each task must be an object", "index": index})
 			return
 		}
 		capability, _ := item["capability"].(string)
 		capability = strings.TrimSpace(capability)
 		if capability == "" {
-			g.base.respond(w, http.StatusBadRequest, envelope, "ERROR", map[string]any{"error": "task capability is required", "index": index})
+			g.base.base.respond(w, http.StatusBadRequest, envelope, "ERROR", map[string]any{"error": "task capability is required", "index": index})
 			return
 		}
 		id, _ := item["id"].(string)
@@ -93,7 +93,7 @@ func (g *EnhancedFederatedGateway) ServeHTTP(w http.ResponseWriter, r *http.Requ
 			id = "task-" + jsonNumber(index)
 		}
 		if _, exists := seenIDs[id]; exists {
-			g.base.respond(w, http.StatusBadRequest, envelope, "ERROR", map[string]any{"error": "duplicate task id", "id": id})
+			g.base.base.respond(w, http.StatusBadRequest, envelope, "ERROR", map[string]any{"error": "duplicate task id", "id": id})
 			return
 		}
 		seenIDs[id] = struct{}{}
@@ -148,7 +148,7 @@ func (g *EnhancedFederatedGateway) ServeHTTP(w http.ResponseWriter, r *http.Requ
 	if requiredFailed {
 		responseStatus = http.StatusBadGateway
 	}
-	g.base.respond(w, responseStatus, envelope, "TASK_RESULT", map[string]any{
+	g.base.base.respond(w, responseStatus, envelope, "TASK_RESULT", map[string]any{
 		"execution":           "federated-supergpu-parallel",
 		"parentCorrelationId": envelope.CorrelationID,
 		"taskCount":           len(results),
