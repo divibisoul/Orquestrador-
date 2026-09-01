@@ -2,6 +2,10 @@
 
 N07 exposes four execution domains with ten public functions in each domain. Public signatures remain stable while configuration, validation, observability and resource safety are enforced internally.
 
+## Production gate
+
+A production change is accepted only after the repository CI passes `go vet ./...`, `go test ./...`, `go test -race ./...` and `go build ./...`. A failing gate is a defect to be corrected before merge.
+
 ## Orquestrador
 `New` builds the runtime and rejects missing dependencies. `Register` accepts `name` or `name@semver` and rejects invalid versions. `Route` resolves registered handlers and caches them with TTL. `Submit` validates messages, propagates context deadlines, enforces source rate limits, tracks active traces and updates the circuit breaker. `Execute` validates operation payloads and dispatches a traced message. `Cancel` cancels the active context associated with a trace. `Status` reports lifecycle state. `Health` returns component and circuit health. `Stats` returns aggregate counters and p95 latency. `Shutdown` stops new work, cancels active traces and shuts down compute.
 
