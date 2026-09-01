@@ -43,9 +43,11 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	unifiedBackend := backend.NewUnified(e, backend.DefaultConfig())
 
+	unified := backend.New(e, backend.DefaultConfig())
 	mux := http.NewServeMux()
+	mux.Handle("/v1/", unified.Handler())
+
 	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusOK, e.Health())
 	})
@@ -65,7 +67,6 @@ func main() {
 	mux.HandleFunc("/topology", func(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusOK, orchestrator.SOULTopology())
 	})
-	mux.Handle("/v1/", unifiedBackend.Handler())
 	mux.Handle("/api/soul-mesh", mesh.NewEnhancedFederatedHTTPGateway(e))
 	mux.HandleFunc("/execute", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
@@ -97,7 +98,7 @@ func main() {
 	if addr == "" {
 		addr = ":8080"
 	}
-	srv := &http.Server{Addr: addr, Handler: mux, ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 15 * time.Second, WriteTimeout: 15 * time.Second, IdleTimeout: 60 * time.Second}
+	srv := &http.Server{Addr: addr, Handler: mux, ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 30 * time.Second, WriteTimeout: 30 * time.Second, IdleTimeout: 60 * time.Second}
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 	if registry := strings.TrimSpace(os.Getenv("N07_MESH_REGISTRY_URL")); registry != "" {
@@ -109,7 +110,7 @@ func main() {
 			}
 			regCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
 			defer cancel()
-			if _, err := a.Register(regCtx, registry, []string{"neural.forward@1.0.0", "neural.learn@1.0.0", "compute.execute@1.0.0", "cognitive.execute@1.0.0", "supergpu.describe@1.0.0", "supergpu.execute@1.0.0", "supergpu.parallel@1.0.0", "supergpu.memory@1.0.0", "mesh.ping", "mesh.describe", "mesh.supergpu.describe", "mesh.supergpu.execute", "mesh.supergpu.parallel"}); err != nil {
+			if _, err := a.Register(regCtx, registry, []string{"neural.forward@1.0.0", "neural.learn@1.0.0", "compute.execute@1.0.0", "cognitive.execute@1.0.0", "supergpu.describe@1.0.0", "supergpu.execute@1.0.0", "supergpu.parallel@1.0.0", "supergpu.memory@1.0.0", "mesh.ping", "mesh.describe"}); err != nil {
 				log.Printf("mesh registration failed: %v", err)
 			}
 		}()
@@ -143,10 +144,10 @@ func requireAppBearer(r *http.Request) error {
 		return errors.New("N07_APP_TOKEN is not configured")
 	}
 	authorization := strings.TrimSpace(r.Header.Get("Authorization"))
-	if !strings.HasPrefix(strings.ToLower(authorization), "bearer ") {
+	if len(authorization) < 7 || !strings.EqualFold(authorization[:7], "bearer ") {
 		return errors.New("Bearer authentication required")
 	}
-	provided := strings.TrimSpace(authorization[len("Bearer "):])
+	provided := strings.TrimSpace(authorization[7:])
 	if provided == "" || provided != expected {
 		return errors.New("invalid application token")
 	}
