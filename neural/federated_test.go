@@ -158,6 +158,26 @@ func TestParallelContextPreservesInputOrderUnderBoundedAdmission(t *testing.T) {
 	}
 }
 
+func TestParallelContextCapsActivePeerCalls(t *testing.T) {
+	peer := &concurrencyPeer{}
+	fabric, err := NewFabric(peer)
+	if err != nil {
+		t.Fatal(err)
+	}
+	const taskCount = maxFederatedParallelism*2 + 7
+	tasks := make([]NeuralTask, taskCount)
+	for i := range tasks {
+		tasks[i] = NeuralTask{ID: "task", Operation: "neural.forward@1.0.0", CorrelationID: "corr", Target: "N01"}
+	}
+	results := fabric.ParallelContext(context.Background(), tasks)
+	if len(results) != taskCount {
+		t.Fatalf("expected %d results, got %d", taskCount, len(results))
+	}
+	if peer.maxActive > maxFederatedParallelism {
+		t.Fatalf("peer concurrency exceeded limit: got %d want <= %d", peer.maxActive, maxFederatedParallelism)
+	}
+}
+
 func TestBroadcastContextCancellationPreservesMembers(t *testing.T) {
 	peer := &deadlinePeer{}
 	fabric, err := NewFabric(peer)
@@ -191,4 +211,33 @@ func (*blockingPeer) Invoke(ctx context.Context, nucleus, operation string, payl
 		return nil, err
 	}
 	return map[string]any{"nucleus": nucleus, "operation": operation}, nil
+}
+
+type concurrencyPeer struct {
+	mu        sync.Mutex
+	active    int
+	maxActive int
+}
+
+func (p *concurrencyPeer) Invoke(ctx context.Context, nucleus, operation string, payload map[string]any, correlation string) (map[string]any, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	p.mu.Lock()
+	p.active++
+	if p.active > p.maxActive {
+		p.maxActive = p.active
+	}
+	p.mu.Unlock()
+	defer func() {
+		p.mu.Lock()
+		p.active--
+		p.mu.Unlock()
+	}()
+	select {
+	case <-time.After(2 * time.Millisecond):
+		return map[string]any{"nucleus": nucleus, "operation": operation}, nil
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	}
 }
