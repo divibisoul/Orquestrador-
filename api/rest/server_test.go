@@ -1,6 +1,7 @@
 package rest
 
 import (
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -15,7 +16,32 @@ func TestHealth(t *testing.T) {
 	r := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodGet, "/health", nil)
 	s.Handler().ServeHTTP(r, req)
-	if r.Code != http.StatusOK { t.Fatalf("status=%d body=%s", r.Code, r.Body.String()) }
+	if r.Code != http.StatusOK {
+		t.Fatalf("status=%d body=%s", r.Code, r.Body.String())
+	}
+}
+
+func TestMetrics(t *testing.T) {
+	s := NewServer(nil, nil, nil)
+	s.Metrics.Record("test", 5, false)
+	r := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/metrics", nil)
+	s.Handler().ServeHTTP(r, req)
+	if r.Code != http.StatusOK {
+		t.Fatalf("status=%d body=%s", r.Code, r.Body.String())
+	}
+	var snapshot map[string]struct {
+		Tasks            uint64  `json:"tasks"`
+		Failures         uint64  `json:"failures"`
+		TotalLatencyMS   float64 `json:"total_latency_ms"`
+	}
+	if err := json.Unmarshal(r.Body.Bytes(), &snapshot); err != nil {
+		t.Fatal(err)
+	}
+	metric, ok := snapshot["test"]
+	if !ok || metric.Tasks != 1 || metric.Failures != 0 || metric.TotalLatencyMS != 5 {
+		t.Fatalf("metrics=%+v", snapshot)
+	}
 }
 
 func TestPlanValidation(t *testing.T) {
@@ -23,5 +49,7 @@ func TestPlanValidation(t *testing.T) {
 	r := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodPost, "/v1/plan", nil)
 	s.Handler().ServeHTTP(r, req)
-	if r.Code != http.StatusBadRequest { t.Fatalf("status=%d", r.Code) }
+	if r.Code != http.StatusBadRequest {
+		t.Fatalf("status=%d", r.Code)
+	}
 }
