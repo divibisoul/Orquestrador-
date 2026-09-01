@@ -1,6 +1,6 @@
 services:
   n07:
-    image: ghcr.io/divibisoul/orquestrador-:latest
+    image: ghcr.io/divibisoul/soul-n07-orquestrador:latest
     restart: unless-stopped
     init: true
     ports:
