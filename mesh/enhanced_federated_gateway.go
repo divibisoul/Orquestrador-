@@ -3,6 +3,7 @@ package mesh
 import (
 	"encoding/json"
 	"errors"
+	"io"
 	"net/http"
 	"strings"
 	"sync"
@@ -21,7 +22,11 @@ func NewEnhancedFederatedHTTPGateway(engine *orchestrator.Engine) *EnhancedFeder
 }
 
 func (g *EnhancedFederatedGateway) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost || g == nil || g.base == nil || g.base.engine == nil {
+	if g == nil || g.base == nil {
+		writeMeshJSON(w, http.StatusServiceUnavailable, map[string]any{"error": "N07 gateway unavailable"})
+		return
+	}
+	if r.Method != http.MethodPost || g.base.engine == nil {
 		g.base.ServeHTTP(w, r)
 		return
 	}
@@ -33,13 +38,13 @@ func (g *EnhancedFederatedGateway) ServeHTTP(w http.ResponseWriter, r *http.Requ
 	}
 	var wire canonicalWireEnvelope
 	if err := json.Unmarshal(body, &wire); err != nil {
-		r.Body = ioNopCloserString(body)
+		r.Body = io.NopCloser(strings.NewReader(string(body)))
 		g.base.ServeHTTP(w, r)
 		return
 	}
 	capability := canonicalCapability(wire)
 	if capability != "mesh.supergpu.parallel" && capability != "supergpu.parallel" {
-		r.Body = ioNopCloserString(body)
+		r.Body = io.NopCloser(strings.NewReader(string(body)))
 		g.base.ServeHTTP(w, r)
 		return
 	}
@@ -65,12 +70,13 @@ func (g *EnhancedFederatedGateway) ServeHTTP(w http.ResponseWriter, r *http.Requ
 	}
 
 	type task struct {
-		ID       string
+		ID         string
 		Capability string
-		Payload  map[string]any
-		Required bool
+		Payload    map[string]any
+		Required   bool
 	}
 	tasks := make([]task, 0, len(rawTasks))
+	seenIDs := map[string]struct{}{}
 	for index, raw := range rawTasks {
 		item, ok := raw.(map[string]any)
 		if !ok {
@@ -84,9 +90,15 @@ func (g *EnhancedFederatedGateway) ServeHTTP(w http.ResponseWriter, r *http.Requ
 			return
 		}
 		id, _ := item["id"].(string)
-		if strings.TrimSpace(id) == "" {
+		id = strings.TrimSpace(id)
+		if id == "" {
 			id = "task-" + jsonNumber(index)
 		}
+		if _, exists := seenIDs[id]; exists {
+			g.base.respond(w, http.StatusBadRequest, envelope, "ERROR", map[string]any{"error": "duplicate task id", "id": id})
+			return
+		}
+		seenIDs[id] = struct{}{}
 		stepPayload, _ := item["payload"].(map[string]any)
 		if stepPayload == nil {
 			stepPayload = map[string]any{}
@@ -96,13 +108,14 @@ func (g *EnhancedFederatedGateway) ServeHTTP(w http.ResponseWriter, r *http.Requ
 	}
 
 	type result struct {
-		ID string `json:"id"`
-		Capability string `json:"capability"`
-		Owner string `json:"owner,omitempty"`
-		Status string `json:"status"`
-		DurationMs int64 `json:"duration_ms"`
-		Payload any `json:"payload,omitempty"`
-		Error string `json:"error,omitempty"`
+		ID              string `json:"id"`
+		Capability      string `json:"capability"`
+		Owner           string `json:"owner,omitempty"`
+		Status          string `json:"status"`
+		DurationMs      int64  `json:"duration_ms"`
+		Payload         any    `json:"payload,omitempty"`
+		Error           string `json:"error,omitempty"`
+		CorrelationID   string `json:"correlationId"`
 	}
 	results := make([]result, len(tasks))
 	var wg sync.WaitGroup
@@ -113,10 +126,10 @@ func (g *EnhancedFederatedGateway) ServeHTTP(w http.ResponseWriter, r *http.Requ
 			defer wg.Done()
 			started := time.Now()
 			childCorrelation := envelope.CorrelationID + "/" + item.ID
-			remote, owner, err := g.base.peers.CallBest(r.Context(), item.Capability, item.Payload, childCorrelation)
-			entry := result{ID: item.ID, Capability: item.Capability, Status: "error", DurationMs: time.Since(started).Milliseconds()}
-			if err != nil {
-				entry.Error = err.Error()
+			remote, owner, callErr := g.base.peers.CallBest(r.Context(), item.Capability, item.Payload, childCorrelation)
+			entry := result{ID: item.ID, Capability: item.Capability, Status: "error", DurationMs: time.Since(started).Milliseconds(), CorrelationID: childCorrelation}
+			if callErr != nil {
+				entry.Error = callErr.Error()
 			} else {
 				entry.Status = "ok"
 				entry.Owner = owner
@@ -138,11 +151,11 @@ func (g *EnhancedFederatedGateway) ServeHTTP(w http.ResponseWriter, r *http.Requ
 		responseStatus = http.StatusBadGateway
 	}
 	g.base.respond(w, responseStatus, envelope, "TASK_RESULT", map[string]any{
-		"execution": "federated-supergpu-parallel",
+		"execution":         "federated-supergpu-parallel",
 		"parentCorrelationId": envelope.CorrelationID,
-		"taskCount": len(results),
-		"requiredFailure": requiredFailed,
-		"tasks": results,
+		"taskCount":         len(results),
+		"requiredFailure":   requiredFailed,
+		"tasks":             results,
 	})
 }
 
@@ -154,16 +167,24 @@ func jsonNumber(value any) string {
 	return string(b)
 }
 
-func ioNopCloserString(body []byte) *readCloser {
-	return &readCloser{data: body}
-}
+var _ io.Reader = (*readCloser)(nil)
+var _ error = errors.New("")
 
-type readCloser struct { data []byte; done bool }
+type readCloser struct {
+	data []byte
+	done bool
+}
 func (r *readCloser) Read(p []byte) (int, error) {
-	if r.done { return 0, errors.New("EOF") }
+	if r.done {
+		return 0, io.EOF
+	}
 	n := copy(p, r.data)
 	r.data = r.data[n:]
-	if len(r.data) == 0 { r.done = true }
+	if len(r.data) == 0 {
+		r.done = true
+	}
 	return n, nil
 }
 func (r *readCloser) Close() error { r.done = true; r.data = nil; return nil }
+
+func init() { _ = protocol.SoulMeshContractVersion }
