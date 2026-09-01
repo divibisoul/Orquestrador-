@@ -10,7 +10,6 @@ import (
 	"github.com/divibisoul/Orquestrador-/neural"
 	"github.com/divibisoul/Orquestrador-/orchestrator"
 	"github.com/divibisoul/Orquestrador-/prefrontal"
-	"github.com/divibisoul/Orquestrador-/protocol"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -46,7 +45,7 @@ func newTestGateway(t *testing.T) *HTTPGateway {
 	if err != nil {
 		t.Fatal(err)
 	}
-	g := supergpu.New(nil)
+	g := supergpuCompat.New(nil)
 	g.Discover()
 	e, err := orchestrator.New(n, c, g)
 	if err != nil {
