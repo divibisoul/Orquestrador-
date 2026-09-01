@@ -1,35 +1,29 @@
-# SOUL v1 — Release Closure Gates
+# SOUL v1 — Release Gates
 
-## Objective
-Deliver the current SOUL architecture as an operational, verified v1. This document is a finite release gate, not an invitation to add indefinite new features.
-
-## Target
-Primary operational target: **2026-09-07**.
-Contingency window for release-blocking defects only: **2026-09-08 through 2026-09-10**.
+Release is finite. New features outside these gates do not extend v1.
 
 ## Mandatory gates
 
-1. N01–N06 current main branches contain the intended cumulative nucleus, Mesh and N07 neural integration changes.
-2. N07 is the canonical orchestration/fusion layer; no duplicate peer runtime is introduced.
-3. Mesh contracts are compatible across all active peers, including identity, correlation, authentication and payload semantics.
-4. N07 discovery, capability routing, delegation, composition and federated parallel execution are executable and covered by regression tests.
-5. Exact-head CI is green for the release revisions: format, vet/typecheck, unit/integration tests, race checks and build.
-6. Security checks pass without secrets committed to source.
-7. Live bidirectional commissioning proves N07 can communicate with N01, N02, N03, N04, N05 and N06 using their configured endpoints and credentials.
-8. Neural federation proves forward/parallel paths with bounded deadlines, finite payload validation and propagated correlation.
-9. SuperCompute/SuperGPU proves parallel fan-out, per-task timing, aggregation and partial-failure behavior.
-10. Final smoke test proves startup, health, Mesh ingress, discovery and a representative delegated/fused execution path.
-
-## Non-blocking future work
-
-Hardware-specific CUDA/HIP/NPU providers, additional transports, new capabilities, performance research and v2 features are outside the v1 closure gate unless they are required for a failing mandatory gate.
+1. N01–N06 current heads reconciled against N07 contracts.
+2. N07 current runtime and APIs compile and pass unit tests.
+3. Mesh ingress/egress, discovery, delegation and correlation are validated.
+4. Neural Federation N07↔N01..N06 uses one canonical payload/signature contract.
+5. Capability, agent and tool ownership is explicit; declared capability is not treated as executable without proof.
+6. SuperGPU/parallel execution is bounded, cancellable and aggregatable.
+7. Resilience controls are active: timeout, retry/backoff, breaker, rate limit, payload bounds and recovery.
+8. Observability exposes routing, peer health, latency, failures, in-flight and trace/correlation state.
+9. Backend integrations (Supabase + Web3 Storage) have automated regression coverage and exact-head CI proof before merge.
+10. CI on the release candidate is green: format, vet, test, race and build.
+11. E2E N01↔N07, N02↔N07, N03↔N07, N04↔N07, N05↔N07, N06↔N07 are verified when runtimes are concurrently available.
+12. Android integration contract is stable and documented for the downstream APK/app project.
+13. Release candidate can start with required configuration and fail closed when secrets are missing.
 
 ## Completion states
 
-- `INCOMPLETE`: one or more mandatory gates are not implemented.
-- `STRUCTURALLY READY`: implementation and local regression coverage exist, but live/E2E evidence is absent.
-- `RELEASE CANDIDATE`: all mandatory code/CI gates are green; live commissioning is the only remaining evidence.
-- `READY / ONLINE`: all mandatory gates and runtime smoke tests pass.
+STRUCTURAL = implementation and repository tests exist.
 
-## Evidence rule
-Never promote a state based solely on documentation, declarations, branch names or commit messages. Evidence must come from the exact revision, executable tests/CI and live runtime checks where required.
+INTEGRATED = cross-front contracts and CI are green on the exact release candidate.
+
+ONLINE = real runtimes are reachable together and the E2E smoke suite succeeds.
+
+Only ONLINE is final v1 completion.
