@@ -1,37 +1,33 @@
 # N07 live cross-front handoff
 
+## CURRENT CONTRACT
+N07 owns the canonical orchestration, neural-fabric, prefrontal and SuperGPU runtime surfaces. Peer nuclei expose adapters and remain independently deployable. Do not create a second N07 runtime or copy peer implementations into N07.
+
 ## WHAT_CHANGED
 - Versioned operation identity is canonicalized as `name@semver` in the N07 registry and router.
 - Explicit version requests route to the exact registration; unversioned requests resolve to the newest registered version.
-- Route cache uses the same canonical identity, preventing stale or unreachable versioned routes.
-- N01–N06 neural adapters target the same N07 neural capability surface and preserve `correlationId`, Mesh contract `1.1.0`, finite-number validation and bounded execution time.
-- Neural federation exposes context-aware `ParallelContext` and `BroadcastContext` paths with deterministic result ordering and a fixed 32-worker ceiling.
-- Neural parallel admission now uses a fixed worker pool rather than one goroutine per submitted task, eliminating unbounded goroutine creation for oversized task arrays.
-- Federated execution preserves parent cancellation through the peer invocation boundary instead of creating detached background work.
-- The cumulative cross-front execution queue is recorded in `SOUL_EXECUTION_QUEUE.md` so concurrent fronts share the same 40-function closure order and evidence gates.
+- Route cache uses the same canonical identity.
+- N01–N06 neural adapters target the same N07 neural capability surface and preserve correlation, Mesh contract, finite-number validation and bounded execution time.
+- Neural federation exposes context-aware `ParallelContext` and `BroadcastContext` with deterministic result ordering and a fixed 32-worker ceiling.
+- Neural parallel admission uses a fixed worker pool rather than one goroutine per submitted task.
+- Parent cancellation propagates through federated peer invocation.
+- SuperGPU parallel Mesh execution is bounded to 32 tasks and now uses capability-aware dynamic peer routing.
+- Dynamic routing evaluates executable capability availability across configured peers concurrently and scores candidates using health, latency and recent failures before invocation.
+- Explicit neural `Target` remains authoritative; the historical `Source` routing hint remains compatible when `Target` is omitted.
 
-## WHAT_WAS_FOUND
-- Previous N07 routing could make versioned registrations unreachable through the router.
-- The neural federation model previously relied on loose routing semantics and needed canonical target handling.
-- A semaphore alone bounded active calls but still created one goroutine per submitted task; this was replaced with a fixed worker pool.
-- Legacy federation methods did not accept a caller context, which could detach cancellation from the parent orchestration request.
-- Cross-front branches continue to evolve independently; current `main` must be reread before each subsequent mutation.
+## COORDINATION RULE
+Before every mutation, reread current `main` and the exact target-file SHA. Concurrent fronts may advance `main` between any two operations. Never force-reset or overwrite a newer front's work.
 
-## WHAT_REMAINS
-- Obtain exact-head CI evidence for the latest HEAD.
-- Complete live bidirectional commissioning of all six peer adapters.
-- Unify response-signature verification semantics across all six TypeScript neural adapters against the canonical N07 response envelope.
-- Complete distributed SuperGPU integration tests while all peer runtimes are concurrently reachable.
-- Reconcile N01–N06 capability/tool changes continuously before final fusion.
+## VALIDATION RULE
+CI is evidence. A green format/vet/test/race/build result is required before declaring the current executable state validated. Structural readiness is not equivalent to live six-runtime commissioning.
 
-## WHAT_NEXT_AGENT_SHOULD_DO
-- Preserve current operation ownership; do not fork another N07 neural runtime.
-- Read current N07 `main` and current peer SHAs before changing files.
-- Preserve concurrent front work and resolve SHA conflicts by rereading the changed file.
-- Treat CI as evidence, not as a declaration.
-- Use `SOUL_EXECUTION_QUEUE.md` as the cumulative task order and update it when executable evidence changes.
+## REMAINING CROSS-FRONT WORK
+- Commission live bidirectional Mesh with N01–N06 concurrently reachable.
+- Reconcile the six peer response-signature implementations against the canonical N07 response envelope.
+- Reconcile current N01–N06 capability/tool/agent heads before final fusion.
+- Validate composed capabilities and distributed SuperGPU execution end-to-end with all peer runtimes available.
 
-## CURRENT_SHA
-- Neural federation worker-pool hardening: `f9be25d8f0711fcf9142c8902ff48ffec2bba368`
-- Neural regression coverage: `450a47711cf448ee01b8dad06f2bbf2333ffff99`
-- Cross-front execution queue: `f9b230a562885b3c4b8a98ddfb6fc79530bdc039`
+## CURRENT_EVIDENCE
+- Current `main` is `70ec375553167349564b868e9826d1102e3353c6`.
+- The latest N07 CI run for that HEAD completed format check, vet, tests, race test and build successfully.
+- The preceding CI failures were diagnosed and corrected rather than bypassed: a Mesh test namespace collision, an over-strict built-in-operation test expectation, and an unintended federation target behavior change were addressed while preserving compatibility.
