@@ -4,30 +4,31 @@
 - Versioned operation identity is canonicalized as `name@semver` in the N07 registry and router.
 - Explicit version requests route to the exact registration; unversioned requests resolve to the newest registered version.
 - Route cache uses the same canonical identity, preventing stale or unreachable versioned routes.
-- N01–N06 neural adapters target the same N07 neural capability surface and use `correlationId`, contract `1.1.0`, finite-number validation and bounded execution time.
-- Neural federation now has an explicit `Target` routing field, finite-payload validation, deterministic empty-task behavior, deadline enforcement, and backward compatibility for the historical `Source` routing hint.
-- Regression tests cover routing, correlation propagation, non-finite payload rejection, explicit/legacy routing, empty parallel batches and deadlines.
+- N01–N06 neural adapters target the same N07 neural capability surface and preserve `correlationId`, Mesh contract `1.1.0`, finite-number validation and bounded execution time.
+- Neural federation uses an explicit target route, deadline enforcement and deterministic validation.
+- Federated SuperGPU execution is now bounded to 32 concurrent tasks, rejects oversized task sets, derives per-task child correlations, and enforces a 15-second default task timeout with cancellation propagation.
+- Regression coverage includes route/version behavior, neural cache behavior, non-finite input rejection, Mesh capability discovery and parallel-execution invariants.
 
 ## WHAT_WAS_FOUND
-- Previous N07 routing stored registered operations under bare names while incoming versioned operations carried `@semver`, making some built-ins unreachable through the router.
-- The live N07 gateway and protocol currently accept N01–N07 identities and use the canonical Mesh contract.
-- The neural federation task model lacked a canonical destination field and silently relied on `Source` as a routing hint.
-- Cross-front work is still changing the repositories, so `main` must be reread before any subsequent modification.
+- Previous N07 routing could make versioned registrations unreachable through the router.
+- The neural federation model previously relied on loose routing semantics and needed canonical target handling.
+- The enhanced federated gateway previously started an unbounded goroutine for every submitted task. That could exhaust process resources under a large request even though the request body itself was bounded.
+- Cross-front branches continue to evolve independently; current `main` must be reread before each subsequent mutation.
 
 ## WHAT_REMAINS
-- Obtain CI evidence for the new N07 HEAD; no status is currently returned for the tested HEADs.
+- Re-run and obtain CI evidence for the latest HEAD after this hardening.
 - Complete live bidirectional commissioning of all six peer adapters.
-- Unify response-signature verification semantics across all six TypeScript neural adapters against the N07 canonical response envelope.
-- Complete distributed Super GPU runtime tests when all peer runtimes are concurrently reachable.
+- Unify response-signature verification semantics across all six TypeScript neural adapters against the canonical N07 response envelope.
+- Complete distributed SuperGPU integration tests while all peer runtimes are concurrently reachable.
 - Reconcile N01–N06 capability/tool changes continuously before final fusion.
 
 ## WHAT_NEXT_AGENT_SHOULD_DO
-- Preserve current operation ownership and do not fork another N07 neural runtime.
+- Preserve current operation ownership; do not fork another N07 neural runtime.
 - Read current N07 `main` and current peer SHAs before changing files.
-- Reconcile any concurrent changes with this handoff rather than overwriting them.
-- Treat CI as evidence: green code changes still require integrated runtime commissioning before claiming completion.
+- Preserve concurrent front work and resolve SHA conflicts by rereading the changed file.
+- Treat CI as evidence, not as a declaration.
 
 ## CURRENT_SHA
-- Neural federation hardening: `bb11e49cc1619f406310b841b048e672cc7bf147`
-- Regression tests: `c6b1bd689500d6218d94f1b502f2794733b372d0`
-- Handoff update: this commit.
+- Bounded parallel gateway: `bf54ed894ddf62e460628317363055cacf589926`
+- Regression test update: `4fef034ee1ae0b0cd1f380afcb53e64f5a349f3b`
+- Handoff: this commit.
