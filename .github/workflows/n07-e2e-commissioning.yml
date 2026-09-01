@@ -1,0 +1,75 @@
+name: N07 E2E Commissioning
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '**/*.go'
+      - 'go.mod'
+      - 'go.sum'
+      - 'Dockerfile'
+      - 'mesh/**'
+      - '.github/workflows/n07-e2e-commissioning.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: read
+
+jobs:
+  e2e-and-runtime:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.25.x'
+          cache: true
+      - name: Go vet
+        run: go vet ./...
+      - name: Go tests
+        run: go test ./...
+      - name: Go race
+        run: go test -race ./...
+      - name: Go build
+        run: go build ./...
+      - name: N01 to N07 federation E2E
+        run: go test ./mesh -run '^TestN01ToN07FederatesAcrossN04N05N06$' -count=1 -v
+      - name: Pull published image
+        run: docker pull ghcr.io/divibisoul/soul-n07-orquestrador:latest
+      - name: Start published image as staging runtime
+        env:
+          N07_APP_TOKEN: commissioning-local-token
+        run: |
+          set -euo pipefail
+          docker run -d --rm --name n07-commissioning \
+            -p 18080:8080 \
+            -e N07_APP_TOKEN="$N07_APP_TOKEN" \
+            -e N07_HTTP_ADDR=:8080 \
+            ghcr.io/divibisoul/soul-n07-orquestrador:latest
+          for i in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:18080/health; then break; fi
+            sleep 2
+          done
+      - name: HTTP health evidence
+        run: |
+          set -euxo pipefail
+          curl -i http://127.0.0.1:18080/health
+          curl -i -H 'Authorization: Bearer commissioning-local-token' http://127.0.0.1:18080/status
+          curl -i http://127.0.0.1:18080/identity
+          curl -i http://127.0.0.1:18080/topology
+      - name: Authenticated execution evidence
+        run: |
+          set -euxo pipefail
+          curl -i -H 'Authorization: Bearer commissioning-local-token' \
+            -H 'Content-Type: application/json' \
+            -X POST http://127.0.0.1:18080/execute \
+            -d '{"operation":"neural.forward@1.0.0","payload":[0.1,0.2],"metadata":{"source":"commissioning"}}'
+      - name: Stop runtime and emit logs
+        if: always()
+        run: |
+          docker logs n07-commissioning || true
+          docker stop n07-commissioning || true
