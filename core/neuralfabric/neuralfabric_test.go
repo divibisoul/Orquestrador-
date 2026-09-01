@@ -110,6 +110,26 @@ func TestRuntimeUpdateChangesWeightsSafely(t *testing.T) {
 	}
 }
 
+func TestRuntimeRouteUsesLearnedWeights(t *testing.T) {
+	f := NewRuntime()
+	ctx := context.Background()
+	candidates := []Route{{NodeID: "node", DeviceID: "device", Precision: "fp32", BatchSize: 1}}
+	baseline, err := f.Route(ctx, State{}, candidates)
+	if err != nil {
+		t.Fatal(err)
+	}
+	f.mu.Lock()
+	f.weights = [5]float64{0, 0, 0, 0, 1}
+	f.mu.Unlock()
+	learned, err := f.Route(ctx, State{}, candidates)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if learned.Score == baseline.Score {
+		t.Fatalf("route score did not change after learned weights update: baseline=%f learned=%f", baseline.Score, learned.Score)
+	}
+}
+
 func TestRuntimeRejectsNilContext(t *testing.T) {
 	f := NewRuntime()
 	if _, err := f.EncodeTask(nil, "task"); !errors.Is(err, ErrNilContext) {
