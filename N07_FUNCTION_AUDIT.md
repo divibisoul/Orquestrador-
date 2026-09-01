@@ -57,3 +57,5 @@ This document is an evidence map, not a substitute for executable code. A functi
 - N07 provides canonical Mesh ingress plus direct control-plane endpoints.
 - Federated parallel execution has parent/child correlation and required-task semantics.
 - Current-head CI is the acceptance gate; live six-runtime E2E is separate and environment-dependent.
+- Active backend/storage front now has isolated regression coverage for Web3 Storage and Supabase adapters: upload/status/auth/error/cancellation and REST insert/validation paths are green on GitHub Actions run #310 / verify job.
+- The backend/storage branch must remain a candidate integration until its PR is rebased/retargeted to the current main and its exact merge-base CI is green.
