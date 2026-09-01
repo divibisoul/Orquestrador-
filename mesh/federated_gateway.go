@@ -23,21 +23,28 @@ type FederatedGateway struct {
 	catalog   []FusionCapability
 }
 
+type FederatedTask struct {
+	ID         string         `json:"id"`
+	Capability string         `json:"capability"`
+	Payload    map[string]any `json:"payload"`
+	Required   bool           `json:"required"`
+}
+
 func NewFederatedHTTPGateway(engine *orchestrator.Engine) *FederatedGateway {
 	peers, err := NewPeerClient(nil)
 	if err != nil {
-		peers = &PeerClient{}
+		peers = &PeerClient{peers: map[string]PeerInfo{}}
 	}
 	return &FederatedGateway{base: NewHTTPGateway(engine), peers: peers, engine: engine, catalog: VerifiedN01N06Catalog()}
 }
 
 func (g *FederatedGateway) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		g.base.Handler(w, r)
-		return
-	}
-	if g.engine == nil {
-		g.base.Handler(w, r)
+	if r.Method != http.MethodPost || g == nil || g.engine == nil {
+		if g != nil && g.base != nil {
+			g.base.Handler(w, r)
+			return
+		}
+		writeMeshJSON(w, http.StatusServiceUnavailable, map[string]any{"error": "N07 gateway unavailable"})
 		return
 	}
 	body, err := ioReadLimited(r.Body, 1<<20)
@@ -45,7 +52,7 @@ func (g *FederatedGateway) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		writeMeshJSON(w, http.StatusBadRequest, map[string]any{"error": err.Error()})
 		return
 	}
-	r.Body = ioNopCloser(bytes.NewReader(body))
+	r.Body = io.NopCloser(bytes.NewReader(body))
 	var wire canonicalWireEnvelope
 	if err := json.Unmarshal(body, &wire); err != nil {
 		g.base.Handler(w, r)
@@ -57,7 +64,6 @@ func (g *FederatedGateway) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if isLocalOperation(g.engine, capability) {
-		r.Body = ioNopCloser(bytes.NewReader(body))
 		g.base.Handler(w, r)
 		return
 	}
@@ -70,14 +76,19 @@ func (g *FederatedGateway) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		g.base.Handler(w, r)
 		return
 	}
-	if capability == "mesh.ping" || capability == "mesh.describe" || capability == "mesh.discovery" || capability == "mesh.capabilities" || capability == "mesh.capability.resolve" || capability == "core.health" || capability == "mesh.fusion.describe" || capability == "mesh.supergpu.describe" {
-		g.handleControl(w, envelope, capability)
+
+	switch capability {
+	case "mesh.ping", "mesh.describe", "mesh.discovery", "mesh.capabilities", "mesh.capability.resolve", "core.health", "mesh.fusion.describe", "mesh.supergpu.describe":
+		g.handleControl(w, r.Context(), envelope, capability)
 		return
-	}
-	if capability == "mesh.fusion.execute" || capability == "fusion.execute" {
+	case "mesh.fusion.execute", "fusion.execute":
 		g.handleComposition(w, r, envelope)
 		return
+	case "mesh.supergpu.parallel", "supergpu.parallel":
+		g.handleParallel(w, r, envelope)
+		return
 	}
+
 	peer, descErr := g.selectPeer(r.Context(), capability)
 	if descErr != nil {
 		g.base.respond(w, http.StatusServiceUnavailable, envelope, "ERROR", map[string]any{"error": "no federated peer capability available", "capability": capability, "details": descErr.Error()})
@@ -108,7 +119,7 @@ func isLocalOperation(engine *orchestrator.Engine, capability string) bool {
 	return false
 }
 
-func (g *FederatedGateway) handleControl(w http.ResponseWriter, in protocol.MeshEnvelope, capability string) {
+func (g *FederatedGateway) handleControl(w http.ResponseWriter, ctx context.Context, in protocol.MeshEnvelope, capability string) {
 	basePayload := map[string]any{"nucleus": protocol.N07, "contractVersion": protocol.SoulMeshContractVersion}
 	switch strings.ToLower(capability) {
 	case "mesh.ping":
@@ -136,7 +147,7 @@ func (g *FederatedGateway) handleControl(w http.ResponseWriter, in protocol.Mesh
 				if candidate.Circuit == CircuitOpen && time.Now().Before(candidate.RetryAfter) {
 					continue
 				}
-				description, err := g.peers.Discover(rContextOrBackground(in), candidate.Nucleus)
+				description, err := g.peers.Discover(ctx, candidate.Nucleus)
 				if err == nil && capabilityInDescription(description, requested) {
 					owner = candidate.Nucleus
 					break
@@ -155,6 +166,7 @@ func (g *FederatedGateway) handleControl(w http.ResponseWriter, in protocol.Mesh
 		catalog := append([]FusionCapability(nil), g.catalog...)
 		g.catalogMu.RUnlock()
 		basePayload["operations"] = g.engine.Operations()
+		basePayload["agents"] = orchestrator.N07Agents()
 		basePayload["capabilityOwnership"] = catalog
 		basePayload["topology"] = orchestrator.SOULTopology()
 		basePayload["transports"] = []string{"IN_PROCESS", "LOOPBACK_HTTP", "HTTP", "REALTIME", "EVENT"}
@@ -162,9 +174,107 @@ func (g *FederatedGateway) handleControl(w http.ResponseWriter, in protocol.Mesh
 	g.base.respond(w, http.StatusOK, in, "TASK_RESULT", basePayload)
 }
 
-func rContextOrBackground(in protocol.MeshEnvelope) context.Context {
-	_ = in
-	return context.Background()
+func (g *FederatedGateway) handleParallel(w http.ResponseWriter, r *http.Request, in protocol.MeshEnvelope) {
+	payload := in.NestedPayload()
+	if payload == nil {
+		g.base.respond(w, http.StatusBadRequest, in, "ERROR", map[string]any{"error": "supergpu.parallel requires payload.tasks"})
+		return
+	}
+	raw, ok := payload["tasks"].([]any)
+	if !ok || len(raw) == 0 {
+		g.base.respond(w, http.StatusBadRequest, in, "ERROR", map[string]any{"error": "supergpu.parallel requires a non-empty tasks array"})
+		return
+	}
+	tasks := make([]FederatedTask, 0, len(raw))
+	seen := map[string]struct{}{}
+	for index, value := range raw {
+		item, ok := value.(map[string]any)
+		if !ok {
+			g.base.respond(w, http.StatusBadRequest, in, "ERROR", map[string]any{"error": "each federated task must be an object", "index": index})
+			return
+		}
+		id, _ := item["id"].(string)
+		id = strings.TrimSpace(id)
+		if id == "" {
+			id = "task-" + strconv.Itoa(index)
+		}
+		if _, exists := seen[id]; exists {
+			g.base.respond(w, http.StatusBadRequest, in, "ERROR", map[string]any{"error": "duplicate task id", "id": id})
+			return
+		}
+		seen[id] = struct{}{}
+		capability, _ := item["capability"].(string)
+		capability = strings.TrimSpace(capability)
+		if capability == "" {
+			g.base.respond(w, http.StatusBadRequest, in, "ERROR", map[string]any{"error": "task capability is required", "id": id})
+			return
+		}
+		stepPayload, _ := item["payload"].(map[string]any)
+		if stepPayload == nil {
+			stepPayload = map[string]any{}
+		}
+		required, _ := item["required"].(bool)
+		tasks = append(tasks, FederatedTask{ID: id, Capability: capability, Payload: stepPayload, Required: required})
+	}
+
+	type result struct {
+		ID            string         `json:"id"`
+		Capability    string         `json:"capability"`
+		Peer          string         `json:"peer,omitempty"`
+		Status        string         `json:"status"`
+		DurationMs    int64          `json:"duration_ms"`
+		CorrelationID string         `json:"correlationId"`
+		Payload       map[string]any `json:"payload,omitempty"`
+		Error         string         `json:"error,omitempty"`
+	}
+	results := make([]result, len(tasks))
+	var wg sync.WaitGroup
+	for index, task := range tasks {
+		index, task := index, task
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			started := time.Now()
+			child := in.CorrelationID + "/" + task.ID
+			peer, err := g.selectPeer(r.Context(), task.Capability)
+			entry := result{ID: task.ID, Capability: task.Capability, Status: "error", CorrelationID: child}
+			if err == nil {
+				var response map[string]any
+				response, err = g.peers.CallWithCorrelation(r.Context(), peer, task.Capability, task.Payload, child)
+				entry.Peer = peer
+				if err == nil {
+					entry.Status = "ok"
+					if p, ok := response["payload"].(map[string]any); ok {
+						entry.Payload = p
+					}
+				}
+			}
+			entry.DurationMs = time.Since(started).Milliseconds()
+			if err != nil {
+				entry.Error = err.Error()
+			}
+			results[index] = entry
+		}()
+	}
+	wg.Wait()
+
+	requiredFailure := false
+	for index, entry := range results {
+		if entry.Status != "ok" && tasks[index].Required {
+			requiredFailure = true
+		}
+	}
+	status := http.StatusOK
+	if requiredFailure {
+		status = http.StatusBadGateway
+	}
+	g.base.respond(w, status, in, "TASK_RESULT", map[string]any{
+		"execution":           "federated-supergpu-parallel",
+		"parentCorrelationId": in.CorrelationID,
+		"taskCount":           len(results),
+		"requiredFailure":     requiredFailure,
+		"tasks":               results,
+	})
 }
 
 func (g *FederatedGateway) handleComposition(w http.ResponseWriter, r *http.Request, in protocol.MeshEnvelope) {
@@ -280,10 +390,8 @@ func capabilityInDescription(desc map[string]any, target string) bool {
 			continue
 		}
 		for _, raw := range items {
-			if value, ok := raw.(string); ok {
-				if strings.TrimSpace(strings.SplitN(value, "@", 2)[0]) == target {
-					return true
-				}
+			if value, ok := raw.(string); ok && strings.TrimSpace(strings.SplitN(value, "@", 2)[0]) == target {
+				return true
 			}
 		}
 	}
