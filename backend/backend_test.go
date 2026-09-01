@@ -34,9 +34,9 @@ func TestWeb3StorageUploadAndStatus(t *testing.T) {
 	defer server.Close()
 
 	s := NewWeb3Storage(Config{
-		Web3StorageURL: server.URL,
+		Web3StorageURL:   server.URL,
 		Web3StorageToken: "secret",
-		IPFSGatewayURL: server.URL + "/ipfs",
+		IPFSGatewayURL:   server.URL + "/ipfs",
 	})
 	cid, size, err := s.Upload(context.Background(), strings.NewReader("hello"), "artifact.bin")
 	if err != nil || cid != "bafy-test" || size != 5 {
