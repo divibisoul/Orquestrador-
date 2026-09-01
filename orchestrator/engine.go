@@ -16,7 +16,7 @@ import (
 type Handler func(context.Context, protocol.Message) (protocol.Result,error)
 type Engine struct { mu sync.RWMutex; handlers map[string]Handler; neural *neural.Network; cortex *prefrontal.Cortex; compute *supergpu.Runtime; running atomic.Bool; sequence atomic.Uint64 }
 
-func New(n *neural.Network, c *prefrontal.Cortex, g *supergpu.Runtime) (*Engine,error) { if n==nil||c==nil||g==nil{return nil,errors.New("all nucleus services are required")}; e:=&Engine{handlers:make(map[string]Handler),neural:n,cortex:c,compute:g}; e.running.Store(true); return e,nil }
+func New(n *neural.Network, c *prefrontal.Cortex, g *supergpu.Runtime) (*Engine,error) { if n==nil||c==nil||g==nil{return nil,errors.New("all nucleus services are required")}; e:=&Engine{handlers:make(map[string]Handler),neural:n,cortex:c,compute:g}; e.running.Store(true); if err:=e.registerBuiltins();err!=nil{return nil,err}; return e,nil }
 
 func (e *Engine) Register(operation string, handler Handler) error { if operation==""||handler==nil{return errors.New("operation and handler are required")}; e.mu.Lock(); defer e.mu.Unlock(); if _,ok:=e.handlers[operation];ok{return errors.New("handler already registered")}; e.handlers[operation]=handler; return nil }
 
@@ -36,10 +36,10 @@ func (e *Engine) Stats() map[string]any { return map[string]any{"sequence":e.seq
 
 func (e *Engine) Shutdown(ctx context.Context) error { if ctx==nil{return errors.New("context is nil")}; e.running.Store(false); select{case <-ctx.Done():return ctx.Err();default:}; return e.compute.Shutdown() }
 
-func (e *Engine) RegisterBuiltins() error {
+func (e *Engine) registerBuiltins() error {
 	if err:=e.Register("neural.forward",func(ctx context.Context,m protocol.Message)(protocol.Result,error){v,err:=e.neural.Forward(ctx,m.Payload);return protocol.Result{TraceID:m.TraceID,Source:"N07.neural",Target:m.Source,Status:status(err),Payload:v,Error:errorText(err)},err});err!=nil{return err}
 	if err:=e.Register("neural.learn",func(_ context.Context,m protocol.Message)(protocol.Result,error){half:=len(m.Payload)/2;if half==0||half*2!=len(m.Payload){return protocol.Result{},errors.New("learn payload must contain input and target halves")};err:=e.neural.Learn(m.Payload[:half],m.Payload[half:]);return protocol.Result{TraceID:m.TraceID,Source:"N07.neural",Target:m.Source,Status:status(err),Error:errorText(err)},err});err!=nil{return err}
-	if err:=e.Register("compute.execute",func(ctx context.Context,m protocol.Message)(protocol.Result,error){d,err:=e.compute.Select(m.Metadata["device"]);if err!=nil{return protocol.Result{},err};v,err:=e.compute.Execute(ctx,d,m.Metadata["operation"],m.Payload);return protocol.Result{TraceID:m.TraceID,Source:"N07.gpu",Target:m.Source,Status:status(err),Payload:v,Error:errorText(err)},err});err!=nil{return err}
+	if err:=e.Register("compute.execute",func(ctx context.Context,m protocol.Message)(protocol.Result,error){d,err:=e.compute.Select(m.Metadata["device"]);if err!=nil{return protocol.Result{},err};op:=m.Metadata["operation"];if op==""{return protocol.Result{},errors.New("metadata.operation is required")};v,err:=e.compute.Execute(ctx,d,op,m.Payload);return protocol.Result{TraceID:m.TraceID,Source:"N07.gpu",Target:m.Source,Status:status(err),Payload:v,Error:errorText(err)},err});err!=nil{return err}
 	return nil
 }
 
