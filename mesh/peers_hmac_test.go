@@ -17,7 +17,7 @@ func TestPeerResponseHMACRoundTrip(t *testing.T) {
 		Source:          "N04",
 		Target:          protocol.N07,
 		Timestamp:       time.Now().UnixMilli(),
-		Nonce:           "n04-response-nonce-test",
+		Nonce:           "n04-response-nonce-test-unique",
 		CorrelationID:   "peer-response-hmac-test",
 		Type:            "TASK_RESULT",
 		Payload: map[string]any{
@@ -29,6 +29,9 @@ func TestPeerResponseHMACRoundTrip(t *testing.T) {
 	}
 	if err := protocol.SignHMAC(&env, secret); err != nil {
 		t.Fatal(err)
+	}
+	if err := protocol.VerifyHMAC(env, secret, time.Now()); err != nil {
+		t.Fatalf("fresh signed envelope failed direct verification: %v; hmac=%q; len=%d", err, env.HMAC, len(env.HMAC))
 	}
 	wire := map[string]any{
 		"protocol":        "soul-mesh/1",
