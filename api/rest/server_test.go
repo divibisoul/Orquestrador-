@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/divibisoul/Orquestrador-/core/orchestrator"
 	"github.com/divibisoul/Orquestrador-/core/prefrontal"
@@ -23,7 +24,7 @@ func TestHealth(t *testing.T) {
 
 func TestMetrics(t *testing.T) {
 	s := NewServer(nil, nil, nil)
-	s.Metrics.Record("test", 5, false)
+	s.Metrics.Record("test", 5*time.Millisecond, false)
 	r := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodGet, "/metrics", nil)
 	s.Handler().ServeHTTP(r, req)
@@ -31,9 +32,9 @@ func TestMetrics(t *testing.T) {
 		t.Fatalf("status=%d body=%s", r.Code, r.Body.String())
 	}
 	var snapshot map[string]struct {
-		Tasks            uint64  `json:"tasks"`
-		Failures         uint64  `json:"failures"`
-		TotalLatencyMS   float64 `json:"total_latency_ms"`
+		Tasks          uint64  `json:"tasks"`
+		Failures       uint64  `json:"failures"`
+		TotalLatencyMS float64 `json:"total_latency_ms"`
 	}
 	if err := json.Unmarshal(r.Body.Bytes(), &snapshot); err != nil {
 		t.Fatal(err)
