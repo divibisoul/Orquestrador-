@@ -2,7 +2,6 @@ package mesh
 
 import (
 	"encoding/json"
-	"errors"
 	"io"
 	"net/http"
 	"strings"
@@ -10,7 +9,6 @@ import (
 	"time"
 
 	"github.com/divibisoul/Orquestrador-/orchestrator"
-	"github.com/divibisoul/Orquestrador-/protocol"
 )
 
 type EnhancedFederatedGateway struct {
@@ -108,14 +106,14 @@ func (g *EnhancedFederatedGateway) ServeHTTP(w http.ResponseWriter, r *http.Requ
 	}
 
 	type result struct {
-		ID              string `json:"id"`
-		Capability      string `json:"capability"`
-		Owner           string `json:"owner,omitempty"`
-		Status          string `json:"status"`
-		DurationMs      int64  `json:"duration_ms"`
-		Payload         any    `json:"payload,omitempty"`
-		Error           string `json:"error,omitempty"`
-		CorrelationID   string `json:"correlationId"`
+		ID            string `json:"id"`
+		Capability    string `json:"capability"`
+		Owner         string `json:"owner,omitempty"`
+		Status        string `json:"status"`
+		DurationMs    int64  `json:"duration_ms"`
+		Payload       any    `json:"payload,omitempty"`
+		Error         string `json:"error,omitempty"`
+		CorrelationID string `json:"correlationId"`
 	}
 	results := make([]result, len(tasks))
 	var wg sync.WaitGroup
@@ -151,11 +149,11 @@ func (g *EnhancedFederatedGateway) ServeHTTP(w http.ResponseWriter, r *http.Requ
 		responseStatus = http.StatusBadGateway
 	}
 	g.base.respond(w, responseStatus, envelope, "TASK_RESULT", map[string]any{
-		"execution":         "federated-supergpu-parallel",
+		"execution":           "federated-supergpu-parallel",
 		"parentCorrelationId": envelope.CorrelationID,
-		"taskCount":         len(results),
-		"requiredFailure":   requiredFailed,
-		"tasks":             results,
+		"taskCount":           len(results),
+		"requiredFailure":     requiredFailed,
+		"tasks":               results,
 	})
 }
 
@@ -166,25 +164,3 @@ func jsonNumber(value any) string {
 	}
 	return string(b)
 }
-
-var _ io.Reader = (*readCloser)(nil)
-var _ error = errors.New("")
-
-type readCloser struct {
-	data []byte
-	done bool
-}
-func (r *readCloser) Read(p []byte) (int, error) {
-	if r.done {
-		return 0, io.EOF
-	}
-	n := copy(p, r.data)
-	r.data = r.data[n:]
-	if len(r.data) == 0 {
-		r.done = true
-	}
-	return n, nil
-}
-func (r *readCloser) Close() error { r.done = true; r.data = nil; return nil }
-
-func init() { _ = protocol.SoulMeshContractVersion }
