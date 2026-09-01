@@ -1,7 +1,10 @@
 package protocol
 
 import("sync";"testing";"time")
+
 func validEnvelope()MeshEnvelope{return MeshEnvelope{Version:SoulMeshVersion,ContractVersion:SoulMeshContractVersion,MessageID:NewTraceID(),Operation:"execute",Payload:map[string]any{"x":1},CorrelationID:"corr-1",Source:"N07",Target:"N01",Timestamp:time.Now().UnixMilli(),Nonce:NewTraceID(),Type:"CAPABILITY_REQUEST"}}
+
+func TestCanonicalMeshContractVersion(t *testing.T){if SoulMeshContractVersion!="1.1.0"{t.Fatalf("canonical Mesh contract drifted: got %s",SoulMeshContractVersion)};m:=validEnvelope();m.ContractVersion="1.2";if err:=m.Validate();err==nil{t.Fatal("legacy/incompatible contract version was accepted")}}
 func TestMeshRoundTrip(t *testing.T){m:=validEnvelope();b,err:=EncodeMesh(m);if err!=nil{t.Fatal(err)};d,err:=DecodeMesh(b);if err!=nil{t.Fatal(err)};if d.CorrelationID!=m.CorrelationID||d.Operation!=m.Operation||d.ContractVersion!=SoulMeshContractVersion{t.Fatal("mesh round-trip failed")}}
 func TestMeshRejectsInvalidEnvelope(t *testing.T){cases:=[]MeshEnvelope{{},{ContractVersion:SoulMeshContractVersion},{Version:SoulMeshVersion,ContractVersion:SoulMeshContractVersion,Operation:"execute",CorrelationID:"c",Source:"N07"},{Version:SoulMeshVersion,ContractVersion:SoulMeshContractVersion,MessageID:"m",CorrelationID:"c",Source:"N07",Target:"N01",Timestamp:time.Now().UnixMilli(),Nonce:"n"}};for i,m:=range cases{if _,err:=EncodeMesh(m);err==nil{t.Fatalf("case %d accepted",i)}}}
 func TestVerifyHMACRejectsReplayConcurrently(t *testing.T){m:=validEnvelope();secret:="0123456789abcdef";if err:=SignHMAC(&m,secret);err!=nil{t.Fatal(err)};const workers=8;var wg sync.WaitGroup;results:=make(chan error,workers);wg.Add(workers);for i:=0;i<workers;i++{go func(){defer wg.Done();results<-VerifyHMAC(m,secret,time.UnixMilli(m.Timestamp))}()};wg.Wait();close(results);success:=0;for err:=range results{if err==nil{success++}};if success!=1{t.Fatalf("expected exactly one successful verification, got %d",success)}}
