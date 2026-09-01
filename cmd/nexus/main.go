@@ -2,77 +2,44 @@ package main
 
 import (
 	"context"
+	"encoding/json"
+	"errors"
 	"log"
-	"net"
 	"net/http"
 	"os"
 	"os/signal"
-	"strconv"
 	"syscall"
 	"time"
 
-	grpcapi "github.com/divibisoul/Orquestrador-/api/grpc"
-	"github.com/divibisoul/Orquestrador-/api/rest"
-	"github.com/divibisoul/Orquestrador-/core/orchestrator"
-	"github.com/divibisoul/Orquestrador-/core/prefrontal"
-	"github.com/divibisoul/Orquestrador-/mesh"
-	"google.golang.org/grpc"
+	"github.com/divibisoul/Orquestrador-/neural"
+	"github.com/divibisoul/Orquestrador-/orchestrator"
+	"github.com/divibisoul/Orquestrador-/prefrontal"
+	"github.com/divibisoul/Orquestrador-/supergpu"
 )
 
+type request struct { Operation string `json:"operation"`; Payload []float64 `json:"payload"`; Metadata map[string]string `json:"metadata"` }
+
 func main() {
-	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-	defer stop()
+	n, err := neural.New(8, 0.05); if err != nil { log.Fatal(err) }
+	c, err := prefrontal.New(0.10, 32); if err != nil { log.Fatal(err) }
+	g := supergpu.New(nil); g.Discover()
+	e, err := orchestrator.New(n,c,g); if err != nil { log.Fatal(err) }
 
-	workers := 4
-	if v, err := strconv.Atoi(os.Getenv("NEXUS_WORKERS")); err == nil && v > 0 {
-		workers = v
-	}
-	orch := orchestrator.NewEngine(workers)
-	pf := prefrontal.New()
-	reg := mesh.NewRegistry()
+	mux := http.NewServeMux()
+	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) { writeJSON(w,http.StatusOK,e.Health()) })
+	mux.HandleFunc("/status", func(w http.ResponseWriter, r *http.Request) { writeJSON(w,http.StatusOK,e.Stats()) })
+	mux.HandleFunc("/execute", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost { writeJSON(w,http.StatusMethodNotAllowed,map[string]string{"error":"POST required"}); return }
+		var req request; if err:=json.NewDecoder(r.Body).Decode(&req);err!=nil{writeJSON(w,http.StatusBadRequest,map[string]string{"error":err.Error()});return}
+		if req.Operation==""{writeJSON(w,http.StatusBadRequest,map[string]string{"error":"operation is required"});return}
+		result,err:=e.Execute(r.Context(),req.Operation,req.Payload,req.Metadata); if err!=nil{writeJSON(w,http.StatusBadRequest,result);return}; writeJSON(w,http.StatusOK,result)
+	})
 
-	restSrv := rest.NewServer(orch, pf, reg)
-	httpSrv := &http.Server{Addr: ":8080", Handler: restSrv.Handler(), ReadHeaderTimeout: 5 * time.Second}
-	go func() {
-		log.Printf("ORQUESTRADOR-NEXUS HTTP listening on %s", httpSrv.Addr)
-		if err := httpSrv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Fatal(err)
-		}
-	}()
-
-	grpcAddr := os.Getenv("NEXUS_GRPC_ADDR")
-	if grpcAddr == "" {
-		grpcAddr = ":9090"
-	}
-	grpcEnabled := true
-	if v, err := strconv.ParseBool(os.Getenv("NEXUS_GRPC_ENABLED")); err == nil {
-		grpcEnabled = v
-	}
-	var grpcSrv *grpc.Server
-	var grpcLis net.Listener
-	if grpcEnabled {
-		var err error
-		grpcLis, err = net.Listen("tcp", grpcAddr)
-		if err != nil {
-			log.Printf("gRPC listener startup failed")
-			log.Fatal(err)
-		}
-		grpcSrv, err = grpcapi.Serve(grpcLis, orch)
-		if err != nil {
-			log.Printf("gRPC startup failed")
-			log.Fatal(err)
-		}
-		log.Printf("ORQUESTRADOR-NEXUS gRPC listener started")
-	}
-
-	<-ctx.Done()
-	shutdown, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-	_ = httpSrv.Shutdown(shutdown)
-	if grpcSrv != nil {
-		grpcSrv.GracefulStop()
-	}
-	if grpcLis != nil {
-		_ = grpcLis.Close()
-	}
+	addr := os.Getenv("N07_HTTP_ADDR"); if addr==""{addr=":8080"}
+	srv:=&http.Server{Addr:addr,Handler:mux,ReadHeaderTimeout:5*time.Second,ReadTimeout:15*time.Second,WriteTimeout:15*time.Second,IdleTimeout:60*time.Second}
+	ctx,stop:=signal.NotifyContext(context.Background(),os.Interrupt,syscall.SIGTERM); defer stop()
+	go func(){log.Printf("N07 Orquestrador listening on %s",addr);if err:=srv.ListenAndServe();err!=nil&&!errors.Is(err,http.ErrServerClosed){log.Printf("server error: %v",err)}}()
+	<-ctx.Done(); shutdown,cancel:=context.WithTimeout(context.Background(),5*time.Second);defer cancel();_ = e.Shutdown(shutdown);_ = srv.Shutdown(shutdown)
 }
+
+func writeJSON(w http.ResponseWriter,status int,v any){w.Header().Set("Content-Type","application/json");w.WriteHeader(status);_ = json.NewEncoder(w).Encode(v)}

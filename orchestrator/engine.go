@@ -1,0 +1,31 @@
+package orchestrator
+
+import (
+	"context"
+	"errors"
+	"math"
+	"sync"
+	"sync/atomic"
+	"time"
+
+	"github.com/divibisoul/Orquestrador-/neural"
+	"github.com/divibisoul/Orquestrador-/prefrontal"
+	"github.com/divibisoul/Orquestrador-/protocol"
+	"github.com/divibisoul/Orquestrador-/supergpu"
+)
+
+type Handler func(context.Context, protocol.Message) (protocol.Result,error)
+type Engine struct{mu sync.RWMutex; handlers map[string]Handler; active map[string]context.CancelFunc; neural *neural.Network; cortex *prefrontal.Cortex; compute *supergpu.Runtime; running atomic.Bool; sequence atomic.Uint64}
+
+func New(n *neural.Network,c *prefrontal.Cortex,g *supergpu.Runtime)(*Engine,error){if n==nil||c==nil||g==nil{return nil,errors.New("all nucleus services are required")};e:=&Engine{handlers:make(map[string]Handler),active:make(map[string]context.CancelFunc),neural:n,cortex:c,compute:g};e.running.Store(true);if err:=e.registerBuiltins();err!=nil{return nil,err};return e,nil}
+func(e *Engine)Register(operation string,handler Handler)error{if operation==""||handler==nil{return errors.New("operation and handler are required")};e.mu.Lock();defer e.mu.Unlock();if _,ok:=e.handlers[operation];ok{return errors.New("handler already registered")};e.handlers[operation]=handler;return nil}
+func(e *Engine)Route(m protocol.Message)(Handler,error){if err:=m.Validate();err!=nil{return nil,err};e.mu.RLock();h:=e.handlers[m.Operation];e.mu.RUnlock();if h==nil{return nil,errors.New("no route for operation: "+m.Operation)};return h,nil}
+func(e *Engine)Submit(ctx context.Context,m protocol.Message)(protocol.Result,error){if !e.running.Load(){return protocol.Result{},errors.New("orchestrator stopped")};if ctx==nil{return protocol.Result{},errors.New("context is nil")};m.Sequence=e.sequence.Add(1);h,err:=e.Route(m);if err!=nil{return protocol.Result{TraceID:m.TraceID,Source:"N07",Target:m.Source,Status:"rejected",Error:err.Error()},err};runCtx,cancel:=context.WithCancel(ctx);e.mu.Lock();e.active[m.TraceID]=cancel;e.mu.Unlock();defer func(){cancel();e.mu.Lock();delete(e.active,m.TraceID);e.mu.Unlock()}();return h(runCtx,m)}
+func(e *Engine)Execute(ctx context.Context,operation string,payload []float64,metadata map[string]string)(protocol.Result,error){m:=protocol.NewMessage("N07","N07","command",operation,payload);m.Metadata=metadata;return e.Submit(ctx,m)}
+func(e *Engine)Cancel(traceID string)error{if traceID==""{return errors.New("trace id is required")};e.mu.RLock();cancel,ok:=e.active[traceID];e.mu.RUnlock();if !ok{return errors.New("trace id is not active")};cancel();return nil}
+func(e *Engine)Status()string{if e.running.Load(){return "ready"};return "stopped"}
+func(e *Engine)Health()map[string]any{e.mu.RLock();handlers,active:=len(e.handlers),len(e.active);e.mu.RUnlock();return map[string]any{"nucleus":"N07","status":e.Status(),"handlers":handlers,"active_traces":active,"neural":e.neural.Health(),"prefrontal":e.cortex.Health(),"compute":e.compute.Health()}}
+func(e *Engine)Stats()map[string]any{return map[string]any{"sequence":e.sequence.Load(),"status":e.Status(),"active_traces":e.Health()["active_traces"],"timestamp":time.Now().UTC()}}
+func(e *Engine)Shutdown(ctx context.Context)error{if ctx==nil{return errors.New("context is nil")};e.running.Store(false);e.mu.Lock();for id,cancel:=range e.active{cancel();delete(e.active,id)};e.mu.Unlock();select{case<-ctx.Done():return ctx.Err();default:};return e.compute.Shutdown()}
+func(e *Engine)registerBuiltins()error{if err:=e.Register("neural.forward",func(ctx context.Context,m protocol.Message)(protocol.Result,error){v,err:=e.neural.Forward(ctx,m.Payload);return protocol.Result{TraceID:m.TraceID,Source:"N07.neural",Target:m.Source,Status:status(err),Payload:v,Error:errorText(err)},err});err!=nil{return err};if err:=e.Register("neural.learn",func(_ context.Context,m protocol.Message)(protocol.Result,error){half:=len(m.Payload)/2;if half==0||half*2!=len(m.Payload){return protocol.Result{},errors.New("learn payload must contain input and target halves")};err:=e.neural.Learn(m.Payload[:half],m.Payload[half:]);return protocol.Result{TraceID:m.TraceID,Source:"N07.neural",Target:m.Source,Status:status(err),Error:errorText(err)},err});err!=nil{return err};if err:=e.Register("compute.execute",func(ctx context.Context,m protocol.Message)(protocol.Result,error){d,err:=e.compute.Select(m.Metadata["device"]);if err!=nil{return protocol.Result{},err};op:=m.Metadata["operation"];if op==""{return protocol.Result{},errors.New("metadata.operation is required")};v,err:=e.compute.Execute(ctx,d,op,m.Payload);return protocol.Result{TraceID:m.TraceID,Source:"N07.gpu",Target:m.Source,Status:status(err),Payload:v,Error:errorText(err)},err});err!=nil{return err};if err:=e.Register("cognitive.execute",func(ctx context.Context,m protocol.Message)(protocol.Result,error){encoded,err:=e.neural.Forward(ctx,m.Payload);if err!=nil{return protocol.Result{TraceID:m.TraceID,Source:"N07",Target:m.Source,Status:"error",Error:err.Error()},err};energy:=0.0;for _,v:=range encoded{energy+=math.Abs(v)};utility:=energy/float64(len(encoded));candidate:=prefrontal.Candidate{ID:m.TraceID,Utility:utility,Cost:0.05,Risk:0.02};selected,err:=e.cortex.Select([]prefrontal.Candidate{candidate});if err!=nil{return protocol.Result{TraceID:m.TraceID,Source:"N07.prefrontal",Target:m.Source,Status:"rejected",Error:err.Error()},err};if _,err=e.cortex.Commit(selected,"neural-output-approved");err!=nil{return protocol.Result{TraceID:m.TraceID,Source:"N07.prefrontal",Target:m.Source,Status:"rejected",Error:err.Error()},err};d,err:=e.compute.Select(m.Metadata["device"]);if err!=nil{return protocol.Result{TraceID:m.TraceID,Source:"N07.gpu",Target:m.Source,Status:"error",Error:err.Error()},err};op:=m.Metadata["operation"];if op==""{op="identity"};out,err:=e.compute.Execute(ctx,d,op,encoded);return protocol.Result{TraceID:m.TraceID,Source:"N07.pipeline",Target:m.Source,Status:status(err),Payload:out,Metadata:map[string]string{"decision":"approved","device":d.ID},Error:errorText(err)},err});err!=nil{return err};return nil}
+func status(err error)string{if err!=nil{return "error"};return "ok"};func errorText(err error)string{if err!=nil{return err.Error()};return ""}
