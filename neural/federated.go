@@ -105,9 +105,9 @@ func (f *Fabric) assignContext(parent context.Context, task NeuralTask, nucleus 
 	payload := map[string]any{
 		"taskId":         task.ID,
 		"operation":      task.Operation,
-		"payload":        task.Payload, // legacy compatibility
-		"payload.values": task.Payload, // canonical neural Mesh vector field
-		"values":         task.Payload, // compact adapter compatibility
+		"payload":        task.Payload,
+		"payload.values": task.Payload,
+		"values":         task.Payload,
 		"priority":       task.Priority,
 		"source":         task.Source,
 		"target":         nucleus,
@@ -185,11 +185,8 @@ func (f *Fabric) ParallelContext(ctx context.Context, tasks []NeuralTask) []Fede
 					}
 					task := tasks[index]
 					target := task.Target
-					// Source was historically used as the routing hint. Preserve
-					// that compatibility while Target remains canonical.
-					if target == "" {
-						target = task.Source
-					}
+					// Target is the canonical destination. Source identifies the
+					// origin and must never be used as an implicit destination.
 					if target == "" {
 						target = members[index%len(members)]
 					}
