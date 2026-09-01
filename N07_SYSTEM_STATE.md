@@ -1,37 +1,60 @@
-# N07 system state
+# N07 — LIVE SYSTEM STATE
+
+Date: 2026-09-01
+Branch: `fusion/n07-complete-live-v3`
 
 ## Current role
-N07 is the SOUL Orchestrator. It coordinates N01–N06 and connects neural processing, prefrontal decision policy and compute execution.
+
+N07 is the SOUL Orchestrator, an independent AI/runtime and an active parallel engineering front. It coordinates N01–N06 and connects neural processing, prefrontal policy, compute, Mesh federation, capability composition and distributed execution.
 
 ## Cumulative engineering rule
+
 PRESERVE → AUDIT → CORRECT → COMPLETE → CONNECT → CROSS → FUSE → OPTIMIZE → VALIDATE → DOCUMENT → ADVANCE.
 
 A declaration, type, route or commit is not proof of runtime completion. Completion requires executable behavior and evidence.
 
-## Cross-front contract
-Every change made in another nucleus must be reviewed for N07 compatibility continuously, not only at a final phase. Relevant dimensions: protocol version, nucleus IDs, correlation/trace propagation, capability ownership, agent/tool contracts, input/output schemas, transport, timeout/cancel semantics, authentication, retries, circuit state and observability.
+## Implemented in the current line
 
-## N07 peer surface
-N07 participates in active bidirectional Mesh integration with N01, N02, N03, N04, N05 and N06. The runtime exposes an inbound canonical Mesh gateway and an outbound peer adapter contract. N07 is no longer reserved as a purely final-stage target; its integration surface advances concurrently with the other nuclei while final commissioning remains evidence-gated.
+- canonical Soul Mesh envelope `1.1.0`;
+- source/target validation, correlation identity, nonce/replay protection, clock-skew validation and TTL enforcement;
+- HMAC authentication on peer transport;
+- N01–N06 structural peer relationships;
+- canonical `mesh.discovery` with `mesh.describe` compatibility fallback;
+- peer health/latency/failure-aware routing;
+- bounded retry/backoff and circuit protection;
+- bounded request/response payloads;
+- local-first execution with federated fallback;
+- explicit N07 agent identities for discovery, routing, execution, composition, validation and observation;
+- explicit N07↔N01..N06 topology contract;
+- federated parallel execution with per-task child correlation and timing;
+- capability composition/fusion path;
+- federation statistics and Prometheus-compatible runtime metrics;
+- bounded TTL discovery cache with invalidation after peer failure;
+- runnable control-plane endpoints and regression coverage.
 
-## Active integration strategy
-N07 is developed simultaneously with N01–N06. Each new peer capability, function, tool, agent contract, transport or resilience change must be reconciled into N07 as soon as it is structurally compatible. This prevents the final fusion from becoming a large unverified merge and allows N07 to expose integration defects early.
+## Cross-front synchronization
 
-## Current known boundary
-The N07 outbound peer client uses the canonical Mesh contract and HMAC signing. Discovery is aligned to the canonical `mesh.discovery` capability. Full live N01–N07 commissioning remains dependent on both endpoints being concurrently reachable with compatible runtime configuration and secrets.
+N07 explicitly consumes the verified N01/N06 fusion ownership model instead of copying their runtime implementations. Active N02/N03/N04/N05 fronts are treated as evolving peers; N07 is designed to discover their live capabilities through the canonical Mesh and adapt to contract changes rather than assuming static ownership.
 
-## Integration gates
-Continuously validate:
+## Known integration boundaries
 
-1. canonical Mesh contract across N01–N07;
-2. five-peer bidirectional logical relationships for N01–N06 and six peers around N07;
-3. capability discovery and ownership;
-4. delegation and response correlation;
-5. failure/timeout/fallback behavior;
-6. inter-nucleus parallel execution;
-7. composed capabilities and function/tool fusion;
-8. distributed Super GPU execution;
-9. final N01–N06–N07 integrated tests and runtime commissioning.
+- Full six-runtime E2E requires N01–N06 endpoints to be simultaneously configured, reachable and authenticated with compatible contract versions.
+- Real accelerator execution remains provider/backend dependent; device discovery alone is not reported as executable CUDA/HIP.
+- GitHub Actions evidence is the authoritative operational gate. A missing workflow result remains unverified.
 
-## Evidence policy
-Current repository state, latest relevant commits, executable tests and CI results take precedence over prior conversation claims. When CI execution is unavailable, keep the affected item explicitly unverified rather than promoting structural completion to runtime completion.
+## Closure gates
+
+1. Exact current-head CI build, vet, test and race evidence.
+2. Live N01–N06 peer configuration and multi-runtime E2E.
+3. Measured SuperGPU/fusion concurrency, latency and failure-recovery behavior.
+4. Final N01×N06×N07 fusion after upstream capability/tool contracts stabilize.
+
+## Handoff
+
+WHAT_CHANGED: protocol hardening, active federation, peer discovery/routing/delegation, agent identity, topology, composition, parallel SuperGPU, caching and observability.
+
+WHAT_WAS_FOUND: stale discovery operation naming, missing gateway methods, missing TTL enforcement, branch/commit concurrency hazards and gaps between documented and executable surfaces.
+
+WHAT_REMAINS: exact-head CI proof, live multi-runtime E2E, stabilization of external capability/provider contracts and final N01×N06×N07 fusion closure.
+
+WHAT_NEXT_AGENT_SHOULD_DO: verify the current branch HEAD and all active peer-front changes before editing; preserve the canonical Mesh; fix the next evidence-backed defect and repeat CI validation.
