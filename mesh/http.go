@@ -13,13 +13,22 @@ import (
 )
 
 type HTTPGateway struct {
-	Engine *orchestrator.Engine
-	Token  string
+	Engine        *orchestrator.Engine
+	Token         string
+	AllowUnauthenticatedLocal bool
 }
 
 func NewHTTPGateway(engine *orchestrator.Engine) *HTTPGateway {
 	token := strings.TrimSpace(os.Getenv("N07_MESH_SHARED_TOKEN"))
-	return &HTTPGateway{Engine: engine, Token: token}
+	allowLocal := strings.EqualFold(strings.TrimSpace(os.Getenv("N07_MESH_ALLOW_UNAUTH_LOCAL")), "true")
+	return &HTTPGateway{Engine: engine, Token: token, AllowUnauthenticatedLocal: allowLocal}
+}
+
+func (g *HTTPGateway) authenticated(r *http.Request) bool {
+	if g.Token == "" {
+		return g.AllowUnauthenticatedLocal
+	}
+	return r.Header.Get("X-Soul-Mesh-Token") == g.Token
 }
 
 func (g *HTTPGateway) Handler(w http.ResponseWriter, r *http.Request) {
@@ -31,7 +40,7 @@ func (g *HTTPGateway) Handler(w http.ResponseWriter, r *http.Request) {
 		writeMeshJSON(w, http.StatusServiceUnavailable, protocol.MeshEnvelope{ContractVersion: "1.2", Operation: "error", CorrelationID: "", Source: "N07", Target: "", Metadata: map[string]string{"error": "N07 engine unavailable"}})
 		return
 	}
-	if g.Token != "" && r.Header.Get("X-Soul-Mesh-Token") != g.Token {
+	if !g.authenticated(r) {
 		writeMeshJSON(w, http.StatusUnauthorized, protocol.MeshEnvelope{ContractVersion: "1.2", Operation: "error", CorrelationID: "", Source: "N07", Target: "", Metadata: map[string]string{"error": "mesh authentication failed"}})
 		return
 	}
