@@ -1,6 +1,7 @@
 package mesh
 
 import (
+	"bytes"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -27,10 +28,12 @@ func TestEnhancedFederatedGatewayParallelExecution(t *testing.T) {
 		if request.CorrelationID == "" {
 			t.Fatal("peer request lost correlation id")
 		}
-		payload := map[string]any{
-			"capability": request.Capability(),
-			"payload":    request.NestedPayload(),
-			"status":     "ok",
+
+		var payload map[string]any
+		if request.Capability() == "mesh.discovery" || request.Capability() == "mesh.describe" {
+			payload = map[string]any{"operations": []string{"task.alpha"}}
+		} else {
+			payload = map[string]any{"document": "validated"}
 		}
 		response := protocol.MeshEnvelope{
 			Version:         protocol.SoulMeshVersion,
@@ -66,18 +69,21 @@ func TestEnhancedFederatedGatewayParallelExecution(t *testing.T) {
 	defer peer.Close()
 
 	n, err := neural.New(8, 0.05)
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	c, err := prefrontal.New(0.10, 32)
-	if err != nil { t.Fatal(err) }
-	g, err := orchestrator.New(n, c, supergpu.New(nil))
-	if err != nil { t.Fatal(err) }
-	gateway := NewEnhancedFederatedHTTPGateway(g)
-	federated := gateway.base.peers
-	if _, err := federated.ConfiguredPeers(), error(nil); err != nil { t.Fatal(err) }
-
-	federated.mu.Lock()
-	federated.peers[protocol.N01] = PeerInfo{Nucleus: protocol.N01, URL: peer.URL, Circuit: CircuitClosed}
-	federated.mu.Unlock()
+	if err != nil {
+		t.Fatal(err)
+	}
+	engine, err := orchestrator.New(n, c, supergpu.New(nil))
+	if err != nil {
+		t.Fatal(err)
+	}
+	gateway := NewEnhancedFederatedHTTPGateway(engine)
+	gateway.base.peers.mu.Lock()
+	gateway.base.peers.peers[protocol.N01] = PeerInfo{Nucleus: protocol.N01, URL: peer.URL, Circuit: CircuitClosed}
+	gateway.base.peers.mu.Unlock()
 
 	request := protocol.MeshEnvelope{
 		Version:         protocol.SoulMeshVersion,
@@ -94,12 +100,29 @@ func TestEnhancedFederatedGatewayParallelExecution(t *testing.T) {
 			"payload":    map[string]any{"document": "alpha"},
 		},
 	}
-	if err := protocol.SignHMAC(&request, secret); err != nil { t.Fatal(err) }
+	if err := protocol.SignHMAC(&request, secret); err != nil {
+		t.Fatal(err)
+	}
 
 	body, err := json.Marshal(request)
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	req := httptest.NewRequest(http.MethodPost, "/api/soul-mesh", bytes.NewReader(body))
 	rec := httptest.NewRecorder()
 	gateway.ServeHTTP(rec, req)
-	if rec.Code != http.StatusBadRequest && rec.Code != http.StatusOK && rec.Code != http.StatusBadGateway { t.Fatalf("unexpected status: %d", rec.Code) }
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected federated execution to succeed, got %d: %s", rec.Code, rec.Body.String())
+	}
+	var out map[string]any
+	if err := json.NewDecoder(rec.Body).Decode(&out); err != nil {
+		t.Fatal(err)
+	}
+	if out["correlationId"] != "trace-supergpu" {
+		t.Fatalf("parent correlation was not preserved: %#v", out)
+	}
+	payload, ok := out["payload"].(map[string]any)
+	if !ok || payload["execution"] != "federated-supergpu-parallel" {
+		t.Fatalf("expected parallel federated execution response: %#v", out)
+	}
 }
