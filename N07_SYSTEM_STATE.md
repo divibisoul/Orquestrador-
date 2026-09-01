@@ -18,12 +18,12 @@ N07 owns orchestration, neural federation, routing, capability composition and S
 
 ## Current evidence
 - Main contains the finite 40-function queue and release gates.
-- Backend/storage regression branch passed Format, Vet, Test, Race Test and Build in GitHub Actions run #310; run #326/#current branch validation is tracked separately.
-- N07 CI uses current-head evidence and does not claim live runtime success without E2E proof.
+- Backend/storage regression branch passed Format, Vet, Test, Race Test and Build in GitHub Actions run #310/verify; follow-up normalization run #326 is active/queued for the updated workflow.
+- N07 CI uses exact-head evidence and does not claim live runtime success without E2E proof.
 
-## Release blockers
-1. Reconcile backend/storage PR into current main using current-main merge base.
-2. Reconcile latest N01-N06 response-signature/health contracts.
+## Next finite gates
+1. Retarget/reconcile backend/storage PR against current main and validate merge-base CI.
+2. Reconcile latest N01-N06 response signatures and health semantics.
 3. Run six-peer live E2E where runtimes are concurrently reachable.
 4. Run release smoke/deploy and hand off to Android/APK stage.
 
