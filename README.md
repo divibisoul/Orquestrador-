@@ -1,18 +1,22 @@
 # N07 — Orquestrador
 
-N07 is the SOUL Orchestrator nucleus. Its responsibility is to coordinate the other nuclei through one typed, traceable protocol and to connect three execution layers:
+N07 is the SOUL Orchestrator nucleus. Its responsibility is to coordinate the other nuclei through one typed, traceable protocol and connect the cognitive and compute layers:
 
 ```text
 N01..N06
    │
    ▼
-N07 Orquestrador ──► Neural Network ──► Prefrontal Cortex
-        │                    │                  │
-        └────────────────────┴──────────────────┘
-                         │
-                         ▼
-                    SuperGPU Runtime
+N07 Orquestrador
+   │
+   ├──► Neural Network ──► Prefrontal Cortex ──► Compute Backend
+   │            ▲                  │                    │
+   └────────────┴──────────────────┴────────────────────┘
+                              │
+                              ▼
+                         SuperGPU Runtime
 ```
+
+The `cognitive.execute` route is the concrete end-to-end path: neural forward pass → prefrontal risk/utility decision → decision commit → compute execution, with the same `trace_id` throughout.
 
 ## Runtime contract
 
@@ -23,10 +27,10 @@ N07 Orquestrador ──► Neural Network ──► Prefrontal Cortex
 - The compute layer is hardware-aware. It discovers NVIDIA/AMD driver tools when present and exposes a backend interface for native GPU implementations. The built-in CPU backend is an execution backend, not a GPU simulation.
 - Shutdown is context-aware and releases compute reservations.
 
-## 40 implemented functions
+## 40 public runtime functions
 
 ### Orquestrador — 10
-`New`, `Register`, `Route`, `Submit`, `Execute`, `Cancel`, `Status`, `Health`, `Stats`, `Shutdown`, plus built-in route registration.
+`New`, `Register`, `Route`, `Submit`, `Execute`, `Cancel`, `Status`, `Health`, `Stats`, `Shutdown`.
 
 ### Neural Network — 10
 `New`, `AddEdge`, `RemoveEdge`, `Activate`, `Forward`, `Learn`, `Normalize`, `Attention`, `Backprop`, `Health`.
@@ -39,7 +43,7 @@ N07 Orquestrador ──► Neural Network ──► Prefrontal Cortex
 
 ## Verification
 
-The repository includes executable Go tests for protocol serialization/trace propagation, neural forward/learning paths, prefrontal decision policy, compute execution/batching, and the end-to-end N07 orchestration path.
+The repository includes executable Go tests for protocol serialization/trace propagation, neural forward/learning paths, prefrontal decision policy, compute execution/batching, and the end-to-end N07 cognitive orchestration path.
 
 ## Hardware boundary
 
