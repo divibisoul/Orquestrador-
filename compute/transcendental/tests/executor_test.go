@@ -2,6 +2,7 @@ package tests
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"testing"
 
@@ -53,8 +54,14 @@ func TestExecutorDeterministicAndMetrics(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if string(r.Data) != "simulated-result" {
-		t.Fatalf("unexpected result data %q", r.Data)
+	var artifact map[string]any
+	if err := json.Unmarshal(r.Data, &artifact); err != nil {
+		t.Fatalf("execution data is not valid JSON: %v", err)
+	}
+	for _, field := range []string{"workloadId", "operation", "architecture", "precision", "metrics", "executedAt"} {
+		if artifact[field] == nil {
+			t.Fatalf("execution artifact missing %q: %#v", field, artifact)
+		}
 	}
 	if r.Metrics.Architecture == "" || r.Metrics.LatencyMs <= 0 {
 		t.Fatalf("invalid metrics %#v", r.Metrics)
