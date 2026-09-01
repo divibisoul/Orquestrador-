@@ -1,0 +1,41 @@
+name: N07 autoformat
+
+on:
+  push:
+    branches:
+      - upgrade/n07-hybrid-supercompute-v2
+    paths:
+      - '**.go'
+      - '.github/workflows/n07-autofmt.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  gofmt:
+    runs-on: ubuntu-latest
+    if: github.actor != 'github-actions[bot]'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.25.x'
+          cache: true
+      - name: Format Go sources
+        run: gofmt -w $(git ls-files '*.go')
+      - name: Commit formatting when needed
+        shell: bash
+        run: |
+          set -euo pipefail
+          if git diff --quiet -- '*.go'; then
+            echo 'All Go files are already gofmt-formatted.'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -- '*.go'
+          git commit -m 'style(n07): apply gofmt'
+          git push
