@@ -25,8 +25,10 @@ The adapter implements:
 - authenticated upload listing / health check;
 - bounded request size;
 - context cancellation and timeout;
+- source-byte integrity checking;
 - provider error propagation;
-- configurable API endpoint for controlled migration to another compatible endpoint.
+- configurable API endpoint for controlled migration to another compatible endpoint;
+- deterministic IPFS gateway URL generation from the returned CID.
 
 N07 routes the capability surface as:
 
@@ -43,7 +45,7 @@ GET  /storage/web3/status?cid=<CID>
 GET  /storage/web3/health
 ```
 
-The upload endpoint accepts a multipart field named `file` and returns the resulting CID.
+The N07 upload endpoint accepts a multipart field named `file`, while the provider adapter forwards the file bytes as the documented raw `POST /upload` body and returns the resulting CID.
 
 ## Security
 
