@@ -10,6 +10,8 @@ import (
 	"testing"
 )
 
+const testCID = "bafybeibhybbpoqakv7pfj5nlrpmldkgiuksmbi3t2cnhxqxnqvbzkhyzjy"
+
 func TestWeb3StorageUploadAndStatus(t *testing.T) {
 	var gotAuth string
 	var gotName string
@@ -23,10 +25,10 @@ func TestWeb3StorageUploadAndStatus(t *testing.T) {
 				t.Fatalf("unexpected upload body: %q", string(body))
 			}
 			w.Header().Set("Content-Type", "application/json")
-			_, _ = io.WriteString(w, `{"cid":"bafy-test"}`)
-		case r.Method == http.MethodGet && r.URL.Path == "/status/bafy-test":
+			_, _ = io.WriteString(w, `{"cid":"`+testCID+`"}`)
+		case r.Method == http.MethodGet && r.URL.Path == "/status/"+testCID:
 			w.Header().Set("Content-Type", "application/json")
-			_, _ = io.WriteString(w, `{"cid":"bafy-test","status":"pinned"}`)
+			_, _ = io.WriteString(w, `{"cid":"`+testCID+`","status":"pinned"}`)
 		default:
 			http.NotFound(w, r)
 		}
@@ -39,7 +41,7 @@ func TestWeb3StorageUploadAndStatus(t *testing.T) {
 		IPFSGatewayURL:   server.URL + "/ipfs",
 	})
 	cid, size, err := s.Upload(context.Background(), strings.NewReader("hello"), "artifact.bin")
-	if err != nil || cid != "bafy-test" || size != 5 {
+	if err != nil || cid != testCID || size != 5 {
 		t.Fatalf("unexpected upload result cid=%q size=%d err=%v", cid, size, err)
 	}
 	if gotAuth != "Bearer secret" || gotName != "artifact.bin" {
@@ -49,7 +51,7 @@ func TestWeb3StorageUploadAndStatus(t *testing.T) {
 	if err != nil || status["status"] != "pinned" {
 		t.Fatalf("unexpected status: %#v err=%v", status, err)
 	}
-	if got := s.ObjectURL(cid); got != server.URL+"/ipfs/bafy-test" {
+	if got := s.ObjectURL(cid); got != server.URL+"/ipfs/"+testCID {
 		t.Fatalf("unexpected object URL: %q", got)
 	}
 }
