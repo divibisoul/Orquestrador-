@@ -1,17 +1,368 @@
 package mesh
 
-import("bytes";"context";"encoding/json";"errors";"fmt";"io";"net/http";"os";"strings";"sync";"time";"github.com/divibisoul/Orquestrador-/protocol")
+import (
+	"bytes"
+	"context"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"io"
+	"net/http"
+	"os"
+	"strings"
+	"sync"
+	"time"
+
+	"github.com/divibisoul/Orquestrador-/protocol"
+)
+
 type CircuitState string
-const(CircuitClosed CircuitState="closed";CircuitOpen CircuitState="open";CircuitHalfOpen CircuitState="half-open")
-type PeerInfo struct{Nucleus string;URL string;Healthy bool;Latency time.Duration;LastError string;Failures int;Circuit CircuitState;RetryAfter time.Time}
-type PeerClient struct{mu sync.RWMutex;peers map[string]PeerInfo;client *http.Client;secret string;maxRetry int;cooldown time.Duration}
-func NewPeerClient(client *http.Client)(*PeerClient,error){if client==nil{client=&http.Client{Timeout:15*time.Second}};peers:=map[string]PeerInfo{};for _,n:=range []string{protocol.N01,protocol.N02,protocol.N03,protocol.N04,protocol.N05,protocol.N06}{if u:=strings.TrimRight(strings.TrimSpace(os.Getenv("SOUL_MESH_"+n+"_URL")),"/");u!=""{peers[n]=PeerInfo{Nucleus:n,URL:u,Circuit:CircuitClosed}}};return &PeerClient{peers:peers,client:client,secret:strings.TrimSpace(os.Getenv("SOUL_MESH_HMAC_SECRET")),maxRetry:3,cooldown:30*time.Second},nil}
-func(p *PeerClient)Discover(ctx context.Context,nucleus string)(map[string]any,error){nucleus=strings.TrimSpace(nucleus);if nucleus==protocol.N07{return nil,errors.New("N07 cannot discover itself through peer transport")};result,err:=p.Call(ctx,nucleus,"mesh.discovery",map[string]any{"from":protocol.N07});if err==nil{return result,nil};if ctx.Err()!=nil{return nil,ctx.Err()};return p.Call(ctx,nucleus,"mesh.describe",map[string]any{"from":protocol.N07})}
-func(p *PeerClient)Call(ctx context.Context,nucleus,capability string,payload map[string]any)(map[string]any,error){if ctx==nil{return nil,errors.New("context is nil")};nucleus=strings.TrimSpace(nucleus);capability=strings.TrimSpace(capability);if nucleus==protocol.N07{return nil,errors.New("N07 cannot call itself through peer transport")};if capability==""{return nil,errors.New("capability is required")};return p.call(ctx,nucleus,capability,payload)}
-func(p *PeerClient)call(ctx context.Context,nucleus,capability string,payload map[string]any)(map[string]any,error){p.mu.RLock();peer,ok:=p.peers[nucleus];p.mu.RUnlock();if !ok{return nil,errors.New("peer not configured: "+nucleus)};if peer.Circuit==CircuitOpen{if time.Now().Before(peer.RetryAfter){return nil,fmt.Errorf("peer circuit open: %s",nucleus)};p.mu.Lock();peer=p.peers[nucleus];peer.Circuit=CircuitHalfOpen;p.peers[nucleus]=peer;p.mu.Unlock()};if p.secret==""{return nil,errors.New("SOUL_MESH_HMAC_SECRET is not configured")};correlation:=protocol.NewTraceID();var lastErr error;for attempt:=1;attempt<=p.maxRetry;attempt++{if err:=ctx.Err();err!=nil{return nil,err};env:=protocol.MeshEnvelope{Version:protocol.SoulMeshVersion,ContractVersion:protocol.SoulMeshContractVersion,MessageID:protocol.NewTraceID(),Source:protocol.N07,Target:nucleus,Timestamp:time.Now().UnixMilli(),Nonce:protocol.NewTraceID(),CorrelationID:correlation,Type:"CAPABILITY_REQUEST",Payload:map[string]any{"capability":capability,"payload":payload}};if err:=protocol.SignHMAC(&env,p.secret);err!=nil{return nil,err};body,err:=protocol.EncodeMesh(env);if err!=nil{return nil,err};req,err:=http.NewRequestWithContext(ctx,http.MethodPost,peer.URL+"/api/soul-mesh",bytes.NewReader(body));if err!=nil{return nil,err};req.Header.Set("Content-Type","application/json");req.Header.Set("X-Soul-Contract-Version",protocol.SoulMeshContractVersion);req.Header.Set("X-Soul-Correlation-Id",correlation);started:=time.Now();resp,err:=p.client.Do(req);latency:=time.Since(started);if err!=nil{lastErr=err;p.recordFailure(nucleus,latency,err.Error());if attempt<p.maxRetry{if err:=waitBackoff(ctx,attempt);err!=nil{return nil,err};continue};return nil,err};var result map[string]any;decodeErr:=jsonDecodeLimited(resp,&result);resp.Body.Close();if decodeErr!=nil{lastErr=decodeErr;p.recordFailure(nucleus,latency,decodeErr.Error());if attempt<p.maxRetry{if err:=waitBackoff(ctx,attempt);err!=nil{return nil,err};continue};return nil,decodeErr};if resp.StatusCode<200||resp.StatusCode>=300{lastErr=fmt.Errorf("peer request failed: %s",resp.Status);p.recordFailure(nucleus,latency,lastErr.Error());if attempt<p.maxRetry&&(resp.StatusCode==408||resp.StatusCode==429||resp.StatusCode>=500){if err:=waitBackoff(ctx,attempt);err!=nil{return nil,err};continue};return result,lastErr};if result["contractVersion"]!=protocol.SoulMeshContractVersion{lastErr=errors.New("mesh response contract version mismatch");p.recordFailure(nucleus,latency,lastErr.Error());return nil,lastErr};if result["correlationId"]!=correlation{lastErr=errors.New("peer correlation mismatch");p.recordFailure(nucleus,latency,lastErr.Error());return nil,lastErr};if err:=verifyResponseHMAC(result,p.secret);err!=nil{lastErr=err;p.recordFailure(nucleus,latency,err.Error());return nil,err};p.recordSuccess(nucleus,latency);return result,nil};if lastErr==nil{lastErr=errors.New("mesh request failed")};return nil,lastErr}
-func jsonDecodeLimited(resp *http.Response,out *map[string]any)error{if resp==nil||resp.Body==nil{return errors.New("empty peer response")};if resp.ContentLength>1<<20{return errors.New("peer response exceeds configured limit")};return json.NewDecoder(io.LimitReader(resp.Body,1<<20)).Decode(out)}
-func waitBackoff(ctx context.Context,attempt int)error{delay:=time.Duration(1<<uint(attempt-1))*250*time.Millisecond;timer:=time.NewTimer(delay);defer timer.Stop();select{case<-ctx.Done():return ctx.Err();case<-timer.C:return nil}}
-func(p *PeerClient)recordSuccess(nucleus string,latency time.Duration){p.mu.Lock();defer p.mu.Unlock();peer,ok:=p.peers[nucleus];if !ok{return};peer.Healthy=true;peer.Latency=latency;peer.LastError="";peer.Failures=0;peer.Circuit=CircuitClosed;peer.RetryAfter=time.Time{};p.peers[nucleus]=peer}
-func(p *PeerClient)recordFailure(nucleus string,latency time.Duration,lastError string){p.mu.Lock();defer p.mu.Unlock();peer,ok:=p.peers[nucleus];if !ok{return};peer.Healthy=false;peer.Latency=latency;peer.LastError=lastError;peer.Failures++;if peer.Failures>=3{peer.Circuit=CircuitOpen;peer.RetryAfter=time.Now().Add(p.cooldown)};p.peers[nucleus]=peer}
-func verifyResponseHMAC(result map[string]any,secret string)error{hmacValue,_:=result["hmac"].(string);nonce,_:=result["nonce"].(string);if hmacValue==""||nonce==""{return errors.New("peer response HMAC credentials are missing")};timestamp,ok:=result["timestamp"].(float64);if !ok{return errors.New("peer response timestamp is invalid")};id,_:=result["id"].(string);source,_:=result["source"].(string);target,_:=result["target"].(string);correlation,_:=result["correlationId"].(string);capability,_:=result["capability"].(string);kind,_:=result["kind"].(string);typ:="TASK_RESULT";if kind=="error"{typ="ERROR"};payload:=map[string]any{};if p,ok:=result["payload"].(map[string]any);ok{payload=p};env:=protocol.MeshEnvelope{Version:protocol.SoulMeshVersion,ContractVersion:protocol.SoulMeshContractVersion,MessageID:id,Source:source,Target:target,Timestamp:int64(timestamp),Nonce:nonce,CorrelationID:correlation,Type:typ,Payload:map[string]any{"capability":capability,"payload":payload}};return protocol.VerifyHMAC(env,secret,time.Now())}
-func(p *PeerClient)ConfiguredPeers()[]PeerInfo{p.mu.RLock();defer p.mu.RUnlock();out:=make([]PeerInfo,0,len(p.peers));for _,peer:=range p.peers{out=append(out,peer)};return out}
+
+const (
+	CircuitClosed   CircuitState = "closed"
+	CircuitOpen     CircuitState = "open"
+	CircuitHalfOpen CircuitState = "half-open"
+)
+
+type PeerInfo struct {
+	Nucleus    string
+	URL        string
+	Healthy    bool
+	Latency    time.Duration
+	LastError  string
+	Failures   int
+	Circuit    CircuitState
+	RetryAfter time.Time
+}
+
+type PeerClient struct {
+	mu       sync.RWMutex
+	peers    map[string]PeerInfo
+	client   *http.Client
+	secret   string
+	maxRetry int
+	cooldown time.Duration
+}
+
+func NewPeerClient(client *http.Client) (*PeerClient, error) {
+	if client == nil {
+		client = &http.Client{Timeout: 15 * time.Second}
+	}
+	peers := map[string]PeerInfo{}
+	for _, n := range []string{protocol.N01, protocol.N02, protocol.N03, protocol.N04, protocol.N05, protocol.N06} {
+		if u := strings.TrimRight(strings.TrimSpace(os.Getenv("SOUL_MESH_"+n+"_URL")), "/"); u != "" {
+			peers[n] = PeerInfo{Nucleus: n, URL: u, Circuit: CircuitClosed}
+		}
+	}
+	return &PeerClient{
+		peers:    peers,
+		client:   client,
+		secret:   strings.TrimSpace(os.Getenv("SOUL_MESH_HMAC_SECRET")),
+		maxRetry: 3,
+		cooldown: 30 * time.Second,
+	}, nil
+}
+
+func (p *PeerClient) Discover(ctx context.Context, nucleus string) (map[string]any, error) {
+	nucleus = strings.TrimSpace(nucleus)
+	if nucleus == protocol.N07 {
+		return nil, errors.New("N07 cannot discover itself through peer transport")
+	}
+	result, err := p.CallWithCorrelation(ctx, nucleus, "mesh.discovery", map[string]any{"from": protocol.N07}, protocol.NewTraceID())
+	if err == nil {
+		return result, nil
+	}
+	if ctx.Err() != nil {
+		return nil, ctx.Err()
+	}
+	return p.CallWithCorrelation(ctx, nucleus, "mesh.describe", map[string]any{"from": protocol.N07}, protocol.NewTraceID())
+}
+
+func (p *PeerClient) Call(ctx context.Context, nucleus, capability string, payload map[string]any) (map[string]any, error) {
+	return p.CallWithCorrelation(ctx, nucleus, capability, payload, protocol.NewTraceID())
+}
+
+func (p *PeerClient) CallWithCorrelation(ctx context.Context, nucleus, capability string, payload map[string]any, correlation string) (map[string]any, error) {
+	if ctx == nil {
+		return nil, errors.New("context is nil")
+	}
+	nucleus = strings.TrimSpace(nucleus)
+	capability = strings.TrimSpace(capability)
+	correlation = strings.TrimSpace(correlation)
+	if nucleus == protocol.N07 {
+		return nil, errors.New("N07 cannot call itself through peer transport")
+	}
+	if capability == "" {
+		return nil, errors.New("capability is required")
+	}
+	if correlation == "" {
+		return nil, errors.New("correlation is required")
+	}
+	return p.call(ctx, nucleus, capability, payload, correlation)
+}
+
+func (p *PeerClient) CallBest(ctx context.Context, capability string, payload map[string]any, correlation string) (map[string]any, string, error) {
+	if ctx == nil {
+		return nil, "", errors.New("context is nil")
+	}
+	for _, peer := range p.ConfiguredPeers() {
+		if peer.Circuit == CircuitOpen && time.Now().Before(peer.RetryAfter) {
+			continue
+		}
+		discoveryCtx, cancel := context.WithTimeout(ctx, 2*time.Second)
+		description, err := p.Discover(discoveryCtx, peer.Nucleus)
+		cancel()
+		if err != nil || !supportsCapability(description, capability) {
+			continue
+		}
+		result, err := p.CallWithCorrelation(ctx, peer.Nucleus, capability, payload, correlation)
+		if err == nil {
+			return result, peer.Nucleus, nil
+		}
+	}
+	return nil, "", fmt.Errorf("no healthy peer exposes executable capability: %s", capability)
+}
+
+func supportsCapability(description map[string]any, capability string) bool {
+	capability = strings.TrimSpace(capability)
+	for _, key := range []string{"capabilities", "operations", "executableCapabilities"} {
+		raw, ok := description[key]
+		if !ok {
+			continue
+		}
+		items, ok := raw.([]any)
+		if !ok {
+			continue
+		}
+		for _, item := range items {
+			if s, ok := item.(string); ok {
+				name := strings.TrimSpace(strings.SplitN(s, "@", 2)[0])
+				if name == capability {
+					return true
+				}
+			}
+		}
+	}
+	return false
+}
+
+func (p *PeerClient) call(ctx context.Context, nucleus, capability string, payload map[string]any, correlation string) (map[string]any, error) {
+	p.mu.RLock()
+	peer, ok := p.peers[nucleus]
+	p.mu.RUnlock()
+	if !ok {
+		return nil, errors.New("peer not configured: " + nucleus)
+	}
+	if peer.Circuit == CircuitOpen {
+		if time.Now().Before(peer.RetryAfter) {
+			return nil, fmt.Errorf("peer circuit open: %s", nucleus)
+		}
+		p.mu.Lock()
+		peer = p.peers[nucleus]
+		peer.Circuit = CircuitHalfOpen
+		p.peers[nucleus] = peer
+		p.mu.Unlock()
+	}
+	if p.secret == "" {
+		return nil, errors.New("SOUL_MESH_HMAC_SECRET is not configured")
+	}
+
+	var lastErr error
+	for attempt := 1; attempt <= p.maxRetry; attempt++ {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
+		env := protocol.MeshEnvelope{
+			Version:         protocol.SoulMeshVersion,
+			ContractVersion: protocol.SoulMeshContractVersion,
+			MessageID:       protocol.NewTraceID(),
+			Source:          protocol.N07,
+			Target:          nucleus,
+			Timestamp:       time.Now().UnixMilli(),
+			Nonce:           protocol.NewTraceID(),
+			CorrelationID:   correlation,
+			Type:            "CAPABILITY_REQUEST",
+			Payload:         map[string]any{"capability": capability, "payload": payload},
+		}
+		if err := protocol.SignHMAC(&env, p.secret); err != nil {
+			return nil, err
+		}
+		body, err := protocol.EncodeMesh(env)
+		if err != nil {
+			return nil, err
+		}
+		req, err := http.NewRequestWithContext(ctx, http.MethodPost, peer.URL+"/api/soul-mesh", bytes.NewReader(body))
+		if err != nil {
+			return nil, err
+		}
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("X-Soul-Contract-Version", protocol.SoulMeshContractVersion)
+		req.Header.Set("X-Soul-Correlation-Id", correlation)
+		started := time.Now()
+		resp, err := p.client.Do(req)
+		latency := time.Since(started)
+		if err != nil {
+			lastErr = err
+			p.recordFailure(nucleus, latency, err.Error())
+			if attempt < p.maxRetry {
+				if err := waitBackoff(ctx, attempt); err != nil {
+					return nil, err
+				}
+				continue
+			}
+			return nil, err
+		}
+
+		var result map[string]any
+		decodeErr := jsonDecodeLimited(resp, &result)
+		resp.Body.Close()
+		if decodeErr != nil {
+			lastErr = decodeErr
+			p.recordFailure(nucleus, latency, decodeErr.Error())
+			if attempt < p.maxRetry {
+				if err := waitBackoff(ctx, attempt); err != nil {
+					return nil, err
+				}
+				continue
+			}
+			return nil, decodeErr
+		}
+		if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+			lastErr = fmt.Errorf("peer request failed: %s", resp.Status)
+			p.recordFailure(nucleus, latency, lastErr.Error())
+			if attempt < p.maxRetry && (resp.StatusCode == 408 || resp.StatusCode == 429 || resp.StatusCode >= 500) {
+				if err := waitBackoff(ctx, attempt); err != nil {
+					return nil, err
+				}
+				continue
+			}
+			return result, lastErr
+		}
+		if result["contractVersion"] != protocol.SoulMeshContractVersion {
+			lastErr = errors.New("mesh response contract version mismatch")
+			p.recordFailure(nucleus, latency, lastErr.Error())
+			return nil, lastErr
+		}
+		if result["correlationId"] != correlation {
+			lastErr = errors.New("peer correlation mismatch")
+			p.recordFailure(nucleus, latency, lastErr.Error())
+			return nil, lastErr
+		}
+		if err := verifyResponseHMAC(result, p.secret); err != nil {
+			lastErr = err
+			p.recordFailure(nucleus, latency, err.Error())
+			return nil, err
+		}
+		p.recordSuccess(nucleus, latency)
+		return result, nil
+	}
+	if lastErr == nil {
+		lastErr = errors.New("mesh request failed")
+	}
+	return nil, lastErr
+}
+
+func jsonDecodeLimited(resp *http.Response, out *map[string]any) error {
+	if resp == nil || resp.Body == nil {
+		return errors.New("empty peer response")
+	}
+	if resp.ContentLength > 1<<20 {
+		return errors.New("peer response exceeds configured limit")
+	}
+	return json.NewDecoder(io.LimitReader(resp.Body, 1<<20)).Decode(out)
+}
+
+func waitBackoff(ctx context.Context, attempt int) error {
+	delay := time.Duration(1<<uint(attempt-1)) * 250 * time.Millisecond
+	timer := time.NewTimer(delay)
+	defer timer.Stop()
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case <-timer.C:
+		return nil
+	}
+}
+
+func (p *PeerClient) recordSuccess(nucleus string, latency time.Duration) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	peer, ok := p.peers[nucleus]
+	if !ok {
+		return
+	}
+	peer.Healthy = true
+	peer.Latency = latency
+	peer.LastError = ""
+	peer.Failures = 0
+	peer.Circuit = CircuitClosed
+	peer.RetryAfter = time.Time{}
+	p.peers[nucleus] = peer
+}
+
+func (p *PeerClient) recordFailure(nucleus string, latency time.Duration, lastError string) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	peer, ok := p.peers[nucleus]
+	if !ok {
+		return
+	}
+	peer.Healthy = false
+	peer.Latency = latency
+	peer.LastError = lastError
+	peer.Failures++
+	if peer.Failures >= 3 {
+		peer.Circuit = CircuitOpen
+		peer.RetryAfter = time.Now().Add(p.cooldown)
+	}
+	p.peers[nucleus] = peer
+}
+
+func verifyResponseHMAC(result map[string]any, secret string) error {
+	hmacValue, _ := result["hmac"].(string)
+	nonce, _ := result["nonce"].(string)
+	if hmacValue == "" || nonce == "" {
+		return errors.New("peer response HMAC credentials are missing")
+	}
+	timestamp, ok := result["timestamp"].(float64)
+	if !ok {
+		return errors.New("peer response timestamp is invalid")
+	}
+	id, _ := result["id"].(string)
+	source, _ := result["source"].(string)
+	target, _ := result["target"].(string)
+	correlation, _ := result["correlationId"].(string)
+	capability, _ := result["capability"].(string)
+	kind, _ := result["kind"].(string)
+	typ := "TASK_RESULT"
+	if kind == "error" {
+		typ = "ERROR"
+	}
+	payload := map[string]any{}
+	if value, ok := result["payload"].(map[string]any); ok {
+		payload = value
+	}
+	env := protocol.MeshEnvelope{
+		Version:         protocol.SoulMeshVersion,
+		ContractVersion: protocol.SoulMeshContractVersion,
+		MessageID:       id,
+		Source:          source,
+		Target:          target,
+		Timestamp:       int64(timestamp),
+		Nonce:           nonce,
+		CorrelationID:   correlation,
+		Type:            typ,
+		Payload:         map[string]any{"capability": capability, "payload": payload},
+	}
+	return protocol.VerifyHMAC(env, secret, time.Now())
+}
+
+func (p *PeerClient) ConfiguredPeers() []PeerInfo {
+	p.mu.RLock()
+	defer p.mu.RUnlock()
+	out := make([]PeerInfo, 0, len(p.peers))
+	for _, peer := range p.peers {
+		out = append(out, peer)
+	}
+	return out
+}
