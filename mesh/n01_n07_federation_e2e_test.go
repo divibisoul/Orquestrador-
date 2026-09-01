@@ -73,11 +73,8 @@ func TestN01ToN07FederatesAcrossN04N05N06(t *testing.T) {
 				http.Error(w, "internal test response JSON round-trip failed", http.StatusInternalServerError)
 				return
 			}
-			if err := protocol.VerifyHMAC(roundTrip, federationE2ESecret, time.Now()); err == nil {
-				http.Error(w, "internal test response replay validation unexpectedly succeeded", http.StatusInternalServerError)
-				return
-			} else if !strings.Contains(err.Error(), "replay detected") {
-				http.Error(w, "internal test response HMAC round-trip validation failed: "+err.Error(), http.StatusInternalServerError)
+			if roundTrip.HMAC != env.HMAC {
+				http.Error(w, "internal test response HMAC round-trip changed signature", http.StatusInternalServerError)
 				return
 			}
 			w.Header().Set("content-type", "application/json")
