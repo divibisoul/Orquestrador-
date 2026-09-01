@@ -13,17 +13,18 @@ import (
 const Version = "N07.v1"
 
 type Message struct {
-	Version   string            `json:"version"`
-	TraceID   string            `json:"trace_id"`
-	Source    string            `json:"source"`
-	Target    string            `json:"target"`
-	Kind      string            `json:"kind"`
-	Operation string            `json:"operation"`
-	Payload   []float64         `json:"payload,omitempty"`
-	Metadata  map[string]string `json:"metadata,omitempty"`
-	Priority  int               `json:"priority"`
-	Deadline  time.Time         `json:"deadline,omitempty"`
-	Sequence  uint64            `json:"sequence"`
+	Version     string            `json:"version"`
+	TraceID     string            `json:"trace_id"`
+	Source      string            `json:"source"`
+	Target      string            `json:"target"`
+	Kind        string            `json:"kind"`
+	Operation   string            `json:"operation"`
+	Payload     []float64         `json:"payload,omitempty"`
+	PayloadJSON json.RawMessage   `json:"payload_json,omitempty"`
+	Metadata    map[string]string `json:"metadata,omitempty"`
+	Priority    int               `json:"priority"`
+	Deadline    time.Time         `json:"deadline,omitempty"`
+	Sequence    uint64            `json:"sequence"`
 }
 
 type Result struct {
@@ -55,6 +56,7 @@ func (m Message) Validate() error {
 	if strings.TrimSpace(m.Kind) == "" || strings.TrimSpace(m.Operation) == "" { return errors.New("kind and operation are required") }
 	if m.Priority < 0 || m.Priority > 100 { return errors.New("priority must be between 0 and 100") }
 	if !m.Deadline.IsZero() && time.Now().After(m.Deadline) { return contextDeadlineError{} }
+	if len(m.PayloadJSON) > 0 && !json.Valid(m.PayloadJSON) { return errors.New("payload_json must contain valid JSON") }
 	return nil
 }
 
