@@ -112,9 +112,80 @@ func TestAssignDeadlineIsEnforced(t *testing.T) {
 	}
 }
 
+func TestParallelContextPropagatesCancellation(t *testing.T) {
+	peer := &deadlinePeer{}
+	fabric, err := NewFabric(peer)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	results := fabric.ParallelContext(ctx, []NeuralTask{
+		{ID: "a", Operation: "neural.forward", CorrelationID: "ca", Target: "N01"},
+		{ID: "b", Operation: "neural.forward", CorrelationID: "cb", Target: "N02"},
+	})
+	for i, result := range results {
+		if result.Error != context.Canceled.Error() {
+			t.Fatalf("result %d was not cancelled: %+v", i, result)
+		}
+	}
+}
+
+func TestParallelContextPreservesInputOrderUnderBoundedAdmission(t *testing.T) {
+	peer := &blockingPeer{}
+	fabric, err := NewFabric(peer)
+	if err != nil {
+		t.Fatal(err)
+	}
+	const taskCount = maxFederatedParallelism + 8
+	tasks := make([]NeuralTask, taskCount)
+	for i := range tasks {
+		tasks[i] = NeuralTask{ID: string(rune('a' + i%26)), Operation: "neural.forward", CorrelationID: "corr", Target: "N01"}
+	}
+	results := fabric.ParallelContext(context.Background(), tasks)
+	if len(results) != taskCount {
+		t.Fatalf("expected %d results, got %d", taskCount, len(results))
+	}
+	for i, result := range results {
+		if result.Nucleus != "N01" || result.Error != "" {
+			t.Fatalf("result %d was not successful/in order: %+v", i, result)
+		}
+	}
+}
+
+func TestBroadcastContextCancellationPreservesMembers(t *testing.T) {
+	peer := &deadlinePeer{}
+	fabric, err := NewFabric(peer)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	results := fabric.BroadcastContext(ctx, NeuralTask{ID: "b", Operation: "neural.forward", CorrelationID: "bc"})
+	if len(results) != len(fabric.Members()) {
+		t.Fatalf("expected one result per member, got %d", len(results))
+	}
+	for _, result := range results {
+		if result.Nucleus == "" || result.Error != context.Canceled.Error() {
+			t.Fatalf("unexpected cancellation result: %+v", result)
+		}
+	}
+}
+
 type deadlinePeer struct{}
 
 func (*deadlinePeer) Invoke(ctx context.Context, nucleus, operation string, payload map[string]any, correlation string) (map[string]any, error) {
 	<-ctx.Done()
 	return nil, errors.New(ctx.Err().Error())
+}
+
+type blockingPeer struct {
+	mu sync.Mutex
+}
+
+func (*blockingPeer) Invoke(ctx context.Context, nucleus, operation string, payload map[string]any, correlation string) (map[string]any, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	return map[string]any{"nucleus": nucleus, "operation": operation}, nil
 }
