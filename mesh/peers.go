@@ -43,12 +43,12 @@ type discoveryCacheEntry struct {
 }
 
 type PeerClient struct {
-	mu               sync.RWMutex
-	peers            map[string]PeerInfo
-	client           *http.Client
-	secret           string
-	maxRetry         int
-	cooldown         time.Duration
+	mu                sync.RWMutex
+	peers             map[string]PeerInfo
+	client            *http.Client
+	secret            string
+	maxRetry          int
+	cooldown          time.Duration
 	discoveryMu       sync.RWMutex
 	discoveryCache    map[string]discoveryCacheEntry
 	discoveryCacheTTL time.Duration
@@ -247,7 +247,7 @@ func (p *PeerClient) call(ctx context.Context, nucleus, capability string, paylo
 			Source:          protocol.N07,
 			Target:          nucleus,
 			Timestamp:       time.Now().UnixMilli(),
-			Nonce:            protocol.NewTraceID(),
+			Nonce:           protocol.NewTraceID(),
 			CorrelationID:   correlation,
 			Type:            "CAPABILITY_REQUEST",
 			Payload:         map[string]any{"capability": capability, "payload": payload},
