@@ -75,7 +75,7 @@ func TestConcurrency(t *testing.T) {
 func TestRuntimeCheckpointLifecycle(t *testing.T) {
 	ctx := context.Background()
 	f := NewRuntime()
-	f.RecordFeedback(Experience{WorkloadID: "checkpoint", Reward: 0.8})
+	f.RecordFeedback(Experience{State: State{Goal: "checkpoint"}, Reward: 0.8})
 	before := f.ExperienceCount()
 	if before != 1 {
 		t.Fatalf("experience count=%d want 1", before)
@@ -83,7 +83,7 @@ func TestRuntimeCheckpointLifecycle(t *testing.T) {
 	if err := f.Save(ctx); err != nil {
 		t.Fatal(err)
 	}
-	f.RecordFeedback(Experience{WorkloadID: "extra", Reward: -0.2})
+	f.RecordFeedback(Experience{State: State{Goal: "extra"}, Reward: -0.2})
 	if f.ExperienceCount() != 2 {
 		t.Fatalf("experience count=%d want 2", f.ExperienceCount())
 	}
@@ -97,7 +97,7 @@ func TestRuntimeCheckpointLifecycle(t *testing.T) {
 
 func TestRuntimeUpdateChangesWeightsSafely(t *testing.T) {
 	f := NewRuntime()
-	f.RecordFeedback(Experience{WorkloadID: "rewarded", Reward: 1})
+	f.RecordFeedback(Experience{State: State{Goal: "rewarded"}, Reward: 1})
 	if err := f.Update(context.Background()); err != nil {
 		t.Fatal(err)
 	}
