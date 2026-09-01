@@ -60,8 +60,8 @@ func (p *PeerClient) CallBestDynamic(ctx context.Context, capability string, pay
 				return
 			}
 			discoveryCtx, cancel := context.WithTimeout(ctx, 2*time.Second)
-		description, err := p.Discover(discoveryCtx, peer.Nucleus)
-		cancel()
+			description, err := p.Discover(discoveryCtx, peer.Nucleus)
+			cancel()
 			if err == nil && supportsExecutableCapability(description, capability) {
 				candidate.Capability = true
 				candidate.Score = routeScore(candidate)
