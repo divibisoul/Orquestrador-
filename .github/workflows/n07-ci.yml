@@ -3,29 +3,38 @@ name: N07 Orquestrador CI
 on:
   push:
     paths:
-      - '**.go'
+      - '**/*.go'
       - 'go.mod'
       - 'go.sum'
       - '.github/workflows/n07-ci.yml'
   pull_request:
     paths:
-      - '**.go'
+      - '**/*.go'
       - 'go.mod'
       - 'go.sum'
       - '.github/workflows/n07-ci.yml'
+  workflow_dispatch:
 
 permissions:
   contents: read
 
+concurrency:
+  group: n07-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   verify:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - name: Assert checkout source
         run: |
           set -euo pipefail
           git rev-parse HEAD
+          test "$(git branch --show-current)" != ""
           git show HEAD:neural/network.go | sha256sum
           sed -n '24p' neural/network.go
           ! grep -nF '<- clip' neural/network.go
@@ -33,6 +42,8 @@ jobs:
         with:
           go-version: '1.25.x'
           cache: true
+      - name: Format check
+        run: test -z "$(gofmt -l $(git ls-files '*.go'))"
       - name: Vet
         run: go vet ./...
       - name: Test
