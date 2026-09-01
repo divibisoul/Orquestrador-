@@ -40,14 +40,14 @@ func DefaultConfig() Config {
 		CORSOrigins:            splitCSV(getenv("N07_CORS_ORIGINS")),
 		MaxRequestBytes:        envInt64("N07_MAX_REQUEST_BYTES", maxRequest),
 		MaxUploadBytes:         envInt64("N07_MAX_UPLOAD_BYTES", maxUpload),
-		SupabaseURL:            strings.TrimRight(strings.TrimSpace(getenv("SUPABASE_URL")), "/"),
-		SupabaseServiceKey:     strings.TrimSpace(getenv("SUPABASE_SERVICE_ROLE_KEY")),
-		SupabaseRunsTable:      envString("SUPABASE_RUNS_TABLE", "n07_runs"),
-		SupabaseArtifactsTable: envString("SUPABASE_ARTIFACTS_TABLE", "n07_artifacts"),
-		Web3StorageURL:         strings.TrimRight(envString("WEB3_STORAGE_API_URL", "https://api.web3.storage"), "/"),
-		Web3StorageToken:       strings.TrimSpace(getenv("WEB3_STORAGE_TOKEN")),
-		IPFSGatewayURL:         strings.TrimRight(envString("N07_IPFS_GATEWAY_URL", "https://dweb.link/ipfs"), "/"),
-		RequestTimeout:         envDuration("N07_BACKEND_TIMEOUT", 30*time.Second),
+		SupabaseURL:             strings.TrimRight(strings.TrimSpace(getenv("SUPABASE_URL")), "/"),
+		SupabaseServiceKey:      strings.TrimSpace(getenv("SUPABASE_SERVICE_ROLE_KEY")),
+		SupabaseRunsTable:       envString("SUPABASE_RUNS_TABLE", "n07_runs"),
+		SupabaseArtifactsTable:  envString("SUPABASE_ARTIFACTS_TABLE", "n07_artifacts"),
+		Web3StorageURL:          strings.TrimRight(envString("WEB3_STORAGE_API_URL", "https://api.web3.storage"), "/"),
+		Web3StorageToken:        strings.TrimSpace(getenv("WEB3_STORAGE_TOKEN")),
+		IPFSGatewayURL:          strings.TrimRight(envString("N07_IPFS_GATEWAY_URL", "https://dweb.link/ipfs"), "/"),
+		RequestTimeout:          envDuration("N07_BACKEND_TIMEOUT", 30*time.Second),
 	}
 }
 
@@ -59,12 +59,16 @@ type Server struct {
 }
 
 func New(engine *orchestrator.Engine, cfg Config) *Server {
-	return &Server{
+	s := &Server{
 		Engine:  engine,
 		Config:  cfg,
 		Store:   NewSupabaseStore(cfg),
 		Storage: NewWeb3Storage(cfg),
 	}
+	if engine != nil {
+		s.ensureSuperGPUOperations()
+	}
+	return s
 }
 
 func (s *Server) Handler() http.Handler {
@@ -202,6 +206,10 @@ func operationForTool(tool string) string {
 		return "supergpu.execute@1.0.0"
 	case "supergpu.parallel":
 		return "supergpu.parallel@1.0.0"
+	case "supergpu.describe":
+		return "supergpu.describe@1.0.0"
+	case "supergpu.memory":
+		return "supergpu.memory@1.0.0"
 	default:
 		return tool
 	}
@@ -209,6 +217,9 @@ func operationForTool(tool string) string {
 
 func mapIntent(tool string, input map[string]any) ([]float64, map[string]string, error) {
 	metadata := map[string]string{}
+	if input == nil {
+		input = map[string]any{}
+	}
 	switch strings.ToLower(strings.TrimSpace(tool)) {
 	case "neural.forward":
 		return numberArray(input["values"])
@@ -239,6 +250,10 @@ func mapIntent(tool string, input map[string]any) ([]float64, map[string]string,
 		if err != nil {
 			return nil, nil, errors.New("inputs must be an array of numeric arrays")
 		}
+		var inputs [][]float64
+		if err := json.Unmarshal(batch, &inputs); err != nil || len(inputs) == 0 {
+			return nil, nil, errors.New("inputs must be an array of numeric arrays")
+		}
 		metadata["inputs_json"] = string(batch)
 		if op, ok := input["operation"].(string); ok && strings.TrimSpace(op) != "" {
 			metadata["operation"] = strings.TrimSpace(op)
@@ -247,6 +262,9 @@ func mapIntent(tool string, input map[string]any) ([]float64, map[string]string,
 			metadata["device"] = strings.TrimSpace(device)
 		}
 		if workers, ok := input["workers"].(float64); ok {
+			if workers < 1 || workers > 128 || workers != float64(int(workers)) {
+				return nil, nil, errors.New("workers must be an integer between 1 and 128")
+			}
 			metadata["workers"] = strconv.Itoa(int(workers))
 		}
 		return []float64{1}, metadata, nil
@@ -268,6 +286,9 @@ func numberArrayOnly(v any) ([]float64, error) {
 	var values []float64
 	if err := json.Unmarshal(encoded, &values); err != nil {
 		return nil, errors.New("values must be an array of numbers")
+	}
+	if len(values) == 0 {
+		return nil, errors.New("values must be a non-empty array of numbers")
 	}
 	return values, nil
 }
@@ -332,6 +353,10 @@ func (s *Server) upload(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusBadGateway, map[string]any{"error": err.Error()})
 		return
 	}
+	if size > s.Config.MaxUploadBytes {
+		writeJSON(w, http.StatusRequestEntityTooLarge, map[string]any{"error": "upload exceeds configured maximum"})
+		return
+	}
 	_ = s.Store.RecordArtifact(r.Context(), map[string]any{"cid": cid, "filename": r.Header.Get("X-Filename"), "size_bytes": size})
 	writeJSON(w, http.StatusOK, map[string]any{"cid": cid, "size": size, "gateway": s.Storage.ObjectURL(cid)})
 }
@@ -365,7 +390,14 @@ func decodeJSON(r *http.Request, limit int64, out any) error {
 	}
 	defer r.Body.Close()
 	decoder := json.NewDecoder(http.MaxBytesReader(nil, r.Body, limit))
-	return decoder.Decode(out)
+	if err := decoder.Decode(out); err != nil {
+		return err
+	}
+	var extra any
+	if err := decoder.Decode(&extra); err != io.EOF {
+		return errors.New("request body must contain exactly one JSON value")
+	}
+	return nil
 }
 
 func writeJSON(w http.ResponseWriter, status int, body any) {
@@ -398,9 +430,9 @@ func withCORS(origins []string, next http.Handler) http.Handler {
 				w.Header().Set("Vary", "Origin")
 			}
 		}
-		w.Header().Set("Access-Control-Allow-Headers", "Authorization, Content-Type, X-Filename, X-Request-ID")
-		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
 		if r.Method == http.MethodOptions {
+			w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+			w.Header().Set("Access-Control-Allow-Headers", "Authorization, Content-Type, X-Request-ID, X-Filename")
 			w.WriteHeader(http.StatusNoContent)
 			return
 		}
@@ -420,29 +452,9 @@ func secureEqual(a, b string) bool {
 }
 
 func randomID() string {
-	b := make([]byte, 16)
-	if _, err := rand.Read(b); err != nil {
-		return fmt.Sprintf("%d", time.Now().UnixNano())
+	buf := make([]byte, 16)
+	if _, err := rand.Read(buf); err != nil {
+		return fmt.Sprintf("req-%d", time.Now().UnixNano())
 	}
-	return hex.EncodeToString(b)
+	return hex.EncodeToString(buf)
 }
-
-func getenv(key string) string    { return strings.TrimSpace(envLookup(key)) }
-func envLookup(key string) string { return lookupEnv(key) }
-
-// Kept as narrow wrappers so this package has one environment seam.
-var lookupEnv = func(key string) string { return "" }
-
-func splitCSV(value string) []string {
-	parts := strings.Split(value, ",")
-	out := make([]string, 0, len(parts))
-	for _, part := range parts {
-		if p := strings.TrimSpace(part); p != "" {
-			out = append(out, p)
-		}
-	}
-	return out
-}
-func envString(_ string, fallback string) string                 { return fallback }
-func envInt64(_ string, fallback int64) int64                    { return fallback }
-func envDuration(_ string, fallback time.Duration) time.Duration { return fallback }
