@@ -37,6 +37,7 @@ jobs:
         with:
           name: n07-diagnostics
           path: .diagnostics/
+          include-hidden-files: true
           if-no-files-found: error
 
   e2e:
@@ -93,6 +94,7 @@ jobs:
         with:
           name: n07-e2e-history
           path: .soul/e2e-history.json
+          include-hidden-files: true
           if-no-files-found: warn
       - name: Save E2E failure history
         if: always()
