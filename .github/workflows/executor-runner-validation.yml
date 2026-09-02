@@ -69,6 +69,17 @@ jobs:
           restore-keys: |
             n07-e2e-history-${{ github.ref_name }}-
             n07-e2e-history-
+      - name: Verify named federation test exists
+        shell: bash
+        run: |
+          set -euo pipefail
+          expected='TestN01ToN07FederatesAcrossN04N05N06'
+          found="$(go test ./mesh -list '^TestN01ToN07FederatesAcrossN04N05N06$' | grep -Fx "$expected" || true)"
+          test "$found" = "$expected" || {
+            echo "ERROR: required federation test is absent or not discoverable: $expected"
+            echo "A zero-test PASS is not valid E2E evidence."
+            exit 1
+          }
       - name: Run federation E2E
         run: timeout --signal=TERM 180s go test ./mesh -run '^TestN01ToN07FederatesAcrossN04N05N06$' -count=1 -v
       - name: Run all 15 bidirectional pair checks
