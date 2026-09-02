@@ -54,6 +54,9 @@ jobs:
         run: |
           set -euo pipefail
           echo "RUNNER_NAME=${RUNNER_NAME:-}"
+          echo "RUNNER_OS=${RUNNER_OS:-}"
+          echo "RUNNER_ARCH=${RUNNER_ARCH:-}"
+          echo "GITHUB_RUN_ID=${GITHUB_RUN_ID:-}"
           go version
           test -n "${RUNNER_NAME:-}" || { echo "ERROR: GitHub runner was not provisioned."; exit 1; }
       - uses: actions/checkout@v4
@@ -61,6 +64,14 @@ jobs:
         with:
           go-version: '1.25'
           cache: true
+      - name: Restore E2E failure history
+        uses: actions/cache/restore@v4
+        with:
+          path: .soul/e2e-history.json
+          key: n07-e2e-history-${{ github.ref_name }}-${{ github.run_id }}
+          restore-keys: |
+            n07-e2e-history-${{ github.ref_name }}-
+            n07-e2e-history-
       - name: Run federation E2E
         run: go test ./mesh -run '^TestN01ToN07FederatesAcrossN04N05N06$' -count=1 -v
       - name: Run all 15 bidirectional pair checks
@@ -80,3 +91,16 @@ jobs:
           name: n07-e2e-validation-report
           path: e2e-validation-report.json
           if-no-files-found: error
+      - name: Upload E2E history snapshot
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: n07-e2e-history
+          path: .soul/e2e-history.json
+          if-no-files-found: warn
+      - name: Save E2E failure history
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: .soul/e2e-history.json
+          key: n07-e2e-history-${{ github.ref_name }}-${{ github.run_id }}
