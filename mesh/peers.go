@@ -369,6 +369,7 @@ func (p *PeerClient) recordSuccess(nucleus string, latency time.Duration) {
 	peer.RetryAfter = time.Time{}
 	p.peers[nucleus] = peer
 }
+
 func (p *PeerClient) recordFailure(nucleus string, latency time.Duration, lastError string) {
 	p.invalidateDiscovery(nucleus)
 	p.mu.Lock()
@@ -380,12 +381,46 @@ func (p *PeerClient) recordFailure(nucleus string, latency time.Duration, lastEr
 	peer.Healthy = false
 	peer.Latency = latency
 	peer.LastError = lastError
+	if !circuitEligibleFailure(lastError) {
+		p.peers[nucleus] = peer
+		return
+	}
 	peer.Failures++
 	if peer.Failures >= 3 {
 		peer.Circuit = CircuitOpen
 		peer.RetryAfter = time.Now().Add(p.cooldown)
 	}
 	p.peers[nucleus] = peer
+}
+
+func circuitEligibleFailure(lastError string) bool {
+	value := strings.ToLower(strings.TrimSpace(lastError))
+	if value == "" {
+		return false
+	}
+	for _, marker := range []string{
+		"hmac",
+		"authentication",
+		"unauthorized",
+		"forbidden",
+		"replay detected",
+		"contract version",
+		"contract mismatch",
+		"correlation mismatch",
+		"protocol mismatch",
+		"kind mismatch",
+		"invalid mesh",
+		"messageid",
+		"messageid is required",
+		"nonce",
+		"timestamp",
+		"capability is required",
+	} {
+		if strings.Contains(value, marker) {
+			return false
+		}
+	}
+	return true
 }
 
 func verifyResponseHMAC(result map[string]any, secret string) error {
@@ -412,7 +447,7 @@ func verifyResponseHMAC(result map[string]any, secret string) error {
 	if value, ok := result["payload"].(map[string]any); ok {
 		payload = value
 	}
-	env := protocol.MeshEnvelope{Version: protocol.SoulMeshVersion, ContractVersion: protocol.SoulMeshContractVersion, MessageID: id, Source: source, Target: target, Timestamp: int64(timestamp), Nonce: nonce, CorrelationID: correlation, Type: typ, Payload: map[string]any{"capability": capability, "payload": payload}}
+	env := protocol.MeshEnvelope{Version: protocol.SoulMeshVersion, ContractVersion: protocol.SoulMeshContractVersion, MessageID: id, Source: source, Target: target, Timestamp: int64(timestamp), Nonce: nonce, CorrelationID: correlation, Type: typ, HMAC: hmacValue, Payload: map[string]any{"capability": capability, "payload": payload}}
 	return protocol.VerifyHMAC(env, secret, time.Now())
 }
 
