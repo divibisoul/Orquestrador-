@@ -72,6 +72,9 @@ func NewWeb3Storage(cfg Config) *Web3Storage {
 	space := strings.TrimSpace(os.Getenv("STORACHA_SPACE"))
 	dataDir := strings.TrimSpace(os.Getenv("STORACHA_DATA_DIR"))
 	token := strings.TrimSpace(cfg.Web3StorageToken)
+	if token == "" {
+		token = strings.TrimSpace(os.Getenv("STORACHA_UCAN"))
+	}
 	return &Web3Storage{
 		baseURL:         legacyURL,
 		token:           token,
