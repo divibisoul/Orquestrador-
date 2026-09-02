@@ -20,7 +20,7 @@ func TestValidateMeshWireResponseRejectsMissingRequiredField(t *testing.T) {
 		"nonce":           "nonce-1",
 		"hmac":            "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
 	}
-	delete(response, "messageId")
+	delete(response, "id")
 	if err := ValidateMeshWireResponse(response); err != nil {
 		if contractErr, ok := err.(*MeshContractError); !ok || contractErr.Field != "id" {
 			t.Fatalf("expected structured id error, got %T: %v", err, err)
