@@ -3,6 +3,9 @@ package mesh
 import (
 	"bytes"
 	"context"
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -48,7 +51,7 @@ type PeerClient struct {
 	client            *http.Client
 	secret            string
 	maxRetry          int
-	cooldown          time.Duration
+	cooldown           time.Duration
 	discoveryMu       sync.RWMutex
 	discoveryCache    map[string]discoveryCacheEntry
 	discoveryCacheTTL time.Duration
@@ -256,7 +259,21 @@ func (p *PeerClient) call(ctx context.Context, nucleus, capability string, paylo
 		if err := protocol.SignHMAC(&env, p.secret); err != nil {
 			return nil, err
 		}
-		body, err := protocol.EncodeMesh(env)
+		wirePayload := cloneMap(payload)
+		if wirePayload == nil {
+			wirePayload = map[string]any{}
+		}
+		wire := canonicalWireEnvelope{Protocol: "soul-mesh/1", ContractVersion: protocol.SoulMeshContractVersion, ID: env.MessageID, CorrelationID: correlation, Source: protocol.N07, Target: nucleus, Kind: "request", Capability: capability, Payload: wirePayload, Timestamp: env.Timestamp, Nonce: env.Nonce}
+		legacyBodyHMAC := env.HMAC
+		wire.HMAC = legacyBodyHMAC
+		unsignedWire, err := canonicalN01Bytes(wire, wire.Nonce)
+		if err != nil {
+			return nil, err
+		}
+		mac := hmac.New(sha256.New, []byte(p.secret))
+		_, _ = mac.Write(unsignedWire)
+		headerHMAC := hex.EncodeToString(mac.Sum(nil))
+		body, err := json.Marshal(wire)
 		if err != nil {
 			return nil, err
 		}
@@ -267,6 +284,8 @@ func (p *PeerClient) call(ctx context.Context, nucleus, capability string, paylo
 		req.Header.Set("Content-Type", "application/json")
 		req.Header.Set("X-Soul-Contract-Version", protocol.SoulMeshContractVersion)
 		req.Header.Set("X-Soul-Correlation-Id", correlation)
+		req.Header.Set("X-Soul-Mesh-Nonce", wire.Nonce)
+		req.Header.Set("X-Soul-Mesh-Hmac", headerHMAC)
 		started := time.Now()
 		resp, err := p.client.Do(req)
 		latency := time.Since(started)
