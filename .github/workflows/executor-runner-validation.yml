@@ -72,6 +72,7 @@ jobs:
       - name: Run federation E2E
         run: go test ./mesh -run '^TestN01ToN07FederatesAcrossN04N05N06$' -count=1 -v
       - name: Run all 15 bidirectional pair checks
+        if: always()
         run: go run ./scripts/e2e-validation.go
         env:
           SOUL_MESH_TOKEN: ${{ secrets.SOUL_MESH_TOKEN }}
