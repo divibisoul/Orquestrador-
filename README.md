@@ -26,6 +26,12 @@ The downstream Android application should treat N07 as an HTTPS service boundary
 
 See `docs/ANDROID_INTEGRATION.md` for the current request/response contract and startup sequence.
 
+## Secrets and restricted mode
+
+N07 does not invent missing credentials. When one or more external credentials are absent, the service remains available for local diagnostics and execution but reports `status: degraded` and `secret_mode: restricted` on `/health`. External storage and Supabase persistence are not attempted by simulated staging.
+
+See `docs/SECRETS.md` for the four required deployment secrets, their purpose, and the credentialed-staging procedure.
+
 ## Release
 
 The v1 release is finite. The repository tracks structural, integrated and online states in `RELEASE_GATES_V1.md` and `SOUL_EXECUTION_QUEUE.md`. CI is required evidence; online completion additionally requires live peer E2E.

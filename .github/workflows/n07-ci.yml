@@ -62,10 +62,14 @@ jobs:
         with:
           fetch-depth: 0
       - name: Assert checkout source
+        env:
+          EXPECTED_SHA: ${{ github.sha }}
         run: |
           set -euo pipefail
-          git rev-parse HEAD
-          test "$(git branch --show-current)" != ""
+          actual_sha="$(git rev-parse HEAD)"
+          echo "checked_out_sha=$actual_sha"
+          echo "expected_sha=$EXPECTED_SHA"
+          test "$actual_sha" = "$EXPECTED_SHA"
           git show HEAD:neural/network.go | sha256sum
           sed -n '24p' neural/network.go
           ! grep -nF '<- clip' neural/network.go
