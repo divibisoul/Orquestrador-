@@ -22,7 +22,7 @@ const defaultStorachaTimeout = 30 * time.Second
 const (
 	storageNotConfiguredCode = "STORAGE_NOT_CONFIGURED"
 	missingUCANReason        = "missing_ucan"
-	storageCureSuggestion    = "Set WEB3_STORAGE_TOKEN (UCAN) and STORACHA_SPACE to enable real uploads. Obtain an authorized UCAN/Space from Storacha."
+	storageCureSuggestion    = "Configure STORACHA_UCAN / WEB3_STORAGE_TOKEN and STORACHA_SPACE with an authorized Storacha credential, then restart the runtime."
 )
 
 var cidPattern = regexp.MustCompile(`^(?:b[a-z2-7][a-z0-9]{20,}|Qm[1-9A-HJ-NP-Za-km-z]{40,}|bafk[a-z0-9]{20,})$`)
@@ -117,12 +117,12 @@ func (s *Web3Storage) Configured() bool {
 
 func (s *Web3Storage) Status() map[string]any {
 	if s == nil {
-		return map[string]any{"status": "degraded", "reason": missingUCANReason, "code": storageNotConfiguredCode, "cureSuggestion": storageCureSuggestion}
+		return map[string]any{"status": "not-configured", "reason": missingUCANReason, "code": storageNotConfiguredCode, "cureSuggestion": storageCureSuggestion}
 	}
 	if s.Configured() {
 		return map[string]any{"status": "ready", "reason": "configured", "code": "STORAGE_READY", "cureSuggestion": ""}
 	}
-	return map[string]any{"status": "degraded", "reason": missingUCANReason, "code": storageNotConfiguredCode, "cureSuggestion": storageCureSuggestion}
+	return map[string]any{"status": "not-configured", "reason": missingUCANReason, "code": storageNotConfiguredCode, "cureSuggestion": storageCureSuggestion}
 }
 
 func storageNotConfiguredError() error {
