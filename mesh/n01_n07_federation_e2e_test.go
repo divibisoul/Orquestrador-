@@ -3,6 +3,9 @@ package mesh
 import (
 	"bytes"
 	"context"
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -131,9 +134,17 @@ func TestN01ToN07FederatesAcrossN04N05N06(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	headerWire := canonicalWireEnvelope{Protocol: "soul-mesh/1", ContractVersion: protocol.SoulMeshContractVersion, ID: request.MessageID, CorrelationID: request.CorrelationID, Source: request.Source, Target: request.Target, Kind: "request", Capability: "supergpu.parallel", Payload: payload, Timestamp: request.Timestamp, Nonce: request.Nonce}
+	unsignedHeader, err := canonicalN01Bytes(headerWire, request.Nonce)
+	if err != nil {
+		t.Fatal(err)
+	}
+	mac := hmac.New(sha256.New, []byte(federationE2ESecret))
+	_, _ = mac.Write(unsignedHeader)
+	headerHMAC := hex.EncodeToString(mac.Sum(nil))
 	req := httptest.NewRequest(http.MethodPost, "/api/soul-mesh", bytes.NewReader(body))
 	req.Header.Set("x-soul-mesh-nonce", request.Nonce)
-	req.Header.Set("x-soul-mesh-hmac", request.HMAC)
+	req.Header.Set("x-soul-mesh-hmac", headerHMAC)
 	rec := httptest.NewRecorder()
 	gateway.ServeHTTP(rec, req)
 	if rec.Code != http.StatusOK {
