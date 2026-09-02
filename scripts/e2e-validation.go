@@ -46,17 +46,17 @@ type historyEntry struct {
 }
 
 type report struct {
-	GeneratedAt       string         `json:"generatedAt"`
-	Protocol          string         `json:"protocol"`
-	ContractVersion   string         `json:"contractVersion"`
-	PairsExpected     int            `json:"pairsExpected"`
-	DirectedProbes    int            `json:"directedProbes"`
-	Passed            int            `json:"passed"`
-	Failed            int            `json:"failed"`
-	FailurePatterns   []string       `json:"failurePatterns"`
-	ResyncSuggested   bool           `json:"resyncSuggested"`
-	Limitations       string         `json:"limitations"`
-	Results           []probe        `json:"results"`
+	GeneratedAt     string   `json:"generatedAt"`
+	Protocol        string   `json:"protocol"`
+	ContractVersion string   `json:"contractVersion"`
+	PairsExpected   int      `json:"pairsExpected"`
+	DirectedProbes  int      `json:"directedProbes"`
+	Passed          int      `json:"passed"`
+	Failed          int      `json:"failed"`
+	FailurePatterns []string `json:"failurePatterns"`
+	ResyncSuggested bool     `json:"resyncSuggested"`
+	Limitations     string   `json:"limitations"`
+	Results         []probe  `json:"results"`
 }
 
 var historyMu sync.Mutex
@@ -89,7 +89,7 @@ func main() {
 		fmt.Println(string(encoded))
 	}
 
-	patterns := detectFailurePatterns(results)
+	patterns := detectFailurePatternsImproved(results)
 	resyncSuggested := false
 	for _, result := range results {
 		if result.Status == "unauthorized" {
@@ -245,15 +245,7 @@ func appendHistory(result probe) {
 		_ = json.Unmarshal(data, &history)
 	}
 
-	history = append(history, historyEntry{
-		At:      time.Now().UTC(),
-		Source:  result.Source,
-		Target:  result.Target,
-		Status:  result.Status,
-		HTTP:    result.HTTP,
-		Latency: result.LatencyMs,
-	})
-
+	history = append(history, historyEntry{At: time.Now().UTC(), Source: result.Source, Target: result.Target, Status: result.Status, HTTP: result.HTTP, Latency: result.LatencyMs})
 	if len(history) > historyLimit {
 		history = history[len(history)-historyLimit:]
 	}
@@ -275,47 +267,7 @@ func appendHistory(result probe) {
 }
 
 func detectFailurePatterns(current []probe) []string {
-	historyMu.Lock()
-	defer historyMu.Unlock()
-
-	path := env("SOUL_E2E_HISTORY_FILE", ".soul/e2e-history.json")
-	data, err := os.ReadFile(path)
-	if err != nil {
-		return nil
-	}
-
-	var history []historyEntry
-	if err := json.Unmarshal(data, &history); err != nil {
-		return nil
-	}
-
-	cutoff := time.Now().Add(-2 * time.Hour)
-	patterns := make([]string, 0)
-
-	for _, item := range current {
-		if item.Status == "healthy" {
-			continue
-		}
-
-		count := 0
-		for i := len(history) - 1; i >= 0; i-- {
-			entry := history[i]
-			if entry.At.Before(cutoff) {
-				break
-			}
-			if entry.Source == item.Source && entry.Target == item.Target && entry.Status != "healthy" {
-				count++
-			} else if count > 0 && (entry.Source != item.Source || entry.Target != item.Target) {
-				break
-			}
-		}
-
-		if count >= 3 {
-			patterns = append(patterns, fmt.Sprintf("%s→%s falhou %d vezes consecutivas nas últimas 2 horas; verificar rede, autenticação e logs do peer.", item.Source, item.Target, count))
-		}
-	}
-
-	return unique(patterns)
+	return detectFailurePatternsImproved(current)
 }
 
 func unique(values []string) []string {
