@@ -130,11 +130,12 @@ func TestN01ToN07FederatesAcrossN04N05N06(t *testing.T) {
 	if err := protocol.SignHMAC(&request, federationE2ESecret); err != nil {
 		t.Fatal(err)
 	}
-	body, err := json.Marshal(request)
+	wireRequest := map[string]any{"protocol": "soul-mesh/1", "contractVersion": request.ContractVersion, "id": request.MessageID, "correlationId": request.CorrelationID, "source": request.Source, "target": request.Target, "kind": "request", "capability": "supergpu.parallel", "payload": request.Payload, "timestamp": request.Timestamp, "nonce": request.Nonce, "hmac": request.HMAC}
+	body, err := json.Marshal(wireRequest)
 	if err != nil {
 		t.Fatal(err)
 	}
-	headerWire := canonicalWireEnvelope{Protocol: "soul-mesh/1", ContractVersion: protocol.SoulMeshContractVersion, ID: request.MessageID, CorrelationID: request.CorrelationID, Source: request.Source, Target: request.Target, Kind: "request", Capability: "supergpu.parallel", Payload: request.Payload, Timestamp: request.Timestamp, Nonce: request.Nonce}
+	headerWire := canonicalWireEnvelope{Protocol: "soul-mesh/1", ContractVersion: request.ContractVersion, ID: request.MessageID, CorrelationID: request.CorrelationID, Source: request.Source, Target: request.Target, Kind: "request", Capability: "supergpu.parallel", Payload: request.Payload, Timestamp: request.Timestamp, Nonce: request.Nonce}
 	unsignedHeader, err := canonicalN01Bytes(headerWire, request.Nonce)
 	if err != nil {
 		t.Fatal(err)
