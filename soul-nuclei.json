@@ -1,0 +1,80 @@
+{
+  "system": "SOUL",
+  "schemaVersion": "1.0.0",
+  "canonicalMesh": {
+    "protocol": "soul-mesh/1",
+    "contractVersion": "1.1.0",
+    "nuclei": ["N01", "N02", "N03", "N04", "N05", "N06", "N07"]
+  },
+  "lawZero": {
+    "singleSystem": true,
+    "singleCanonicalAuthorityPerResponsibility": true,
+    "legacyOnlyAsDeprecatedAdapters": true,
+    "forbidParallelAuthorities": true
+  },
+  "nuclei": {
+    "N01": {
+      "repository": "divibisoul/aeternum-core-29",
+      "role": "host-reference-gateway",
+      "entrypoints": ["scripts/soul-mesh-server-entry.mjs"],
+      "capabilityOwnership": "native",
+      "peers": ["N02", "N03", "N04", "N05", "N06", "N07"],
+      "manifestAuthority": "SOUL-FUSION-MANIFEST.json",
+      "status": "evidence-present-ci-failed"
+    },
+    "N02": {
+      "repository": "divibisoul/Eternium-",
+      "role": "conversation-interaction",
+      "entrypoints": ["api/soul-mesh.ts"],
+      "capabilityOwnership": "native",
+      "peers": ["N01", "N03", "N04", "N05", "N06", "N07"],
+      "manifestAuthority": "SOUL-FUSION-MANIFEST.json",
+      "status": "evidence-present-ci-failed"
+    },
+    "N03": {
+      "repository": "divibisoul/nexus-aeternum-fusion",
+      "role": "perception-voice-multimodal-context",
+      "entrypoints": ["api/soul-mesh.ts", "src/mesh/SoulMeshProtocol.ts"],
+      "capabilityOwnership": "native",
+      "peers": ["N01", "N02", "N04", "N05", "N06", "N07"],
+      "manifestAuthority": "SOUL-FUSION-MANIFEST.json",
+      "status": "dual-protocol-evidence-ci-blocked"
+    },
+    "N04": {
+      "repository": "divibisoul/nextjs-ai-chatbots",
+      "role": "tools-documents-artifacts",
+      "entrypoints": ["lib/soul-mesh/SoulMeshProtocol.ts"],
+      "capabilityOwnership": "native",
+      "peers": ["N01", "N02", "N03", "N05", "N06", "N07"],
+      "manifestAuthority": "SOUL-FUSION-MANIFEST.json",
+      "status": "reference-baseline"
+    },
+    "N05": {
+      "repository": "divibisoul/nextjs-ai-chatbot",
+      "role": "orchestration-dispatch-execution",
+      "entrypoints": ["app/api/soul-mesh/route.ts", "lib/soul-mesh/peer-client.ts"],
+      "capabilityOwnership": "native",
+      "peers": ["N01", "N02", "N03", "N04", "N06", "N07"],
+      "manifestAuthority": "SOUL-FUSION-MANIFEST.json",
+      "status": "manifest-complete-derived-peer-mismatch"
+    },
+    "N06": {
+      "repository": "divibisoul/nextjs-ai-chatbot-2000",
+      "role": "cognition-synthesis-audit-governance",
+      "entrypoints": ["app/api/soul-mesh/route.ts", "lib/soul-core/N06Processor.ts"],
+      "capabilityOwnership": "native",
+      "peers": ["N01", "N02", "N03", "N04", "N05", "N07"],
+      "manifestAuthority": "SOUL-FUSION-MANIFEST.json",
+      "status": "multiple-runtime-authorities-evidence"
+    },
+    "N07": {
+      "repository": "divibisoul/Orquestrador-",
+      "role": "orchestration-federation-supergpu-control-plane",
+      "entrypoints": ["go.mod", "scripts/generate-crossfront-state.mjs"],
+      "capabilityOwnership": "system-governance",
+      "peers": ["N01", "N02", "N03", "N04", "N05", "N06"],
+      "manifestAuthority": "soul-nuclei.json",
+      "status": "governance-source-of-truth-in-progress"
+    }
+  }
+}
