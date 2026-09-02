@@ -277,7 +277,7 @@ func (s *Server) capabilities(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusMethodNotAllowed, map[string]any{"error": "GET required"})
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]any{"nucleus": "N07", "operations": s.Engine.Operations(), "storage": map[string]any{"configured": s.Storage.Configured(), "api": "web3.storage-compatible"}, "supabase": map[string]any{"configured": s.Store.Configured()}})
+	writeJSON(w, http.StatusOK, map[string]any{"nucleus": "N07", "operations": s.Engine.Operations(), "storage": s.Storage.Status(), "supabase": map[string]any{"configured": s.Store.Configured()}})
 }
 
 func (s *Server) health(w http.ResponseWriter, r *http.Request) {
@@ -286,7 +286,7 @@ func (s *Server) health(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	status := s.Engine.Health()
-	status["backend"] = map[string]any{"supabase_configured": s.Store.Configured(), "storage_configured": s.Storage.Configured()}
+	status["backend"] = map[string]any{"supabase_configured": s.Store.Configured(), "storage": s.Storage.Status()}
 	writeJSON(w, http.StatusOK, status)
 }
 
@@ -296,7 +296,7 @@ func (s *Server) upload(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if !s.Storage.Configured() {
-		writeJSON(w, http.StatusServiceUnavailable, map[string]any{"error": "Web3 Storage is not configured"})
+		writeJSON(w, http.StatusServiceUnavailable, s.Storage.Status())
 		return
 	}
 	contentType := r.Header.Get("Content-Type")
@@ -342,8 +342,12 @@ func (s *Server) storageStatus(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusBadRequest, map[string]any{"error": "cid is required"})
 		return
 	}
-	status, err := s.Storage.Status(r.Context(), cid)
+	status, err := s.Storage.StatusForCID(r.Context(), cid)
 	if err != nil {
+		if errors.Is(err, storageNotConfiguredError()) {
+			writeJSON(w, http.StatusServiceUnavailable, s.Storage.Status())
+			return
+		}
 		writeJSON(w, http.StatusBadGateway, map[string]any{"error": err.Error()})
 		return
 	}
@@ -356,7 +360,12 @@ func (s *Server) storageObject(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusBadRequest, map[string]any{"error": "cid is required"})
 		return
 	}
-	http.Redirect(w, r, s.Storage.ObjectURL(cid), http.StatusFound)
+	url := s.Storage.ObjectURL(cid)
+	if url == "" {
+		writeJSON(w, http.StatusServiceUnavailable, s.Storage.Status())
+		return
+	}
+	http.Redirect(w, r, url, http.StatusFound)
 }
 
 func decodeJSON(r *http.Request, limit int64, out any) error {
