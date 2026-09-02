@@ -73,13 +73,17 @@ func canonicalKind(w canonicalWireEnvelope) string {
 	if strings.TrimSpace(w.Kind) != "" {
 		return strings.TrimSpace(w.Kind)
 	}
-	switch strings.TrimSpace(w.Type) {
-	case "PING":
+	switch strings.ToLower(strings.TrimSpace(w.Type)) {
+	case "ping":
 		return "request"
-	case "TASK_RESULT":
+	case "task_result":
 		return "response"
-	case "ERROR":
+	case "error":
 		return "error"
+	case "request":
+		return "request"
+	case "response":
+		return "response"
 	default:
 		return ""
 	}
