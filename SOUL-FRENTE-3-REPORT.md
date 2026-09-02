@@ -81,4 +81,8 @@ Implementação não é confundida com certificação. Enquanto os secrets/URLs 
 
 Os 30 probes do N07 comprovam o contrato e a rota a partir do executor N07; não são, isoladamente, prova física de que cada processo remoto originou a chamada. Essa prova continua dependente da execução do teste federado e da instrumentação real disponível na topologia.
 
+## Estado de CI desta execução
+
+O PR da Frente 3 está aberto e a execução final do workflow ainda está **PENDENTE DE EVIDÊNCIA** neste momento. Nenhum PASS é declarado sem logs/jobs reais.
+
 N04 e N06 não foram modificados.
