@@ -20,7 +20,7 @@ import (
 const (
 	protocolVersion = "soul-mesh/1"
 	contractVersion = "1.1.0"
-	maxBodyBytes   = 1 << 20
+	maxBodyBytes    = 1 << 20
 )
 
 type Dashboard struct {
@@ -40,12 +40,12 @@ type probeResult struct {
 }
 
 type dashboardResponse struct {
-	System          string        `json:"system"`
-	GeneratedAt     string        `json:"generatedAt"`
-	Protocol        string        `json:"protocol"`
-	ContractVersion string        `json:"contractVersion"`
-	OverallStatus   string        `json:"overallStatus"`
-	Checks          []probeResult `json:"checks"`
+	System          string         `json:"system"`
+	GeneratedAt     string         `json:"generatedAt"`
+	Protocol        string         `json:"protocol"`
+	ContractVersion string         `json:"contractVersion"`
+	OverallStatus   string         `json:"overallStatus"`
+	Checks          []probeResult  `json:"checks"`
 	Summary         map[string]any `json:"summary"`
 }
 
@@ -111,12 +111,12 @@ func (d *Dashboard) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		OverallStatus:   status,
 		Checks:          checks,
 		Summary: map[string]any{
-			"healthy":         healthy,
-			"checks":          len(checks),
+			"healthy":          healthy,
+			"checks":           len(checks),
 			"configuredChecks": configured,
-			"nuclei":          len(d.Peers),
-			"source":          "N07",
-			"transport":       "HTTP/Soul Mesh",
+			"nuclei":           len(d.Peers),
+			"source":           "N07",
+			"transport":        "HTTP/Soul Mesh",
 		},
 	}
 
@@ -141,11 +141,11 @@ func (d *Dashboard) probe(ctx context.Context, nucleus, baseURL, capability stri
 		"payload":         map[string]any{"probe": "dashboard"},
 		"timestamp":       time.Now().UnixMilli(),
 		"meta": map[string]any{
-			"runtime":  "Orquestrador-",
+			"runtime":   "Orquestrador-",
 			"transport": "HTTP",
-			"encoding": "json",
-			"version":  contractVersion,
-			"traceId":  correlationID,
+			"encoding":  "json",
+			"version":   contractVersion,
+			"traceId":   correlationID,
 		},
 	}
 	data, err := json.Marshal(message)
