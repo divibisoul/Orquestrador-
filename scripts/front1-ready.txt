@@ -1,0 +1,1 @@
+Front 1 continuation state is anchored to the PR20 branch head.
