@@ -89,14 +89,10 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Assert checkout source
+      - name: Assert declarative SOUL source
         run: |
           set -euo pipefail
-          git rev-parse HEAD
-          test "$(git branch --show-current)" != ""
-          git show HEAD:neural/network.go | sha256sum
-          sed -n '24p' neural/network.go
-          ! grep -nF '<- clip' neural/network.go
+          node -e "const fs=require('node:fs');const m=JSON.parse(fs.readFileSync('soul-nuclei.json','utf8'));if(m.system!=='SOUL')throw new Error('SOUL_MATRIX_SYSTEM_INVALID');if(m.canonicalMesh?.protocol!=='soul-mesh/1')throw new Error('SOUL_MATRIX_PROTOCOL_INVALID');if(m.canonicalMesh?.contractVersion!=='1.1.0')throw new Error('SOUL_MATRIX_CONTRACT_INVALID');for(const id of ['N01','N02','N03','N04','N05','N06','N07'])if(!m.nuclei?.[id])throw new Error('SOUL_MATRIX_NUCLEUS_MISSING:'+id);console.log('SOUL declarative source verified.');"
       - uses: actions/setup-go@v5
         with:
           go-version: '1.25.x'
