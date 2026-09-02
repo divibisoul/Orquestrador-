@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/divibisoul/Orquestrador-/backend"
+	"github.com/divibisoul/Orquestrador-/config"
 	"github.com/divibisoul/Orquestrador-/mesh"
 	"github.com/divibisoul/Orquestrador-/neural"
 	"github.com/divibisoul/Orquestrador-/orchestrator"
@@ -29,6 +30,13 @@ type request struct {
 
 func main() {
 	syncMeshSecretAlias()
+	secretStatus := config.InspectSecrets()
+	if secretStatus.Status == "degraded" {
+		for _, name := range secretStatus.Missing {
+			log.Printf("DEGRADED: missing secret %s; external capability remains restricted", name)
+		}
+		log.Printf("N07 secret mode: %s", secretStatus.Mode)
+	}
 	n, err := neural.New(8, .05)
 	if err != nil {
 		log.Fatal(err)
@@ -49,7 +57,11 @@ func main() {
 	mux.Handle("/v1/", unified.Handler())
 
 	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
-		writeJSON(w, http.StatusOK, e.Health())
+		health := e.Health()
+		health["status"] = secretStatus.Status
+		health["secret_mode"] = secretStatus.Mode
+		health["missing_secrets"] = secretStatus.Missing
+		writeJSON(w, http.StatusOK, health)
 	})
 	mux.HandleFunc("/status", func(w http.ResponseWriter, r *http.Request) {
 		if err := requireAppBearer(r); err != nil {
