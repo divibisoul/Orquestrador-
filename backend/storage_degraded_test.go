@@ -9,12 +9,13 @@ import (
 
 func TestWeb3StorageMissingUCANReportsDegradedState(t *testing.T) {
 	t.Setenv("WEB3_STORAGE_TOKEN", "")
+	t.Setenv("STORACHA_UCAN", "")
 	t.Setenv("STORACHA_SPACE", "")
 	t.Setenv("STORACHA_MODE", "storacha")
 
 	s := NewWeb3Storage(DefaultConfig())
 	status := s.Status()
-	if status["status"] != "degraded" || status["reason"] != "missing_ucan" || status["code"] != "STORAGE_NOT_CONFIGURED" {
+	if status["status"] != "not-configured" || status["reason"] != "missing_ucan" || status["code"] != "STORAGE_NOT_CONFIGURED" {
 		t.Fatalf("unexpected storage status: %#v", status)
 	}
 }
@@ -22,6 +23,7 @@ func TestWeb3StorageMissingUCANReportsDegradedState(t *testing.T) {
 func TestServerStorageEndpointsReturn503WhenUCANMissing(t *testing.T) {
 	t.Setenv("N07_APP_TOKEN", "test-app-token")
 	t.Setenv("WEB3_STORAGE_TOKEN", "")
+	t.Setenv("STORACHA_UCAN", "")
 	t.Setenv("STORACHA_SPACE", "")
 	t.Setenv("STORACHA_MODE", "storacha")
 
@@ -33,8 +35,8 @@ func TestServerStorageEndpointsReturn503WhenUCANMissing(t *testing.T) {
 		path   string
 	}{
 		{http.MethodPost, "/v1/storage/upload"},
-		{http.MethodGet, "/v1/storage/status/bafybeigdyrzt4example"},
-		{http.MethodGet, "/v1/storage/object/bafybeigdyrzt4example"},
+		{http.MethodGet, "/v1/storage/status/" + testCID},
+		{http.MethodGet, "/v1/storage/object/" + testCID},
 	}
 
 	for _, check := range checks {
@@ -50,11 +52,12 @@ func TestServerStorageEndpointsReturn503WhenUCANMissing(t *testing.T) {
 
 func TestStorageStatusDoesNotRequireNetworkWhenMissingUCAN(t *testing.T) {
 	t.Setenv("WEB3_STORAGE_TOKEN", "")
+	t.Setenv("STORACHA_UCAN", "")
 	t.Setenv("STORACHA_SPACE", "")
 	t.Setenv("STORACHA_MODE", "storacha")
 
 	s := NewWeb3Storage(DefaultConfig())
-	_, err := s.StatusForCID(context.Background(), "bafybeigdyrzt4example")
+	_, err := s.StatusForCID(context.Background(), testCID)
 	if err == nil || err.Error() != "STORAGE_NOT_CONFIGURED" {
 		t.Fatalf("expected STORAGE_NOT_CONFIGURED, got %v", err)
 	}
