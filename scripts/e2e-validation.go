@@ -21,16 +21,16 @@ const (
 )
 
 type probe struct {
-	Pair            string `json:"pair"`
-	Source          string `json:"source"`
-	Target          string `json:"target"`
-	Route           string `json:"route"`
-	CorrelationID   string `json:"correlationId"`
-	Status          string `json:"status"`
-	HTTP            int    `json:"http,omitempty"`
-	LatencyMs       int64  `json:"latencyMs"`
-	ReturnedID      string `json:"returnedCorrelationId,omitempty"`
-	Error           string `json:"error,omitempty"`
+	Pair             string `json:"pair"`
+	Source           string `json:"source"`
+	Target           string `json:"target"`
+	Route            string `json:"route"`
+	CorrelationID    string `json:"correlationId"`
+	Status           string `json:"status"`
+	HTTP             int    `json:"http,omitempty"`
+	LatencyMs        int64  `json:"latencyMs"`
+	ReturnedID       string `json:"returnedCorrelationId,omitempty"`
+	Error            string `json:"error,omitempty"`
 	CorrectionRecipe string `json:"correctionRecipe"`
 }
 
@@ -109,17 +109,17 @@ func runProbe(ctx context.Context, client *http.Client, pair, source, target, su
 	result.Route = endpoint
 
 	message := map[string]any{
-		"protocol":       protocolVersion,
+		"protocol":        protocolVersion,
 		"contractVersion": contractVersion,
-		"id":             correlationID,
-		"correlationId":  correlationID,
-		"source":         source,
-		"target":         target,
-		"kind":           "request",
-		"capability":     "mesh.ping",
-		"payload":        map[string]any{"e2e": true, "requestedBy": "N07", "pair": pair},
-		"timestamp":      time.Now().UnixMilli(),
-		"meta":           map[string]any{"runtime": "Orquestrador-", "transport": "HTTP", "encoding": "json", "version": contractVersion, "traceId": correlationID},
+		"id":              correlationID,
+		"correlationId":   correlationID,
+		"source":          source,
+		"target":          target,
+		"kind":            "request",
+		"capability":      "mesh.ping",
+		"payload":         map[string]any{"e2e": true, "requestedBy": "N07", "pair": pair},
+		"timestamp":       time.Now().UnixMilli(),
+		"meta":            map[string]any{"runtime": "Orquestrador-", "transport": "HTTP", "encoding": "json", "version": contractVersion, "traceId": correlationID},
 	}
 	body, err := json.Marshal(message)
 	if err != nil {
@@ -186,7 +186,7 @@ func runProbe(ctx context.Context, client *http.Client, pair, source, target, su
 	case http.StatusRequestTimeout, http.StatusGatewayTimeout:
 		result.Status = "timeout"
 		result.CorrectionRecipe = "Timeout: preserve timeout curto, acione circuit breaker e rota alternativa antes de repetir; não aumente timeout cegamente."
-	case http.StatusInternalServerError, http.StatusBadGateway, http.StatusServiceUnavailable, http.StatusGatewayTimeout:
+	case http.StatusInternalServerError, http.StatusBadGateway, http.StatusServiceUnavailable:
 		result.Status = "remote-error"
 		result.CorrectionRecipe = "5xx: inspecione logs/telemetria do alvo, restaure dependências e só então reabra o tráfego."
 	default:
