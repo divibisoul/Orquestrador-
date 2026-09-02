@@ -424,15 +424,12 @@ func circuitEligibleFailure(lastError string) bool {
 }
 
 func verifyResponseHMAC(result map[string]any, secret string) error {
+	if err := protocol.ValidateMeshWireResponse(result); err != nil {
+		return err
+	}
 	hmacValue, _ := result["hmac"].(string)
 	nonce, _ := result["nonce"].(string)
-	if hmacValue == "" || nonce == "" {
-		return errors.New("peer response HMAC credentials are missing")
-	}
-	timestamp, ok := result["timestamp"].(float64)
-	if !ok {
-		return errors.New("peer response timestamp is invalid")
-	}
+	timestamp, _ := result["timestamp"].(float64)
 	id, _ := result["id"].(string)
 	source, _ := result["source"].(string)
 	target, _ := result["target"].(string)
