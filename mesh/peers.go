@@ -252,9 +252,7 @@ func (p *PeerClient) call(ctx context.Context, nucleus, capability string, paylo
 		if err := ctx.Err(); err != nil {
 			return nil, err
 		}
-		env := protocol.MeshEnvelope{
-			Version: protocol.SoulMeshVersion, ContractVersion: protocol.SoulMeshContractVersion, MessageID: protocol.NewTraceID(), Source: protocol.N07, Target: nucleus, Timestamp: time.Now().UnixMilli(), Nonce: protocol.NewTraceID(), CorrelationID: correlation, Type: "CAPABILITY_REQUEST", Payload: map[string]any{"capability": capability, "payload": payload},
-		}
+		env := protocol.MeshEnvelope{Version: protocol.SoulMeshVersion, ContractVersion: protocol.SoulMeshContractVersion, MessageID: protocol.NewTraceID(), Source: protocol.N07, Target: nucleus, Timestamp: time.Now().UnixMilli(), Nonce: protocol.NewTraceID(), CorrelationID: correlation, Type: "CAPABILITY_REQUEST", Payload: map[string]any{"capability": capability, "payload": payload}}
 		if err := protocol.SignHMAC(&env, p.secret); err != nil {
 			return nil, err
 		}
@@ -410,6 +408,7 @@ func circuitEligibleFailure(lastError string) bool {
 		"protocol mismatch",
 		"kind mismatch",
 		"invalid mesh",
+		"invalid_mesh_contract",
 		"messageid",
 		"messageid is required",
 		"nonce",
