@@ -7,18 +7,18 @@ import (
 
 func TestValidateMeshWireResponseRejectsMissingRequiredField(t *testing.T) {
 	response := map[string]any{
-		"protocol":       "soul-mesh/1",
+		"protocol":        "soul-mesh/1",
 		"contractVersion": SoulMeshContractVersion,
-		"id":             "response-1",
-		"correlationId":  "corr-1",
-		"source":         N04,
-		"target":         N07,
-		"kind":           "response",
-		"capability":     "mesh.discovery",
-		"payload":        map[string]any{"ok": true},
-		"timestamp":      float64(time.Now().UnixMilli()),
-		"nonce":          "nonce-1",
-		"hmac":           "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+		"id":              "response-1",
+		"correlationId":   "corr-1",
+		"source":          N04,
+		"target":          N07,
+		"kind":            "response",
+		"capability":      "mesh.discovery",
+		"payload":         map[string]any{"ok": true},
+		"timestamp":       float64(time.Now().UnixMilli()),
+		"nonce":           "nonce-1",
+		"hmac":            "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
 	}
 	delete(response, "messageId")
 	if err := ValidateMeshWireResponse(response); err != nil {
