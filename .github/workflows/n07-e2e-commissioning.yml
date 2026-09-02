@@ -1,0 +1,50 @@
+name: N07 Storage Commissioning
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - fix/n07-storacha-runtime-hardening-2026-09-01
+
+jobs:
+  storage-commissioning:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout exact branch head
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: 1.25.x
+          cache: true
+
+      - name: Detect Storacha credential state
+        id: credential
+        env:
+          STORACHA_UCAN: ${{ secrets.STORACHA_UCAN }}
+          WEB3_STORAGE_TOKEN: ${{ secrets.WEB3_STORAGE_TOKEN }}
+        run: |
+          set -euo pipefail
+          if [[ -z "${STORACHA_UCAN}" && -z "${WEB3_STORAGE_TOKEN}" ]]; then
+            echo 'configured=false' >> "$GITHUB_OUTPUT"
+            echo 'SKIPPED: Storage not configured. Set STORACHA_UCAN or WEB3_STORAGE_TOKEN to enable real upload tests.'
+          else
+            echo 'configured=true' >> "$GITHUB_OUTPUT"
+            echo 'Storacha credential material is present; real commissioning tests are enabled.'
+          fi
+
+      - name: Run storage contract tests without credentials
+        if: steps.credential.outputs.configured == 'false'
+        run: go test ./backend -run 'TestWeb3StorageStatusNotConfiguredWithoutUCAN|TestWeb3StorageUploadDoesNotAttemptWithoutCredential' -count=1
+
+      - name: Run real storage commissioning tests
+        if: steps.credential.outputs.configured == 'true'
+        env:
+          STORACHA_UCAN: ${{ secrets.STORACHA_UCAN }}
+          WEB3_STORAGE_TOKEN: ${{ secrets.WEB3_STORAGE_TOKEN }}
+        run: |
+          set -euo pipefail
+          go test ./backend -run TestStorachaCommissioning -count=1 -v
