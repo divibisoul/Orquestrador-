@@ -49,7 +49,7 @@ func TestWeb3StorageUploadAndStatus(t *testing.T) {
 	if gotAuth != "Bearer secret" || gotName != "artifact.bin" {
 		t.Fatalf("unexpected upload headers auth=%q name=%q", gotAuth, gotName)
 	}
-	status, err := s.Status(context.Background(), cid)
+	status, err := s.StatusForCID(context.Background(), cid)
 	if err != nil || status["status"] != "pinned" {
 		t.Fatalf("unexpected status: %#v err=%v", status, err)
 	}
