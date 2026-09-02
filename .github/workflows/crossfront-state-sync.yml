@@ -1,0 +1,78 @@
+name: Crossfront State Sync
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '17 3 * * *'
+
+permissions:
+  contents: write
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout N07
+        uses: actions/checkout@v4
+      - name: Checkout N01
+        uses: actions/checkout@v4
+        with:
+          repository: divibisoul/aeternum-core-29
+          path: sources/N01
+          fetch-depth: 1
+      - name: Checkout N02
+        uses: actions/checkout@v4
+        with:
+          repository: divibisoul/Eternium-
+          path: sources/N02
+          fetch-depth: 1
+      - name: Checkout N03
+        uses: actions/checkout@v4
+        with:
+          repository: divibisoul/nexus-aeternum-fusion
+          path: sources/N03
+          fetch-depth: 1
+      - name: Checkout N04
+        uses: actions/checkout@v4
+        with:
+          repository: divibisoul/nextjs-ai-chatbots
+          path: sources/N04
+          fetch-depth: 1
+      - name: Checkout N05
+        uses: actions/checkout@v4
+        with:
+          repository: divibisoul/nextjs-ai-chatbot
+          path: sources/N05
+          fetch-depth: 1
+      - name: Checkout N06
+        uses: actions/checkout@v4
+        with:
+          repository: divibisoul/nextjs-ai-chatbot-2000
+          path: sources/N06
+          fetch-depth: 1
+      - name: Generate crossfront state
+        run: node scripts/generate-crossfront-state.mjs
+      - name: Publish generated state
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const content = fs.readFileSync('SOUL-SYSTEM-CROSSFRONT-STATE.md', 'utf8');
+            let sha;
+            try {
+              const current = await github.rest.repos.getContent({ owner: context.repo.owner, repo: context.repo.repo, path: 'SOUL-SYSTEM-CROSSFRONT-STATE.md', ref: context.ref.replace('refs/heads/','') });
+              sha = current.data.sha;
+              const currentContent = Buffer.from(current.data.content, 'base64').toString('utf8');
+              if (currentContent === content) { core.info('Crossfront state unchanged; no commit required.'); return; }
+            } catch (error) {
+              if (error.status !== 404) throw error;
+            }
+            await github.rest.repos.createOrUpdateFileContents({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              path: 'SOUL-SYSTEM-CROSSFRONT-STATE.md',
+              message: 'docs(governance): refresh generated crossfront state',
+              content: Buffer.from(content, 'utf8').toString('base64'),
+              sha,
+              branch: context.ref.replace('refs/heads/','')
+            });
