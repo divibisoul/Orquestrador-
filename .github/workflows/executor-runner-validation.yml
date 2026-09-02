@@ -59,7 +59,24 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version: '1.24'
+          go-version: '1.25'
           cache: true
       - name: Run federation E2E
         run: go test ./mesh -run '^TestN01ToN07FederatesAcrossN04N05N06$' -count=1 -v
+      - name: Run all 15 bidirectional pair checks
+        run: go run ./scripts/e2e-validation.go
+        env:
+          SOUL_MESH_TOKEN: ${{ secrets.SOUL_MESH_TOKEN }}
+          SOUL_MESH_N01_URL: ${{ secrets.SOUL_MESH_N01_URL }}
+          SOUL_MESH_N02_URL: ${{ secrets.SOUL_MESH_N02_URL }}
+          SOUL_MESH_N03_URL: ${{ secrets.SOUL_MESH_N03_URL }}
+          SOUL_MESH_N04_URL: ${{ secrets.SOUL_MESH_N04_URL }}
+          SOUL_MESH_N05_URL: ${{ secrets.SOUL_MESH_N05_URL }}
+          SOUL_MESH_N06_URL: ${{ secrets.SOUL_MESH_N06_URL }}
+      - name: Upload E2E failure report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: n07-e2e-validation-report
+          path: e2e-validation-report.json
+          if-no-files-found: error
