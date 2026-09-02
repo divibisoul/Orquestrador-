@@ -8,6 +8,9 @@ on:
       - 'go.sum'
       - 'Dockerfile'
       - 'supabase/migrations/**'
+      - 'soul-nuclei.json'
+      - 'scripts/soul-architectural-integrity.mjs'
+      - 'scripts/generate-crossfront-state.mjs'
       - '.github/workflows/n07-ci.yml'
   pull_request:
     paths:
@@ -16,6 +19,9 @@ on:
       - 'go.sum'
       - 'Dockerfile'
       - 'supabase/migrations/**'
+      - 'soul-nuclei.json'
+      - 'scripts/soul-architectural-integrity.mjs'
+      - 'scripts/generate-crossfront-state.mjs'
       - '.github/workflows/n07-ci.yml'
   workflow_dispatch:
 
@@ -54,7 +60,29 @@ jobs:
           git commit -m 'style(n07): normalize Go formatting'
           git push origin HEAD:main
 
+  integrity:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.x'
+      - name: Architectural integrity
+        run: node scripts/soul-architectural-integrity.mjs
+      - name: Declarative crossfront generation
+        run: node scripts/generate-crossfront-state.mjs
+      - name: Verify generated diagnostics are tracked
+        run: |
+          set -euo pipefail
+          test -s SOUL-ARCHITECTURAL-INTEGRITY.json
+          test -s SOUL-CROSSFRONT-EVIDENCE.json
+          test -s SOUL-SYSTEM-CROSSFRONT-STATE.md
+
   verify:
+    needs: integrity
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
