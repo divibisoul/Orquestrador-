@@ -1,0 +1,45 @@
+name: Front 1 Contract Prover
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/contract-15-pairs.test.js'
+      - 'scripts/topology-validator.js'
+      - '.github/workflows/front1-contract-prover.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'scripts/contract-15-pairs.test.js'
+      - 'scripts/topology-validator.js'
+      - '.github/workflows/front1-contract-prover.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  contract-prover:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Validate 15 unordered pairs in both directions
+        run: node scripts/contract-15-pairs.test.js
+
+      - name: Validate topology configuration schema without network
+        run: node scripts/topology-validator.js
+
+      - name: Upload contract evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: front1-contract-evidence
+          path: .diagnostics/
+          if-no-files-found: error
