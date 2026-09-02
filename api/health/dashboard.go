@@ -30,16 +30,16 @@ type Dashboard struct {
 }
 
 type probeResult struct {
-	Nucleus         string `json:"nucleus"`
-	Status          string `json:"status"`
-	HTTP            int    `json:"http,omitempty"`
-	LatencyMs       int64  `json:"latencyMs"`
-	CorrelationID   string `json:"correlationId"`
-	Capability      string `json:"capability"`
-	Error           string `json:"error,omitempty"`
-	CureSuggestion  string `json:"cureSuggestion,omitempty"`
-	CureAction      string `json:"cureAction,omitempty"`
-	Trend           string `json:"trend,omitempty"`
+	Nucleus        string `json:"nucleus"`
+	Status         string `json:"status"`
+	HTTP           int    `json:"http,omitempty"`
+	LatencyMs      int64  `json:"latencyMs"`
+	CorrelationID  string `json:"correlationId"`
+	Capability     string `json:"capability"`
+	Error          string `json:"error,omitempty"`
+	CureSuggestion string `json:"cureSuggestion,omitempty"`
+	CureAction     string `json:"cureAction,omitempty"`
+	Trend          string `json:"trend,omitempty"`
 }
 
 type healthSample struct {
@@ -61,8 +61,8 @@ type dashboardResponse struct {
 
 func New() *Dashboard {
 	d := &Dashboard{
-		Client: &http.Client{Timeout: 5 * time.Second},
-		Peers:  loadPeers(),
+		Client:  &http.Client{Timeout: 5 * time.Second},
+		Peers:   loadPeers(),
 		history: make(map[string][]healthSample),
 	}
 	d.loadHistory()
@@ -101,9 +101,12 @@ func (d *Dashboard) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	wg.Wait()
 
-	healthy, configured := 0, 0
+	healthy, configured, notConfigured := 0, 0, 0
 	for _, check := range checks {
-		if check.Status != "not-configured" {
+		switch check.Status {
+		case "not-configured":
+			notConfigured++
+		default:
 			configured++
 		}
 		if check.Status == "healthy" {
@@ -112,11 +115,11 @@ func (d *Dashboard) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	status := "degraded"
-	if len(checks) > 0 && healthy == len(checks) {
-		status = "online"
-	}
-	if len(checks) == 0 {
+	switch {
+	case len(checks) == 0 || notConfigured == len(checks):
 		status = "not-configured"
+	case healthy == len(checks):
+		status = "online"
 	}
 
 	writeJSON(w, http.StatusOK, dashboardResponse{
@@ -131,6 +134,7 @@ func (d *Dashboard) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			"healthy":          healthy,
 			"checks":           len(checks),
 			"configuredChecks": configured,
+			"notConfigured":    notConfigured,
 			"nuclei":           len(d.Peers),
 			"historySamples":   historyLimit,
 			"source":           "N07",
@@ -145,8 +149,8 @@ func (d *Dashboard) probe(ctx context.Context, nucleus, baseURL, capability stri
 
 	if strings.TrimSpace(baseURL) == "" {
 		result.Status = "not-configured"
-		result.CureSuggestion = fmt.Sprintf("%s está sem endpoint configurado. Cadastre SOUL_MESH_%s_URL e execute o health check novamente.", nucleus, nucleus)
-		result.CureAction = "configure_endpoint"
+		result.CureSuggestion = fmt.Sprintf("Configure SOUL_MESH_PEERS environment variable with URLs for N01-N06 (ex: {\"N01\":\"http://...\", ...}); currently %s has no endpoint.", nucleus)
+		result.CureAction = "configure_peers"
 		return result
 	}
 
@@ -256,11 +260,7 @@ func (d *Dashboard) recordHistory(result probeResult) {
 	defer d.historyMu.Unlock()
 
 	samples := d.history[result.Nucleus]
-	samples = append(samples, healthSample{
-		At:        time.Now().UTC(),
-		Status:    result.Status,
-		LatencyMs: result.LatencyMs,
-	})
+	samples = append(samples, healthSample{At: time.Now().UTC(), Status: result.Status, LatencyMs: result.LatencyMs})
 	if len(samples) > historyLimit {
 		samples = samples[len(samples)-historyLimit:]
 	}
@@ -273,23 +273,20 @@ func (d *Dashboard) trend(nucleus string) string {
 	defer d.historyMu.Unlock()
 
 	samples := d.history[nucleus]
-	if len(samples) < 2 {
-		return "insufficient-history"
-	}
-
-	first := samples[0]
-	last := samples[len(samples)-1]
-
-	if first.LatencyMs <= 0 || last.LatencyMs <= 0 {
-		if last.Status != "healthy" {
-			return "degraded"
+	active := make([]healthSample, 0, len(samples))
+	for _, sample := range samples {
+		if sample.Status != "not-configured" && sample.LatencyMs > 0 {
+			active = append(active, sample)
 		}
-		return "stable"
+	}
+	if len(active) < 2 {
+		return "insufficient-active-history"
 	}
 
+	first := active[0]
+	last := active[len(active)-1]
 	change := ((float64(last.LatencyMs) - float64(first.LatencyMs)) / float64(first.LatencyMs)) * 100
 	elapsed := last.At.Sub(first.At).Hours()
-
 	if elapsed > 0 && change >= 5 {
 		return fmt.Sprintf("latency-increasing %.1f%% over %.1fh", change, elapsed)
 	}
@@ -309,10 +306,7 @@ func (d *Dashboard) historySummary() map[string]any {
 	out := make(map[string]any, len(d.history))
 	for nucleus, samples := range d.history {
 		copySamples := append([]healthSample(nil), samples...)
-		out[nucleus] = map[string]any{
-			"samples": copySamples,
-			"count":   len(copySamples),
-		}
+		out[nucleus] = map[string]any{"samples": copySamples, "count": len(copySamples)}
 	}
 	return out
 }
@@ -372,7 +366,14 @@ func authorizeDashboard(r *http.Request) error {
 }
 
 func loadPeers() map[string]string {
-	peers := make(map[string]string)
+	peers := map[string]string{
+		"N01": "",
+		"N02": "",
+		"N03": "",
+		"N04": "",
+		"N05": "",
+		"N06": "",
+	}
 	var raw map[string]any
 	if err := json.Unmarshal([]byte(env("SOUL_MESH_PEERS", "{}")), &raw); err != nil {
 		return peers
