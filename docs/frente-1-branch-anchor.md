@@ -1,0 +1,1 @@
+Frente 1 continuation is anchored on the current Storacha hardening branch head. This marker preserves concurrent PR20 work while the readiness patches are reviewed separately.
