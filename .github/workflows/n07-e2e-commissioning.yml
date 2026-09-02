@@ -9,6 +9,19 @@ on:
       - 'go.sum'
       - 'Dockerfile'
       - 'mesh/**'
+      - 'config/**'
+      - '.github/workflows/n07-e2e-commissioning.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - '**/*.go'
+      - 'go.mod'
+      - 'go.sum'
+      - 'Dockerfile'
+      - 'mesh/**'
+      - 'config/**'
+      - 'docs/**'
+      - 'SOUL-BRIDGE-VERSION.md'
       - '.github/workflows/n07-e2e-commissioning.yml'
   workflow_dispatch:
 
@@ -73,6 +86,83 @@ jobs:
         run: |
           docker logs n07-commissioning || true
           docker stop n07-commissioning || true
+
+  staging-simulado:
+    name: Simulated staging / no external credentials
+    runs-on: ubuntu-22.04
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Execute transparent simulated staging
+        env:
+          CONFIGURED_APP_TOKEN: ${{ secrets.N07_APP_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .diagnostics
+          if [ -n "${CONFIGURED_APP_TOKEN//[[:space:]]/}" ]; then
+            cat > simulated-staging-report.json <<'EOF'
+          {
+            "mode": "not-run",
+            "reason": "N07_APP_TOKEN is configured; credentialed staging owns this path",
+            "external_connections_attempted": false,
+            "tests": [],
+            "skipped": [
+              {"name": "simulated staging", "reason": "secrets configured"}
+            ]
+          }
+          EOF
+            cat simulated-staging-report.json
+            exit 0
+          fi
+
+          docker build -t n07-simulated:local .
+          SIM_TOKEN="$(openssl rand -hex 32)"
+          docker run -d --rm --name n07-simulated \
+            -p 18082:8080 \
+            -e N07_APP_TOKEN="$SIM_TOKEN" \
+            -e N07_HTTP_ADDR=:8080 \
+            n07-simulated:local
+          trap 'docker logs n07-simulated || true; docker stop n07-simulated || true' EXIT
+
+          health_file=/tmp/n07-simulated-health.json
+          for i in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:18082/health > "$health_file"; then break; fi
+            sleep 2
+          done
+          test -s "$health_file"
+          jq -e '.status == "degraded"' "$health_file"
+          jq -e '.secret_mode == "restricted"' "$health_file"
+          jq -e '.missing_secrets | index("WEB3_STORAGE_TOKEN") != null' "$health_file"
+          jq -e '.missing_secrets | index("SUPABASE_URL") != null' "$health_file"
+          jq -e '.missing_secrets | index("SUPABASE_SERVICE_ROLE_KEY") != null' "$health_file"
+
+          curl -fsS -H "Authorization: Bearer $SIM_TOKEN" \
+            http://127.0.0.1:18082/status > /tmp/n07-simulated-status.json
+          curl -fsS -H "Authorization: Bearer $SIM_TOKEN" \
+            -H 'Content-Type: application/json' \
+            -X POST http://127.0.0.1:18082/execute \
+            -d '{"operation":"neural.forward@1.0.0","payload":[0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8],"metadata":{"source":"simulated-staging"}}' \
+            > /tmp/n07-simulated-execution.json
+
+          jq -e '.status == "ok"' /tmp/n07-simulated-execution.json
+          jq -n \
+            --argjson health "$(cat "$health_file")" \
+            --argjson status "$(cat /tmp/n07-simulated-status.json)" \
+            --argjson execution "$(cat /tmp/n07-simulated-execution.json)" \
+            '{mode:"simulated",authentication:"ephemeral-local-token",external_connections_attempted:false,tests:[{name:"health",result:"passed",observed_status:$health.status},{name:"status",result:"passed",observed_status:$status.status},{name:"execute",result:"passed",observed_status:$execution.status}],skipped:[{name:"Web3 Storage",reason:"secrets não configurados"},{name:"Supabase persistence",reason:"secrets não configurados"}],secrets:["N07_APP_TOKEN","WEB3_STORAGE_TOKEN","SUPABASE_URL","SUPABASE_SERVICE_ROLE_KEY"],note:"The local token is generated only for this ephemeral simulation and is not a GitHub secret."}' \
+            > simulated-staging-report.json
+          cat simulated-staging-report.json
+
+      - name: Upload simulated staging report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: n07-simulated-staging-${{ github.run_id }}
+          path: simulated-staging-report.json
+          if-no-files-found: error
 
   configured-staging:
     name: Configured staging / secrets diagnostic
