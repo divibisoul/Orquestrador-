@@ -29,10 +29,6 @@ jobs:
           go version
           test -n "${RUNNER_NAME:-}" || { echo "ERROR: GitHub runner was not provisioned."; exit 1; }
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
       - name: Generate diagnostics
         run: node scripts/diagnostics.mjs
       - name: Upload diagnostics
