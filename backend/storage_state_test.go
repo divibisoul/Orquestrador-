@@ -1,6 +1,8 @@
 package backend
 
 import (
+	"bytes"
+	"context"
 	"testing"
 )
 
@@ -26,8 +28,8 @@ func TestWeb3StorageUploadDoesNotAttemptWithoutCredential(t *testing.T) {
 	cfg.Web3StorageToken = ""
 	cfg.Web3StorageURL = ""
 	storage := NewWeb3Storage(cfg)
-	_, _, err := storage.Upload(nil, nil, "ignored")
-	if err == nil {
-		t.Fatal("expected upload configuration error")
+	_, _, err := storage.Upload(context.Background(), bytes.NewBufferString("payload"), "test.bin")
+	if err == nil || err.Error() != storageNotConfiguredCode {
+		t.Fatalf("expected %s, got %v", storageNotConfiguredCode, err)
 	}
 }
