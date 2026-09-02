@@ -2,7 +2,7 @@ name: N07 Executor Runner Validation
 
 on:
   push:
-    branches: [audit/2026-09-01-hardening]
+    branches: [audit/2026-09-01-hardening, frente-3]
   pull_request:
     branches: [main]
   workflow_dispatch:
@@ -76,12 +76,27 @@ jobs:
           expected='TestN01ToN07FederatesAcrossN04N05N06'
           found="$(go test ./mesh -list '^TestN01ToN07FederatesAcrossN04N05N06$' | grep -Fx "$expected" || true)"
           test "$found" = "$expected" || {
-            echo "ERROR: required federation test is absent or not discoverable: $expected"
+            echo "ERROR: REQUIRED TEST NOT FOUND in package mesh. Check file naming and build tags."
             echo "A zero-test PASS is not valid E2E evidence."
             exit 1
           }
-      - name: Run federation E2E
-        run: timeout --signal=TERM 180s go test ./mesh -run '^TestN01ToN07FederatesAcrossN04N05N06$' -count=1 -v
+      - name: Run federation E2E and prove execution
+        shell: bash
+        run: |
+          set -uo pipefail
+          expected='TestN01ToN07FederatesAcrossN04N05N06'
+          timeout --signal=TERM 180s go test ./mesh -run "^${expected}$" -count=1 -v 2>&1 | tee .diagnostics-federation-test.log
+          test_status=${PIPESTATUS[0]}
+          if ! grep -q "=== RUN   ${expected}" .diagnostics-federation-test.log; then
+            echo "ERROR: REQUIRED TEST FOUND BUT DID NOT EXECUTE: ${expected}"
+            echo "The -count=1 run produced no execution marker."
+            exit 1
+          fi
+          if ! grep -q -- "--- PASS: ${expected}" .diagnostics-federation-test.log; then
+            echo "ERROR: REQUIRED TEST EXECUTED BUT DID NOT PASS: ${expected}"
+            exit "${test_status:-1}"
+          fi
+          test "${test_status:-1}" -eq 0
       - name: Run all 15 bidirectional pair checks
         if: always()
         run: go run ./scripts/e2e-validation.go ./scripts/e2e-patterns.go
@@ -99,6 +114,13 @@ jobs:
         with:
           name: n07-e2e-validation-report
           path: e2e-validation-report.json
+          if-no-files-found: error
+      - name: Upload federation execution log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: n07-federation-execution-log
+          path: .diagnostics-federation-test.log
           if-no-files-found: error
       - name: Upload E2E history snapshot
         if: always()
