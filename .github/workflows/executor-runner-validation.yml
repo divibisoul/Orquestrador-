@@ -73,7 +73,7 @@ jobs:
         run: timeout --signal=TERM 180s go test ./mesh -run '^TestN01ToN07FederatesAcrossN04N05N06$' -count=1 -v
       - name: Run all 15 bidirectional pair checks
         if: always()
-        run: go run ./scripts/e2e-validation.go
+        run: go run ./scripts/e2e-validation.go ./scripts/e2e-patterns.go
         env:
           SOUL_MESH_TOKEN: ${{ secrets.SOUL_MESH_TOKEN }}
           SOUL_MESH_N01_URL: ${{ secrets.SOUL_MESH_N01_URL }}
