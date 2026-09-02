@@ -19,6 +19,12 @@ import (
 
 const defaultStorachaTimeout = 30 * time.Second
 
+const (
+	storageNotConfiguredCode = "STORAGE_NOT_CONFIGURED"
+	missingUCANReason        = "missing_ucan"
+	storageCureSuggestion    = "Set WEB3_STORAGE_TOKEN (UCAN) and STORACHA_SPACE to enable real uploads. Obtain an authorized UCAN/Space from Storacha."
+)
+
 var cidPattern = regexp.MustCompile(`^(?:b[a-z2-7][a-z0-9]{20,}|Qm[1-9A-HJ-NP-Za-km-z]{40,}|bafk[a-z0-9]{20,})$`)
 var cidFinder = regexp.MustCompile(`(?:https?://[^/]+/ipfs/)?(b[a-z2-7][a-z0-9]{20,}|Qm[1-9A-HJ-NP-Za-km-z]{40,}|bafk[a-z0-9]{20,})`)
 
@@ -65,9 +71,10 @@ func NewWeb3Storage(cfg Config) *Web3Storage {
 	}
 	space := strings.TrimSpace(os.Getenv("STORACHA_SPACE"))
 	dataDir := strings.TrimSpace(os.Getenv("STORACHA_DATA_DIR"))
+	token := strings.TrimSpace(cfg.Web3StorageToken)
 	return &Web3Storage{
 		baseURL:         legacyURL,
-		token:           cfg.Web3StorageToken,
+		token:           token,
 		gateway:         legacyGateway,
 		mode:            mode,
 		storachaBin:     bin,
@@ -91,7 +98,7 @@ func (s *Web3Storage) useStoracha() bool {
 }
 
 func (s *Web3Storage) modernConfigured() bool {
-	return strings.TrimSpace(s.storachaSpace) != "" && strings.TrimSpace(s.storachaBin) != ""
+	return strings.TrimSpace(s.storachaSpace) != "" && strings.TrimSpace(s.storachaBin) != "" && strings.TrimSpace(s.token) != ""
 }
 
 func (s *Web3Storage) legacyConfigured() bool {
@@ -99,10 +106,27 @@ func (s *Web3Storage) legacyConfigured() bool {
 }
 
 func (s *Web3Storage) Configured() bool {
+	if s == nil {
+		return false
+	}
 	if s.useStoracha() {
 		return s.modernConfigured()
 	}
 	return s.legacyConfigured()
+}
+
+func (s *Web3Storage) Status() map[string]any {
+	if s == nil {
+		return map[string]any{"status": "degraded", "reason": missingUCANReason, "code": storageNotConfiguredCode, "cureSuggestion": storageCureSuggestion}
+	}
+	if s.Configured() {
+		return map[string]any{"status": "ready", "reason": "configured", "code": "STORAGE_READY", "cureSuggestion": ""}
+	}
+	return map[string]any{"status": "degraded", "reason": missingUCANReason, "code": storageNotConfiguredCode, "cureSuggestion": storageCureSuggestion}
+}
+
+func storageNotConfiguredError() error {
+	return errors.New(storageNotConfiguredCode)
 }
 
 func (s *Web3Storage) Upload(ctx context.Context, body io.Reader, filename string) (string, int64, error) {
@@ -112,11 +136,11 @@ func (s *Web3Storage) Upload(ctx context.Context, body io.Reader, filename strin
 	if ctx == nil {
 		return "", 0, errors.New("context is nil")
 	}
+	if !s.Configured() {
+		return "", 0, storageNotConfiguredError()
+	}
 	if s.useStoracha() {
 		return s.uploadStoracha(ctx, body, filename)
-	}
-	if !s.legacyConfigured() {
-		return "", 0, errors.New("Web3 Storage credentials are not configured")
 	}
 	return s.uploadLegacy(ctx, body, filename)
 }
@@ -158,10 +182,6 @@ func (s *Web3Storage) uploadLegacy(ctx context.Context, body io.Reader, filename
 }
 
 func (s *Web3Storage) uploadStoracha(ctx context.Context, body io.Reader, filename string) (string, int64, error) {
-	if !s.modernConfigured() {
-		return "", 0, errors.New("Storacha credentials/space are not configured")
-	}
-
 	tmpDir, err := os.MkdirTemp("", "n07-storacha-upload-")
 	if err != nil {
 		return "", 0, err
@@ -213,17 +233,21 @@ func (s *Web3Storage) uploadStoracha(ctx context.Context, body io.Reader, filena
 	return cid, written, nil
 }
 
-func (s *Web3Storage) Status(ctx context.Context, cid string) (map[string]any, error) {
+func (s *Web3Storage) StatusForCID(ctx context.Context, cid string) (map[string]any, error) {
 	cid = strings.TrimSpace(cid)
 	if !validCID(cid) {
 		return nil, errors.New("invalid cid")
 	}
+	if !s.Configured() {
+		return nil, storageNotConfiguredError()
+	}
 	if s.useStoracha() {
 		return s.statusStoracha(ctx, cid)
 	}
-	if !s.legacyConfigured() {
-		return nil, errors.New("Web3 Storage credentials are not configured")
-	}
+	return s.statusLegacy(ctx, cid)
+}
+
+func (s *Web3Storage) statusLegacy(ctx context.Context, cid string) (map[string]any, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, s.baseURL+"/status/"+cid, nil)
 	if err != nil {
 		return nil, err
@@ -265,7 +289,7 @@ func (s *Web3Storage) statusStoracha(ctx context.Context, cid string) (map[strin
 
 func (s *Web3Storage) ObjectURL(cid string) string {
 	cid = strings.TrimSpace(cid)
-	if !validCID(cid) {
+	if !validCID(cid) || !s.Configured() {
 		return ""
 	}
 	if s.useStoracha() {
