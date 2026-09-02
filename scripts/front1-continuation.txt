@@ -1,0 +1,1 @@
+Front 1 continuation uses the current PR20 head without rewriting concurrent history.
