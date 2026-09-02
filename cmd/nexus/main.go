@@ -13,6 +13,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/divibisoul/Orquestrador-/api/health"
 	"github.com/divibisoul/Orquestrador-/backend"
 	"github.com/divibisoul/Orquestrador-/mesh"
 	"github.com/divibisoul/Orquestrador-/neural"
@@ -47,6 +48,7 @@ func main() {
 	unified := backend.New(e, backend.DefaultConfig())
 	mux := http.NewServeMux()
 	mux.Handle("/v1/", unified.Handler())
+	mux.Handle("/api/health/dashboard", health.Handler())
 
 	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusOK, e.Health())
