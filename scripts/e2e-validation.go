@@ -11,13 +11,15 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"sync"
 	"time"
 )
 
 const (
 	contractVersion = "1.1.0"
 	protocolVersion = "soul-mesh/1"
-	maxResponse    = 1 << 20
+	maxResponse     = 1 << 20
+	historyLimit    = 100
 )
 
 type probe struct {
@@ -34,17 +36,30 @@ type probe struct {
 	CorrectionRecipe string `json:"correctionRecipe"`
 }
 
-type report struct {
-	GeneratedAt     string  `json:"generatedAt"`
-	Protocol        string  `json:"protocol"`
-	ContractVersion string  `json:"contractVersion"`
-	PairsExpected   int     `json:"pairsExpected"`
-	DirectedProbes  int     `json:"directedProbes"`
-	Passed          int     `json:"passed"`
-	Failed          int     `json:"failed"`
-	Limitations     string  `json:"limitations"`
-	Results         []probe `json:"results"`
+type historyEntry struct {
+	At      time.Time `json:"at"`
+	Source  string    `json:"source"`
+	Target  string    `json:"target"`
+	Status  string    `json:"status"`
+	HTTP    int       `json:"http,omitempty"`
+	Latency int64     `json:"latencyMs"`
 }
+
+type report struct {
+	GeneratedAt       string         `json:"generatedAt"`
+	Protocol          string         `json:"protocol"`
+	ContractVersion   string         `json:"contractVersion"`
+	PairsExpected     int            `json:"pairsExpected"`
+	DirectedProbes    int            `json:"directedProbes"`
+	Passed            int            `json:"passed"`
+	Failed            int            `json:"failed"`
+	FailurePatterns   []string       `json:"failurePatterns"`
+	ResyncSuggested   bool           `json:"resyncSuggested"`
+	Limitations       string         `json:"limitations"`
+	Results           []probe        `json:"results"`
+}
+
+var historyMu sync.Mutex
 
 func main() {
 	client := &http.Client{Timeout: 8 * time.Second}
@@ -74,6 +89,15 @@ func main() {
 		fmt.Println(string(encoded))
 	}
 
+	patterns := detectFailurePatterns(results)
+	resyncSuggested := false
+	for _, result := range results {
+		if result.Status == "unauthorized" {
+			resyncSuggested = true
+			break
+		}
+	}
+
 	reportData := report{
 		GeneratedAt:     time.Now().UTC().Format(time.RFC3339),
 		Protocol:        protocolVersion,
@@ -82,6 +106,8 @@ func main() {
 		DirectedProbes:  len(results),
 		Passed:          passed,
 		Failed:          failed,
+		FailurePatterns: patterns,
+		ResyncSuggested: resyncSuggested,
 		Limitations:     "O executor roda no N07. Os 30 testes exercitam o contrato direcionado via endpoints configurados; eles não substituem uma prova física de processo-origem quando a infraestrutura não permite que N07 observe o tráfego interno entre dois núcleos. O teste federado N01→N07 existente continua sendo complementar.",
 		Results:         results,
 	}
@@ -90,6 +116,7 @@ func main() {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(2)
 	}
+
 	if failed > 0 {
 		os.Exit(1)
 	}
@@ -103,6 +130,7 @@ func runProbe(ctx context.Context, client *http.Client, pair, source, target, su
 	if baseURL == "" {
 		result.Status = "not-configured"
 		result.CorrectionRecipe = fmt.Sprintf("Configure SOUL_MESH_%s_URL. Sem endpoint não há prova E2E; não classificar como saudável.", target)
+		appendHistory(result)
 		return result
 	}
 	endpoint := baseURL + suffix
@@ -125,6 +153,7 @@ func runProbe(ctx context.Context, client *http.Client, pair, source, target, su
 	if err != nil {
 		result.Error = err.Error()
 		result.CorrectionRecipe = "Corrija a serialização do envelope e mantenha protocol/contractVersion/correlationId obrigatórios."
+		appendHistory(result)
 		return result
 	}
 
@@ -132,6 +161,7 @@ func runProbe(ctx context.Context, client *http.Client, pair, source, target, su
 	if err != nil {
 		result.Error = err.Error()
 		result.CorrectionRecipe = "Corrija a URL/rota publicada do núcleo alvo."
+		appendHistory(result)
 		return result
 	}
 	req.Header.Set("Content-Type", "application/json")
@@ -147,6 +177,7 @@ func runProbe(ctx context.Context, client *http.Client, pair, source, target, su
 		result.Status = "unreachable"
 		result.Error = err.Error()
 		result.CorrectionRecipe = fmt.Sprintf("%s→%s inacessível. Verifique serviço, ingress/DNS e faça redeploy controlado; depois valide novamente.", source, target)
+		appendHistory(result)
 		return result
 	}
 	defer response.Body.Close()
@@ -158,6 +189,7 @@ func runProbe(ctx context.Context, client *http.Client, pair, source, target, su
 		result.Status = "invalid-response"
 		result.Error = "response is not valid JSON"
 		result.CorrectionRecipe = "Corrija o adaptador Soul Mesh para devolver envelope JSON canônico com correlationId."
+		appendHistory(result)
 		return result
 	}
 
@@ -167,6 +199,7 @@ func runProbe(ctx context.Context, client *http.Client, pair, source, target, su
 	if response.StatusCode == http.StatusOK && validEnvelope {
 		result.Status = "healthy"
 		result.CorrectionRecipe = "Nenhuma: contrato, autenticação, rota e correlationId confirmados."
+		appendHistory(result)
 		return result
 	}
 
@@ -197,7 +230,105 @@ func runProbe(ctx context.Context, client *http.Client, pair, source, target, su
 			result.CorrectionRecipe = "Status HTTP inesperado: revisar contrato da rota e política de erro do peer."
 		}
 	}
+
+	appendHistory(result)
 	return result
+}
+
+func appendHistory(result probe) {
+	historyMu.Lock()
+	defer historyMu.Unlock()
+
+	path := env("SOUL_E2E_HISTORY_FILE", ".soul/e2e-history.json")
+	var history []historyEntry
+	if data, err := os.ReadFile(path); err == nil {
+		_ = json.Unmarshal(data, &history)
+	}
+
+	history = append(history, historyEntry{
+		At:      time.Now().UTC(),
+		Source:  result.Source,
+		Target:  result.Target,
+		Status:  result.Status,
+		HTTP:    result.HTTP,
+		Latency: result.LatencyMs,
+	})
+
+	if len(history) > historyLimit {
+		history = history[len(history)-historyLimit:]
+	}
+
+	data, err := json.MarshalIndent(history, "", "  ")
+	if err != nil {
+		return
+	}
+
+	dir := "."
+	for i := len(path) - 1; i >= 0; i-- {
+		if path[i] == '/' || path[i] == '\\' {
+			dir = path[:i]
+			break
+		}
+	}
+	_ = os.MkdirAll(dir, 0o700)
+	_ = os.WriteFile(path, append(data, '\n'), 0o600)
+}
+
+func detectFailurePatterns(current []probe) []string {
+	historyMu.Lock()
+	defer historyMu.Unlock()
+
+	path := env("SOUL_E2E_HISTORY_FILE", ".soul/e2e-history.json")
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil
+	}
+
+	var history []historyEntry
+	if err := json.Unmarshal(data, &history); err != nil {
+		return nil
+	}
+
+	cutoff := time.Now().Add(-2 * time.Hour)
+	patterns := make([]string, 0)
+
+	for _, item := range current {
+		if item.Status == "healthy" {
+			continue
+		}
+
+		count := 0
+		for i := len(history) - 1; i >= 0; i-- {
+			entry := history[i]
+			if entry.At.Before(cutoff) {
+				break
+			}
+			if entry.Source == item.Source && entry.Target == item.Target && entry.Status != "healthy" {
+				count++
+			} else if count > 0 && (entry.Source != item.Source || entry.Target != item.Target) {
+				break
+			}
+		}
+
+		if count >= 3 {
+			patterns = append(patterns, fmt.Sprintf("%s→%s falhou %d vezes consecutivas nas últimas 2 horas; verificar rede, autenticação e logs do peer.", item.Source, item.Target, count))
+		}
+	}
+
+	return unique(patterns)
+}
+
+func unique(values []string) []string {
+	seen := make(map[string]struct{}, len(values))
+	out := make([]string, 0, len(values))
+	for _, value := range values {
+		if _, ok := seen[value]; ok {
+			continue
+		}
+		seen[value] = struct{}{}
+		out = append(out, value)
+	}
+	return out
 }
 
 func traceID() string {
