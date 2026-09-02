@@ -22,14 +22,14 @@ type Config struct {
 	CORSOrigins            []string
 	MaxRequestBytes        int64
 	MaxUploadBytes         int64
-	SupabaseURL             string
-	SupabaseServiceKey      string
-	SupabaseRunsTable       string
-	SupabaseArtifactsTable  string
-	Web3StorageURL          string
-	Web3StorageToken        string
-	IPFSGatewayURL          string
-	RequestTimeout          time.Duration
+	SupabaseURL            string
+	SupabaseServiceKey     string
+	SupabaseRunsTable      string
+	SupabaseArtifactsTable string
+	Web3StorageURL         string
+	Web3StorageToken       string
+	IPFSGatewayURL         string
+	RequestTimeout         time.Duration
 }
 
 func DefaultConfig() Config {
