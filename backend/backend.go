@@ -22,14 +22,14 @@ type Config struct {
 	CORSOrigins            []string
 	MaxRequestBytes        int64
 	MaxUploadBytes         int64
-	SupabaseURL            string
-	SupabaseServiceKey     string
-	SupabaseRunsTable      string
-	SupabaseArtifactsTable string
-	Web3StorageURL         string
-	Web3StorageToken       string
-	IPFSGatewayURL         string
-	RequestTimeout         time.Duration
+	SupabaseURL             string
+	SupabaseServiceKey      string
+	SupabaseRunsTable       string
+	SupabaseArtifactsTable  string
+	Web3StorageURL          string
+	Web3StorageToken        string
+	IPFSGatewayURL          string
+	RequestTimeout          time.Duration
 }
 
 func DefaultConfig() Config {
@@ -344,7 +344,7 @@ func (s *Server) storageStatus(w http.ResponseWriter, r *http.Request) {
 	}
 	status, err := s.Storage.StatusForCID(r.Context(), cid)
 	if err != nil {
-		if errors.Is(err, storageNotConfiguredError()) {
+		if err.Error() == storageNotConfiguredCode {
 			writeJSON(w, http.StatusServiceUnavailable, s.Storage.Status())
 			return
 		}
