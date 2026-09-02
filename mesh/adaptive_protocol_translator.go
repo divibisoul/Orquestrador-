@@ -7,9 +7,9 @@ import (
 )
 
 const (
-	adaptiveMeshProtocol       = "soul-mesh/1"
-	canonicalMeshContract      = "1.1.0"
-	legacyMeshContract         = "1.2.0"
+	adaptiveMeshProtocol  = "soul-mesh/1"
+	canonicalMeshContract = "1.1.0"
+	legacyMeshContract    = "1.2.0"
 )
 
 // AdaptiveProtocolTranslator is a compatibility capability for legacy Mesh
