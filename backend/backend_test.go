@@ -101,8 +101,9 @@ func TestStorachaUploadUsesConfiguredSpaceAndFilename(t *testing.T) {
 	}
 
 	t.Setenv("STORACHA_MODE", "storacha")
+	t.Setenv("STORACHA_UCAN", "unit-test-ucan")
 	t.Setenv("STORACHA_GUPPY_BIN", bin)
-	t.Setenv("STORACHA_SPACE", "did:key:z6Mkhfake-space")
+	t.Setenv("STORACHA_SPACE", "did:key:z6Mkhunit-test-space")
 	t.Setenv("STORACHA_DATA_DIR", filepath.Join(t.TempDir(), "state"))
 	t.Setenv("STORACHA_GATEWAY_URL", "https://storacha.link/ipfs")
 
@@ -125,8 +126,9 @@ func TestStorachaUploadEnforcesConfiguredLimit(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Setenv("STORACHA_MODE", "storacha")
+	t.Setenv("STORACHA_UCAN", "unit-test-ucan")
 	t.Setenv("STORACHA_GUPPY_BIN", bin)
-	t.Setenv("STORACHA_SPACE", "did:key:z6Mkhfake-space")
+	t.Setenv("STORACHA_SPACE", "did:key:z6Mkhunit-test-space")
 
 	s := NewWeb3Storage(Config{MaxUploadBytes: 4})
 	if _, _, err := s.Upload(context.Background(), strings.NewReader("hello"), "x"); err == nil || !strings.Contains(err.Error(), "maximum size") {
