@@ -34,18 +34,22 @@ func TestN01ToN07FederatesAcrossN04N05N06(t *testing.T) {
 	for _, nucleus := range []string{"N04", "N05", "N06"} {
 		nucleus := nucleus
 		servers[nucleus] = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			var in protocol.MeshEnvelope
+			var in canonicalWireEnvelope
 			if err := json.NewDecoder(r.Body).Decode(&in); err != nil {
 				http.Error(w, err.Error(), http.StatusBadRequest)
 				return
 			}
-			if err := protocol.VerifyHMAC(in, federationE2ESecret, time.Now()); err != nil {
+			if in.Protocol != "soul-mesh/1" || in.ContractVersion != protocol.SoulMeshContractVersion || in.Kind != "request" || in.Source != protocol.N07 || in.Target != nucleus || in.Capability == "" || in.HMAC == "" {
+				http.Error(w, "invalid canonical peer request", http.StatusBadRequest)
+				return
+			}
+			if err := verifyN01HeaderHMAC(in, r, federationE2ESecret); err != nil {
 				http.Error(w, err.Error(), http.StatusUnauthorized)
 				return
 			}
 			mu.Lock()
 			defer mu.Unlock()
-			capability := in.Capability()
+			capability := in.Capability
 			payload := map[string]any{}
 			switch capability {
 			case "mesh.discovery", "mesh.describe":
