@@ -39,7 +39,9 @@ function isAdapter(file, content='') {
   return p.includes('/legacy/') || p.includes('adapter') || /@deprecated[\s\S]{0,120}compatibility/i.test(content);
 }
 
-const report={system:'SOUL',checker:'SOUL Architectural Integrity Engine',schemaVersion:'3.0.0',generatedAt:new Date().toISOString(),state:'PASS',duplicateAuthorities:[],duplicateProtocols:[],duplicateRegistries:[],topologyConflicts:[],contractConflicts:[],orphanCapabilities:[],legacyAdapters:[],canonicalAuthorities:[],degraded:[],remoteProvenance:[],promptContract:[],headSnapshot:[]};
+const token=String(process.env.SOUL_GITHUB_AUDIT_TOKEN??'').trim();
+const requireRemote=process.env.SOUL_REQUIRE_REMOTE_PROVENANCE==='true';
+const report={system:'SOUL',checker:'SOUL Architectural Integrity Engine',schemaVersion:'3.1.0',generatedAt:new Date().toISOString(),state:'PASS',provenanceMode:token?'REMOTE_REQUIRED':'LOCAL_STRUCTURAL_DEGRADED',duplicateAuthorities:[],duplicateProtocols:[],duplicateRegistries:[],topologyConflicts:[],contractConflicts:[],orphanCapabilities:[],legacyAdapters:[],canonicalAuthorities:[],degraded:[],remoteProvenance:[],promptContract:[],headSnapshot:[]};
 const matrix=await readJson(MATRIX_PATH);
 
 if (matrix?.system!=='SOUL') add(report.contractConflicts,{type:'system-invalid'});
@@ -67,8 +69,7 @@ for (const [id,n] of Object.entries(matrix.nuclei??{})) for (const peer of n.pee
 }
 
 async function remoteSnapshot(id,nucleus) {
-  const token=String(process.env.SOUL_GITHUB_AUDIT_TOKEN??'').trim();
-  if (!token) { add(report.degraded,{nucleus:id,type:'remote-provenance-unverified',requiredEnv:'SOUL_GITHUB_AUDIT_TOKEN'}); return null; }
+  if (!token) { add(report.degraded,{nucleus:id,type:'remote-provenance-unverified',requiredEnv:'SOUL_GITHUB_AUDIT_TOKEN',fallback:'LOCAL_STRUCTURAL'}); return null; }
   const headers={accept:'application/vnd.github+json',authorization:`Bearer ${token}`,'x-github-api-version':'2022-11-28','user-agent':'SOUL-Architectural-Integrity-Engine'};
   const repoResponse=await fetch(`${API}/repos/${nucleus.repository}`,{headers});
   if (!repoResponse.ok) throw new Error(`REMOTE_REPO_LOOKUP_FAILED:${id}:${repoResponse.status}`);
@@ -88,7 +89,7 @@ for (const [id,nucleus] of Object.entries(matrix.nuclei??{})) {
     const files=[]; for (const f of await walk(root)) files.push({file:path.relative(root,f),content:await fs.readFile(f,'utf8')});
     local={id,nucleus,origin:'snapshot',commit:nucleus.sourceRef??null,files};
   }
-  const remote=process.env.SOUL_GITHUB_AUDIT_TOKEN ? await remoteSnapshot(id,nucleus) : null;
+  const remote=token ? await remoteSnapshot(id,nucleus) : null;
   const selected=remote ?? local;
   if (!selected) add(report.degraded,{nucleus:id,type:'source-snapshot-unavailable'});
   else sourceResults.push(selected);
@@ -121,4 +122,4 @@ if (n03Legacy.length) add(report.duplicateProtocols,{family:'mesh-protocol',cano
 const critical=[...report.duplicateAuthorities,...report.duplicateRegistries,...report.duplicateProtocols,...report.topologyConflicts,...report.contractConflicts,...report.orphanCapabilities];
 if (critical.length) report.state='FAIL'; else if (report.degraded.length) report.state='DEGRADED';
 await fs.writeFile(path.join(ROOT,'SOUL-ARCHITECTURAL-INTEGRITY.json'),`${JSON.stringify(report,null,2)}\n`,'utf8');
-if (report.state==='FAIL' || (process.env.SOUL_REQUIRE_REMOTE_PROVENANCE==='true' && report.degraded.length)) process.exitCode=1;
+if (report.state==='FAIL' || (requireRemote && token && report.degraded.length)) process.exitCode=1;
