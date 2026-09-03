@@ -27,6 +27,7 @@ on:
 
 permissions:
   contents: write
+  actions: read
 
 concurrency:
   group: n07-ci-${{ github.workflow }}-${{ github.ref }}
@@ -80,6 +81,12 @@ jobs:
           test -s SOUL-ARCHITECTURAL-INTEGRITY.json
           test -s SOUL-CROSSFRONT-EVIDENCE.json
           test -s SOUL-SYSTEM-CROSSFRONT-STATE.md
+      - name: Upload Integrity Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: soul-integrity-report
+          path: SOUL-ARCHITECTURAL-INTEGRITY.json
+          if-no-files-found: error
 
   verify:
     needs: integrity
