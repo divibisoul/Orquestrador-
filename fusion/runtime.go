@@ -81,27 +81,39 @@ func AdjacentPair(left, right string) bool {
 	order := []string{"N01", "N02", "N03", "N04", "N05", "N06", "N07"}
 	li, ri := -1, -1
 	for i, id := range order {
-		if id == left { li = i }
-		if id == right { ri = i }
+		if id == left {
+			li = i
+		}
+		if id == right {
+			ri = i
+		}
 	}
 	return li >= 0 && ri >= 0 && left != right && (li-ri == 1 || ri-li == 1)
 }
 
 func (r *Registry) Fuse(ctx context.Context, componentIDs []string, input []float64) (Result, error) {
-	if ctx == nil { return Result{}, errors.New("context is nil") }
-	if len(componentIDs) < 2 { return Result{}, errors.New("at least two components are required for fusion") }
+	if ctx == nil {
+		return Result{}, errors.New("context is nil")
+	}
+	if len(componentIDs) < 2 {
+		return Result{}, errors.New("at least two components are required for fusion")
+	}
 	current := append([]float64(nil), input...)
 	trace := make([]TraceStep, 0, len(componentIDs))
 	var previousNucleus string
 	for _, id := range componentIDs {
 		component, ok := r.Get(id)
-		if !ok { return Result{}, fmt.Errorf("FUSION_COMPONENT_NOT_FOUND: %s", id) }
+		if !ok {
+			return Result{}, fmt.Errorf("FUSION_COMPONENT_NOT_FOUND: %s", id)
+		}
 		if previousNucleus != "" && !AdjacentPair(previousNucleus, component.Nucleus) {
 			return Result{}, fmt.Errorf("FUSION_NON_ADJACENT_NUCLEI: %s->%s", previousNucleus, component.Nucleus)
 		}
 		start := time.Now()
 		output, err := component.Execute(ctx, current)
-		if err != nil { return Result{}, fmt.Errorf("FUSION_COMPONENT_FAILED:%s: %w", component.ID, err) }
+		if err != nil {
+			return Result{}, fmt.Errorf("FUSION_COMPONENT_FAILED:%s: %w", component.ID, err)
+		}
 		trace = append(trace, TraceStep{Component: component.ID, Nucleus: component.Nucleus, Kind: component.Kind, Started: start.UTC(), Duration: time.Since(start)})
 		current = output
 		previousNucleus = component.Nucleus
@@ -113,7 +125,9 @@ func (r *Registry) Snapshot() []Component {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 	out := make([]Component, 0, len(r.components))
-	for _, c := range r.components { out = append(out, c) }
+	for _, c := range r.components {
+		out = append(out, c)
+	}
 	sort.Slice(out, func(i, j int) bool { return out[i].ID < out[j].ID })
 	return out
 }

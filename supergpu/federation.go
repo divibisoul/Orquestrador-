@@ -23,10 +23,12 @@ type FederatedResult struct {
 	Output  []float64
 }
 
-type Federation struct { Runtime *Runtime }
+type Federation struct{ Runtime *Runtime }
 
 func NewFederation(r *Runtime) (*Federation, error) {
-	if r == nil { return nil, errors.New("supergpu runtime is required") }
+	if r == nil {
+		return nil, errors.New("supergpu runtime is required")
+	}
 	return &Federation{Runtime: r}, nil
 }
 
@@ -42,22 +44,38 @@ func validClient(nucleus string) bool {
 // Execute grants any SOUL nucleus a real execution lease on N07 compute hardware.
 // No synthetic GPU is created: unavailable hardware is returned as an explicit error.
 func (f *Federation) Execute(ctx context.Context, req FederatedRequest) (FederatedResult, error) {
-	if f == nil || f.Runtime == nil { return FederatedResult{}, errors.New("supergpu federation is unavailable") }
+	if f == nil || f.Runtime == nil {
+		return FederatedResult{}, errors.New("supergpu federation is unavailable")
+	}
 	req.Nucleus, req.Operation, req.Device = strings.TrimSpace(req.Nucleus), strings.TrimSpace(req.Operation), strings.TrimSpace(req.Device)
-	if !validClient(req.Nucleus) { return FederatedResult{}, fmt.Errorf("SUPERGPU_NUCLEUS_INVALID: %s", req.Nucleus) }
-	if req.Operation == "" { return FederatedResult{}, errors.New("supergpu operation is required") }
-	if len(req.Payload) == 0 { return FederatedResult{}, errors.New("supergpu payload is empty") }
+	if !validClient(req.Nucleus) {
+		return FederatedResult{}, fmt.Errorf("SUPERGPU_NUCLEUS_INVALID: %s", req.Nucleus)
+	}
+	if req.Operation == "" {
+		return FederatedResult{}, errors.New("supergpu operation is required")
+	}
+	if len(req.Payload) == 0 {
+		return FederatedResult{}, errors.New("supergpu payload is empty")
+	}
 	device, err := f.Runtime.Select(req.Device)
-	if err != nil { return FederatedResult{}, err }
-	if err := f.Runtime.Reserve(device.ID, req.Nucleus); err != nil { return FederatedResult{}, err }
+	if err != nil {
+		return FederatedResult{}, err
+	}
+	if err := f.Runtime.Reserve(device.ID, req.Nucleus); err != nil {
+		return FederatedResult{}, err
+	}
 	defer f.Runtime.Release(device.ID, req.Nucleus)
 	output, err := f.Runtime.Execute(ctx, device, req.Operation, req.Payload)
-	if err != nil { return FederatedResult{}, err }
+	if err != nil {
+		return FederatedResult{}, err
+	}
 	return FederatedResult{Nucleus: req.Nucleus, Device: device, Output: output}, nil
 }
 
 func (f *Federation) Health() map[string]any {
-	if f == nil || f.Runtime == nil { return map[string]any{"status": "degraded", "error": "runtime unavailable"} }
+	if f == nil || f.Runtime == nil {
+		return map[string]any{"status": "degraded", "error": "runtime unavailable"}
+	}
 	h := f.Runtime.Health()
 	h["federation"] = "N01..N07"
 	h["resource_policy"] = "N07-control-plane-with-nucleus-scoped-leases"
