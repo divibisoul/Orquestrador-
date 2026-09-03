@@ -26,7 +26,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
   actions: read
 
 concurrency:
@@ -36,6 +36,8 @@ concurrency:
 jobs:
   normalize-main:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main' && github.actor != 'github-actions[bot]'
+    permissions:
+      contents: write
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -63,7 +65,10 @@ jobs:
 
   integrity:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
+    env:
+      SOUL_GITHUB_AUDIT_TOKEN: ${{ secrets.SOUL_GITHUB_AUDIT_TOKEN }}
+      SOUL_REQUIRE_REMOTE_PROVENANCE: 'true'
     steps:
       - uses: actions/checkout@v4
         with:
@@ -99,7 +104,7 @@ jobs:
       - name: Assert declarative SOUL source
         run: |
           set -euo pipefail
-          node -e "const fs=require('node:fs');const m=JSON.parse(fs.readFileSync('soul-nuclei.json','utf8'));if(m.system!=='SOUL')throw new Error('SOUL_MATRIX_SYSTEM_INVALID');if(m.canonicalMesh?.protocol!=='soul-mesh/1')throw new Error('SOUL_MATRIX_PROTOCOL_INVALID');if(m.canonicalMesh?.contractVersion!=='1.1.0')throw new Error('SOUL_MATRIX_CONTRACT_INVALID');for(const id of ['N01','N02','N03','N04','N05','N06','N07'])if(!m.nuclei?.[id])throw new Error('SOUL_MATRIX_NUCLEUS_MISSING:'+id);console.log('SOUL declarative source verified.');"
+          node -e "const fs=require('node:fs');const m=JSON.parse(fs.readFileSync('soul-nuclei.json','utf8'));if(m.system!=='SOUL')throw new Error('SOUL_MATRIX_SYSTEM_INVALID');if(m.canonicalMesh?.protocol!=='soul-mesh/1')throw new Error('SOUL_MATRIX_PROTOCOL_INVALID');if(m.canonicalMesh?.contractVersion!=='1.1.0')throw new Error('SOUL_MATRIX_CONTRACT_INVALID');for(const id of ['N01','N02','N03','N04','N05','N06','N07'])if(!m.nuclei?.[id])throw new Error('SOUL_MATRIX_NUCLEUS_MISSING:'+id);for(const [id,n] of Object.entries(m.nuclei))if(typeof n.sourceRef!=='string'||!/^[0-9a-f]{40}$/.test(n.sourceRef))throw new Error('SOUL_MATRIX_SOURCE_REF_INVALID:'+id);console.log('SOUL declarative source verified.');"
       - uses: actions/setup-go@v5
         with:
           go-version: '1.25.x'
