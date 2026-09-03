@@ -1,6 +1,6 @@
 {
   "system": "SOUL",
-  "schemaVersion": "1.0.0",
+  "schemaVersion": "1.1.0",
   "canonicalMesh": {
     "protocol": "soul-mesh/1",
     "contractVersion": "1.1.0",
@@ -20,6 +20,7 @@
       "capabilityOwnership": "native",
       "peers": ["N02", "N03", "N04", "N05", "N06", "N07"],
       "manifestAuthority": "SOUL-FUSION-MANIFEST.json",
+      "sourceRef": "6c828648fb2d953f609218d612501102566684fc",
       "status": "evidence-present-ci-failed"
     },
     "N02": {
@@ -29,6 +30,7 @@
       "capabilityOwnership": "native",
       "peers": ["N01", "N03", "N04", "N05", "N06", "N07"],
       "manifestAuthority": "SOUL-FUSION-MANIFEST.json",
+      "sourceRef": "28ab385589ea664c92c0adbeeeb3e26752a645e4",
       "status": "evidence-present-ci-failed"
     },
     "N03": {
@@ -38,6 +40,7 @@
       "capabilityOwnership": "native",
       "peers": ["N01", "N02", "N04", "N05", "N06", "N07"],
       "manifestAuthority": "SOUL-FUSION-MANIFEST.json",
+      "sourceRef": "636da50ad25c0a12771d85465c3a8401fa7f7bca",
       "status": "dual-protocol-evidence-ci-blocked"
     },
     "N04": {
@@ -47,6 +50,7 @@
       "capabilityOwnership": "native",
       "peers": ["N01", "N02", "N03", "N05", "N06", "N07"],
       "manifestAuthority": "SOUL-FUSION-MANIFEST.json",
+      "sourceRef": "d7cc05f84c8b83184905705b5ceed5551723afcd",
       "status": "reference-baseline"
     },
     "N05": {
@@ -56,6 +60,7 @@
       "capabilityOwnership": "native",
       "peers": ["N01", "N02", "N03", "N04", "N06", "N07"],
       "manifestAuthority": "SOUL-FUSION-MANIFEST.json",
+      "sourceRef": "adab63cc31d68f6cd54b43a5bc0f3b9169a1acdf",
       "status": "manifest-complete-derived-peer-mismatch"
     },
     "N06": {
@@ -65,7 +70,8 @@
       "capabilityOwnership": "native",
       "peers": ["N01", "N02", "N03", "N04", "N05", "N07"],
       "manifestAuthority": "SOUL-FUSION-MANIFEST.json",
-      "status": "multiple-runtime-authorities-evidence"
+      "sourceRef": "1c7034356d552240af9666fbcc07156c397c8742",
+      "status": "single-authority-fix-applied-awaiting-remote-proof"
     },
     "N07": {
       "repository": "divibisoul/Orquestrador-",
@@ -74,6 +80,7 @@
       "capabilityOwnership": "system-governance",
       "peers": ["N01", "N02", "N03", "N04", "N05", "N06"],
       "manifestAuthority": "soul-nuclei.json",
+      "sourceRef": "9ec7e799987769b22fc41f7618553c04c2c80e53",
       "status": "governance-source-of-truth-in-progress"
     }
   }
