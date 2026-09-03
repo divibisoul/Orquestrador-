@@ -4,25 +4,13 @@ import path from 'node:path';
 const ROOT = process.cwd();
 const MATRIX_PATH = path.join(ROOT, 'soul-nuclei.json');
 const SOURCES_ROOT = path.join(ROOT, 'sources');
+const API = 'https://api.github.com';
 
 const DUPLICATION_FAMILIES = [
-  {
-    id: 'mesh-protocol',
-    definitionPatterns: [/class\s+SoulMeshProtocol\b/, /function\s+createSoulMeshMessage\b/, /export\s+const\s+SOUL_MESH_PROTOCOL\b/],
-    canonical: 'canonicalMesh',
-  },
-  {
-    id: 'n06-execution',
-    definitionPatterns: [/class\s+N06Processor\b/, /class\s+Nucleus06CapabilityRuntime\b/, /class\s+N06CapabilityDispatcher\b/, /class\s+N06CapabilityEngine\b/],
-    canonical: 'N06CapabilityEngine',
-  },
-  {
-    id: 'n06-tool-registry',
-    definitionPatterns: [/function\s+createN06Tools\b/, /function\s+createNucleus06Tools\b/, /function\s+createNucleus05Tools\b/, /const\s+N06ToolRegistry\b/],
-    canonical: 'N06ToolRegistry',
-  },
+  { id: 'mesh-protocol', definitionPatterns: [/class\s+SoulMeshProtocol\b/, /function\s+createSoulMeshMessage\b/, /export\s+const\s+SOUL_MESH_PROTOCOL\b/], canonical: 'canonicalMesh' },
+  { id: 'n06-execution', definitionPatterns: [/class\s+N06Processor\b/, /class\s+Nucleus06CapabilityRuntime\b/, /class\s+N06CapabilityDispatcher\b/, /class\s+N06CapabilityEngine\b/], canonical: 'N06Processor' },
+  { id: 'n06-tool-registry', definitionPatterns: [/function\s+createN06Tools\b/, /function\s+createNucleus06Tools\b/, /function\s+createNucleus05Tools\b/, /const\s+N06ToolRegistry\b/], canonical: 'N06ToolRegistry' },
 ];
-
 const PEERS = new Set(['N01', 'N02', 'N03', 'N04', 'N05', 'N06', 'N07']);
 const TS_EXTENSIONS = new Set(['.ts', '.tsx', '.js', '.mjs']);
 const IGNORED_DIRS = new Set(['node_modules', '.git', '.next', 'dist', 'build', 'coverage']);
@@ -44,24 +32,13 @@ async function walk(dir) {
 function addIssue(bucket, issue) { bucket.push(issue); }
 function isCompatibilityAdapter(relativePath, content) {
   const normalized = relativePath.replaceAll('\\', '/').toLowerCase();
-  return normalized.includes('/legacy/') || normalized.includes('adapter') || /@deprecated\s+.*compatibility/i.test(content);
+  return normalized.includes('/legacy/') || normalized.includes('adapter') || /@deprecated[\s\S]{0,100}compatibility/i.test(content);
 }
 
 const report = {
-  system: 'SOUL',
-  checker: 'SOUL Architectural Integrity Engine',
-  schemaVersion: '1.0.1',
-  generatedAt: new Date().toISOString(),
-  state: 'PASS',
-  duplicateAuthorities: [],
-  duplicateProtocols: [],
-  duplicateRegistries: [],
-  topologyConflicts: [],
-  contractConflicts: [],
-  orphanCapabilities: [],
-  legacyAdapters: [],
-  canonicalAuthorities: [],
-  degraded: [],
+  system: 'SOUL', checker: 'SOUL Architectural Integrity Engine', schemaVersion: '2.0.0', generatedAt: new Date().toISOString(), state: 'PASS',
+  duplicateAuthorities: [], duplicateProtocols: [], duplicateRegistries: [], topologyConflicts: [], contractConflicts: [], orphanCapabilities: [],
+  legacyAdapters: [], canonicalAuthorities: [], degraded: [], remoteProvenance: [],
 };
 
 const matrix = await readJson(MATRIX_PATH);
@@ -81,16 +58,59 @@ for (const [leftId, left] of Object.entries(matrix.nuclei ?? {})) {
   }
 }
 
+async function remoteSnapshot(id, nucleus) {
+  const token = String(process.env.SOUL_GITHUB_AUDIT_TOKEN ?? '').trim();
+  if (!token) {
+    report.degraded.push({ nucleus: id, type: 'remote-provenance-unverified', requiredEnv: 'SOUL_GITHUB_AUDIT_TOKEN' });
+    return null;
+  }
+  const headers = { accept: 'application/vnd.github+json', authorization: `Bearer ${token}`, 'x-github-api-version': '2022-11-28', 'user-agent': 'SOUL-Architectural-Integrity-Engine' };
+  const repoUrl = `${API}/repos/${nucleus.repository}`;
+  const repoResponse = await fetch(repoUrl, { headers });
+  if (!repoResponse.ok) throw new Error(`REMOTE_REPO_LOOKUP_FAILED:${id}:${repoResponse.status}`);
+  const repo = await repoResponse.json();
+  const branch = repo.default_branch;
+  const refResponse = await fetch(`${API}/repos/${nucleus.repository}/git/ref/heads/${encodeURIComponent(branch)}`, { headers });
+  if (!refResponse.ok) throw new Error(`REMOTE_REF_LOOKUP_FAILED:${id}:${refResponse.status}`);
+  const ref = await refResponse.json();
+  const actualSha = ref?.object?.sha;
+  const expectedSha = nucleus.sourceRef;
+  const provenance = { nucleus: id, repository: nucleus.repository, branch, expectedSha, actualSha, state: actualSha === expectedSha ? 'MATCH' : 'DRIFT' };
+  report.remoteProvenance.push(provenance);
+  if (expectedSha && actualSha !== expectedSha) addIssue(report.contractConflicts, { nucleus: id, type: 'source-ref-drift', expectedSha, actualSha });
+  const treeResponse = await fetch(`${API}/repos/${nucleus.repository}/git/trees/${actualSha}?recursive=1`, { headers });
+  if (!treeResponse.ok) throw new Error(`REMOTE_TREE_LOOKUP_FAILED:${id}:${treeResponse.status}`);
+  const tree = await treeResponse.json();
+  if (tree.truncated) addIssue(report.degraded, { nucleus: id, type: 'remote-tree-truncated' });
+  const candidates = (tree.tree ?? []).filter((entry) => entry.type === 'blob' && TS_EXTENSIONS.has(path.extname(entry.path)) && entry.size <= 2_000_000);
+  const files = [];
+  for (const entry of candidates) {
+    const blobResponse = await fetch(`${API}/repos/${nucleus.repository}/git/blobs/${entry.sha}`, { headers });
+    if (!blobResponse.ok) throw new Error(`REMOTE_BLOB_LOOKUP_FAILED:${id}:${blobResponse.status}:${entry.path}`);
+    const blob = await blobResponse.json();
+    const content = Buffer.from(String(blob.content ?? ''), 'base64').toString('utf8');
+    files.push({ file: entry.path, content });
+  }
+  return { id, nucleus, files, origin: 'remote', commit: actualSha };
+}
+
 const sourceResults = [];
 for (const [id, nucleus] of Object.entries(matrix.nuclei ?? {})) {
   const root = path.join(SOURCES_ROOT, id);
-  if (!(await fs.stat(root).then((stat) => stat.isDirectory()).catch(() => false))) {
-    addIssue(report.degraded, { nucleus: id, type: 'source-snapshot-unavailable', expected: root });
+  let local = null;
+  if (await fs.stat(root).then((stat) => stat.isDirectory()).catch(() => false)) {
+    const files = [];
+    for (const file of await walk(root)) files.push({ file: path.relative(root, file), content: await fs.readFile(file, 'utf8') });
+    local = { id, nucleus, files, origin: 'snapshot', commit: nucleus.sourceRef ?? null };
+  }
+  let remote = null;
+  if (process.env.SOUL_GITHUB_AUDIT_TOKEN) remote = await remoteSnapshot(id, nucleus);
+  const selected = remote ?? local;
+  if (!selected) {
+    if (!report.degraded.some((item) => item.nucleus === id && item.type === 'remote-provenance-unverified')) report.degraded.push({ nucleus: id, type: 'source-snapshot-unavailable' });
     continue;
   }
-  const files = [];
-  for (const file of await walk(root)) files.push({ file: path.relative(root, file), content: await fs.readFile(file, 'utf8') });
-  sourceResults.push({ id, nucleus, files });
+  sourceResults.push(selected);
 }
 
 for (const family of DUPLICATION_FAMILIES) {
@@ -115,7 +135,7 @@ for (const family of DUPLICATION_FAMILIES) {
 
 for (const source of sourceResults) {
   for (const file of source.files) {
-    if (isCompatibilityAdapter(file.file, file.content) && (file.file.includes('SoulMeshProtocol') || file.file.includes('ToolRegistry') || file.file.includes('Processor') || file.file.includes('Runtime'))) report.legacyAdapters.push({ nucleus: source.id, file: file.file });
+    if (isCompatibilityAdapter(file.file, file.content) && /SoulMeshProtocol|ToolRegistry|Processor|Runtime/i.test(file.file)) report.legacyAdapters.push({ nucleus: source.id, file: file.file });
     if (file.content.includes('contractVersion') && !file.content.includes('1.1.0')) addIssue(report.contractConflicts, { nucleus: source.id, file: file.file, type: 'non-canonical-contract-version' });
   }
 }
@@ -124,4 +144,4 @@ const critical = [...report.duplicateAuthorities, ...report.duplicateRegistries,
 if (critical.length) report.state = 'FAIL';
 else if (report.degraded.length) report.state = 'DEGRADED';
 await fs.writeFile(path.join(ROOT, 'SOUL-ARCHITECTURAL-INTEGRITY.json'), `${JSON.stringify(report, null, 2)}\n`, 'utf8');
-if (report.state === 'FAIL') process.exitCode = 1;
+if (report.state === 'FAIL' || (process.env.SOUL_REQUIRE_REMOTE_PROVENANCE === 'true' && report.degraded.length)) process.exitCode = 1;
