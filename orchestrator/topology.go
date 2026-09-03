@@ -24,16 +24,16 @@ func SOULTopology() map[string]any {
 		)
 	}
 	return map[string]any{
-		"nucleus": protocol.N07,
-		"nuclei": nuclei,
-		"adjacency": [][]string{{protocol.N01, protocol.N02}, {protocol.N02, protocol.N03}, {protocol.N03, protocol.N04}, {protocol.N04, protocol.N05}, {protocol.N05, protocol.N06}, {protocol.N06, protocol.N07}},
-		"fusion_policy": "adjacent-only-dynamic",
-		"in_peer_count": 6,
+		"nucleus":        protocol.N07,
+		"nuclei":         nuclei,
+		"adjacency":      [][]string{{protocol.N01, protocol.N02}, {protocol.N02, protocol.N03}, {protocol.N03, protocol.N04}, {protocol.N04, protocol.N05}, {protocol.N05, protocol.N06}, {protocol.N06, protocol.N07}},
+		"fusion_policy":  "adjacent-only-dynamic",
+		"in_peer_count":  6,
 		"out_peer_count": 6,
-		"channels": channels,
-		"directional": len(channels),
-		"transports": transports,
-		"mesh": "canonical-soul-mesh",
-		"execution": "prefrontal-admission→discovery→routing→delegation→hardware-lease/fusion→execution→response→correlation",
+		"channels":       channels,
+		"directional":    len(channels),
+		"transports":     transports,
+		"mesh":           "canonical-soul-mesh",
+		"execution":      "prefrontal-admission→discovery→routing→delegation→hardware-lease/fusion→execution→response→correlation",
 	}
 }
