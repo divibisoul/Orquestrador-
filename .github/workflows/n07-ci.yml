@@ -9,7 +9,9 @@ on:
       - 'Dockerfile'
       - 'supabase/migrations/**'
       - 'soul-nuclei.json'
+      - 'SOUL_MASTER_ENGINEERING_CONTRACT.md'
       - 'scripts/soul-architectural-integrity.mjs'
+      - 'scripts/soul-live-source-audit.mjs'
       - 'scripts/generate-crossfront-state.mjs'
       - '.github/workflows/n07-ci.yml'
   pull_request:
@@ -20,7 +22,9 @@ on:
       - 'Dockerfile'
       - 'supabase/migrations/**'
       - 'soul-nuclei.json'
+      - 'SOUL_MASTER_ENGINEERING_CONTRACT.md'
       - 'scripts/soul-architectural-integrity.mjs'
+      - 'scripts/soul-live-source-audit.mjs'
       - 'scripts/generate-crossfront-state.mjs'
       - '.github/workflows/n07-ci.yml'
   workflow_dispatch:
@@ -78,19 +82,24 @@ jobs:
           node-version: '22.x'
       - name: Architectural integrity
         run: node scripts/soul-architectural-integrity.mjs
+      - name: Live source integrity
+        run: node scripts/soul-live-source-audit.mjs
       - name: Declarative crossfront generation
         run: node scripts/generate-crossfront-state.mjs
       - name: Verify generated diagnostics are tracked
         run: |
           set -euo pipefail
           test -s SOUL-ARCHITECTURAL-INTEGRITY.json
+          test -s SOUL-LIVE-SOURCE-AUDIT.json
           test -s SOUL-CROSSFRONT-EVIDENCE.json
           test -s SOUL-SYSTEM-CROSSFRONT-STATE.md
-      - name: Upload Integrity Report
+      - name: Upload Integrity Reports
         uses: actions/upload-artifact@v4
         with:
           name: soul-integrity-report
-          path: SOUL-ARCHITECTURAL-INTEGRITY.json
+          path: |
+            SOUL-ARCHITECTURAL-INTEGRITY.json
+            SOUL-LIVE-SOURCE-AUDIT.json
           if-no-files-found: error
 
   verify:
@@ -104,7 +113,7 @@ jobs:
       - name: Assert declarative SOUL source
         run: |
           set -euo pipefail
-          node -e "const fs=require('node:fs');const m=JSON.parse(fs.readFileSync('soul-nuclei.json','utf8'));if(m.system!=='SOUL')throw new Error('SOUL_MATRIX_SYSTEM_INVALID');if(m.canonicalMesh?.protocol!=='soul-mesh/1')throw new Error('SOUL_MATRIX_PROTOCOL_INVALID');if(m.canonicalMesh?.contractVersion!=='1.1.0')throw new Error('SOUL_MATRIX_CONTRACT_INVALID');for(const id of ['N01','N02','N03','N04','N05','N06','N07'])if(!m.nuclei?.[id])throw new Error('SOUL_MATRIX_NUCLEUS_MISSING:'+id);for(const [id,n] of Object.entries(m.nuclei))if(typeof n.sourceRef!=='string'||!/^[0-9a-f]{40}$/.test(n.sourceRef))throw new Error('SOUL_MATRIX_SOURCE_REF_INVALID:'+id);console.log('SOUL declarative source verified.');"
+          node -e "const fs=require('node:fs');const m=JSON.parse(fs.readFileSync('soul-nuclei.json','utf8'));if(m.system!=='SOUL')throw new Error('SOUL_MATRIX_SYSTEM_INVALID');if(m.canonicalMesh?.protocol!=='soul-mesh/1')throw new Error('SOUL_MATRIX_PROTOCOL_INVALID');if(m.canonicalMesh?.contractVersion!=='1.1.0')throw new Error('SOUL_MATRIX_CONTRACT_INVALID');for(const id of ['N01','N02','N03','N04','N05','N06','N07'])if(!m.nuclei?.[id])throw new Error('SOUL_MATRIX_NUCLEUS_MISSING:'+id);for(const [id,n] of Object.entries(m.nuclei)){if(id!=='N07'&&(typeof n.sourceRef!=='string'||!/^[0-9a-f]{40}$/.test(n.sourceRef)))throw new Error('SOUL_MATRIX_SOURCE_REF_INVALID:'+id);if(!Array.isArray(n.adjacentPeers))throw new Error('SOUL_MATRIX_ADJACENCY_MISSING:'+id)};if(m.hardware?.simulation!==false||m.hardware?.realHardwareOnly!==true)throw new Error('SOUL_MATRIX_HARDWARE_POLICY_INVALID');console.log('SOUL declarative source verified.');"
       - uses: actions/setup-go@v5
         with:
           go-version: '1.25.x'
