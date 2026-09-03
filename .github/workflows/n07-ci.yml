@@ -147,12 +147,29 @@ jobs:
 
   verify:
     needs: integrity
+    permissions:
+      contents: write
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          ref: ${{ github.event_name == 'pull_request' && github.head_ref || github.ref }}
+      - name: Normalize Go formatting on same PR branch
+        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+        run: |
+          set -euo pipefail
+          gofmt -w $(git ls-files '*.go')
+          if git diff --quiet; then
+            echo 'PR Go formatting already normalized.'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -- '*.go'
+          git commit -m 'style(n07): normalize PR Go formatting'
+          git push origin HEAD:${{ github.head_ref }}
       - name: Assert declarative SOUL source
         run: |
           set -euo pipefail
