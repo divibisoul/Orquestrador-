@@ -80,27 +80,42 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22.x'
+      - name: Report provenance mode
+        run: |
+          set -euo pipefail
+          if [ -n "${SOUL_GITHUB_AUDIT_TOKEN:-}" ]; then
+            echo 'Provenance mode: REMOTE'
+          else
+            echo 'Provenance mode: LOCAL-STRUCTURAL (DEGRADED)'
+          fi
       - name: Architectural integrity
         run: node scripts/soul-architectural-integrity.mjs
       - name: Live source integrity
+        if: env.SOUL_GITHUB_AUDIT_TOKEN != ''
         run: node scripts/soul-live-source-audit.mjs
+      - name: Local provenance fallback report
+        if: env.SOUL_GITHUB_AUDIT_TOKEN == ''
+        run: |
+          set -euo pipefail
+          node -e "const fs=require('node:fs');const report=JSON.parse(fs.readFileSync('SOUL-ARCHITECTURAL-INTEGRITY.json','utf8'));if(report.state!=='DEGRADED')throw new Error('LOCAL_FALLBACK_STATE_INVALID');if(report.provenanceMode!=='LOCAL_STRUCTURAL_DEGRADED')throw new Error('LOCAL_FALLBACK_MODE_INVALID');console.log(JSON.stringify({state:report.state,provenanceMode:report.provenanceMode,degraded:report.degraded},null,2));"
       - name: Declarative crossfront generation
         run: node scripts/generate-crossfront-state.mjs
       - name: Verify generated diagnostics are tracked
         run: |
           set -euo pipefail
           test -s SOUL-ARCHITECTURAL-INTEGRITY.json
-          test -s SOUL-LIVE-SOURCE-AUDIT.json
+          if [ -n "${SOUL_GITHUB_AUDIT_TOKEN:-}" ]; then test -s SOUL-LIVE-SOURCE-AUDIT.json; fi
           test -s SOUL-CROSSFRONT-EVIDENCE.json
           test -s SOUL-SYSTEM-CROSSFRONT-STATE.md
       - name: Upload Integrity Reports
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: soul-integrity-report
           path: |
             SOUL-ARCHITECTURAL-INTEGRITY.json
             SOUL-LIVE-SOURCE-AUDIT.json
-          if-no-files-found: error
+          if-no-files-found: ignore
 
   verify:
     needs: integrity
