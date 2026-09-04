@@ -385,6 +385,15 @@ func (r *Runtime) Health() map[string]any {
 	}
 	return map[string]any{"status": status, "devices": len(r.devices), "accelerators": accelerators, "reservations": len(r.reserved), "backend": true, "hardware_acceleration": accelerators > 0, "discovery_age_ms": time.Since(r.discoverAt).Milliseconds(), "resilience_state": resilienceState, "resilience_faults": faults}
 }
+func (r *Runtime) ResiliencePrometheus() string {
+	r.mu.RLock()
+	engine := r.resilience
+	r.mu.RUnlock()
+	if engine == nil {
+		return ""
+	}
+	return engine.Metrics().Prometheus()
+}
 func (r *Runtime) Shutdown() error {
 	r.runMu.Lock()
 	r.mu.Lock()
