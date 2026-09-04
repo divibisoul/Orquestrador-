@@ -396,8 +396,8 @@ func (e *Engine) recordFault(operation string, severity Severity, layer Layer, s
 	return countBefore + 1
 }
 
-func (e *Engine) Faults() []Fault { return e.cfg.Store.Snapshot() }
-func (e *Engine) Metrics() *Metrics { return e.cfg.Metrics }
+func (e *Engine) Faults() []Fault            { return e.cfg.Store.Snapshot() }
+func (e *Engine) Metrics() *Metrics          { return e.cfg.Metrics }
 func (e *Engine) CircuitState() BreakerState { return e.cfg.Breaker.State() }
 
 // ChaosOperation returns a bounded failure injector for controlled tests/staging.
