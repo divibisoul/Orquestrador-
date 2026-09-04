@@ -233,15 +233,12 @@ func sleep(ctx context.Context, delay time.Duration) error {
 }
 
 func retryDelay(policy RetryPolicy, retryIndex int) time.Duration {
-	if retryIndex <= 0 {
-		return 0
-	}
-	if policy.BaseDelay <= 0 {
+	if retryIndex <= 0 || policy.BaseDelay <= 0 {
 		return 0
 	}
 	delay := policy.BaseDelay
 	for i := 1; i < retryIndex; i++ {
-		if delay >= policy.MaxDelay/2 && policy.MaxDelay > 0 {
+		if policy.MaxDelay > 0 && delay >= policy.MaxDelay/2 {
 			return policy.MaxDelay
 		}
 		delay *= 2
@@ -336,13 +333,7 @@ func NewEngine(cfg Config) *Engine {
 	return &Engine{cfg: cfg}
 }
 
-func (e *Engine) ExecuteCompute(
-	ctx context.Context,
-	op string,
-	severity Severity,
-	primary func(context.Context) ([]float64, error),
-	fallback func(context.Context) ([]float64, error),
-) ([]float64, ExecutionReport, error) {
+func (e *Engine) ExecuteCompute(ctx context.Context, op string, severity Severity, primary func(context.Context) ([]float64, error), fallback func(context.Context) ([]float64, error)) ([]float64, ExecutionReport, error) {
 	if primary == nil {
 		return nil, ExecutionReport{State: StateFailed}, errors.New("resilience: primary operation is nil")
 	}
@@ -376,14 +367,7 @@ func (e *Engine) ExecuteCompute(
 	if fallback != nil && ctx.Err() == nil {
 		fallbackOutput, fallbackErr := fallback(ctx)
 		if fallbackErr == nil {
-			report := ExecutionReport{
-				State:          StateDegraded,
-				Attempts:       attempts,
-				FallbackUsed:   true,
-				CircuitState:   e.cfg.Breaker.State(),
-				FaultSignature: signature,
-				FaultCount:     count,
-			}
+			report := ExecutionReport{State: StateDegraded, Attempts: attempts, FallbackUsed: true, CircuitState: e.cfg.Breaker.State(), FaultSignature: signature, FaultCount: count}
 			return fallbackOutput, report, nil
 		}
 		e.recordFault(op, severity, LayerCorrective, "compute.fallback_failure", fallbackErr, 1)
@@ -394,47 +378,29 @@ func (e *Engine) ExecuteCompute(
 }
 
 func (e *Engine) recordFault(operation string, severity Severity, layer Layer, signature string, err error, attempt int) int {
-	fault := Fault{
-		ID:         fmt.Sprintf("fault-%d", time.Now().UnixNano()),
-		Signature:  signature,
-		Operation:  operation,
-		Severity:   severity,
-		Layer:      layer,
-		State:      StateFailed,
-		Attempt:    attempt,
-		Error:      err.Error(),
-		Stack:      string(debug.Stack()),
-		OccurredAt: time.Now().UTC(),
-	}
+	fault := Fault{ID: fmt.Sprintf("fault-%d", time.Now().UnixNano()), Signature: signature, Operation: operation, Severity: severity, Layer: layer, State: StateFailed, Attempt: attempt, Error: err.Error(), Stack: string(debug.Stack()), OccurredAt: time.Now().UTC()}
 	countBefore := e.cfg.Store.Count(signature)
-	e.cfg.Store.Record(fault)
-	e.cfg.Metrics.Inc(signature, StateFailed)
+	remediationID := ""
 	if e.cfg.Remediation.Armed && countBefore+1 >= e.cfg.Remediation.MinimumOccurrences && severity <= e.cfg.Remediation.MaximumAutomaticSeverity {
 		for _, runbook := range e.cfg.Runbooks {
 			if err := runbook.Execute(context.Background(), fault); err == nil {
-				fault.RemediationID = runbook.ID()
-				e.cfg.Metrics.Inc("remediation."+runbook.ID(), StateHealthy)
+				remediationID = runbook.ID()
+				e.cfg.Metrics.Inc("remediation."+remediationID, StateHealthy)
 				break
 			}
 		}
 	}
+	fault.RemediationID = remediationID
+	e.cfg.Store.Record(fault)
+	e.cfg.Metrics.Inc(signature, StateFailed)
 	return countBefore + 1
 }
 
-func (e *Engine) Faults() []Fault {
-	return e.cfg.Store.Snapshot()
-}
+func (e *Engine) Faults() []Fault { return e.cfg.Store.Snapshot() }
+func (e *Engine) Metrics() *Metrics { return e.cfg.Metrics }
+func (e *Engine) CircuitState() BreakerState { return e.cfg.Breaker.State() }
 
-func (e *Engine) Metrics() *Metrics {
-	return e.cfg.Metrics
-}
-
-func (e *Engine) CircuitState() BreakerState {
-	return e.cfg.Breaker.State()
-}
-
-// ChaosOperation returns an operation that deliberately fails a bounded number of times.
-// It is intended for controlled tests/staging, never as a production default.
+// ChaosOperation returns a bounded failure injector for controlled tests/staging.
 func ChaosOperation(failures int, err error, success func(context.Context) ([]float64, error)) func(context.Context) ([]float64, error) {
 	remaining := failures
 	if err == nil {
