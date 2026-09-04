@@ -193,6 +193,10 @@ jobs:
         run: go test ./...
       - name: Race test
         run: go test -race ./...
+      - name: Golden Rule resilience unit gate
+        run: go test ./resilience -count=1
+      - name: Golden Rule resilience race gate
+        run: go test -race ./resilience -count=1
       - name: Build
         run: go build ./...
       - name: Backend regression
