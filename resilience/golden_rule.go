@@ -52,7 +52,7 @@ type Fault struct {
 }
 
 type FaultStore struct {
-	mu    sync.Mutex
+	mu     sync.Mutex
 	faults []Fault
 }
 
@@ -152,13 +152,13 @@ const (
 )
 
 type CircuitBreaker struct {
-	mu          sync.Mutex
-	state       BreakerState
-	failures    int
-	threshold   int
-	cooldown    time.Duration
-	openedAt    time.Time
-	now         func() time.Time
+	mu        sync.Mutex
+	state     BreakerState
+	failures  int
+	threshold int
+	cooldown  time.Duration
+	openedAt  time.Time
+	now       func() time.Time
 }
 
 func NewCircuitBreaker(threshold int, cooldown time.Duration) *CircuitBreaker {
@@ -298,12 +298,12 @@ type RemediationPolicy struct {
 }
 
 type Config struct {
-	Retry         RetryPolicy
-	Breaker       *CircuitBreaker
-	Remediation   RemediationPolicy
-	Runbooks      []Runbook
-	Store         *FaultStore
-	Metrics       *Metrics
+	Retry       RetryPolicy
+	Breaker     *CircuitBreaker
+	Remediation RemediationPolicy
+	Runbooks    []Runbook
+	Store       *FaultStore
+	Metrics     *Metrics
 }
 
 type ExecutionReport struct {

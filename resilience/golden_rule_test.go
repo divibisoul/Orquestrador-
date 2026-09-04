@@ -105,11 +105,11 @@ func (r *testRunbook) Execute(context.Context, Fault) error {
 func TestGenerativeRunbookArmedOnlyAndSeverityBounded(t *testing.T) {
 	runbook := &testRunbook{}
 	engine := NewEngine(Config{
-		Retry:     RetryPolicy{MaxAttempts: 1},
-		Breaker:   NewCircuitBreaker(10, time.Second),
-		Store:     &FaultStore{},
-		Metrics:   NewMetrics(),
-		Runbooks:  []Runbook{runbook},
+		Retry:    RetryPolicy{MaxAttempts: 1},
+		Breaker:  NewCircuitBreaker(10, time.Second),
+		Store:    &FaultStore{},
+		Metrics:  NewMetrics(),
+		Runbooks: []Runbook{runbook},
 		Remediation: RemediationPolicy{
 			Armed:                    true,
 			MinimumOccurrences:       1,
