@@ -1,10 +1,21 @@
 {
   "system": "SOUL",
-  "schemaVersion": "1.2.0",
+  "schemaVersion": "1.3.0",
   "canonicalMesh": {"protocol":"soul-mesh/1","contractVersion":"1.1.0","nuclei":["N01","N02","N03","N04","N05","N06","N07"]},
   "lawZero": {"singleSystem":true,"singleCanonicalAuthorityPerResponsibility":true,"legacyOnlyAsDeprecatedAdapters":true,"forbidParallelAuthorities":true},
   "fusion": {"topology":"linear-adjacent","policy":"adjacent-only-dynamic","bidirectionalChannelsPerEdge":2},
   "hardware": {"controlPlane":"N07","resourceSharing":"federated-nucleus-leases","realHardwareOnly":true,"simulation":false},
+  "resilience": {
+    "authority":"N07:resilience.Engine",
+    "layers":["REACTIVE","CORRECTIVE","GENERATIVE"],
+    "retry":"exponential-backoff",
+    "circuitBreaker":"bounded-failure-threshold-with-half-open-recovery",
+    "fallback":"CPU-for-supported-compute-operations",
+    "forensics":"structured-fault-with-stack-trace",
+    "telemetry":"Prometheus-compatible-sli",
+    "chaos":"controlled-test-only",
+    "remediation":"armed-and-severity-bounded"
+  },
   "governance": {"externalSourceRefsAreExactHeadAssertions":true,"selfSourceRefPolicy":"release-identity","masterContract":"SOUL_MASTER_ENGINEERING_CONTRACT.md"},
   "nuclei": {
     "N01": {"repository":"divibisoul/aeternum-core-29","role":"host-reference-gateway","entrypoints":["scripts/soul-mesh-server-entry.mjs"],"capabilityOwnership":"native","peers":["N02","N03","N04","N05","N06","N07"],"adjacentPeers":["N02"],"manifestAuthority":"SOUL-FUSION-MANIFEST.json","sourceRef":"6c828648fb2d953f609218d612501102566684fc","status":"evidence-present-ci-not-proven"},
@@ -13,6 +24,6 @@
     "N04": {"repository":"divibisoul/nextjs-ai-chatbots","role":"tools-documents-artifacts","entrypoints":["lib/soul-mesh/SoulMeshProtocol.ts"],"capabilityOwnership":"native","peers":["N01","N02","N03","N05","N06","N07"],"adjacentPeers":["N03","N05"],"manifestAuthority":"SOUL-FUSION-MANIFEST.json","sourceRef":"d7cc05f84c8b83184905705b5ceed5551723afcd","status":"main-live-ci-not-proven"},
     "N05": {"repository":"divibisoul/nextjs-ai-chatbot","role":"orchestration-dispatch-execution","entrypoints":["app/api/soul-mesh/route.ts","lib/soul-mesh/peer-client.ts"],"capabilityOwnership":"native","peers":["N01","N02","N03","N04","N06","N07"],"adjacentPeers":["N04","N06"],"manifestAuthority":"SOUL-FUSION-MANIFEST.json","sourceRef":"adab63cc31d68f6cd54b43a5bc0f3b9169a1acdf","status":"main-live-ci-not-proven"},
     "N06": {"repository":"divibisoul/nextjs-ai-chatbot-2000","role":"cognition-synthesis-audit-governance","entrypoints":["app/api/soul-mesh/route.ts","lib/soul-core/N06CapabilityEngine.ts"],"capabilityOwnership":"native","peers":["N01","N02","N03","N04","N05","N07"],"adjacentPeers":["N05","N07"],"manifestAuthority":"SOUL-FUSION-MANIFEST.json","sourceRef":"ba5eb65594c5b93fda03df7b1d42fcb48af7f673","status":"main-live-single-authority-implementation"},
-    "N07": {"repository":"divibisoul/Orquestrador-","role":"super-agi-master-orchestration-federation-supergpu-control-plane","entrypoints":["go.mod","cmd/nexus/main.go","scripts/soul-architectural-integrity.mjs"],"capabilityOwnership":"system-governance","peers":["N01","N02","N03","N04","N05","N06"],"adjacentPeers":["N06"],"manifestAuthority":"soul-nuclei.json","sourceRef":"release-identity:self","status":"self-audited-current-main"}
+    "N07": {"repository":"divibisoul/Orquestrador-","role":"super-agi-master-orchestration-federation-supergpu-control-plane","entrypoints":["go.mod","cmd/nexus/main.go","scripts/soul-architectural-integrity.mjs","resilience/golden_rule.go"],"capabilityOwnership":"system-governance","peers":["N01","N02","N03","N04","N05","N06"],"adjacentPeers":["N06"],"manifestAuthority":"soul-nuclei.json","sourceRef":"release-identity:self","status":"resilience-hardening-on-corrective-branch"}
   }
 }
