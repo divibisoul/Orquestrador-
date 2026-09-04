@@ -8,6 +8,8 @@ import (
 	"runtime"
 	"sync"
 	"time"
+
+	"github.com/divibisoul/Orquestrador-/resilience"
 )
 
 type Device struct {
@@ -39,6 +41,7 @@ type Runtime struct {
 	runMu        sync.Mutex
 	devices      []Device
 	backend      Backend
+	resilience   *resilience.Engine
 	reserved     map[string]Reservation
 	closed       bool
 	discoverAt   time.Time
@@ -98,7 +101,7 @@ func New(backend Backend) *Runtime {
 	if backend == nil {
 		backend = CPUBackend{}
 	}
-	return &Runtime{backend: backend, reserved: map[string]Reservation{}, discoveryTTL: 10 * time.Second}
+	return &Runtime{backend: backend, resilience: resilience.NewEngine(resilience.Config{}), reserved: map[string]Reservation{}, discoveryTTL: 10 * time.Second}
 }
 func (r *Runtime) Discover() []Device {
 	r.mu.Lock()
@@ -213,24 +216,40 @@ func (r *Runtime) Execute(ctx context.Context, device Device, operation string, 
 	}
 	r.runMu.Lock()
 	r.mu.RLock()
-	closed, backend := r.closed, r.backend
+	closed, backend, engine := r.closed, r.backend, r.resilience
 	r.mu.RUnlock()
 	if closed {
 		r.runMu.Unlock()
 		return nil, errors.New("runtime closed")
 	}
-	if !device.Available {
-		r.runMu.Unlock()
-		return nil, errors.New("device unavailable")
-	}
-	if cb, ok := backend.(CapabilityBackend); ok && !cb.Supports(device) {
-		r.runMu.Unlock()
-		return nil, errors.New("backend does not support selected device")
-	}
 	r.running.Add(1)
 	r.runMu.Unlock()
 	defer r.running.Done()
-	return backend.Execute(ctx, device, operation, input)
+
+	primary := func(callCtx context.Context) ([]float64, error) {
+		if !device.Available {
+			return nil, errors.New("device unavailable")
+		}
+		if cb, ok := backend.(CapabilityBackend); ok && !cb.Supports(device) {
+			return nil, errors.New("backend does not support selected device")
+		}
+		return backend.Execute(callCtx, device, operation, input)
+	}
+
+	var fallback func(context.Context) ([]float64, error)
+	severity := resilience.SeverityMedium
+	if device.Backend != "cpu" {
+		severity = resilience.SeverityHigh
+		fallback = func(callCtx context.Context) ([]float64, error) {
+			cpu := Device{ID: "cpu-fallback", Vendor: "host", Name: runtime.GOOS + "/" + runtime.GOARCH + " CPU fallback", Available: true, Backend: "cpu", Capabilities: CPUBackend{}.Capabilities(Device{})}
+			return CPUBackend{}.Execute(callCtx, cpu, operation, input)
+		}
+	}
+	if engine == nil {
+		return primary(ctx)
+	}
+	output, _, err := engine.ExecuteCompute(ctx, "supergpu."+operation, severity, primary, fallback)
+	return output, err
 }
 func (r *Runtime) Batch(ctx context.Context, device Device, operation string, inputs [][]float64) ([][]float64, error) {
 	if ctx == nil {
@@ -355,10 +374,16 @@ func (r *Runtime) Health() map[string]any {
 			accelerators++
 		}
 	}
+	resilienceState := resilience.BreakerClosed
+	faults := 0
+	if r.resilience != nil {
+		resilienceState = r.resilience.CircuitState()
+		faults = len(r.resilience.Faults())
+	}
 	if accelerators == 0 && status == "ready" {
 		status = "degraded"
 	}
-	return map[string]any{"status": status, "devices": len(r.devices), "accelerators": accelerators, "reservations": len(r.reserved), "backend": true, "hardware_acceleration": accelerators > 0, "discovery_age_ms": time.Since(r.discoverAt).Milliseconds()}
+	return map[string]any{"status": status, "devices": len(r.devices), "accelerators": accelerators, "reservations": len(r.reserved), "backend": true, "hardware_acceleration": accelerators > 0, "discovery_age_ms": time.Since(r.discoverAt).Milliseconds(), "resilience_state": resilienceState, "resilience_faults": faults}
 }
 func (r *Runtime) Shutdown() error {
 	r.runMu.Lock()
