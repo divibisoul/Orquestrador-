@@ -63,7 +63,7 @@ func main() {
 		}
 		writeJSON(w, http.StatusOK, e.Stats())
 	})
-	mux.HandleFunc("/metrics", func(w http.ResponseWriter, r *http.Request) { writeMetrics(w, e.Stats()) })
+	mux.HandleFunc("/metrics", func(w http.ResponseWriter, r *http.Request) { writeMetrics(w, e.Stats(), g) })
 	mux.HandleFunc("/identity", func(w http.ResponseWriter, r *http.Request) { writeJSON(w, http.StatusOK, orchestrator.N07Identity()) })
 	mux.HandleFunc("/topology", func(w http.ResponseWriter, r *http.Request) { writeJSON(w, http.StatusOK, orchestrator.SOULTopology()) })
 	mux.Handle("/api/soul-mesh", mesh.NewEnhancedFederatedHTTPGateway(e))
@@ -155,7 +155,7 @@ func writeJSON(w http.ResponseWriter, status int, v any) {
 	w.WriteHeader(status)
 	_ = json.NewEncoder(w).Encode(v)
 }
-func writeMetrics(w http.ResponseWriter, s map[string]any) {
+func writeMetrics(w http.ResponseWriter, s map[string]any, compute *supergpu.Runtime) {
 	w.Header().Set("Content-Type", "text/plain; version=0.0.4")
 	m, ok := s["metrics"].(map[string]any)
 	if !ok {
@@ -166,6 +166,11 @@ func writeMetrics(w http.ResponseWriter, s map[string]any) {
 	for _, k := range []string{"requests", "success", "errors", "cancelled", "in_flight", "latency_p95_ms"} {
 		if v, exists := m[k]; exists {
 			_, _ = fmt.Fprintf(w, "n07_%s %v\n", k, v)
+		}
+	}
+	if compute != nil {
+		if resilienceMetrics := compute.ResiliencePrometheus(); resilienceMetrics != "" {
+			_, _ = w.Write([]byte(resilienceMetrics))
 		}
 	}
 }
