@@ -271,12 +271,33 @@ func (g *HTTPGateway) Handler(w http.ResponseWriter, r *http.Request) {
 		g.respond(w, http.StatusOK, envelope, "TASK_RESULT", map[string]any{"nucleus": "N07", "operations": g.Engine.Operations(), "transports": []string{"LOOPBACK_HTTP", "HTTP"}})
 		return
 	}
-	values, err := payloadValues(envelope.NestedPayload())
-	if err != nil {
-		g.respond(w, http.StatusBadRequest, envelope, "ERROR", map[string]any{"error": err.Error()})
-		return
-	}
+	var values []float64
 	metadata := envelope.NestedMetadata()
+	if strings.HasPrefix(capability, "sara.") {
+		// SARA aceita payload estruturado; o protocolo N07 interno ainda usa []float64.
+		// Mantemos ambos os contratos sem criar um segundo transporte.
+		raw, err := json.Marshal(envelope.NestedPayload())
+		if err != nil {
+			g.respond(w, http.StatusBadRequest, envelope, "ERROR", map[string]any{"error": "invalid SARA payload"})
+			return
+		}
+		metadata["sara_payload_json"] = string(raw)
+		if payloadMap := envelope.NestedPayload(); payloadMap != nil {
+			if v, ok := payloadMap["input"].(string); ok {
+				metadata["sara_input"] = v
+			}
+			if v, ok := payloadMap["cycle_id"].(string); ok {
+				metadata["sara_cycle_id"] = v
+			}
+		}
+	} else {
+		var err error
+		values, err = payloadValues(envelope.NestedPayload())
+		if err != nil {
+			g.respond(w, http.StatusBadRequest, envelope, "ERROR", map[string]any{"error": err.Error()})
+			return
+		}
+	}
 	if metadata == nil {
 		metadata = map[string]string{}
 	}
@@ -298,7 +319,7 @@ func (g *HTTPGateway) Handler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		status = http.StatusBadRequest
 	}
-	payload := map[string]any{"values": result.Payload, "status": result.Status}
+	payload := map[string]any{"values": result.Payload, "status": result.Status, "metadata": result.Metadata}
 	if result.Error != "" {
 		payload["error"] = result.Error
 	}
