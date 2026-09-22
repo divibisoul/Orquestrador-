@@ -32,8 +32,12 @@ func main() {
 	e, err := orchestrator.New(n, c, g); if err != nil { log.Fatal(err) }
 	if err := orchestrator.RegisterSuperGPUOperations(e); err != nil { log.Fatal(err) }
 	if err := orchestrator.RegisterAdvancedOperations(e); err != nil { log.Fatal(err) }
+	cfg := backend.DefaultConfig()
+	if proxy := backend.NewSARAProxy(cfg); proxy.Configured() {
+		if err := backend.RegisterSARAOperations(e, proxy); err != nil { log.Fatal(err) }
+	}
 
-	unified := backend.NewUnified(e, backend.DefaultConfig())
+	unified := backend.NewUnified(e, cfg)
 	mux := http.NewServeMux()
 	mux.Handle("/v1/", unified.Handler())
 	mux.Handle("/api/health/dashboard", health.Handler())
