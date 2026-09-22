@@ -112,13 +112,20 @@ for (const family of DUPLICATION_FAMILIES) {
   }
 }
 
-const n06EngineFiles=sourceResults.flatMap(s=>s.files.filter(f=>s.id==='N06' && /N06CapabilityEngine\.(ts|tsx|js|mjs)$/.test(f.file) && !isAdapter(f.file,f.content)));
-if (!n06EngineFiles.length) add(report.contractConflicts,{nucleus:'N06',type:'canonical-capability-engine-not-found'});
+const n06Source = sourceResults.find(source => source.id === 'N06');
+const n06EngineFiles = n06Source
+  ? n06Source.files.filter(f=>/N06CapabilityEngine\.(ts|tsx|js|mjs)$/.test(f.file) && !isAdapter(f.file,f.content))
+  : [];
+if (n06Source && !n06EngineFiles.length) add(report.contractConflicts,{nucleus:'N06',type:'canonical-capability-engine-not-found'});
 
-const n03Legacy=sourceResults.flatMap(s=>s.files.filter(f=>s.id==='N03' && /(^|\/)soul-mesh\/SoulMeshProtocol\.(ts|tsx|js|mjs)$/.test(f.file) && !isAdapter(f.file,f.content)));
-if (n03Legacy.length) add(report.duplicateProtocols,{family:'mesh-protocol',canonical:'src/mesh/SoulMeshProtocol.ts',authorities:n03Legacy.map(f=>({nucleus:'N03',file:f.file,reason:'legacy protocol is active, not adapter'}))});
+const n03Source = sourceResults.find(source => source.id === 'N03');
+const n03Legacy = n03Source
+  ? n03Source.files.filter(f=>/(^|\/)soul-mesh\/SoulMeshProtocol\.(ts|tsx|js|mjs)$/.test(f.file) && !isAdapter(f.file,f.content))
+  : [];
+if (n03Legacy.length) add(report.duplicateProtocols,{family:'mesh-protocol',canonical:'lib/soul-mesh/SoulMeshProtocol.ts',authorities:n03Legacy.map(f=>({nucleus:'N03',file:f.file,reason:'legacy protocol is active, not adapter'}))});
 
 const critical=[...report.duplicateAuthorities,...report.duplicateRegistries,...report.duplicateProtocols,...report.topologyConflicts,...report.contractConflicts,...report.orphanCapabilities];
 if (critical.length) report.state='FAIL'; else if (report.degraded.length) report.state='DEGRADED';
 await fs.writeFile(path.join(ROOT,'SOUL-ARCHITECTURAL-INTEGRITY.json'),`${JSON.stringify(report,null,2)}\n`,'utf8');
+console.log(JSON.stringify(report,null,2));
 if (report.state==='FAIL' || (process.env.SOUL_REQUIRE_REMOTE_PROVENANCE==='true' && report.degraded.length)) process.exitCode=1;
