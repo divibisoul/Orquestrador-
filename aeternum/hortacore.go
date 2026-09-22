@@ -84,13 +84,13 @@ func (h *HortaCore) Health() map[string]any {
 		status = "READY"
 	}
 	return map[string]any{
-		"system": "AETERNUM_HORTACORE",
-		"status": status,
-		"module_count": len(h.modules),
-		"processor_count": len(h.Processors()),
-		"sara_configured": saraConfigured,
+		"system":            "AETERNUM_HORTACORE",
+		"status":            status,
+		"module_count":      len(h.modules),
+		"processor_count":   len(h.Processors()),
+		"sara_configured":   saraConfigured,
 		"n07_engine_status": h.engine.Status(),
-		"timestamp": time.Now().UTC(),
+		"timestamp":         time.Now().UTC(),
 		"principles": []string{
 			"no_mock",
 			"no_fabricated_success",
