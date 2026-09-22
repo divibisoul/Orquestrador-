@@ -299,6 +299,7 @@ func (s *Server) capabilities(w http.ResponseWriter, r *http.Request) {
 				"sara.regenerate@1.0.0",
 				"sara.state@1.0.0",
 				"sara.capabilities@1.0.0",
+				"sara.trace@1.0.0",
 			},
 		},
 	})
