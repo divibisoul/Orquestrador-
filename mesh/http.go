@@ -273,6 +273,9 @@ func (g *HTTPGateway) Handler(w http.ResponseWriter, r *http.Request) {
 	}
 	var values []float64
 	metadata := envelope.NestedMetadata()
+	if metadata == nil {
+		metadata = map[string]string{}
+	}
 	if strings.HasPrefix(capability, "sara.") {
 		// SARA aceita payload estruturado; o protocolo N07 interno ainda usa []float64.
 		// Mantemos ambos os contratos sem criar um segundo transporte.
@@ -297,9 +300,6 @@ func (g *HTTPGateway) Handler(w http.ResponseWriter, r *http.Request) {
 			g.respond(w, http.StatusBadRequest, envelope, "ERROR", map[string]any{"error": err.Error()})
 			return
 		}
-	}
-	if metadata == nil {
-		metadata = map[string]string{}
 	}
 	metadata["mesh_contract_version"] = envelope.ContractVersion
 	metadata["mesh_transport"] = "HTTP"
