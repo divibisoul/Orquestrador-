@@ -26,6 +26,7 @@ Quando os dois valores de configuração existem, o N07 registra:
 - sara.regenerate@1.0.0
 - sara.state@1.0.0
 - sara.capabilities@1.0.0
+- sara.trace@1.0.0
 
 A descoberta normal do N07 informa essas operações no inventário.
 
