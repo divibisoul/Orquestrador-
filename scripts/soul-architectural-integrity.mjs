@@ -67,7 +67,7 @@ for (const [id,n] of Object.entries(matrix.nuclei??{})) for (const peer of n.pee
 }
 
 async function remoteSnapshot(id,nucleus) {
-  const token=String(process.env.SOUL_GITHUB_AUDIT_TOKEN??process.env.GITHUB_TOKEN??'').trim();
+  const token=String(process.env.SOUL_GITHUB_AUDIT_TOKEN || process.env.GITHUB_TOKEN || '').trim();
   if (!token) { add(report.degraded,{nucleus:id,type:'remote-provenance-unverified',requiredEnv:'GITHUB_TOKEN'}); return null; }
   const headers={accept:'application/vnd.github+json',authorization:`Bearer ${token}`,'x-github-api-version':'2022-11-28','user-agent':'SOUL-Architectural-Integrity-Engine'};
   const repoResponse=await fetch(`${API}/repos/${nucleus.repository}`,{headers});
