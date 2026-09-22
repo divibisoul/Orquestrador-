@@ -29,6 +29,9 @@ type Config struct {
 	Web3StorageURL         string
 	Web3StorageToken       string
 	IPFSGatewayURL         string
+	SARAServiceURL         string
+	SARAServiceToken       string
+	SARARequestTimeout     time.Duration
 	RequestTimeout         time.Duration
 }
 
@@ -47,7 +50,10 @@ func DefaultConfig() Config {
 		Web3StorageURL:         strings.TrimRight(envString("WEB3_STORAGE_API_URL", "https://api.web3.storage"), "/"),
 		Web3StorageToken:       strings.TrimSpace(getenv("WEB3_STORAGE_TOKEN")),
 		IPFSGatewayURL:         strings.TrimRight(envString("N07_IPFS_GATEWAY_URL", "https://dweb.link/ipfs"), "/"),
-		RequestTimeout:         envDuration("N07_BACKEND_TIMEOUT", 30*time.Second),
+		SARAServiceURL:         strings.TrimRight(envString("SARA_SERVICE_URL", ""), "/"),
+		SARAServiceToken:       strings.TrimSpace(getenv("SARA_SERVICE_TOKEN")),
+		SARARequestTimeout:     envDuration("SARA_REQUEST_TIMEOUT", 30*time.Second),
+		RequestTimeout:          envDuration("N07_BACKEND_TIMEOUT", 30*time.Second),
 	}
 }
 
@@ -431,7 +437,7 @@ func getenv(key string) string    { return strings.TrimSpace(envLookup(key)) }
 func envLookup(key string) string { return lookupEnv(key) }
 
 // Kept as narrow wrappers so this package has one environment seam.
-var lookupEnv = func(key string) string { return "" }
+var lookupEnv = func(key string) string { return os.Getenv(key) }
 
 func splitCSV(value string) []string {
 	parts := strings.Split(value, ",")
@@ -443,6 +449,21 @@ func splitCSV(value string) []string {
 	}
 	return out
 }
-func envString(_ string, fallback string) string                 { return fallback }
-func envInt64(_ string, fallback int64) int64                    { return fallback }
-func envDuration(_ string, fallback time.Duration) time.Duration { return fallback }
+func envString(key, fallback string) string {
+	if value := strings.TrimSpace(lookupEnv(key)); value != "" { return value }
+	return fallback
+}
+func envInt64(key string, fallback int64) int64 {
+	value := strings.TrimSpace(lookupEnv(key))
+	if value == "" { return fallback }
+	parsed, err := strconv.ParseInt(value, 10, 64)
+	if err != nil || parsed <= 0 { return fallback }
+	return parsed
+}
+func envDuration(key string, fallback time.Duration) time.Duration {
+	value := strings.TrimSpace(lookupEnv(key))
+	if value == "" { return fallback }
+	parsed, err := time.ParseDuration(value)
+	if err != nil || parsed <= 0 { return fallback }
+	return parsed
+}
