@@ -59,7 +59,7 @@ func main() {
 	addr:=os.Getenv("N07_HTTP_ADDR");if addr==""{addr=":8080"}
 	srv:=&http.Server{Addr:addr,Handler:mux,ReadHeaderTimeout:5*time.Second,ReadTimeout:30*time.Second,WriteTimeout:30*time.Second,IdleTimeout:60*time.Second}
 	ctx,stop:=signal.NotifyContext(context.Background(),os.Interrupt,syscall.SIGTERM);defer stop()
-	if registry:=strings.TrimSpace(os.Getenv("N07_MESH_REGISTRY_URL"));registry!=""{go func(){a,err:=mesh.New(registry);if err!=nil{log.Printf("mesh adapter init failed: %v",err);return};regCtx,cancel:=context.WithTimeout(ctx,10*time.Second);defer cancel();if _,err:=a.Register(regCtx,registry,[]string{"neural.forward@1.0.0","neural.learn@1.0.0","compute.execute@1.0.0","cognitive.execute@1.0.0","supergpu.describe@1.0.0","supergpu.execute@1.0.0","supergpu.parallel@1.0.0","supergpu.memory@1.0.0","supergpu.federated.execute@1.0.0","mesh.ping","mesh.describe","mesh.fusion.describe@1.0.0","mesh.fusion.execute@1.0.0","prefrontal.admission@1.0.0"});err!=nil{log.Printf("mesh registration failed: %v",err)}}()}
+	if registry:=strings.TrimSpace(os.Getenv("N07_MESH_REGISTRY_URL"));registry!=""{go func(){a,err:=mesh.New(registry);if err!=nil{log.Printf("mesh adapter init failed: %v",err);return};regCtx,cancel:=context.WithTimeout(ctx,10*time.Second);defer cancel();if _,err:=a.Register(regCtx,registry,e.Operations());err!=nil{log.Printf("mesh registration failed: %v",err)}}()}
 	go func(){log.Printf("N07 Orquestrador listening on %s",addr);if err:=srv.ListenAndServe();err!=nil&&!errors.Is(err,http.ErrServerClosed){log.Printf("server error: %v",err)}}()
 	<-ctx.Done();shutdown,cancel:=context.WithTimeout(context.Background(),5*time.Second);defer cancel();_ = e.Shutdown(shutdown);_ = srv.Shutdown(shutdown)
 }
