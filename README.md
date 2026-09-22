@@ -29,3 +29,21 @@ See `docs/ANDROID_INTEGRATION.md` for the current request/response contract and 
 ## Release
 
 The v1 release is finite. The repository tracks structural, integrated and online states in `RELEASE_GATES_V1.md` and `SOUL_EXECUTION_QUEUE.md`. CI is required evidence; online completion additionally requires live peer E2E.
+
+
+## SARA regenerative service
+
+N07 integrates the SARA regenerative core without creating a new SOUL nucleus or
+duplicating ARA/ETR/ITR.
+
+Server-side configuration:
+- `SARA_SERVICE_URL`
+- `SARA_SERVICE_TOKEN`
+- `SARA_REQUEST_TIMEOUT` (optional, default 30s)
+
+When configured, N07 registers:
+`sara.cycle@1.0.0`, `sara.audit@1.0.0`,
+`sara.regenerate@1.0.0`, `sara.state@1.0.0`,
+`sara.capabilities@1.0.0`.
+
+SARA integration details: `docs/SARA_INTEGRATION.md`.
