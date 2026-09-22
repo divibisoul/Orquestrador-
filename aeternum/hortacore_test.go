@@ -26,6 +26,9 @@ func newHortaCoreForTest(t *testing.T) *HortaCore {
 	if err != nil {
 		t.Fatal(err)
 	}
+	if err := orchestrator.RegisterSuperGPUOperations(e); err != nil {
+		t.Fatal(err)
+	}
 	if err := orchestrator.RegisterAdvancedOperations(e); err != nil {
 		t.Fatal(err)
 	}
