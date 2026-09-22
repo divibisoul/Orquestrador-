@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
@@ -131,7 +132,7 @@ func (p *SARAProxy) Trace(ctx context.Context, cycleID string) (map[string]any, 
 		return nil, errors.New("cycle id is required")
 	}
 	var out map[string]any
-	err := p.request(ctx, http.MethodGet, "/v1/trace/"+cycleID, nil, &out)
+	err := p.request(ctx, http.MethodGet, "/v1/trace/"+url.PathEscape(cycleID), nil, &out)
 	return out, err
 }
 
