@@ -355,7 +355,7 @@ func (r *Runtime) Health() map[string]any {
 			accelerators++
 		}
 	}
-	if accelerators == 0 && status == "ready" {
+	if len(r.devices) == 0 && status == "ready" {
 		status = "degraded"
 	}
 	return map[string]any{"status": status, "devices": len(r.devices), "accelerators": accelerators, "reservations": len(r.reserved), "backend": true, "hardware_acceleration": accelerators > 0, "discovery_age_ms": time.Since(r.discoverAt).Milliseconds()}
