@@ -44,6 +44,7 @@ func TestSARAProxyRegistrationOnlyWhenConfigured(t *testing.T) {
 		"sara.regenerate@1.0.0",
 		"sara.state@1.0.0",
 		"sara.capabilities@1.0.0",
+		"sara.trace@1.0.0",
 	} {
 		// Registration itself is deterministic and independent of network reachability.
 		if !contains(e.Operations(), op) {
@@ -67,7 +68,7 @@ func TestSARAProxyLiveCycleIsOptIn(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 35*time.Second)
 	defer cancel()
 
-	out, err := proxy.Cycle(ctx, "promover autonomia e transparência", "n07-live-sara")
+	out, err := proxy.Cycle(ctx, "promover autonomia e transparência", "n07-live-sara", "corr-live-sara")
 	if err != nil {
 		t.Fatal(err)
 	}
