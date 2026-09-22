@@ -209,6 +209,8 @@ func operationForTool(tool string) string {
 		return "supergpu.execute@1.0.0"
 	case "supergpu.parallel":
 		return "supergpu.parallel@1.0.0"
+	case "sara.cycle", "sara.audit", "sara.regenerate", "sara.state", "sara.capabilities", "sara.trace":
+		return strings.ToLower(strings.TrimSpace(tool)) + "@1.0.0"
 	default:
 		return tool
 	}
@@ -257,6 +259,28 @@ func mapIntent(tool string, input map[string]any) ([]float64, map[string]string,
 			metadata["workers"] = strconv.Itoa(int(workers))
 		}
 		return []float64{1}, metadata, nil
+	case "sara.cycle", "sara.audit", "sara.regenerate":
+		value, ok := input["input"].(string)
+		if !ok || strings.TrimSpace(value) == "" {
+			return nil, nil, errors.New("SARA intent requires input string")
+		}
+		metadata["sara_input"] = value
+		if cycleID, ok := input["cycle_id"].(string); ok && strings.TrimSpace(cycleID) != "" {
+			metadata["sara_cycle_id"] = strings.TrimSpace(cycleID)
+		}
+		if reqID, ok := input["request_id"].(string); ok && strings.TrimSpace(reqID) != "" {
+			metadata["sara_request_id"] = strings.TrimSpace(reqID)
+		}
+		return []float64{0}, metadata, nil
+	case "sara.state", "sara.capabilities":
+		return []float64{0}, metadata, nil
+	case "sara.trace":
+		cycleID, ok := input["cycle_id"].(string)
+		if !ok || strings.TrimSpace(cycleID) == "" {
+			return nil, nil, errors.New("SARA trace intent requires cycle_id string")
+		}
+		metadata["sara_cycle_id"] = strings.TrimSpace(cycleID)
+		return []float64{0}, metadata, nil
 	default:
 		return nil, nil, fmt.Errorf("unsupported tool: %s", tool)
 	}
