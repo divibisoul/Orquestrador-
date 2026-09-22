@@ -71,7 +71,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
-      SOUL_GITHUB_AUDIT_TOKEN: ${{ github.token }}
+      SOUL_GITHUB_AUDIT_TOKEN: ${{ secrets.SOUL_GITHUB_AUDIT_TOKEN }}
       SOUL_REQUIRE_REMOTE_PROVENANCE: 'false'
     steps:
       - uses: actions/checkout@v4
