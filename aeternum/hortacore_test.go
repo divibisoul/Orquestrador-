@@ -1,4 +1,3 @@
-
 package aeternum
 
 import (
