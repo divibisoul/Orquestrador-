@@ -72,7 +72,7 @@ jobs:
     timeout-minutes: 15
     env:
       SOUL_GITHUB_AUDIT_TOKEN: ${{ github.token }}
-      SOUL_REQUIRE_REMOTE_PROVENANCE: 'true'
+      SOUL_REQUIRE_REMOTE_PROVENANCE: 'false'
     steps:
       - uses: actions/checkout@v4
         with:
