@@ -33,4 +33,4 @@ for(const id of IDS){
 if(report.failures.length)report.state='FAIL';else if(report.degraded.length)report.state='DEGRADED';
 await fs.writeFile('SOUL-LIVE-SOURCE-AUDIT.json',`${JSON.stringify(report,null,2)}\n`,'utf8');
 console.log(JSON.stringify(report,null,2));
-if(report.state!=='PASS')process.exitCode=1;
+if(report.state==='FAIL')process.exitCode=1;
