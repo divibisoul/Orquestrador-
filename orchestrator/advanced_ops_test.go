@@ -48,7 +48,7 @@ func TestAdvancedOperationsExecuteWithRealServices(t *testing.T) {
 
 	candidate := map[string]any{"ID": "safe-action", "Cost": 0.01, "Risk": 0.01, "Utility": 0.5, "Uncertainty": 0.01, "Urgency": 0.1, "Impact": 0.1}
 	candidateJSON, _ := json.Marshal(candidate)
-	result, err := e.Execute(context.Background(), "prefrontal.admission@1.0.0", []float64{1, 2}, map[string]string{"candidate_json": string(candidateJSON)})
+	result, err := e.Execute(context.Background(), "prefrontal.admission@1.0.0", []float64{1, 2, 3, 4}, map[string]string{"candidate_json": string(candidateJSON)})
 	if err != nil {
 		t.Fatal(err)
 	}
