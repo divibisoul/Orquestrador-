@@ -13,6 +13,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/divibisoul/Orquestrador-/aeternum"
 	"github.com/divibisoul/Orquestrador-/api/health"
 	"github.com/divibisoul/Orquestrador-/backend"
 	"github.com/divibisoul/Orquestrador-/mesh"
@@ -51,10 +52,16 @@ func main() {
 		log.Fatal(err)
 	}
 	cfg := backend.DefaultConfig()
+	var saraProxy *backend.SARAProxy
 	if proxy := backend.NewSARAProxy(cfg); proxy.Configured() {
+		saraProxy = proxy
 		if err := backend.RegisterSARAOperations(e, proxy); err != nil {
 			log.Fatal(err)
 		}
+	}
+	horta, err := aeternum.NewHortaCore(e, saraProxy)
+	if err != nil {
+		log.Fatal(err)
 	}
 
 	unified := backend.NewUnified(e, cfg)
@@ -62,6 +69,56 @@ func main() {
 	mux.Handle("/v1/", unified.Handler())
 	mux.Handle("/api/health/dashboard", health.Handler())
 	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) { writeJSON(w, http.StatusOK, e.Health()) })
+	mux.HandleFunc("/v1/aeternum/health", func(w http.ResponseWriter, r *http.Request) {
+		if err := requireAppBearer(r); err != nil {
+			writeJSON(w, http.StatusUnauthorized, map[string]string{"error": err.Error()})
+			return
+		}
+		writeJSON(w, http.StatusOK, horta.Health())
+	})
+	mux.HandleFunc("/v1/aeternum/processors", func(w http.ResponseWriter, r *http.Request) {
+		if err := requireAppBearer(r); err != nil {
+			writeJSON(w, http.StatusUnauthorized, map[string]string{"error": err.Error()})
+			return
+		}
+		writeJSON(w, http.StatusOK, map[string]any{"count": len(horta.Processors()), "processors": horta.Processors()})
+	})
+	mux.HandleFunc("/v1/aeternum/capabilities", func(w http.ResponseWriter, r *http.Request) {
+		if err := requireAppBearer(r); err != nil {
+			writeJSON(w, http.StatusUnauthorized, map[string]string{"error": err.Error()})
+			return
+		}
+		writeJSON(w, http.StatusOK, map[string]any{"count": len(horta.Capabilities()), "modules": horta.Capabilities()})
+	})
+	mux.HandleFunc("/v1/aeternum/module", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "POST required"})
+			return
+		}
+		if err := requireAppBearer(r); err != nil {
+			writeJSON(w, http.StatusUnauthorized, map[string]string{"error": err.Error()})
+			return
+		}
+		var req struct {
+			ModuleID string            `json:"module_id"`
+			Payload  []float64         `json:"payload"`
+			Metadata map[string]string `json:"metadata"`
+		}
+		if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 1<<20)).Decode(&req); err != nil {
+			writeJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
+			return
+		}
+		result, err := horta.Execute(r.Context(), req.ModuleID, req.Payload, req.Metadata)
+		if err != nil {
+			if strings.HasPrefix(err.Error(), "AETERNUM_BLOCKED_INFRASTRUCTURE:") || strings.HasPrefix(err.Error(), "AETERNUM_ADAPTER_REQUIRED:") {
+				writeJSON(w, http.StatusConflict, map[string]any{"status": "BLOCKED", "error": err.Error()})
+				return
+			}
+			writeJSON(w, http.StatusBadRequest, map[string]any{"status": "ERROR", "error": err.Error()})
+			return
+		}
+		writeJSON(w, http.StatusOK, result)
+	})
 	mux.HandleFunc("/status", func(w http.ResponseWriter, r *http.Request) {
 		if err := requireAppBearer(r); err != nil {
 			writeJSON(w, http.StatusUnauthorized, map[string]string{"error": err.Error()})
