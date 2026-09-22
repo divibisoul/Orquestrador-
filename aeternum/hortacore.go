@@ -125,7 +125,7 @@ func (h *HortaCore) Execute(ctx context.Context, moduleID string, payload []floa
 
 func moduleCatalog() []ModuleSpec {
 	const (
-		native = StatusNative
+		native  = StatusNative
 		adapter = StatusAdapter
 		blocked = StatusBlocked
 	)
