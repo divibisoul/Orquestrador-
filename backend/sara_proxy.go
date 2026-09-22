@@ -63,6 +63,9 @@ func (p *SARAProxy) request(ctx context.Context, method, path string, body any, 
 	}
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("Authorization", "Bearer "+p.Token)
+	if strings.TrimSpace(correlationID) != "" {
+		req.Header.Set("X-Correlation-ID", strings.TrimSpace(correlationID))
+	}
 	if body != nil {
 		req.Header.Set("Content-Type", "application/json")
 	}
