@@ -16,13 +16,13 @@ func TestSARAProxyForwardsCorrelationHeader(t *testing.T) {
 			t.Fatalf("X-Correlation-ID=%q want %q", got, correlation)
 		}
 		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte("{\"status\":\"ok\",\"cycle_id\":\"cycle-001\"}"))
+		_, _ = w.Write([]byte("{"status":"ok","cycle_id":"cycle-001"}"))
 	}))
 	defer server.Close()
 
 	proxy := NewSARAProxy(Config{
-		SARAServiceURL: server.URL,
-		SARAServiceToken: "test-token",
+		SARAServiceURL:     server.URL,
+		SARAServiceToken:   "test-token",
 		SARARequestTimeout: 5 * time.Second,
 	})
 
