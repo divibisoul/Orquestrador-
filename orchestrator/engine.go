@@ -389,6 +389,12 @@ func (e *Engine) Execute(ctx context.Context, operation string, payload []float6
 	message := protocol.NewMessage("N07", "N07", "command", operation, payload)
 	message.Metadata = metadata
 	if metadata != nil {
+		if correlationID := strings.TrimSpace(metadata["correlation_id"]); correlationID != "" {
+			message.CorrelationID = correlationID
+		}
+		if traceID := strings.TrimSpace(metadata["trace_id"]); traceID != "" {
+			message.TraceID = traceID
+		}
 		if schema := strings.TrimSpace(metadata["schema"]); schema != "" {
 			if err := validateSchema(schema, payload); err != nil {
 				return protocol.Result{TraceID: message.TraceID, CorrelationID: message.CorrelationID, Source: "N07", Target: "N07", Status: "rejected", Error: err.Error()}, err
