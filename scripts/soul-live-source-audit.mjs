@@ -3,7 +3,7 @@ import fs from 'node:fs/promises';
 const API='https://api.github.com';
 const IDS=['N01','N02','N03','N04','N05','N06','N07'];
 const REPOS={N01:'divibisoul/aeternum-core-29',N02:'divibisoul/Eternium-',N03:'divibisoul/nexus-aeternum-fusion',N04:'divibisoul/nextjs-ai-chatbots',N05:'divibisoul/nextjs-ai-chatbot',N06:'divibisoul/nextjs-ai-chatbot-2000',N07:'divibisoul/Orquestrador-'};
-const token=String(process.env.SOUL_GITHUB_AUDIT_TOKEN??'').trim();
+const token=String(process.env.SOUL_GITHUB_AUDIT_TOKEN || process.env.GITHUB_TOKEN || '').trim();
 const headers={accept:'application/vnd.github+json','x-github-api-version':'2022-11-28','user-agent':'SOUL-Live-Source-Audit',...(token?{authorization:`Bearer ${token}`}:{})};
 const report={system:'SOUL',checker:'SOUL Live Source Audit',schemaVersion:'1.0.0',generatedAt:new Date().toISOString(),state:'PASS',nuclei:[],failures:[],degraded:[]};
 const read=async(url)=>{const r=await fetch(url,{headers});if(!r.ok)throw new Error(`HTTP_${r.status}:${url}`);return r.json();};
