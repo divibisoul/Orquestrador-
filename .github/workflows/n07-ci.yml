@@ -118,6 +118,9 @@ jobs:
         with:
           go-version: '1.25.x'
           cache: true
+      - name: Aeternum gofmt diagnostic
+        run: gofmt -d aeternum/hortacore.go
+
       - name: Format check
         run: |
           set -euo pipefail
