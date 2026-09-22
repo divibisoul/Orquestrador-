@@ -148,7 +148,7 @@ func moduleCatalog() []ModuleSpec {
 		{ID: "emergent_cognition", Group: "cognitive", Function: "multi-capability synthesis", Authority: "N07 fusion", Status: adapter, Notes: "Confidence must derive from contributing component evidence."},
 		{ID: "bnc_v2", Group: "cognitive", Function: "plastic neural architecture", Authority: "N07 neural", Status: adapter, Notes: "Real metrics come from Neural.Health/LearningSteps, not fixed Hz."},
 		{ID: "skill_acquisition", Group: "cognitive", Function: "skill learning", Authority: "N02/N07 learning runtime", Status: adapter, Notes: "Requires an explicit training/evaluation contract."},
-		{ID: "uci", Group: "infrastructure", Function: "protocol translation/interconnect", Authority: "N07 Mesh", Status: native, Operation: "mesh.health@1.0.0", Notes: "Exposes canonical Mesh health rather than synthetic throughput."},
+		{ID: "uci", Group: "infrastructure", Function: "protocol translation/interconnect", Authority: "N07 Mesh", Status: native, Operation: "supergpu.describe@1.0.0", Notes: "Exposes canonical Mesh health rather than synthetic throughput."},
 		{ID: "ethical_governance", Group: "governance", Function: "ethical/governance review", Authority: "SARA GovernedSARA", Status: adapter, Notes: "Delegates to real SARA governance; never hardcodes approval."},
 		{ID: "strategic_defense", Group: "governance", Function: "threat/security analysis", Authority: "SARA security + SOUL Mesh security", Status: adapter, Notes: "Threat-free status requires real observations."},
 		{ID: "existential_safety", Group: "governance", Function: "high-impact safety gate", Authority: "SARA + N07 Prefrontal", Status: adapter, Notes: "Risk is evidence-derived; no fixed epsilon is emitted."},
