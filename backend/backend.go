@@ -177,6 +177,9 @@ func (s *Server) intent(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusBadRequest, map[string]any{"error": err.Error()})
 		return
 	}
+	if strings.TrimSpace(req.CorrelationID) != "" {
+		metadata["correlation_id"] = strings.TrimSpace(req.CorrelationID)
+	}
 	ctx, cancel := context.WithTimeout(r.Context(), s.Config.RequestTimeout)
 	defer cancel()
 	result, err := s.Engine.Execute(ctx, operationForTool(toolName), values, metadata)
