@@ -125,6 +125,16 @@ func (p *SARAProxy) Capabilities(ctx context.Context) (map[string]any, error) {
 	return out, err
 }
 
+func (p *SARAProxy) Trace(ctx context.Context, cycleID string) (map[string]any, error) {
+	cycleID = strings.TrimSpace(cycleID)
+	if cycleID == "" {
+		return nil, errors.New("cycle id is required")
+	}
+	var out map[string]any
+	err := p.request(ctx, http.MethodGet, "/v1/trace/"+cycleID, nil, &out)
+	return out, err
+}
+
 func RegisterSARAOperations(e *orchestrator.Engine, proxy *SARAProxy) error {
 	if e == nil {
 		return errors.New("orchestrator engine is required")
@@ -168,6 +178,11 @@ func RegisterSARAOperations(e *orchestrator.Engine, proxy *SARAProxy) error {
 		}},
 		{"sara.capabilities@1.0.0", func(ctx context.Context, message protocol.Message) (protocol.Result, error) {
 			out, err := proxy.Capabilities(ctx)
+			return saraResult(message, out, err)
+		}},
+		{"sara.trace@1.0.0", func(ctx context.Context, message protocol.Message) (protocol.Result, error) {
+			cycleID := strings.TrimSpace(message.Metadata["sara_cycle_id"])
+			out, err := proxy.Trace(ctx, cycleID)
 			return saraResult(message, out, err)
 		}},
 	}
