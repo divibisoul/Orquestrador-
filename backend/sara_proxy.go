@@ -32,8 +32,8 @@ func NewSARAProxy(cfg Config) *SARAProxy {
 	}
 	return &SARAProxy{
 		BaseURL: strings.TrimRight(strings.TrimSpace(cfg.SARAServiceURL), "/"),
-		Token: cfg.SARAServiceToken,
-		Client: &http.Client{Timeout: timeout},
+		Token:   cfg.SARAServiceToken,
+		Client:  &http.Client{Timeout: timeout},
 		Timeout: timeout,
 	}
 }
@@ -198,7 +198,7 @@ func RegisterSARAOperations(e *orchestrator.Engine, proxy *SARAProxy) error {
 
 func saraResult(message protocol.Message, payload map[string]any, err error) (protocol.Result, error) {
 	metadata := map[string]string{
-		"sara_transport": "HTTP",
+		"sara_transport":   "HTTP",
 		"sara_result_json": "{}",
 	}
 	if payload != nil {
@@ -209,12 +209,12 @@ func saraResult(message protocol.Message, payload map[string]any, err error) (pr
 		metadata["sara_result_json"] = string(raw)
 	}
 	result := protocol.Result{
-		TraceID: message.TraceID,
+		TraceID:       message.TraceID,
 		CorrelationID: message.CorrelationID,
-		Source: "N07.sara",
-		Target: message.Source,
-		Status: "ok",
-		Metadata: metadata,
+		Source:        "N07.sara",
+		Target:        message.Source,
+		Status:        "ok",
+		Metadata:      metadata,
 	}
 	if err != nil {
 		result.Status = "error"

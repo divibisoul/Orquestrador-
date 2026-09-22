@@ -54,7 +54,7 @@ func DefaultConfig() Config {
 		SARAServiceURL:         strings.TrimRight(envString("SARA_SERVICE_URL", ""), "/"),
 		SARAServiceToken:       strings.TrimSpace(getenv("SARA_SERVICE_TOKEN")),
 		SARARequestTimeout:     envDuration("SARA_REQUEST_TIMEOUT", 30*time.Second),
-		RequestTimeout:          envDuration("N07_BACKEND_TIMEOUT", 30*time.Second),
+		RequestTimeout:         envDuration("N07_BACKEND_TIMEOUT", 30*time.Second),
 	}
 }
 
@@ -312,14 +312,14 @@ func (s *Server) capabilities(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]any{
-		"nucleus": "N07",
+		"nucleus":    "N07",
 		"operations": s.Engine.Operations(),
-		"storage": map[string]any{"configured": s.Storage.Configured(), "api": "web3.storage-compatible"},
-		"supabase": map[string]any{"configured": s.Store.Configured()},
+		"storage":    map[string]any{"configured": s.Storage.Configured(), "api": "web3.storage-compatible"},
+		"supabase":   map[string]any{"configured": s.Store.Configured()},
 		"sara": map[string]any{
-			"configured": s.Config.SARAServiceURL != "" && s.Config.SARAServiceToken != "",
+			"configured":          s.Config.SARAServiceURL != "" && s.Config.SARAServiceToken != "",
 			"base_url_configured": s.Config.SARAServiceURL != "",
-			"token_configured": s.Config.SARAServiceToken != "",
+			"token_configured":    s.Config.SARAServiceToken != "",
 			"operations": []string{
 				"sara.cycle@1.0.0",
 				"sara.audit@1.0.0",
@@ -340,8 +340,8 @@ func (s *Server) health(w http.ResponseWriter, r *http.Request) {
 	status := s.Engine.Health()
 	status["backend"] = map[string]any{
 		"supabase_configured": s.Store.Configured(),
-		"storage_configured": s.Storage.Configured(),
-		"sara_configured": s.Config.SARAServiceURL != "" && s.Config.SARAServiceToken != "",
+		"storage_configured":  s.Storage.Configured(),
+		"sara_configured":     s.Config.SARAServiceURL != "" && s.Config.SARAServiceToken != "",
 	}
 	writeJSON(w, http.StatusOK, status)
 }
@@ -500,20 +500,30 @@ func splitCSV(value string) []string {
 	return out
 }
 func envString(key, fallback string) string {
-	if value := strings.TrimSpace(lookupEnv(key)); value != "" { return value }
+	if value := strings.TrimSpace(lookupEnv(key)); value != "" {
+		return value
+	}
 	return fallback
 }
 func envInt64(key string, fallback int64) int64 {
 	value := strings.TrimSpace(lookupEnv(key))
-	if value == "" { return fallback }
+	if value == "" {
+		return fallback
+	}
 	parsed, err := strconv.ParseInt(value, 10, 64)
-	if err != nil || parsed <= 0 { return fallback }
+	if err != nil || parsed <= 0 {
+		return fallback
+	}
 	return parsed
 }
 func envDuration(key string, fallback time.Duration) time.Duration {
 	value := strings.TrimSpace(lookupEnv(key))
-	if value == "" { return fallback }
+	if value == "" {
+		return fallback
+	}
 	parsed, err := time.ParseDuration(value)
-	if err != nil || parsed <= 0 { return fallback }
+	if err != nil || parsed <= 0 {
+		return fallback
+	}
 	return parsed
 }
