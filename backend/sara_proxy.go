@@ -42,7 +42,7 @@ func (p *SARAProxy) Configured() bool {
 	return p != nil && p.BaseURL != "" && p.Token != ""
 }
 
-func (p *SARAProxy) request(ctx context.Context, method, path string, body any, out *map[string]any) error {
+func (p *SARAProxy) request(ctx context.Context, method, path string, body any, correlationID string, out *map[string]any) error {
 	if p == nil || !p.Configured() {
 		return errors.New("SARA service is not configured")
 	}
@@ -92,47 +92,47 @@ func (p *SARAProxy) request(ctx context.Context, method, path string, body any, 
 	return nil
 }
 
-func (p *SARAProxy) Cycle(ctx context.Context, input, cycleID string) (map[string]any, error) {
+func (p *SARAProxy) Cycle(ctx context.Context, input, cycleID, correlationID string) (map[string]any, error) {
 	body := map[string]any{"input": input}
 	if strings.TrimSpace(cycleID) != "" {
 		body["cycle_id"] = strings.TrimSpace(cycleID)
 	}
 	var out map[string]any
-	err := p.request(ctx, http.MethodPost, "/v1/cycle", body, &out)
+	err := p.request(ctx, http.MethodPost, "/v1/cycle", body, correlationID, &out)
 	return out, err
 }
 
-func (p *SARAProxy) Audit(ctx context.Context, input string) (map[string]any, error) {
+func (p *SARAProxy) Audit(ctx context.Context, input, correlationID string) (map[string]any, error) {
 	var out map[string]any
-	err := p.request(ctx, http.MethodPost, "/v1/audit", map[string]any{"input": input}, &out)
+	err := p.request(ctx, http.MethodPost, "/v1/audit", map[string]any{"input": input}, correlationID, &out)
 	return out, err
 }
 
-func (p *SARAProxy) Regenerate(ctx context.Context, input string) (map[string]any, error) {
+func (p *SARAProxy) Regenerate(ctx context.Context, input, correlationID string) (map[string]any, error) {
 	var out map[string]any
-	err := p.request(ctx, http.MethodPost, "/v1/regenerate", map[string]any{"input": input}, &out)
+	err := p.request(ctx, http.MethodPost, "/v1/regenerate", map[string]any{"input": input}, correlationID, &out)
 	return out, err
 }
 
-func (p *SARAProxy) State(ctx context.Context) (map[string]any, error) {
+func (p *SARAProxy) State(ctx context.Context, correlationID string) (map[string]any, error) {
 	var out map[string]any
-	err := p.request(ctx, http.MethodGet, "/v1/state", nil, &out)
+	err := p.request(ctx, http.MethodGet, "/v1/state", nil, correlationID, &out)
 	return out, err
 }
 
-func (p *SARAProxy) Capabilities(ctx context.Context) (map[string]any, error) {
+func (p *SARAProxy) Capabilities(ctx context.Context, correlationID string) (map[string]any, error) {
 	var out map[string]any
-	err := p.request(ctx, http.MethodGet, "/v1/capabilities", nil, &out)
+	err := p.request(ctx, http.MethodGet, "/v1/capabilities", nil, correlationID, &out)
 	return out, err
 }
 
-func (p *SARAProxy) Trace(ctx context.Context, cycleID string) (map[string]any, error) {
+func (p *SARAProxy) Trace(ctx context.Context, cycleID, correlationID string) (map[string]any, error) {
 	cycleID = strings.TrimSpace(cycleID)
 	if cycleID == "" {
 		return nil, errors.New("cycle id is required")
 	}
 	var out map[string]any
-	err := p.request(ctx, http.MethodGet, "/v1/trace/"+url.PathEscape(cycleID), nil, &out)
+	err := p.request(ctx, http.MethodGet, "/v1/trace/"+url.PathEscape(cycleID), nil, correlationID, &out)
 	return out, err
 }
 
@@ -154,7 +154,7 @@ func RegisterSARAOperations(e *orchestrator.Engine, proxy *SARAProxy) error {
 			if input == "" {
 				return protocol.Result{}, errors.New("metadata.sara_input is required")
 			}
-			out, err := proxy.Cycle(ctx, input, cycleID)
+			out, err := proxy.Cycle(ctx, input, cycleID, message.CorrelationID)
 			return saraResult(message, out, err)
 		}},
 		{"sara.audit@1.0.0", func(ctx context.Context, message protocol.Message) (protocol.Result, error) {
@@ -162,7 +162,7 @@ func RegisterSARAOperations(e *orchestrator.Engine, proxy *SARAProxy) error {
 			if input == "" {
 				return protocol.Result{}, errors.New("metadata.sara_input is required")
 			}
-			out, err := proxy.Audit(ctx, input)
+			out, err := proxy.Audit(ctx, input, message.CorrelationID)
 			return saraResult(message, out, err)
 		}},
 		{"sara.regenerate@1.0.0", func(ctx context.Context, message protocol.Message) (protocol.Result, error) {
@@ -170,20 +170,20 @@ func RegisterSARAOperations(e *orchestrator.Engine, proxy *SARAProxy) error {
 			if input == "" {
 				return protocol.Result{}, errors.New("metadata.sara_input is required")
 			}
-			out, err := proxy.Regenerate(ctx, input)
+			out, err := proxy.Regenerate(ctx, input, message.CorrelationID)
 			return saraResult(message, out, err)
 		}},
 		{"sara.state@1.0.0", func(ctx context.Context, message protocol.Message) (protocol.Result, error) {
-			out, err := proxy.State(ctx)
+			out, err := proxy.State(ctx, message.CorrelationID)
 			return saraResult(message, out, err)
 		}},
 		{"sara.capabilities@1.0.0", func(ctx context.Context, message protocol.Message) (protocol.Result, error) {
-			out, err := proxy.Capabilities(ctx)
+			out, err := proxy.Capabilities(ctx, message.CorrelationID)
 			return saraResult(message, out, err)
 		}},
 		{"sara.trace@1.0.0", func(ctx context.Context, message protocol.Message) (protocol.Result, error) {
 			cycleID := strings.TrimSpace(message.Metadata["sara_cycle_id"])
-			out, err := proxy.Trace(ctx, cycleID)
+			out, err := proxy.Trace(ctx, cycleID, message.CorrelationID)
 			return saraResult(message, out, err)
 		}},
 	}
