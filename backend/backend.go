@@ -283,7 +283,24 @@ func (s *Server) capabilities(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusMethodNotAllowed, map[string]any{"error": "GET required"})
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]any{"nucleus": "N07", "operations": s.Engine.Operations(), "storage": map[string]any{"configured": s.Storage.Configured(), "api": "web3.storage-compatible"}, "supabase": map[string]any{"configured": s.Store.Configured()}})
+	writeJSON(w, http.StatusOK, map[string]any{
+		"nucleus": "N07",
+		"operations": s.Engine.Operations(),
+		"storage": map[string]any{"configured": s.Storage.Configured(), "api": "web3.storage-compatible"},
+		"supabase": map[string]any{"configured": s.Store.Configured()},
+		"sara": map[string]any{
+			"configured": s.Config.SARAServiceURL != "" && s.Config.SARAServiceToken != "",
+			"base_url_configured": s.Config.SARAServiceURL != "",
+			"token_configured": s.Config.SARAServiceToken != "",
+			"operations": []string{
+				"sara.cycle@1.0.0",
+				"sara.audit@1.0.0",
+				"sara.regenerate@1.0.0",
+				"sara.state@1.0.0",
+				"sara.capabilities@1.0.0",
+			},
+		},
+	})
 }
 
 func (s *Server) health(w http.ResponseWriter, r *http.Request) {
@@ -292,7 +309,11 @@ func (s *Server) health(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	status := s.Engine.Health()
-	status["backend"] = map[string]any{"supabase_configured": s.Store.Configured(), "storage_configured": s.Storage.Configured()}
+	status["backend"] = map[string]any{
+		"supabase_configured": s.Store.Configured(),
+		"storage_configured": s.Storage.Configured(),
+		"sara_configured": s.Config.SARAServiceURL != "" && s.Config.SARAServiceToken != "",
+	}
 	writeJSON(w, http.StatusOK, status)
 }
 
