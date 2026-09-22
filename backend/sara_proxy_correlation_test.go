@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 )
 
 func TestSARAProxyForwardsCorrelationHeader(t *testing.T) {
@@ -22,7 +23,7 @@ func TestSARAProxyForwardsCorrelationHeader(t *testing.T) {
 	proxy := NewSARAProxy(Config{
 		SARAServiceURL: server.URL,
 		SARAServiceToken: "test-token",
-		SARARequestTimeout: 5,
+		SARARequestTimeout: 5 * time.Second,
 	})
 
 	out, err := proxy.Cycle(context.Background(), "input", "cycle-001", correlation)
