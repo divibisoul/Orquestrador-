@@ -19,7 +19,7 @@ const (
 	OpSignal   = "octacore.signal@1.0.0"
 )
 
-func RegisterOctaCoreOperations(engine *orchestrator.Engine, processor *Processor) error {
+func RegisterOctaCoreOperations(engine *orchestrator.Engine, processor *Processor, horta *hortacore.Fusion) error {
 	if engine == nil {
 		return errors.New("orchestrator engine is required")
 	}
