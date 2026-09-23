@@ -106,16 +106,16 @@ func (p *SARAProxy) Cycle(ctx context.Context, input, cycleID, correlationID str
 }
 
 func (p *SARAProxy) CycleWithContext(ctx context.Context, input, cycleID, correlationID string, contextPayload map[string]any) (map[string]any, error) {
-    body := map[string]any{"input": input}
-    if strings.TrimSpace(cycleID) != "" {
-        body["cycle_id"] = strings.TrimSpace(cycleID)
-    }
-    if contextPayload != nil {
-        body["context"] = contextPayload
-    }
-    var out map[string]any
-    err := p.request(ctx, http.MethodPost, "/v1/cycle", body, correlationID, &out)
-    return out, err
+	body := map[string]any{"input": input}
+	if strings.TrimSpace(cycleID) != "" {
+		body["cycle_id"] = strings.TrimSpace(cycleID)
+	}
+	if contextPayload != nil {
+		body["context"] = contextPayload
+	}
+	var out map[string]any
+	err := p.request(ctx, http.MethodPost, "/v1/cycle", body, correlationID, &out)
+	return out, err
 }
 
 func (p *SARAProxy) Audit(ctx context.Context, input, correlationID string) (map[string]any, error) {
