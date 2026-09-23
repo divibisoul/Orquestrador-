@@ -149,10 +149,11 @@ jobs:
       - name: Format check
         run: |
           set -euo pipefail
-          files="$(gofmt -l $(git ls-files '*.go'))"
-          if [ -n "$files" ]; then
-            echo 'The following Go files require gofmt:'
-            printf '%s\n' "$files"
+          gofmt -w $(git ls-files '*.go')
+          if ! git diff --exit-code -- $(git ls-files '*.go'); then
+            echo 'The following Go files are not in canonical gofmt form:'
+            git diff --name-only -- $(git ls-files '*.go')
+            git diff -- $(git ls-files '*.go')
             exit 1
           fi
       - name: Vet
