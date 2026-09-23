@@ -154,12 +154,12 @@ func NewScheduler(cfg SchedulerConfig, control ControlPublisher, compute *superg
 func defaultSlots() map[SlotID]OctaCoreSlot {
 	return map[SlotID]OctaCoreSlot{
 		G0: {Slot: G0, Nucleus: "SARA", Role: "regenerative compute kernel", Status: SlotImplemented, Capabilities: []string{"sara.cycle", "sara.audit", "sara.regenerate", "sara.state", "sara.trace"}, Execution: []Backend{BackendSARAHTTP}},
-		G1: {Slot: G1, Nucleus: "N01", Role: "edge ingress / host gateway kernels", Status: SlotRepoPresentUnverified, Execution: []Backend{BackendRemoteMesh}},
-		G2: {Slot: G2, Nucleus: "N02", Role: "conversation turn kernels", Status: SlotRepoPresentUnverified, Execution: []Backend{BackendRemoteMesh}},
-		G3: {Slot: G3, Nucleus: "N03", Role: "perception / multimodal prep kernels", Status: SlotRepoPresentUnverified, Execution: []Backend{BackendRemoteMesh}},
-		G4: {Slot: G4, Nucleus: "N04", Role: "tools / documents / research kernels", Status: SlotAdapterReady, Execution: []Backend{BackendRemoteMesh}},
-		G5: {Slot: G5, Nucleus: "N05", Role: "dispatch kernels (existing runtime)", Status: SlotRepoPresentUnverified, Execution: []Backend{BackendRemoteMesh}},
-		G6: {Slot: G6, Nucleus: "N06", Role: "cognition / session batching + SARA client", Status: SlotAdapterReady, Execution: []Backend{BackendRemoteMesh}},
+		G1: {Slot: G1, Nucleus: "N01", Role: "edge ingress / host gateway kernels", Status: SlotAdapterReady, Capabilities: []string{"octacore.submit", "octacore.batch", "octacore.health", "octacore.inventory"}, Execution: []Backend{BackendInProcess}},
+		G2: {Slot: G2, Nucleus: "N02", Role: "conversation turn kernels", Status: SlotAdapterReady, Capabilities: []string{"octacore.execute"}, Execution: []Backend{BackendRemoteMesh}},
+		G3: {Slot: G3, Nucleus: "N03", Role: "perception / multimodal prep kernels", Status: SlotAdapterReady, Capabilities: []string{"octacore.execute"}, Execution: []Backend{BackendRemoteMesh}},
+		G4: {Slot: G4, Nucleus: "N04", Role: "tools / documents / research kernels", Status: SlotAdapterReady, Capabilities: []string{"octacore.execute"}, Execution: []Backend{BackendRemoteMesh}},
+		G5: {Slot: G5, Nucleus: "N05", Role: "dispatch kernels (existing runtime)", Status: SlotAdapterReady, Capabilities: []string{"octacore.execute"}, Execution: []Backend{BackendRemoteMesh}},
+		G6: {Slot: G6, Nucleus: "N06", Role: "cognition / session batching + SARA client", Status: SlotAdapterReady, Capabilities: []string{"octacore.execute"}, Execution: []Backend{BackendRemoteMesh}},
 		G7: {Slot: G7, Nucleus: "N07", Role: "SuperGPU scheduler + Mesh router + correlation", Status: SlotImplemented, Capabilities: []string{"octacore.submit", "octacore.batch", "octacore.health", "mesh.delegate", "mesh.supergpu.execute", "mesh.supergpu.parallel"}, Execution: []Backend{BackendInProcess, BackendRemoteMesh}},
 	}
 }
@@ -283,6 +283,7 @@ func (s *OctaCoreScheduler) ExecutePlan(ctx context.Context, jobs []OctaCoreJob)
 		pending[i] = job
 	}
 	blockedBarriers := make(map[string]string)
+	publishedBarriers := make(map[string]bool)
 	for len(pending) > 0 {
 		ready := make([]int, 0, len(pending))
 		for i, job := range pending {
@@ -340,7 +341,8 @@ func (s *OctaCoreScheduler) ExecutePlan(ctx context.Context, jobs []OctaCoreJob)
 					break
 				}
 			}
-			if !stillPending {
+			if !stillPending && !publishedBarriers[name] {
+				publishedBarriers[name] = true
 				s.publish(ctx, newVagusEvent("gpu.barrier", "G7", "G6", 100, 1, barrierCorrelation(jobs, name), map[string]any{"barrier": name, "completed_job_ids": ids, "joined": true}))
 			}
 		}
@@ -353,18 +355,17 @@ func barrierReady(_ int, job OctaCoreJob, pending map[int]OctaCoreJob) bool {
 	if name == "" {
 		return true
 	}
-	if isBarrierConsumer(job) {
-		for _, other := range pending {
-			if strings.TrimSpace(ptrString(other.Barrier)) != name || isBarrierConsumer(other) {
-				continue
-			}
-			return false
-		}
+	if !isBarrierConsumer(job) {
 		return true
+	}
+	for _, other := range pending {
+		if strings.TrimSpace(ptrString(other.Barrier)) != name || isBarrierConsumer(other) {
+			continue
+		}
+		return false
 	}
 	return true
 }
-
 func isBarrierConsumer(job OctaCoreJob) bool {
 	if job.Target == string(G0) || job.Kind == KindSARAudit || job.Kind == KindSARACycle {
 		return true
