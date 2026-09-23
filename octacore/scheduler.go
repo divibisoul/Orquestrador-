@@ -352,18 +352,22 @@ func barrierReady(_ int, job OctaCoreJob, pending map[int]OctaCoreJob) bool {
 	if name == "" {
 		return true
 	}
-	group := strings.TrimSpace(ptrString(job.ParallelGroup))
-	for _, other := range pending {
-		if strings.TrimSpace(ptrString(other.Barrier)) != name {
-			continue
+	if isBarrierConsumer(job) {
+		for _, other := range pending {
+			if strings.TrimSpace(ptrString(other.Barrier)) != name || isBarrierConsumer(other) {
+				continue
+			}
+			return false
 		}
-		otherGroup := strings.TrimSpace(ptrString(other.ParallelGroup))
-		if group != "" && group == otherGroup {
-			continue
-		}
-		return false
+		return true
 	}
+	// Non-regenerative jobs are producers for a named join. They can execute
+	// concurrently; G0 is the consumer/authority for regenerative work.
 	return true
+}
+
+func isBarrierConsumer(job OctaCoreJob) bool {
+	return job.Target == string(G0) || job.Kind == KindSARAudit || job.Kind == KindSARACycle
 }
 
 func (s *OctaCoreScheduler) resolveSlot(job OctaCoreJob) (OctaCoreSlot, error) {
@@ -549,8 +553,11 @@ func (s *OctaCoreScheduler) acquireInflight(ctx context.Context, slot SlotID) er
 			return fmt.Errorf("slot circuit open: %s", slot)
 		}
 		limit := s.effectiveInflightLimit()
-		if int(s.inflight.Load()) < limit {
-			s.inflight.Add(1)
+		if slot == G0 {
+			limit = 1
+		}
+		current := s.inflight.Load()
+		if int(current) < limit && s.inflight.CompareAndSwap(current, current+1) {
 			st := s.state[slot]
 			st.mu.Lock()
 			st.inflight++
