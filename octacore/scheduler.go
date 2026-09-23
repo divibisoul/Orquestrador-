@@ -51,6 +51,7 @@ type SchedulerHealth struct {
 	QueueDepth         int          `json:"queue_depth"`
 	ControlPlane       string       `json:"control_plane"`
 	SuperGPUConnected  bool         `json:"supergpu_connected"`
+	SuperGPUHealth     map[string]any `json:"supergpu_health,omitempty"`
 	ParallelismEnabled bool         `json:"parallelism_enabled"`
 	Slots              []SlotHealth `json:"slots"`
 }
@@ -640,8 +641,12 @@ func (s *OctaCoreScheduler) recordFailure(slot SlotID, latencyMS int64, message 
 func (s *OctaCoreScheduler) Health() SchedulerHealth {
 	s.computeMu.RLock()
 	computeConnected := s.compute != nil
+	var computeHealth map[string]any
+	if s.compute != nil {
+		computeHealth = s.compute.Health()
+	}
 	s.computeMu.RUnlock()
-	out := SchedulerHealth{Status: "READY", ThrottleLevel: int(s.throttle.Load()), Inflight: int(s.inflight.Load()), QueueDepth: int(s.queue.Load()), ControlPlane: "UNCONFIGURED", ParallelismEnabled: true, SuperGPUConnected: computeConnected}
+	out := SchedulerHealth{Status: "READY", ThrottleLevel: int(s.throttle.Load()), Inflight: int(s.inflight.Load()), QueueDepth: int(s.queue.Load()), ControlPlane: "UNCONFIGURED", ParallelismEnabled: true, SuperGPUConnected: computeConnected, SuperGPUHealth: computeHealth}
 	if s.halted.Load() {
 		out.Status = "HALTED"
 	}
