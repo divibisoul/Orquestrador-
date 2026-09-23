@@ -520,7 +520,7 @@ func (s *OctaCoreScheduler) executeG7Compute(ctx context.Context, job OctaCoreJo
 		return nil, string(BackendInProcess), err
 	}
 	defer compute.Release(backendName.ID, job.JobID)
-	result, err := compute.Execute(ctx, backendName.ID, operation, values)
+	result, err := compute.Execute(ctx, backendName, operation, values)
 	if err != nil {
 		return nil, string(BackendInProcess), err
 	}
