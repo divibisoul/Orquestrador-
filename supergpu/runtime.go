@@ -207,6 +207,30 @@ func (r *Runtime) Release(deviceID, owner string) error {
 	delete(r.reserved, deviceID)
 	return nil
 }
+// ExecuteConcurrent is the explicitly parallel execution path used by
+// BatchParallel and Octacore. It preserves the existing Execute semantics while
+// avoiding the legacy single-flight lock that protects ordinary Execute calls.
+func (r *Runtime) ExecuteConcurrent(ctx context.Context, device Device, operation string, input []float64) ([]float64, error) {
+	if ctx == nil {
+		return nil, errors.New("context is nil")
+	}
+	r.mu.RLock()
+	closed, backend := r.closed, r.backend
+	r.mu.RUnlock()
+	if closed {
+		return nil, errors.New("runtime closed")
+	}
+	if !device.Available {
+		return nil, errors.New("device unavailable")
+	}
+	if cb, ok := backend.(CapabilityBackend); ok && !cb.Supports(device) {
+		return nil, errors.New("backend does not support selected device")
+	}
+	r.running.Add(1)
+	defer r.running.Done()
+	return backend.Execute(ctx, device, operation, input)
+}
+
 func (r *Runtime) Execute(ctx context.Context, device Device, operation string, input []float64) ([]float64, error) {
 	if ctx == nil {
 		return nil, errors.New("context is nil")
@@ -294,7 +318,7 @@ func (r *Runtime) BatchParallel(ctx context.Context, device Device, operation st
 				if !ok {
 					return
 				}
-				value, err := r.Execute(workCtx, device, operation, item.input)
+				value, err := r.ExecuteConcurrent(workCtx, device, operation, item.input)
 				if err != nil {
 					setErr(err)
 					return
