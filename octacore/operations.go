@@ -19,22 +19,22 @@ const (
     OpSignal = "octacore.signal@1.0.0"
 )
 
-func RegisterOctaCoreOperations(engine *orchestrator.Engine, scheduler *OctaCoreScheduler) error {
+func RegisterOctaCoreOperations(engine *orchestrator.Engine, processor *Processor) error {
     if engine == nil { return errors.New("orchestrator engine is required") }
-    if scheduler == nil { return errors.New("Octacore scheduler is required") }
+    if processor == nil { return errors.New("Octacore processor is required") }
     registrations := map[string]orchestrator.Handler{
         OpDescribe: func(_ context.Context, message protocol.Message) (protocol.Result, error) {
-            raw, err := json.Marshal(map[string]any{"name":"Octacore","type":"system_gpu_federated_processor","silicon_gpu":false,"slots":scheduler.Inventory(),"backends":[]string{"IN_PROCESS","WEBASSEMBLY","WEBGPU","REMOTE_MESH","SARA_HTTP"}})
+            raw, err := json.Marshal(map[string]any{"name":"Octacore","type":"system_gpu_federated_processor","silicon_gpu":false,"slots":processor.Inventory(),"backends":[]string{"IN_PROCESS","WEBASSEMBLY","WEBGPU","REMOTE_MESH","SARA_HTTP"}})
             return octaProtocolResult(message, raw, err)
         },
         OpHealth: func(_ context.Context, message protocol.Message) (protocol.Result, error) {
-            raw, err := json.Marshal(scheduler.Health())
+            raw, err := json.Marshal(processor.Health())
             return octaProtocolResult(message, raw, err)
         },
         OpSubmit: func(ctx context.Context, message protocol.Message) (protocol.Result, error) {
             job, err := decodeJob(message.Metadata)
             if err != nil { return octaProtocolResult(message, nil, fmt.Errorf("INVALID_OCTACORE_JOB: %w", err)) }
-            result := scheduler.Execute(ctx, job)
+            result := processor.Submit(ctx, job)
             raw, marshalErr := json.Marshal(result)
             if marshalErr != nil { return octaProtocolResult(message, nil, marshalErr) }
             if !result.OK { return octaProtocolResult(message, raw, errors.New(result.Error.Code+":"+result.Error.Message)) }
@@ -43,7 +43,7 @@ func RegisterOctaCoreOperations(engine *orchestrator.Engine, scheduler *OctaCore
         OpBatch: func(ctx context.Context, message protocol.Message) (protocol.Result, error) {
             jobs, err := decodeJobs(message.Metadata)
             if err != nil { return octaProtocolResult(message, nil, fmt.Errorf("INVALID_OCTACORE_BATCH: %w", err)) }
-            results := scheduler.ExecutePlan(ctx, jobs)
+            results := processor.Batch(ctx, jobs)
             raw, marshalErr := json.Marshal(results)
             if marshalErr != nil { return octaProtocolResult(message, nil, marshalErr) }
             return octaProtocolResult(message, raw, nil)
@@ -54,9 +54,9 @@ func RegisterOctaCoreOperations(engine *orchestrator.Engine, scheduler *OctaCore
             case "throttle":
                 levelText := strings.TrimSpace(message.Metadata["level"]); var level int
                 if _, err := fmt.Sscan(levelText, &level); err != nil { return octaProtocolResult(message, nil, errors.New("signal level must be integer 0..3")) }
-                if err := scheduler.SetThrottle(level); err != nil { return octaProtocolResult(message, nil, err) }
-            case "halt": scheduler.Halt()
-            case "resume": scheduler.Resume()
+                if err := processor.SetThrottle(level); err != nil { return octaProtocolResult(message, nil, err) }
+            case "halt": processor.Halt()
+            case "resume": processor.Resume()
             default: return octaProtocolResult(message, nil, errors.New("unsupported Octacore signal"))
             }
             raw, err := json.Marshal(scheduler.Health())
