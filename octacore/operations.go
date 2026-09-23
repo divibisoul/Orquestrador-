@@ -65,13 +65,28 @@ func RegisterOctaCoreOperations(engine *orchestrator.Engine, processor *Processo
 		},
 		OpFederatedContextCycle: func(ctx context.Context, message protocol.Message) (protocol.Result, error) {
 			input := strings.TrimSpace(message.Metadata["octacore_input"])
+			allowResearchSkip := message.Metadata["allow_research_skip"] == "true"
+			var envelopePayload map[string]any
+			if rawPayload := strings.TrimSpace(message.Metadata["local_payload_json"]); rawPayload != "" {
+				if err := json.Unmarshal([]byte(rawPayload), &envelopePayload); err != nil {
+					return octaProtocolResult(message, nil, fmt.Errorf("invalid local Octacore payload: %w", err))
+				}
+				if input == "" {
+					if value, ok := envelopePayload["input"].(string); ok {
+						input = strings.TrimSpace(value)
+					}
+				}
+				if value, ok := envelopePayload["allow_research_skip"].(bool); ok {
+					allowResearchSkip = value
+				}
+			}
 			if input == "" {
 				return octaProtocolResult(message, nil, errors.New("octacore_input is required"))
 			}
 			request := FederatedContextInput{
 				CorrelationID:      message.CorrelationID,
 				Input:              input,
-				AllowResearchSkip: message.Metadata["allow_research_skip"] == "true",
+				AllowResearchSkip: allowResearchSkip,
 				Priority:           90,
 				TTLMS:              30_000,
 			}
@@ -83,6 +98,18 @@ func RegisterOctaCoreOperations(engine *orchestrator.Engine, processor *Processo
 			if raw := strings.TrimSpace(message.Metadata["perception_payload_json"]); raw != "" {
 				if err := json.Unmarshal([]byte(raw), &request.PerceptionPayload); err != nil {
 					return octaProtocolResult(message, nil, fmt.Errorf("invalid perception payload: %w", err))
+				}
+			}
+			if envelopePayload != nil {
+				if request.ResearchPayload == nil {
+					if value, ok := envelopePayload["research_payload"].(map[string]any); ok {
+						request.ResearchPayload = value
+					}
+				}
+				if request.PerceptionPayload == nil {
+					if value, ok := envelopePayload["perception_payload"].(map[string]any); ok {
+						request.PerceptionPayload = value
+					}
 				}
 			}
 			raw, err := json.Marshal(processor.ExecuteFederatedContextCycle(ctx, request))
