@@ -148,9 +148,6 @@ func (j OctaCoreJob) Validate() error {
 			}
 		}
 	}
-	if j.Kind != KindSARACycle && j.Kind != KindSARAudit && len(j.BackendPrefs) == 0 {
-		return errors.New("backend_prefs required for non-regenerative job")
-	}
 	return nil
 }
 
