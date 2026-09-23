@@ -403,10 +403,11 @@ func (s *OctaCoreScheduler) ExecutePlan(ctx context.Context, jobs []OctaCoreJob)
 }
 
 func isBarrierConsumer(job OctaCoreJob) bool {
-	if job.Target != string(G0) {
-		return false
+	if job.Target == string(G0) && (job.Kind == KindSARAudit || job.Kind == KindSARACycle) {
+		return true
 	}
-	return job.Kind == KindSARAudit || job.Kind == KindSARACycle
+	role, _ := job.Payload["barrier_role"].(string)
+	return strings.EqualFold(strings.TrimSpace(role), "consumer")
 }
 
 func barrierReady(_ int, job OctaCoreJob, pending map[int]OctaCoreJob) bool {
