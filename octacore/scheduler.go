@@ -320,7 +320,7 @@ func (s *OctaCoreScheduler) ExecutePlan(ctx context.Context, jobs []OctaCoreJob)
 		completedBarriers := map[string][]string{}
 		for _, i := range ready {
 			delete(pending, i)
-			if name := strings.TrimSpace(ptrString(jobs[i].Barrier)); name != "" {
+			if name := strings.TrimSpace(ptrString(jobs[i].Barrier)); name != "" && !isBarrierConsumer(jobs[i]) {
 				completedBarriers[name] = append(completedBarriers[name], jobs[i].JobID)
 				if !results[i].OK && blockedBarriers[name] == "" {
 					reason := "barrier dependency failed"
@@ -361,8 +361,6 @@ func barrierReady(_ int, job OctaCoreJob, pending map[int]OctaCoreJob) bool {
 		}
 		return true
 	}
-	// Non-regenerative jobs are producers for a named join. They can execute
-	// concurrently; G0 is the consumer/authority for regenerative work.
 	return true
 }
 
