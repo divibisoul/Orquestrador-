@@ -6,6 +6,8 @@ import (
     "sync"
     "testing"
     "time"
+
+    "github.com/divibisoul/Orquestrador-/supergpu"
 )
 
 func testScheduler(t *testing.T) *OctaCoreScheduler {
