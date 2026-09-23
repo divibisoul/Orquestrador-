@@ -2,8 +2,6 @@ package hortacore
 
 import (
     "context"
-    "fmt"
-
     "github.com/divibisoul/Orquestrador-/octacore"
 )
 
@@ -76,9 +74,6 @@ func (f *Fusion) Dispatch(ctx context.Context, processorID ProcessorID, input, c
             Type: eventType,
             Payload: map[string]any{"processor": processorID, "result": result},
         })
-    }
-    if !result.OK && result.Error != nil {
-        _ = fmt.Sprintf("%s:%s", result.Error.Code, result.Error.Message)
     }
     return result
 }
