@@ -67,3 +67,37 @@ Current Actions infrastructure remains the hard validation blocker: several rece
 N07 CI reached real runner execution after the normalization gate was corrected. The initial Octacore formatting failure was an automation defect (`git push HEAD:` with an empty ref), not a source compile failure. The normalizer now runs on push events and targets all Go files touched by the Octacore/HortaCore fusion.
 
 The next verification gate must observe `gofmt`, `go vet`, unit tests, race tests, build and the existing N01->N07 federation E2E step before promoting N07 to runtime-certified.
+
+## Validation update 2026-09-23 — current evidence
+
+### Focused nucleus gates
+
+- G2/N02 — PASS: Octacore G2 Focused Gate run 35816233796.
+- G3/N03 — PASS: Octacore G3 Focused Gate run 35816195012.
+- G5/N05 — PASS: Octacore G5 Focused Gate run 35816741470.
+- G6/N06 — existing N06 Channel Contract and Soul Mesh CI are PASS on its Octacore branch.
+- G4/N04 — N04 CI and Soul Mesh CI are PASS; the Octacore adapter is present and uses the canonical N04 runtime boundary.
+
+### G7/N07 full Round-1 gate
+
+The latest successful Octacore Focused Gate is run 35819219405. Its observed steps all passed:
+
+`gofmt` → `go vet ./octacore ./hortacore` → `go test ./octacore ./hortacore` → race tests → federated preflow tests → full build.
+
+The federated test passed the complete contract flow:
+
+`G6 → G4/G3 parallel pre-stage → barrier → G0 SARA audit → G0 SARA cycle`.
+
+The same gate also passed HortaCore tests, including shared Octacore control and canonical Mesh discovery.
+
+### HortaCore fusion
+
+HortaCore is now an additive G7 composition layer over the canonical Octacore processor. It does not create a second scheduler or Mesh. Mesh discovery is parallelized through the existing N07 peer client; HortaCore publishes capability/result/error/health events through the Vagus control boundary and exposes throttle/degrade/halt/resume signals against the same Octacore processor.
+
+### Soul Admin Plus thaw
+
+Plus is UNFROZEN for this integration stage. Its Android source now includes an authenticated HortaCoreClient over the existing N07 `/v1/execute` contract, persistent HortaCore health in DashboardStateStore, and cockpit visibility. This is implementation-level integration; APK/runtime commissioning remains unverified.
+
+### Remaining gate
+
+SARA G0 validation is still OPEN. The most recent SARA validation run exposed missing methods in OctaCoreG0Kernel that were themselves traced to an earlier accidental line-removal during fusion; those methods are being restored additively. No SARA production certification is declared until its own CI returns PASS.
