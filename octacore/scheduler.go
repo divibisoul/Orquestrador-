@@ -50,6 +50,7 @@ type SchedulerHealth struct {
     Inflight int `json:"inflight"`
     QueueDepth int `json:"queue_depth"`
     ControlPlane string `json:"control_plane"`
+    SuperGPUConnected bool `json:"supergpu_connected"`
     ParallelismEnabled bool `json:"parallelism_enabled"`
     Slots []SlotHealth `json:"slots"`
 }
@@ -352,7 +353,10 @@ func (s *OctaCoreScheduler) recordSuccess(slot SlotID, latencyMS int64) { st:=s.
 func (s *OctaCoreScheduler) recordFailure(slot SlotID, latencyMS int64, message string) { st:=s.state[slot]; st.mu.Lock(); st.failures++; st.lastLatency=time.Duration(latencyMS)*time.Millisecond; st.lastError=message; if st.failures>=s.cfg.FailureThreshold { st.circuit=string(CircuitOpen); st.openUntil=time.Now().Add(s.cfg.CircuitCooldown) }; st.mu.Unlock() }
 
 func (s *OctaCoreScheduler) Health() SchedulerHealth {
-    out:=SchedulerHealth{Status:"READY",ThrottleLevel:int(s.throttle.Load()),Inflight:int(s.inflight.Load()),QueueDepth:int(s.queue.Load()),ControlPlane:"UNCONFIGURED",ParallelismEnabled:true}; if s.halted.Load(){out.Status="HALTED"}; if s.control!=nil{out.ControlPlane=s.control.Status()}; for _,slot:=range s.Inventory(){st:=s.state[slot.Slot];st.mu.Lock();out.Slots=append(out.Slots,SlotHealth{Slot:slot.Slot,Status:string(slot.Status),Inflight:st.inflight,Failures:st.failures,Circuit:st.circuit,LastLatencyMS:st.lastLatency.Milliseconds(),LastError:st.lastError});st.mu.Unlock()}; return out
+    s.computeMu.RLock()
+    computeConnected := s.compute != nil
+    s.computeMu.RUnlock()
+    out:=SchedulerHealth{Status:"READY",ThrottleLevel:int(s.throttle.Load()),Inflight:int(s.inflight.Load()),QueueDepth:int(s.queue.Load()),ControlPlane:"UNCONFIGURED",ParallelismEnabled:true,SuperGPUConnected:computeConnected}; if s.halted.Load(){out.Status="HALTED"}; if s.control!=nil{out.ControlPlane=s.control.Status()}; for _,slot:=range s.Inventory(){st:=s.state[slot.Slot];st.mu.Lock();out.Slots=append(out.Slots,SlotHealth{Slot:slot.Slot,Status:string(slot.Status),Inflight:st.inflight,Failures:st.failures,Circuit:st.circuit,LastLatencyMS:st.lastLatency.Milliseconds(),LastError:st.lastError});st.mu.Unlock()}; return out
 }
 func (s *OctaCoreScheduler) publish(ctx context.Context, event VagusEnvelope) { if s.control!=nil { _=s.control.Publish(ctx,event) } }
 
