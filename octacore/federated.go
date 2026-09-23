@@ -68,13 +68,6 @@ func (p *Processor) ExecuteFederatedContextCycle(ctx context.Context, input Fede
     if ttl <= 0 {
         ttl = 30_000
     }
-    priority := input.Priority
-    if priority <= 0 {
-        priority = 90
-    }
-
-    _ = priority
-    _ = ttl
     jobs := BuildFederatedPreJobs(input)
 
 
@@ -125,7 +118,11 @@ func (p *Processor) ExecuteFederatedContextCycle(ctx context.Context, input Fede
         Priority: 100, TTLMS: ttl,
     })
     if !audit.OK {
-        return FederatedContextResult{CorrelationID: correlationID, Research: research, Perception: perception, Audit: audit, Cycle: failedResult(auditJobFrom(audit), "SARA_AUDIT_FAILED", errors.New(audit.Error.Message), 0, 0), Barrier: "pre"}
+        message := "SARA audit failed"
+        if audit.Error != nil {
+            message = audit.Error.Message
+        }
+        return FederatedContextResult{CorrelationID: correlationID, Research: research, Perception: perception, Audit: audit, Cycle: failedResult(auditJobFrom(audit), "SARA_AUDIT_FAILED", errors.New(message), 0, 0), Barrier: "pre"}
     }
     cyclePayload := map[string]any{"input": input.Input, "context": contextPayload, "cycle_id": correlationID, "audit": audit.Output}
     cycle := p.Submit(ctx, OctaCoreJob{
