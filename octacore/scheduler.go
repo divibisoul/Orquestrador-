@@ -112,13 +112,13 @@ type OctaCoreScheduler struct {
     halted atomic.Bool
     kernelMu sync.RWMutex
     localKernels map[SlotID]func(context.Context, OctaCoreJob) (map[string]any, error)
+    computeMu sync.RWMutex
 }
 
 func NewScheduler(cfg SchedulerConfig, control ControlPublisher, compute *supergpu.Runtime) (*OctaCoreScheduler, error) {
     if cfg.MaxInflight <= 0 { return nil, errors.New("MaxInflight must be positive") }
     if cfg.FailureThreshold <= 0 { return nil, errors.New("FailureThreshold must be positive") }
     if cfg.CircuitCooldown <= 0 { return nil, errors.New("CircuitCooldown must be positive") }
-    if compute == nil { compute = supergpu.New(nil); compute.Discover() }
     peers, err := mesh.NewPeerClient(nil)
     if err != nil { return nil, fmt.Errorf("create Mesh peer client: %w", err) }
     s := &OctaCoreScheduler{cfg: cfg, compute: compute, peers: peers, sara: backend.NewSARAProxy(backend.DefaultConfig()), control: control, slots: defaultSlots(), state: make(map[SlotID]*slotRuntimeState, 8), bucket: newTokenBucket(cfg.TokenCapacity, cfg.TokenRefillPerSec), localKernels: make(map[SlotID]func(context.Context, OctaCoreJob) (map[string]any, error))}
@@ -163,6 +163,23 @@ func (s *OctaCoreScheduler) localKernel(slot SlotID) func(context.Context, OctaC
     s.kernelMu.RLock()
     defer s.kernelMu.RUnlock()
     return s.localKernels[slot]
+}
+
+func (s *OctaCoreScheduler) AttachSuperGPU(runtime *supergpu.Runtime) error {
+    if runtime == nil {
+        return errors.New("SuperGPU runtime is required")
+    }
+    runtime.Discover()
+    s.computeMu.Lock()
+    s.compute = runtime
+    s.computeMu.Unlock()
+    return nil
+}
+
+func (s *OctaCoreScheduler) SuperGPUConnected() bool {
+    s.computeMu.RLock()
+    defer s.computeMu.RUnlock()
+    return s.compute != nil
 }
 
 func (s *OctaCoreScheduler) SetThrottle(level int) error {
@@ -314,9 +331,15 @@ func (s *OctaCoreScheduler) executeRemote(ctx context.Context, job OctaCoreJob, 
 }
 
 func (s *OctaCoreScheduler) executeG7Compute(ctx context.Context, job OctaCoreJob) (map[string]any, string, error) {
+    s.computeMu.RLock()
+    compute := s.compute
+    s.computeMu.RUnlock()
+    if compute == nil {
+        return nil, string(BackendInProcess), errors.New("SUPERGPU_NOT_CONNECTED")
+    }
     operation, _ := job.Payload["operation"].(string); operation = strings.TrimSpace(operation); values, err := numberArray(job.Payload["values"]); if err != nil { return nil, string(BackendInProcess), err }; if operation == "" { return nil, string(BackendInProcess), errors.New("IN_PROCESS_OPERATION_REQUIRED") }
-    backendName, err := s.compute.Select(""); if err != nil { return nil, string(BackendInProcess), err }; if err := s.compute.Reserve(backendName.ID, job.JobID); err != nil { return nil, string(BackendInProcess), err }; defer s.compute.Release(backendName.ID, job.JobID)
-    result, err := s.compute.Execute(ctx, backendName.ID, operation, values); if err != nil { return nil, string(BackendInProcess), err }; return map[string]any{"operation": operation, "values": result, "backend": backendName.ID}, string(BackendInProcess), nil
+    backendName, err := compute.Select(""); if err != nil { return nil, string(BackendInProcess), err }; if err := compute.Reserve(backendName.ID, job.JobID); err != nil { return nil, string(BackendInProcess), err }; defer compute.Release(backendName.ID, job.JobID)
+    result, err := compute.Execute(ctx, backendName.ID, operation, values); if err != nil { return nil, string(BackendInProcess), err }; return map[string]any{"operation": operation, "values": result, "backend": backendName.ID}, string(BackendInProcess), nil
 }
 
 func (s *OctaCoreScheduler) acquireInflight(ctx context.Context, slot SlotID) error {
