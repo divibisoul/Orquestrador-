@@ -119,7 +119,7 @@ func NewScheduler(cfg SchedulerConfig, control ControlPublisher, compute *superg
     if compute == nil { compute = supergpu.New(nil); compute.Discover() }
     peers, err := mesh.NewPeerClient(nil)
     if err != nil { return nil, fmt.Errorf("create Mesh peer client: %w", err) }
-    s := &OctaCoreScheduler{cfg: cfg, compute: compute, peers: peers, sara: backend.NewSARAProxy(backend.DefaultConfig()), control: control, slots: defaultSlots(), state: make(map[SlotID]*slotRuntimeState, 8), bucket: newTokenBucket(cfg.TokenCapacity, cfg.TokenRefillPerSec)}
+    s := &OctaCoreScheduler{cfg: cfg, compute: compute, peers: peers, sara: backend.NewSARAProxy(backend.DefaultConfig()), control: control, slots: defaultSlots(), state: make(map[SlotID]*slotRuntimeState, 8), bucket: newTokenBucket(cfg.TokenCapacity, cfg.TokenRefillPerSec), localKernels: make(map[SlotID]func(context.Context, OctaCoreJob) (map[string]any, error))}
     for _, slot := range []SlotID{G0, G1, G2, G3, G4, G5, G6, G7} { s.state[slot] = &slotRuntimeState{circuit: string(CircuitClosed)} }
     return s, nil
 }
@@ -142,6 +142,25 @@ func (s *OctaCoreScheduler) Inventory() []OctaCoreSlot {
     for _, slot := range s.slots { out = append(out, slot) }
     sort.Slice(out, func(i, j int) bool { return out[i].Slot < out[j].Slot })
     return out
+}
+
+func (s *OctaCoreScheduler) RegisterLocalKernel(slot SlotID, handler func(context.Context, OctaCoreJob) (map[string]any, error)) error {
+    if slot != G7 {
+        return errors.New("local kernel registration is restricted to G7 until a concrete local kernel contract exists")
+    }
+    if handler == nil {
+        return errors.New("local kernel handler is required")
+    }
+    s.kernelMu.Lock()
+    s.localKernels[slot] = handler
+    s.kernelMu.Unlock()
+    return nil
+}
+
+func (s *OctaCoreScheduler) localKernel(slot SlotID) func(context.Context, OctaCoreJob) (map[string]any, error) {
+    s.kernelMu.RLock()
+    defer s.kernelMu.RUnlock()
+    return s.localKernels[slot]
 }
 
 func (s *OctaCoreScheduler) SetThrottle(level int) error {
@@ -210,7 +229,47 @@ func (s *OctaCoreScheduler) resolveSlot(job OctaCoreJob) (OctaCoreSlot, error) {
 }
 
 func (s *OctaCoreScheduler) executeSelected(ctx context.Context, job OctaCoreJob, slot OctaCoreSlot) (map[string]any, string, error) {
-    switch slot.Slot { case G0: return s.executeG0(ctx, job); case G7: if job.Kind == KindDispatch { child, ok := parseNestedJob(job.Payload); if !ok { return nil, "", errors.New("dispatch job requires payload.job") }; childResult := s.Execute(ctx, child); if !childResult.OK { return nil, "IN_PROCESS_SCHEDULER", fmt.Errorf("child job failed: %s", childResult.Error.Code) }; return map[string]any{"result": childResult}, "IN_PROCESS_SCHEDULER", nil }; return s.executeG7Compute(ctx, job); default: return s.executeRemote(ctx, job, slot) }
+    if slot.Slot == G0 {
+        return s.executeG0(ctx, job)
+    }
+    for _, preferred := range job.BackendPrefs {
+        switch preferred {
+        case BackendInProcess:
+            if slot.Slot == G7 {
+                if job.Kind == KindDispatch {
+                    child, ok := parseNestedJob(job.Payload)
+                    if !ok {
+                        return nil, string(BackendInProcess), errors.New("dispatch job requires payload.job")
+                    }
+                    childResult := s.Execute(ctx, child)
+                    if !childResult.OK {
+                        return nil, string(BackendInProcess), fmt.Errorf("child job failed: %s", childResult.Error.Code)
+                    }
+                    return map[string]any{"result": childResult}, "IN_PROCESS_SCHEDULER", nil
+                }
+                if handler := s.localKernel(slot.Slot); handler != nil {
+                    output, err := handler(ctx, job)
+                    return output, string(BackendInProcess), err
+                }
+                output, used, err := s.executeG7Compute(ctx, job)
+                if err == nil {
+                    return output, used, nil
+                }
+                return nil, string(BackendInProcess), err
+            }
+        case BackendRemoteMesh:
+            if slot.Slot != G7 {
+                return s.executeRemote(ctx, job, slot)
+            }
+        case BackendWASM, BackendWebGPU:
+            continue
+        case BackendSARAHTTP:
+            return nil, string(BackendSARAHTTP), errors.New("SARA_HTTP_ONLY_FOR_G0")
+        default:
+            return nil, "", fmt.Errorf("unsupported backend: %s", preferred)
+        }
+    }
+    return nil, "", errors.New("BACKEND_UNAVAILABLE")
 }
 
 func (s *OctaCoreScheduler) executeG0(ctx context.Context, job OctaCoreJob) (map[string]any, string, error) {
