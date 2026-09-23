@@ -58,6 +58,18 @@ func (p *Processor) SuperGPUConnected() bool {
 
 func (p *Processor) SetThrottle(level int) error { return p.scheduler.SetThrottle(level) }
 
-func (p *Processor) Halt() { p.scheduler.Halt() }
+func (p *Processor) SetThrottleWithContext(ctx context.Context, level int, correlationID string) error {
+	return p.scheduler.SetThrottleWithContext(ctx, level, correlationID)
+}
 
-func (p *Processor) Resume() { p.scheduler.Resume() }
+func (p *Processor) Halt() { _ = p.HaltWithContext(context.Background(), NewJobID()) }
+
+func (p *Processor) HaltWithContext(ctx context.Context, correlationID string) error {
+	return p.scheduler.HaltWithContext(ctx, correlationID)
+}
+
+func (p *Processor) Resume() { _ = p.ResumeWithContext(context.Background(), NewJobID()) }
+
+func (p *Processor) ResumeWithContext(ctx context.Context, correlationID string) error {
+	return p.scheduler.ResumeWithContext(ctx, correlationID)
+}
