@@ -24,11 +24,11 @@ func NewFusion(processor *octacore.Processor, control octacore.ControlPublisher)
 func (f *Fusion) Describe() map[string]any {
 	description := f.core.Describe()
 	description["fusion"] = map[string]any{
-		"hortacore":              true,
-		"vagus_control":          f.control != nil && f.control.Status() != "UNCONFIGURED",
-		"mesh_execution":         true,
-		"mesh_transport":         "canonical-soul-mesh",
-		"octacore_scheduler":     true,
+		"hortacore":               true,
+		"vagus_control":           f.control != nil && f.control.Status() != "UNCONFIGURED",
+		"mesh_execution":          true,
+		"mesh_transport":          "canonical-soul-mesh",
+		"octacore_scheduler":      true,
 		"shared_supergpu_runtime": f.core.processor.SuperGPUConnected(),
 		"bidirectional_control":   true,
 	}
@@ -37,11 +37,11 @@ func (f *Fusion) Describe() map[string]any {
 
 func (f *Fusion) Health(ctx context.Context, correlationID string) map[string]any {
 	health := map[string]any{
-		"status":       "READY",
+		"status":         "READY",
 		"correlation_id": correlationID,
-		"describe":     f.Describe(),
-		"octacore":     f.core.processor.Health(),
-		"mesh":         f.SyncMesh(ctx, correlationID),
+		"describe":       f.Describe(),
+		"octacore":       f.core.processor.Health(),
+		"mesh":           f.SyncMesh(ctx, correlationID),
 	}
 	if f.control != nil {
 		health["vagus_control_status"] = f.control.Status()
