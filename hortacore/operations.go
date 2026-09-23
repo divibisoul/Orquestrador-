@@ -46,7 +46,7 @@ func RegisterOperations(engine *orchestrator.Engine, fusion *Fusion) error {
 					return result(message, nil, errors.New("hortacore.signal level must be integer 0..3"))
 				}
 			}
-			state, err := fusion.ApplySignal(signal, level)
+			state, err := fusion.ApplySignal(signal, level, message.CorrelationID)
 			if err != nil {
 				return result(message, nil, err)
 			}
