@@ -14,6 +14,9 @@ const (
 	BackendWASM       Backend = "WEBASSEMBLY"
 	BackendWebGPU     Backend = "WEBGPU"
 	BackendRemoteMesh Backend = "REMOTE_MESH"
+	// Internal SARA authority transport. It is not a generic execution backend:
+	// regenerative jobs are always resolved to G0/SARA.
+	BackendSARAHTTP Backend = "SARA_HTTP"
 )
 
 type JobKind string
@@ -143,7 +146,7 @@ func (j OctaCoreJob) Validate() error {
 			return errors.New("backend_prefs required for non-regenerative job")
 		}
 		for _, backend := range j.BackendPrefs {
-			if backend != BackendInProcess && backend != BackendWASM && backend != BackendWebGPU && backend != BackendRemoteMesh {
+			if backend != BackendInProcess && backend != BackendWASM && backend != BackendWebGPU && backend != BackendRemoteMesh && backend != BackendSARAHTTP {
 				return fmt.Errorf("unsupported backend_pref: %s", backend)
 			}
 		}
