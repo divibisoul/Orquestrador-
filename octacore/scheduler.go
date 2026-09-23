@@ -429,7 +429,7 @@ func (s *OctaCoreScheduler) executeSelected(ctx context.Context, job OctaCoreJob
 		case BackendWASM, BackendWebGPU:
 			continue
 		case BackendSARAHTTP:
-			return nil, string(BackendSARAHTTP), errors.New("SARA_HTTP_ONLY_FOR_G0")
+			return nil, "SARA_HTTP", errors.New("SARA_HTTP_ONLY_FOR_G0")
 		default:
 			return nil, "", fmt.Errorf("unsupported backend: %s", preferred)
 		}
@@ -439,16 +439,16 @@ func (s *OctaCoreScheduler) executeSelected(ctx context.Context, job OctaCoreJob
 
 func (s *OctaCoreScheduler) executeG0(ctx context.Context, job OctaCoreJob) (map[string]any, string, error) {
 	if s.sara == nil || !s.sara.Configured() {
-		return nil, string(BackendSARAHTTP), errors.New("SARA_UNAVAILABLE:SARA service is not configured")
+		return nil, "SARA_HTTP", errors.New("SARA_UNAVAILABLE:SARA service is not configured")
 	}
 	input, _ := job.Payload["input"].(string)
 	if strings.TrimSpace(input) == "" {
-		return nil, string(BackendSARAHTTP), errors.New("SARA_INPUT_REQUIRED")
+		return nil, "SARA_HTTP", errors.New("SARA_INPUT_REQUIRED")
 	}
 	switch job.Kind {
 	case KindSARAudit:
 		out, err := s.sara.Audit(ctx, input, job.CorrelationID)
-		return out, string(BackendSARAHTTP), err
+		return out, "SARA_HTTP", err
 	case KindSARACycle:
 		cycleID, _ := job.Payload["cycle_id"].(string)
 		out, err := s.sara.Cycle(ctx, input, cycleID, job.CorrelationID)
