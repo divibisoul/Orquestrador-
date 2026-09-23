@@ -52,7 +52,7 @@ func TestHortaCoreVagusSignalsControlSharedOctacoreProcessor(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	state, err := fusion.ApplySignal("throttle", 2)
+	state, err := fusion.ApplySignal(context.Background(), "throttle", 2, "horta-signal-corr")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -63,13 +63,13 @@ func TestHortaCoreVagusSignalsControlSharedOctacoreProcessor(t *testing.T) {
 	if health.ThrottleLevel != 2 {
 		t.Fatalf("expected throttle 2, got %d", health.ThrottleLevel)
 	}
-	if _, err := fusion.ApplySignal("halt", 0); err != nil {
+	if _, err := fusion.ApplySignal(context.Background(), "halt", 0, "horta-signal-corr"); err != nil {
 		t.Fatal(err)
 	}
 	if processor.Health().Status != "HALTED" {
 		t.Fatalf("expected shared Octacore processor to be halted")
 	}
-	if _, err := fusion.ApplySignal("resume", 0); err != nil {
+	if _, err := fusion.ApplySignal(context.Background(), "resume", 0, "horta-signal-corr"); err != nil {
 		t.Fatal(err)
 	}
 	if processor.Health().Status == "HALTED" {
