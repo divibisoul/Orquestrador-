@@ -37,6 +37,22 @@
     "policy": "adjacent-only-dynamic",
     "bidirectionalChannelsPerEdge": 2
   },
+  "hortacore": {
+    "type": "federated-composition-layer",
+    "owner": "N07",
+    "controlPlane": "VagusBus",
+    "executionPlane": "canonical-soul-mesh",
+    "octacoreOwner": "G7",
+    "regenerationAuthority": "SARA",
+    "processors": {
+      "codex": "PENDING_REPO",
+      "blueprint": "PENDING_REPO",
+      "eru": "DELEGATE_SARA",
+      "audit": "DELEGATE_SARA",
+      "guide": "PENDING_REPO"
+    },
+    "policy": "additive-preserve-optimize-connect"
+  },
   "hardware": {
     "controlPlane": "N07",
     "resourceSharing": "federated-nucleus-leases",
