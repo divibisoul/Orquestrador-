@@ -106,7 +106,7 @@ func TestOctaCoreCircuitBreakerOpensAfterFailures(t *testing.T) {
     for i := 0; i < 2; i++ { result := s.Execute(context.Background(), testJob("f"+string(rune('1'+i)), 1, nil, nil)); if result.OK { t.Fatal("expected execution failure") } }
     third := s.Execute(context.Background(), testJob("f3", 1, nil, nil))
     if third.OK { t.Fatal("expected open circuit to reject third execution") }
-    if third.Error == nil || third.Error.Code != "EXECUTION_ERROR" { t.Fatalf("unexpected third error: %#v", third.Error) }
+    if third.Error == nil || third.Error.Code != "THROTTLED" { t.Fatalf("unexpected third error: %#v", third.Error) }
     health := s.Health()
     for _, slot := range health.Slots { if slot.Slot == G7 && slot.Circuit != string(CircuitOpen) { t.Fatalf("expected G7 open circuit, got %s", slot.Circuit) } }
 }
