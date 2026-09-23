@@ -18,6 +18,9 @@ const (
 	OpSubmit   = "octacore.submit@1.0.0"
 	OpBatch    = "octacore.batch@1.0.0"
 	OpSignal   = "octacore.signal@1.0.0"
+	OpHortaDescribe = "hortacore.describe@1.0.0"
+	OpHortaSync = "hortacore.sync@1.0.0"
+	OpFederatedContextCycle = "octacore.federated_context_cycle@1.0.0"
 )
 
 func RegisterOctaCoreOperations(engine *orchestrator.Engine, processor *Processor, horta *hortacore.Fusion) error {
@@ -26,6 +29,9 @@ func RegisterOctaCoreOperations(engine *orchestrator.Engine, processor *Processo
 	}
 	if processor == nil {
 		return errors.New("Octacore processor is required")
+	}
+	if horta == nil {
+		return errors.New("HortaCore fusion is required")
 	}
 	registrations := map[string]orchestrator.Handler{
 		OpDescribe: func(_ context.Context, message protocol.Message) (protocol.Result, error) {
@@ -62,6 +68,39 @@ func RegisterOctaCoreOperations(engine *orchestrator.Engine, processor *Processo
 				return octaProtocolResult(message, nil, marshalErr)
 			}
 			return octaProtocolResult(message, raw, nil)
+		},
+		OpHortaDescribe: func(_ context.Context, message protocol.Message) (protocol.Result, error) {
+			raw, err := json.Marshal(horta.Describe())
+			return octaProtocolResult(message, raw, err)
+		},
+		OpHortaSync: func(ctx context.Context, message protocol.Message) (protocol.Result, error) {
+			raw, err := json.Marshal(horta.SyncMesh(ctx, message.CorrelationID))
+			return octaProtocolResult(message, raw, err)
+		},
+		OpFederatedContextCycle: func(ctx context.Context, message protocol.Message) (protocol.Result, error) {
+			input := strings.TrimSpace(message.Metadata["octacore_input"])
+			if input == "" {
+				return octaProtocolResult(message, nil, errors.New("octacore_input is required"))
+			}
+			request := FederatedContextInput{
+				CorrelationID:      message.CorrelationID,
+				Input:              input,
+				AllowResearchSkip: message.Metadata["allow_research_skip"] == "true",
+				Priority:           90,
+				TTLMS:              30_000,
+			}
+			if raw := strings.TrimSpace(message.Metadata["research_payload_json"]); raw != "" {
+				if err := json.Unmarshal([]byte(raw), &request.ResearchPayload); err != nil {
+					return octaProtocolResult(message, nil, fmt.Errorf("invalid research payload: %w", err))
+				}
+			}
+			if raw := strings.TrimSpace(message.Metadata["perception_payload_json"]); raw != "" {
+				if err := json.Unmarshal([]byte(raw), &request.PerceptionPayload); err != nil {
+					return octaProtocolResult(message, nil, fmt.Errorf("invalid perception payload: %w", err))
+				}
+			}
+			raw, err := json.Marshal(processor.ExecuteFederatedContextCycle(ctx, request))
+			return octaProtocolResult(message, raw, err)
 		},
 		OpSignal: func(_ context.Context, message protocol.Message) (protocol.Result, error) {
 			signal := strings.ToLower(strings.TrimSpace(message.Metadata["signal"]))
