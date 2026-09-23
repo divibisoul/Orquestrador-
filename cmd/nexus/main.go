@@ -72,7 +72,10 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	if err := octacore.RegisterOctaCoreOperations(e, octaProcessor, hortaFusion); err != nil {
+	if err := octacore.RegisterOctaCoreOperations(e, octaProcessor); err != nil {
+		log.Fatal(err)
+	}
+	if err := hortacore.RegisterOperations(e, hortaFusion); err != nil {
 		log.Fatal(err)
 	}
 
