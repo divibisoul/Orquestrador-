@@ -468,6 +468,10 @@ func (s *OctaCoreScheduler) executeG0(ctx context.Context, job OctaCoreJob) (map
 		return out, "SARA_HTTP", err
 	case "sara.cycle":
 		cycleID, _ := job.Payload["cycle_id"].(string)
+		if contextPayload, ok := job.Payload["context"].(map[string]any); ok {
+			out, err := s.sara.CycleWithContext(ctx, input, cycleID, job.CorrelationID, contextPayload)
+			return out, "SARA_HTTP", err
+		}
 		out, err := s.sara.Cycle(ctx, input, cycleID, job.CorrelationID)
 		return out, "SARA_HTTP", err
 	case "sara.regenerate":
