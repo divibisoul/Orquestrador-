@@ -10,11 +10,11 @@ import (
 type Backend string
 
 const (
-	BackendInProcess   Backend = "IN_PROCESS"
-	BackendWASM        Backend = "WEBASSEMBLY"
-	BackendWebGPU      Backend = "WEBGPU"
-	BackendRemoteMesh  Backend = "REMOTE_MESH"
-	BackendSARAHTTP    Backend = "SARA_HTTP"
+	BackendInProcess  Backend = "IN_PROCESS"
+	BackendWASM       Backend = "WEBASSEMBLY"
+	BackendWebGPU     Backend = "WEBGPU"
+	BackendRemoteMesh Backend = "REMOTE_MESH"
+	BackendSARAHTTP   Backend = "SARA_HTTP"
 )
 
 type JobKind string
@@ -46,34 +46,34 @@ const (
 type SlotStatus string
 
 const (
-	SlotImplemented              SlotStatus = "IMPLEMENTED"
-	SlotAdapterReady             SlotStatus = "ADAPTER_READY"
-	SlotRepoPresentUnverified    SlotStatus = "REPO_PRESENT_RUNTIME_UNVERIFIED"
-	SlotPendingKernelAdapter     SlotStatus = "PENDING_KERNEL_ADAPTER"
-	SlotPendingInfrastructure    SlotStatus = "PENDING_INFRASTRUCTURE"
+	SlotImplemented           SlotStatus = "IMPLEMENTED"
+	SlotAdapterReady          SlotStatus = "ADAPTER_READY"
+	SlotRepoPresentUnverified SlotStatus = "REPO_PRESENT_RUNTIME_UNVERIFIED"
+	SlotPendingKernelAdapter  SlotStatus = "PENDING_KERNEL_ADAPTER"
+	SlotPendingInfrastructure SlotStatus = "PENDING_INFRASTRUCTURE"
 )
 
 type OctaCoreSlot struct {
-	Slot        SlotID     `json:"slot"`
-	Nucleus     string     `json:"nucleus"`
-	Role        string     `json:"role"`
-	Status      SlotStatus `json:"status"`
-	Capabilities []string  `json:"capabilities,omitempty"`
-	Execution   []Backend  `json:"execution,omitempty"`
+	Slot         SlotID     `json:"slot"`
+	Nucleus      string     `json:"nucleus"`
+	Role         string     `json:"role"`
+	Status       SlotStatus `json:"status"`
+	Capabilities []string   `json:"capabilities,omitempty"`
+	Execution    []Backend  `json:"execution,omitempty"`
 }
 
 type OctaCoreJob struct {
-	JobID         string    `json:"job_id"`
-	CorrelationID string    `json:"correlation_id"`
-	Kind          JobKind   `json:"kind"`
-	Source        SlotID    `json:"source"`
-	Target        string    `json:"target"`
-	BackendPrefs  []Backend  `json:"backend_prefs"`
-	ParallelGroup *string    `json:"parallel_group,omitempty"`
-	Barrier       *string    `json:"barrier,omitempty"`
+	JobID         string         `json:"job_id"`
+	CorrelationID string         `json:"correlation_id"`
+	Kind          JobKind        `json:"kind"`
+	Source        SlotID         `json:"source"`
+	Target        string         `json:"target"`
+	BackendPrefs  []Backend      `json:"backend_prefs"`
+	ParallelGroup *string        `json:"parallel_group,omitempty"`
+	Barrier       *string        `json:"barrier,omitempty"`
 	Payload       map[string]any `json:"payload"`
-	Priority      int       `json:"priority"`
-	TTLMS         int64     `json:"ttl_ms"`
+	Priority      int            `json:"priority"`
+	TTLMS         int64          `json:"ttl_ms"`
 }
 
 type GpuJob = OctaCoreJob
@@ -90,12 +90,12 @@ type OctaCoreMetrics struct {
 }
 
 type OctaCoreResult struct {
-	JobID         string         `json:"job_id"`
-	CorrelationID string         `json:"correlation_id"`
-	OK            bool           `json:"ok"`
-	BackendUsed   string         `json:"backend_used"`
-	Output        map[string]any `json:"output,omitempty"`
-	Error         *OctaCoreError `json:"error,omitempty"`
+	JobID         string          `json:"job_id"`
+	CorrelationID string          `json:"correlation_id"`
+	OK            bool            `json:"ok"`
+	BackendUsed   string          `json:"backend_used"`
+	Output        map[string]any  `json:"output,omitempty"`
+	Error         *OctaCoreError  `json:"error,omitempty"`
 	Metrics       OctaCoreMetrics `json:"metrics"`
 }
 
