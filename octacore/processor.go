@@ -39,7 +39,7 @@ func (p *Processor) Batch(ctx context.Context, jobs []OctaCoreJob) []OctaCoreRes
 }
 
 func (p *Processor) DiscoverPeer(ctx context.Context, nucleus string) (map[string]any, error) {
-    return p.scheduler.DiscoverPeer(ctx, nucleus)
+	return p.scheduler.DiscoverPeer(ctx, nucleus)
 }
 
 func (p *Processor) Health() SchedulerHealth { return p.scheduler.Health() }
