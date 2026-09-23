@@ -6,7 +6,6 @@ import (
     "errors"
 
     "github.com/divibisoul/Orquestrador-/orchestrator"
-    "github.com/divibisoul/Orquestrador-/octacore"
     "github.com/divibisoul/Orquestrador-/protocol"
 )
 
@@ -75,4 +74,3 @@ func result(message protocol.Message, raw []byte, err error) (protocol.Result, e
     return out, nil
 }
 
-var _ = octacore.VagusVersion
