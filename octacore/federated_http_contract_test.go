@@ -85,6 +85,20 @@ func TestFederatedContextCycleFullContractFlow(t *testing.T) {
 			correlation, _ := envelope["correlationId"].(string)
 			capability, _ := envelope["capability"].(string)
 			payload, _ := envelope["payload"].(map[string]any)
+			responsePayload := handler(payload)
+			switch capability {
+			case "mesh.discovery", "mesh.describe":
+				if nucleus == "N04" {
+					responsePayload = map[string]any{"executableCapabilities": []string{"octacore.execute", "mesh.describe"}}
+				} else if nucleus == "N03" {
+					responsePayload = map[string]any{"executableCapabilities": []string{"mesh.describe"}}
+				}
+			case "octacore.execute":
+				responsePayload = map[string]any{
+					"research_snippets": []any{{"source": "N04", "text": "contract-research"}},
+					"pipeline":          "research_ready",
+				}
+			}
 			response := protocol.MeshEnvelope{
 				Version:         protocol.SoulMeshVersion,
 				ContractVersion: protocol.SoulMeshContractVersion,
@@ -97,7 +111,7 @@ func TestFederatedContextCycleFullContractFlow(t *testing.T) {
 				Type:            "TASK_RESULT",
 				Payload: map[string]any{
 					"capability": capability,
-					"payload":    handler(payload),
+					"payload":    responsePayload,
 				},
 			}
 			if err := protocol.SignHMAC(&response, secret); err != nil {
