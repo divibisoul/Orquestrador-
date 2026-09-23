@@ -484,13 +484,26 @@ func (s *OctaCoreScheduler) executeRemote(ctx context.Context, job OctaCoreJob, 
 	if capability == "" {
 		return nil, string(BackendRemoteMesh), errors.New("REMOTE_CAPABILITY_REQUIRED")
 	}
+	callCapability := capability
+	preflightCapability := capability
+	if slot.Slot == G4 || slot.Slot == G6 {
+		preflightCapability = "octacore.execute"
+	}
+	probeCtx, cancel := context.WithTimeout(ctx, 3*time.Second)
+	supported, probeErr := s.peers.SupportsCapability(probeCtx, slot.Nucleus, preflightCapability)
+	cancel()
+	if probeErr != nil {
+		return nil, string(BackendRemoteMesh), fmt.Errorf("REMOTE_CAPABILITY_DISCOVERY_FAILED:%w", probeErr)
+	}
+	if !supported {
+		return nil, string(BackendRemoteMesh), fmt.Errorf("REMOTE_CAPABILITY_UNAVAILABLE:%s:%s", slot.Nucleus, preflightCapability)
+	}
 	payload := cloneMap(job.Payload)
 	delete(payload, "capability")
 	payload["octacore"] = map[string]any{"job_id": job.JobID, "correlation_id": job.CorrelationID, "source": job.Source, "target": slot.Slot, "kind": job.Kind}
-	callCapability := capability
 	if slot.Slot == G4 || slot.Slot == G6 {
 		callCapability = "octacore.execute"
-		payload = map[string]any{"capability": capability, "payload": cloneMap(job.Payload)}
+		payload = map[string]any{"capability": capability, "payload": cloneMap(job.Payload), "job_id": job.JobID}
 	}
 	out, err := s.peers.CallWithCorrelation(ctx, slot.Nucleus, callCapability, payload, job.CorrelationID)
 	return out, string(BackendRemoteMesh), err
