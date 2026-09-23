@@ -3,6 +3,7 @@ package hortacore
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"errors"
 
 	"github.com/divibisoul/Orquestrador-/orchestrator"
@@ -11,8 +12,10 @@ import (
 
 const (
 	OpDescribe = "hortacore.describe@1.0.0"
+	OpHealth   = "hortacore.health@1.0.0"
 	OpSync     = "hortacore.sync@1.0.0"
 	OpDispatch = "hortacore.dispatch@1.0.0"
+	OpSignal   = "hortacore.signal@1.0.0"
 )
 
 func RegisterOperations(engine *orchestrator.Engine, fusion *Fusion) error {
@@ -27,8 +30,27 @@ func RegisterOperations(engine *orchestrator.Engine, fusion *Fusion) error {
 			raw, err := json.Marshal(fusion.Describe())
 			return result(message, raw, err)
 		},
+		OpHealth: func(ctx context.Context, message protocol.Message) (protocol.Result, error) {
+			raw, err := json.Marshal(fusion.Health(ctx, message.CorrelationID))
+			return result(message, raw, err)
+		},
 		OpSync: func(ctx context.Context, message protocol.Message) (protocol.Result, error) {
 			raw, err := json.Marshal(fusion.SyncMesh(ctx, message.CorrelationID))
+			return result(message, raw, err)
+		},
+		OpSignal: func(_ context.Context, message protocol.Message) (protocol.Result, error) {
+			signal := message.Metadata["signal"]
+			level := 0
+			if text := message.Metadata["level"]; text != "" {
+				if _, err := fmt.Sscanf(text, "%d", &level); err != nil {
+					return result(message, nil, errors.New("hortacore.signal level must be integer 0..3"))
+				}
+			}
+			state, err := fusion.ApplySignal(signal, level)
+			if err != nil {
+				return result(message, nil, err)
+			}
+			raw, err := json.Marshal(state)
 			return result(message, raw, err)
 		},
 		OpDispatch: func(ctx context.Context, message protocol.Message) (protocol.Result, error) {
