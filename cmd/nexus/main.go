@@ -20,6 +20,7 @@ import (
 	"github.com/divibisoul/Orquestrador-/octacore"
 	"github.com/divibisoul/Orquestrador-/orchestrator"
 	"github.com/divibisoul/Orquestrador-/prefrontal"
+	"github.com/divibisoul/Orquestrador-/hortacore"
 	"github.com/divibisoul/Orquestrador-/supergpu"
 )
 
@@ -63,12 +64,15 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	if err := octacore.RegisterOctaCoreOperations(e, octaProcessor); err != nil {
-		log.Fatal(err)
-	}
-
 	// Final wiring: Octacore G7 reuses the already-created canonical N07 SuperGPU runtime.
 	if err := octaProcessor.ConnectSuperGPU(g); err != nil {
+		log.Fatal(err)
+	}
+	hortaFusion, err := hortacore.NewFusion(octaProcessor, control)
+	if err != nil {
+		log.Fatal(err)
+	}
+	if err := octacore.RegisterOctaCoreOperations(e, octaProcessor, hortaFusion); err != nil {
 		log.Fatal(err)
 	}
 
