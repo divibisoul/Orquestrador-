@@ -610,8 +610,8 @@ func (s *OctaCoreScheduler) executeG7Compute(ctx context.Context, job OctaCoreJo
 	}
 	return map[string]any{
 		"operation": operation,
-		"values": result,
-		"backend": backendName.ID,
+		"values":    result,
+		"backend":   backendName.ID,
 	}, string(BackendInProcess), nil
 }
 
