@@ -67,6 +67,34 @@ jobs:
           git commit -m 'style(n07): normalize Go formatting'
           git push origin HEAD:main
 
+
+  normalize-octacore:
+    if: (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository) || (github.event_name == 'push' && github.ref == 'refs/heads/feat/octacore-system-processor-r1')
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'pull_request' && github.head_ref || github.ref_name }}
+          fetch-depth: 0
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.25.x'
+      - name: Normalize Octacore Go formatting
+        run: |
+          set -euo pipefail
+          gofmt -w octacore/*.go hortacore/*.go cmd/nexus/main.go backend/backend.go backend/sara_proxy.go mesh/http.go mesh/peers.go supergpu/runtime.go
+          if git diff --quiet -- octacore hortacore cmd/nexus/main.go backend/backend.go backend/sara_proxy.go mesh/http.go mesh/peers.go supergpu/runtime.go; then
+            echo 'Octacore Go files are already gofmt-clean.'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -- octacore/*.go hortacore/*.go cmd/nexus/main.go backend/backend.go backend/sara_proxy.go mesh/http.go mesh/peers.go supergpu/runtime.go
+          git commit -m 'style(octacore): normalize Go formatting'
+          git push origin HEAD:${{ github.head_ref || github.ref_name }}
   integrity:
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -113,7 +141,7 @@ jobs:
       - name: Assert declarative SOUL source
         run: |
           set -euo pipefail
-          node -e "const fs=require('node:fs');const m=JSON.parse(fs.readFileSync('soul-nuclei.json','utf8'));if(m.system!=='SOUL')throw new Error('SOUL_MATRIX_SYSTEM_INVALID');if(m.canonicalMesh?.protocol!=='soul-mesh/1')throw new Error('SOUL_MATRIX_PROTOCOL_INVALID');if(m.canonicalMesh?.contractVersion!=='1.1.0')throw new Error('SOUL_MATRIX_CONTRACT_INVALID');for(const id of ['N01','N02','N03','N04','N05','N06','N07'])if(!m.nuclei?.[id])throw new Error('SOUL_MATRIX_NUCLEUS_MISSING:'+id);for(const [id,n] of Object.entries(m.nuclei)){if(id!=='N07'&&(typeof n.sourceRef!=='string'||!/^[0-9a-f]{40}$/.test(n.sourceRef)))throw new Error('SOUL_MATRIX_SOURCE_REF_INVALID:'+id);if(!Array.isArray(n.adjacentPeers))throw new Error('SOUL_MATRIX_ADJACENCY_MISSING:'+id)};if(m.hardware?.simulation!==false||m.hardware?.realHardwareOnly!==true)throw new Error('SOUL_MATRIX_HARDWARE_POLICY_INVALID');console.log('SOUL declarative source verified.');"
+          node -e "const fs=require('node:fs');const m=JSON.parse(fs.readFileSync('soul-nuclei.json','utf8'));if(m.system!=='SOUL')throw new Error('SOUL_MATRIX_SYSTEM_INVALID');if(m.canonicalMesh?.protocol!=='soul-mesh/1')throw new Error('SOUL_MATRIX_PROTOCOL_INVALID');if(m.canonicalMesh?.contractVersion!=='1.1.0')throw new Error('SOUL_MATRIX_CONTRACT_INVALID');for(const id of ['N01','N02','N03','N04','N05','N06','N07'])if(!m.nuclei?.[id])throw new Error('SOUL_MATRIX_NUCLEUS_MISSING:'+id);for(const [id,n] of Object.entries(m.nuclei)){if(id!=='N07'&&(typeof n.sourceRef!=='string'||!/^[0-9a-f]{40}$/.test(n.sourceRef)))throw new Error('SOUL_MATRIX_SOURCE_REF_INVALID:'+id);if(!Array.isArray(n.adjacentPeers))throw new Error('SOUL_MATRIX_ADJACENCY_MISSING:'+id)};if(m.hardware?.simulation!==false||m.hardware?.realHardwareOnly!==true)throw new Error('SOUL_MATRIX_HARDWARE_POLICY_INVALID');if(m.octacore?.type!=='system-gpu-software-processor'||m.octacore?.siliconOctaCore!==false||m.octacore?.simulation!==false)throw new Error('OCTACORE_MANIFEST_POLICY_INVALID');if(JSON.stringify(m.octacore?.slots)!==JSON.stringify(['G0:SARA','G1:N01','G2:N02','G3:N03','G4:N04','G5:N05','G6:N06','G7:N07']))throw new Error('OCTACORE_SLOT_MANIFEST_INVALID');if(m.octacore?.schedulerOwner!=='N07'||m.octacore?.regenerativeAuthority!=='SARA'||m.octacore?.controlPlane!=='VagusBus'||m.octacore?.executionPlane!=='canonical-soul-mesh')throw new Error('OCTACORE_OWNERSHIP_INVALID');console.log('SOUL declarative source verified.');"
       - uses: actions/setup-go@v5
         with:
           go-version: '1.25.x'
@@ -121,10 +149,11 @@ jobs:
       - name: Format check
         run: |
           set -euo pipefail
-          files="$(gofmt -l $(git ls-files '*.go'))"
-          if [ -n "$files" ]; then
-            echo 'The following Go files require gofmt:'
-            printf '%s\n' "$files"
+          gofmt -w $(git ls-files '*.go')
+          if ! git diff --exit-code -- $(git ls-files '*.go'); then
+            echo 'The following Go files are not in canonical gofmt form:'
+            git diff --name-only -- $(git ls-files '*.go')
+            git diff -- $(git ls-files '*.go')
             exit 1
           fi
       - name: Vet
@@ -139,8 +168,24 @@ jobs:
         run: go test ./backend -run 'Test(Web3Storage|Supabase|Server|Intent)' -count=1
       - name: Federation E2E N01 to N07 via N04 N05 N06
         run: go test ./mesh -run '^TestN01ToN07FederatesAcrossN04N05N06$' -count=1
-
   container:
+    needs: verify
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build production image
+        run: docker build --pull --tag n07-orquestrador:ci .
+      - name: Inspect image without starting the server
+        run: |
+          set -euo pipefail
+          docker image inspect n07-orquestrador:ci >/dev/null
+          test "$(docker run --rm --entrypoint /bin/sh n07-orquestrador:ci -c 'test -x /app/n07 && test -x /usr/local/bin/guppy && echo ok')" = ok
+      - name: Final verification marker
+        run: echo "verify job completed before container gate"
+
+  octacore-container-regression:
     needs: verify
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
