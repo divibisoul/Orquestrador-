@@ -347,16 +347,13 @@ func (s *OctaCoreScheduler) ExecutePlan(ctx context.Context, jobs []OctaCoreJob)
 	return results
 }
 
-func barrierReady(index int, job OctaCoreJob, pending map[int]OctaCoreJob) bool {
+func barrierReady(_ int, job OctaCoreJob, pending map[int]OctaCoreJob) bool {
 	name := strings.TrimSpace(ptrString(job.Barrier))
 	if name == "" {
 		return true
 	}
 	group := strings.TrimSpace(ptrString(job.ParallelGroup))
-	for i, other := range pending {
-		if i >= index {
-			continue
-		}
+	for _, other := range pending {
 		if strings.TrimSpace(ptrString(other.Barrier)) != name {
 			continue
 		}
