@@ -49,7 +49,7 @@ func (f *Fusion) Health(ctx context.Context, correlationID string) map[string]an
 	return health
 }
 
-func (f *Fusion) ApplySignal(signal string, level int) (map[string]any, error) {
+func (f *Fusion) ApplySignal(signal string, level int, correlationID string) (map[string]any, error) {
 	switch signal {
 	case "throttle", "degrade":
 		if level < 0 || level > 3 {
@@ -70,7 +70,7 @@ func (f *Fusion) ApplySignal(signal string, level int) (map[string]any, error) {
 		_ = f.control.Publish(context.Background(), octacore.VagusEnvelope{
 			VagusVersion:  octacore.VagusVersion,
 			MessageID:     octacore.NewJobID(),
-			CorrelationID: octacore.NewJobID(),
+			CorrelationID: correlationID,
 			Source:        "G7.HortaCore",
 			Target:        "VagusBus",
 			Priority:      100,
