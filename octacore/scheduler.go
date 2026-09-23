@@ -444,7 +444,7 @@ func (s *OctaCoreScheduler) resolveSlot(job OctaCoreJob) (OctaCoreSlot, error) {
 	case KindSessionStep:
 		return s.slots[G6], nil
 	case KindDispatch:
-		return s.slots[G7], nil
+		return s.slots[G5], nil
 	case KindCustom:
 		return OctaCoreSlot{}, errors.New("custom job requires explicit target")
 	default:
