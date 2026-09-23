@@ -110,6 +110,8 @@ type OctaCoreScheduler struct {
     inflight atomic.Int32
     queue atomic.Int32
     halted atomic.Bool
+    kernelMu sync.RWMutex
+    localKernels map[SlotID]func(context.Context, OctaCoreJob) (map[string]any, error)
 }
 
 func NewScheduler(cfg SchedulerConfig, control ControlPublisher, compute *supergpu.Runtime) (*OctaCoreScheduler, error) {
