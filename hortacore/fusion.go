@@ -49,19 +49,23 @@ func (f *Fusion) Health(ctx context.Context, correlationID string) map[string]an
 	return health
 }
 
-func (f *Fusion) ApplySignal(signal string, level int, correlationID string) (map[string]any, error) {
+func (f *Fusion) ApplySignal(ctx context.Context, signal string, level int, correlationID string) (map[string]any, error) {
 	switch signal {
 	case "throttle", "degrade":
 		if level < 0 || level > 3 {
 			return nil, fmt.Errorf("HortaCore signal level must be 0..3")
 		}
-		if err := f.core.processor.SetThrottle(level); err != nil {
+		if err := f.core.processor.SetThrottleWithContext(ctx, level, correlationID); err != nil {
 			return nil, err
 		}
 	case "halt":
-		f.core.processor.Halt()
+		if err := f.core.processor.HaltWithContext(ctx, correlationID); err != nil {
+			return nil, err
+		}
 	case "resume":
-		f.core.processor.Resume()
+		if err := f.core.processor.ResumeWithContext(ctx, correlationID); err != nil {
+			return nil, err
+		}
 	default:
 		return nil, fmt.Errorf("unsupported HortaCore signal: %s", signal)
 	}
