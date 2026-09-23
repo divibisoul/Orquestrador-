@@ -94,12 +94,29 @@ func (p *Processor) ExecuteFederatedContextCycle(ctx context.Context, input Fede
 	}
 	if !researchOK && !input.AllowResearchSkip {
 		err := errors.New("G4_RESEARCH_FAILED")
+		detail := map[string]any{}
+		for _, result := range pre {
+			jobIndex := findJobByID(jobs, result.JobID)
+			if jobIndex >= 0 && jobs[jobIndex].Target == "G4" && !result.OK {
+				if result.Error != nil {
+					detail["code"] = result.Error.Code
+					detail["message"] = result.Error.Message
+					detail["backend"] = result.BackendUsed
+					detail["metrics"] = result.Metrics
+				}
+				break
+			}
+		}
+		failedAudit := failedResult(OctaCoreJob{CorrelationID: correlationID}, "G4_RESEARCH_FAILED", err, 0, 0)
+		failedAudit.Error.Details = detail
+		failedCycle := failedResult(OctaCoreJob{CorrelationID: correlationID}, "G4_RESEARCH_FAILED", err, 0, 0)
+		failedCycle.Error.Details = detail
 		return FederatedContextResult{
 			CorrelationID: correlationID,
 			Research:      research,
 			Perception:    perception,
-			Audit:         failedResult(OctaCoreJob{CorrelationID: correlationID}, "G4_RESEARCH_FAILED", err, 0, 0),
-			Cycle:         failedResult(OctaCoreJob{CorrelationID: correlationID}, "G4_RESEARCH_FAILED", err, 0, 0),
+			Audit:         failedAudit,
+			Cycle:         failedCycle,
 			Barrier:       "pre",
 		}
 	}
