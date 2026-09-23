@@ -94,7 +94,7 @@ jobs:
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add -- octacore/*.go hortacore/*.go cmd/nexus/main.go backend/backend.go backend/sara_proxy.go mesh/http.go mesh/peers.go supergpu/runtime.go
           git commit -m 'style(octacore): normalize Go formatting'
-          git push origin HEAD:${GITHUB_REF_NAME}
+          git push origin HEAD:${{ github.head_ref || github.ref_name }}
   integrity:
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -182,7 +182,7 @@ jobs:
           set -euo pipefail
           docker image inspect n07-orquestrador:ci >/dev/null
           test "$(docker run --rm --entrypoint /bin/sh n07-orquestrador:ci -c 'test -x /app/n07 && test -x /usr/local/bin/guppy && echo ok')" = ok
-       - name: Final verification marker
+      - name: Final verification marker
         run: echo "verify job completed before container gate"
 
   octacore-container-regression:
