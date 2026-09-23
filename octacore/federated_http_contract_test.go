@@ -95,7 +95,7 @@ func TestFederatedContextCycleFullContractFlow(t *testing.T) {
 				}
 			case "octacore.execute":
 				responsePayload = map[string]any{
-					"research_snippets": []any{{"source": "N04", "text": "contract-research"}},
+					"research_snippets": []any{map[string]any{"source": "N04", "text": "contract-research"}},
 					"pipeline":          "research_ready",
 				}
 			}
