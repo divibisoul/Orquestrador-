@@ -330,10 +330,10 @@ func (s *Server) capabilities(w http.ResponseWriter, r *http.Request) {
 			},
 		},
 		"octacore": map[string]any{
-			"slots": 8,
-			"scheduler_owner": "N07/G7",
+			"slots":                  8,
+			"scheduler_owner":        "N07/G7",
 			"regeneration_authority": "SARA/G0",
-			"backends": []string{"IN_PROCESS", "WEBASSEMBLY", "WEBGPU", "REMOTE_MESH"},
+			"backends":               []string{"IN_PROCESS", "WEBASSEMBLY", "WEBGPU", "REMOTE_MESH"},
 			"operations": []string{
 				"octacore.describe@1.0.0",
 				"octacore.health@1.0.0",
@@ -344,9 +344,9 @@ func (s *Server) capabilities(w http.ResponseWriter, r *http.Request) {
 			},
 		},
 		"hortacore": map[string]any{
-			"owner": "N07/G7",
-			"control_plane": "VagusBus",
-			"execution_plane": "canonical-soul-mesh",
+			"owner":                  "N07/G7",
+			"control_plane":          "VagusBus",
+			"execution_plane":        "canonical-soul-mesh",
 			"regeneration_authority": "SARA/G0",
 			"operations": []string{
 				"hortacore.describe@1.0.0",

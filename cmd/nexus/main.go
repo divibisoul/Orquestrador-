@@ -15,12 +15,12 @@ import (
 
 	"github.com/divibisoul/Orquestrador-/api/health"
 	"github.com/divibisoul/Orquestrador-/backend"
+	"github.com/divibisoul/Orquestrador-/hortacore"
 	"github.com/divibisoul/Orquestrador-/mesh"
 	"github.com/divibisoul/Orquestrador-/neural"
 	"github.com/divibisoul/Orquestrador-/octacore"
 	"github.com/divibisoul/Orquestrador-/orchestrator"
 	"github.com/divibisoul/Orquestrador-/prefrontal"
-	"github.com/divibisoul/Orquestrador-/hortacore"
 	"github.com/divibisoul/Orquestrador-/supergpu"
 )
 
