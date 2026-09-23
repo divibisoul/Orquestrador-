@@ -1,30 +1,21 @@
-# SOUL — Crossfront State (Generated Baseline)
+# SOUL — Crossfront State (Generated)
 
-> N07 governance baseline. Repository evidence is reported separately from live runtime commissioning. Canonical Soul Mesh contract target: **1.1.0**.
+> Generated from the declarative SOUL matrix. Missing repository evidence is surfaced as DEGRADED; runtime availability is never fabricated.
 
-| Nucleus | Repository | Contract target | Mesh role | Neural layer status | Runtime commissioning |
-|---|---|---:|---|---|---|
-| N01 | `divibisoul/aeternum-core-29` | 1.1.0 | Gateway / Android peer | Local bridge + existing Mesh runtime | External runtime required |
-| N02 | `divibisoul/Eternium-` | 1.1.0 | Cognition / inference | Synaptic bridge + Mesh runtime | External runtime required |
-| N03 | `divibisoul/nexus-aeternum-fusion` | 1.1.0 | Audio / speech | Synaptic bridge + Mesh runtime | External runtime required |
-| N04 | `divibisoul/nextjs-ai-chatbots` | 1.1.0 | Documents / tools | Synaptic bridge + Mesh runtime | External runtime required |
-| N05 | `divibisoul/nextjs-ai-chatbot` | 1.1.0 | Conversation | Synaptic bridge + Mesh runtime | External runtime required |
-| N06 | `divibisoul/nextjs-ai-chatbot-2000` | 1.1.0 | Cognitive support | Synaptic bridge + Mesh runtime | External runtime required |
-| N07 | `divibisoul/Orquestrador-` | 1.1.0 | Neocortex / federation / SuperGPU control plane | Neural federation + adaptive protocol capability | External runtime required |
+| Nucleus | Repository | Role | Contract | Mesh | Neural/Federation | Evidence state | Source |
+|---|---|---|---:|---|---|---|---|
+| N01 | divibisoul/aeternum-core-29 | host-reference-gateway | not-detected | present | not detected | OBSERVED | scripts/soul-mesh-server-entry.mjs |
+| N02 | divibisoul/Eternium- | conversation-interaction | not-detected | present | not detected | OBSERVED | api/soul-mesh.ts |
+| N03 | divibisoul/nexus-aeternum-fusion | perception-voice-multimodal-context | not-detected | present | not detected | OBSERVED | api/soul-mesh.ts |
+| N04 | divibisoul/nextjs-ai-chatbots | tools-documents-artifacts | 1.1.0 | present | not detected | OBSERVED | lib/soul-mesh/SoulMeshProtocol.ts |
+| N05 | divibisoul/nextjs-ai-chatbot | orchestration-dispatch-execution | not-detected | not detected | not detected | OBSERVED | app/api/soul-mesh/route.ts |
+| N06 | divibisoul/nextjs-ai-chatbot-2000 | cognition-synthesis-audit-governance | not-detected | present | not detected | OBSERVED | app/api/soul-mesh/route.ts |
+| N07 | divibisoul/Orquestrador- | super-agi-master-orchestration-federation-supergpu-control-plane | not-detected | not detected | not detected | DEGRADED | not-found |
 
-## Current governance capabilities
+## Governance
 
-- N01 peer client routes to N02–N07 and validates `correlationId`, protocol, contract and route identity.
-- N02 exposes the canonical existing `api/soul-mesh.ts`; the compatibility adapter accepts legacy action envelopes without replacing the secured Mesh runtime.
-- N02–N06 expose local `SynapticNodeBridge` modules over the existing Soul Mesh.
-- N07 contains adaptive protocol translation and federation controls.
-- Integrity verifiers are present in all seven nuclei and report correlation, response validity and latency.
-- External deployment URLs/secrets are never fabricated; unavailable commissioning remains explicitly uncommissioned.
-
-## Automatic governance
-
-N07 now owns `scripts/generate-crossfront-state.mjs` and `.github/workflows/crossfront-state-sync.yml`. The workflow checks out N01–N07 repository state, regenerates this report and publishes changes only when the generated content differs.
-
-## Acceptance rule
-
-A repository-level green state does not prove live seven-runtime connectivity. Final ONLINE status requires successful authenticated real-runtime federation/E2E evidence through the existing N07 commissioning gates.
+- Canonical Mesh contract target: **soul-mesh/1 / 1.1.0**.
+- SOUL is one system; N01–N07 are specialized nuclei.
+- The matrix is the source of truth for nucleus identity, role and topology.
+- A legacy implementation may remain only as a compatibility adapter pointing at a canonical authority.
+- Repository evidence and live runtime evidence are kept separate.
