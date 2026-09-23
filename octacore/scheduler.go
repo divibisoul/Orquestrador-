@@ -153,7 +153,7 @@ func NewScheduler(cfg SchedulerConfig, control ControlPublisher, compute *superg
 
 func defaultSlots() map[SlotID]OctaCoreSlot {
 	return map[SlotID]OctaCoreSlot{
-		G0: {Slot: G0, Nucleus: "SARA", Role: "regenerative compute kernel", Status: SlotImplemented, Capabilities: []string{"sara.cycle", "sara.audit", "sara.regenerate", "sara.state", "sara.trace"}, Execution: []Backend{BackendRemoteMesh}},
+		G0: {Slot: G0, Nucleus: "SARA", Role: "regenerative compute kernel", Status: SlotImplemented, Capabilities: []string{"sara.cycle", "sara.audit", "sara.regenerate", "sara.state", "sara.trace"}, Execution: []Backend{BackendSARAHTTP}},
 		G1: {Slot: G1, Nucleus: "N01", Role: "edge ingress / host gateway kernels", Status: SlotRepoPresentUnverified, Execution: []Backend{BackendRemoteMesh}},
 		G2: {Slot: G2, Nucleus: "N02", Role: "conversation turn kernels", Status: SlotRepoPresentUnverified, Execution: []Backend{BackendRemoteMesh}},
 		G3: {Slot: G3, Nucleus: "N03", Role: "perception / multimodal prep kernels", Status: SlotRepoPresentUnverified, Execution: []Backend{BackendRemoteMesh}},
