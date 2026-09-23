@@ -38,7 +38,7 @@ func RegisterOperations(engine *orchestrator.Engine, fusion *Fusion) error {
 			raw, err := json.Marshal(fusion.SyncMesh(ctx, message.CorrelationID))
 			return result(message, raw, err)
 		},
-		OpSignal: func(_ context.Context, message protocol.Message) (protocol.Result, error) {
+		OpSignal: func(ctx context.Context, message protocol.Message) (protocol.Result, error) {
 			signal := message.Metadata["signal"]
 			level := 0
 			if text := message.Metadata["level"]; text != "" {
@@ -46,7 +46,7 @@ func RegisterOperations(engine *orchestrator.Engine, fusion *Fusion) error {
 					return result(message, nil, errors.New("hortacore.signal level must be integer 0..3"))
 				}
 			}
-			state, err := fusion.ApplySignal(context.Background(), signal, level, message.CorrelationID)
+			state, err := fusion.ApplySignal(ctx, signal, level, message.CorrelationID)
 			if err != nil {
 				return result(message, nil, err)
 			}
