@@ -158,16 +158,61 @@ jobs:
           fi
       - name: Vet
         run: go vet ./...
+      - name: Octacore focused tests
+        id: octacore_tests
+        run: go test ./octacore ./hortacore -count=1
       - name: Test
+        id: full_tests
+        continue-on-error: true
         run: go test ./...
       - name: Race test
+        id: race_tests
+        continue-on-error: true
         run: go test -race ./...
       - name: Build
+        id: build
+        continue-on-error: true
         run: go build ./...
       - name: Backend regression
+        id: backend_regression
+        continue-on-error: true
         run: go test ./backend -run 'Test(Web3Storage|Supabase|Server|Intent)' -count=1
       - name: Federation E2E N01 to N07 via N04 N05 N06
-        run: go test ./mesh -run '^TestN01ToN07FederatesAcrossN04N05N06$' -count=1
+        id: federation_e2e
+        continue-on-error: true
+        run: go test ./mesh -run '^TestN01ToN07FederatesAcrossN04N05N06
+
+  container:
+    needs: verify
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build production image
+        run: docker build --pull --tag n07-orquestrador:ci .
+      - name: Inspect image without starting the server
+        run: |
+          set -euo pipefail
+          docker image inspect n07-orquestrador:ci >/dev/null
+          test "$(docker run --rm --entrypoint /bin/sh n07-orquestrador:ci -c 'test -x /app/n07 && test -x /usr/local/bin/guppy && echo ok')" = ok
+ -count=1
+      - name: Final verification gate
+        if: always()
+        run: |
+          set -euo pipefail
+          echo "octacore_tests=${{ steps.octacore_tests.outcome }}"
+          echo "full_tests=${{ steps.full_tests.outcome }}"
+          echo "race_tests=${{ steps.race_tests.outcome }}"
+          echo "build=${{ steps.build.outcome }}"
+          echo "backend_regression=${{ steps.backend_regression.outcome }}"
+          echo "federation_e2e=${{ steps.federation_e2e.outcome }}"
+          test "${{ steps.octacore_tests.outcome }}" = success
+          test "${{ steps.full_tests.outcome }}" = success
+          test "${{ steps.race_tests.outcome }}" = success
+          test "${{ steps.build.outcome }}" = success
+          test "${{ steps.backend_regression.outcome }}" = success
+          test "${{ steps.federation_e2e.outcome }}" = success
 
   container:
     needs: verify
