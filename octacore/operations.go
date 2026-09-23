@@ -59,7 +59,7 @@ func RegisterOctaCoreOperations(engine *orchestrator.Engine, processor *Processo
             case "resume": processor.Resume()
             default: return octaProtocolResult(message, nil, errors.New("unsupported Octacore signal"))
             }
-            raw, err := json.Marshal(scheduler.Health())
+            raw, err := json.Marshal(processor.Health())
             return octaProtocolResult(message, raw, err)
         },
     }
