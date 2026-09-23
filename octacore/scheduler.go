@@ -200,6 +200,7 @@ func (s *OctaCoreScheduler) Execute(ctx context.Context, job OctaCoreJob) OctaCo
 func (s *OctaCoreScheduler) ExecutePlan(ctx context.Context, jobs []OctaCoreJob) []OctaCoreResult {
     results := make([]OctaCoreResult, len(jobs)); if len(jobs) == 0 { return results }
     pending := make(map[int]OctaCoreJob, len(jobs)); for i, job := range jobs { pending[i] = job }
+    blockedBarriers := make(map[string]string)
     for len(pending) > 0 {
         ready := make([]int, 0, len(pending))
         for i, job := range pending { if barrierReady(i, job, pending) { ready = append(ready, i) } }
