@@ -329,6 +329,31 @@ func (s *Server) capabilities(w http.ResponseWriter, r *http.Request) {
 				"sara.trace@1.0.0",
 			},
 		},
+		"octacore": map[string]any{
+			"slots": 8,
+			"scheduler_owner": "N07/G7",
+			"regeneration_authority": "SARA/G0",
+			"backends": []string{"IN_PROCESS", "WEBASSEMBLY", "WEBGPU", "REMOTE_MESH"},
+			"operations": []string{
+				"octacore.describe@1.0.0",
+				"octacore.health@1.0.0",
+				"octacore.submit@1.0.0",
+				"octacore.batch@1.0.0",
+				"octacore.signal@1.0.0",
+				"octacore.federated_context_cycle@1.0.0",
+			},
+		},
+		"hortacore": map[string]any{
+			"owner": "N07/G7",
+			"control_plane": "VagusBus",
+			"execution_plane": "canonical-soul-mesh",
+			"regeneration_authority": "SARA/G0",
+			"operations": []string{
+				"hortacore.describe@1.0.0",
+				"hortacore.sync@1.0.0",
+				"hortacore.dispatch@1.0.0",
+			},
+		},
 	})
 }
 
