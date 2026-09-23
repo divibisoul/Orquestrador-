@@ -214,11 +214,42 @@ func (s *OctaCoreScheduler) SetThrottle(level int) error {
 		return errors.New("throttle level must be 0..3")
 	}
 	s.throttle.Store(int32(level))
+	if err := s.publishControlSignal("signal.throttle", "fabric", map[string]any{"level": level}); err != nil {
+		s.throttle.Store(0)
+		return err
+	}
 	return nil
 }
-func (s *OctaCoreScheduler) Resume()      { s.halted.Store(false) }
-func (s *OctaCoreScheduler) Halt()        { s.halted.Store(true) }
+
+func (s *OctaCoreScheduler) Resume() {
+	s.halted.Store(false)
+	_ = s.publishControlSignal("signal.resume", "fabric", map[string]any{"level": 0})
+}
+
+func (s *OctaCoreScheduler) Halt() {
+	s.halted.Store(true)
+	_ = s.publishControlSignal("signal.halt", "fabric", map[string]any{"level": 3})
+}
+
 func (s *OctaCoreScheduler) Halted() bool { return s.halted.Load() }
+
+func (s *OctaCoreScheduler) publishControlSignal(eventType, target string, payload map[string]any) error {
+	if s.control == nil || s.control.Status() == "UNCONFIGURED" {
+		return nil
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	correlationID := NewJobID()
+	return s.control.Publish(ctx, newVagusEvent(
+		eventType,
+		"G7",
+		target,
+		100,
+		5_000,
+		correlationID,
+		payload,
+	))
+}
 
 func (s *OctaCoreScheduler) Execute(ctx context.Context, job OctaCoreJob) OctaCoreResult {
 	queuedAt := time.Now()
