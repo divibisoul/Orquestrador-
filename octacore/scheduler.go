@@ -210,11 +210,15 @@ func (s *OctaCoreScheduler) SuperGPUConnected() bool {
 }
 
 func (s *OctaCoreScheduler) SetThrottle(level int) error {
+	return s.SetThrottleWithContext(context.Background(), level, NewJobID())
+}
+
+func (s *OctaCoreScheduler) SetThrottleWithContext(ctx context.Context, level int, correlationID string) error {
 	if level < 0 || level > 3 {
 		return errors.New("throttle level must be 0..3")
 	}
 	s.throttle.Store(int32(level))
-	if err := s.publishControlSignal("signal.throttle", "fabric", map[string]any{"level": level}); err != nil {
+	if err := s.publishControlSignal(ctx, "signal.throttle", "fabric", map[string]any{"level": level}, correlationID); err != nil {
 		s.throttle.Store(0)
 		return err
 	}
@@ -222,25 +226,38 @@ func (s *OctaCoreScheduler) SetThrottle(level int) error {
 }
 
 func (s *OctaCoreScheduler) Resume() {
+	_ = s.ResumeWithContext(context.Background(), NewJobID())
+}
+
+func (s *OctaCoreScheduler) ResumeWithContext(ctx context.Context, correlationID string) error {
 	s.halted.Store(false)
-	_ = s.publishControlSignal("signal.resume", "fabric", map[string]any{"level": 0})
+	return s.publishControlSignal(ctx, "signal.resume", "fabric", map[string]any{"level": 0}, correlationID)
 }
 
 func (s *OctaCoreScheduler) Halt() {
+	_ = s.HaltWithContext(context.Background(), NewJobID())
+}
+
+func (s *OctaCoreScheduler) HaltWithContext(ctx context.Context, correlationID string) error {
 	s.halted.Store(true)
-	_ = s.publishControlSignal("signal.halt", "fabric", map[string]any{"level": 3})
+	return s.publishControlSignal(ctx, "signal.halt", "fabric", map[string]any{"level": 3}, correlationID)
 }
 
 func (s *OctaCoreScheduler) Halted() bool { return s.halted.Load() }
 
-func (s *OctaCoreScheduler) publishControlSignal(eventType, target string, payload map[string]any) error {
+func (s *OctaCoreScheduler) publishControlSignal(ctx context.Context, eventType, target string, payload map[string]any, correlationID string) error {
 	if s.control == nil || s.control.Status() == "UNCONFIGURED" {
 		return nil
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	signalCtx, cancel := context.WithTimeout(ctx, 3*time.Second)
 	defer cancel()
-	correlationID := NewJobID()
-	return s.control.Publish(ctx, newVagusEvent(
+	if strings.TrimSpace(correlationID) == "" {
+		correlationID = NewJobID()
+	}
+	return s.control.Publish(signalCtx, newVagusEvent(
 		eventType,
 		"G7",
 		target,
