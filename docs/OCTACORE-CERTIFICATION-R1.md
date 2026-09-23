@@ -61,3 +61,9 @@ No second Mesh is created on Android.
 Repository source and contract tests can establish implementation/contract state. They cannot prove live distributed execution without a real configured N07/SARA endpoint and an observable build/runtime environment.
 
 Current Actions infrastructure remains the hard validation blocker: several recent workflows complete as failures with no recorded steps/logs. Therefore this document intentionally does not label live E2E as PASS.
+
+## Validation update 2026-09-23
+
+N07 CI reached real runner execution after the normalization gate was corrected. The initial Octacore formatting failure was an automation defect (`git push HEAD:` with an empty ref), not a source compile failure. The normalizer now runs on push events and targets all Go files touched by the Octacore/HortaCore fusion.
+
+The next verification gate must observe `gofmt`, `go vet`, unit tests, race tests, build and the existing N01->N07 federation E2E step before promoting N07 to runtime-certified.
