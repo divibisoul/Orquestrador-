@@ -112,12 +112,11 @@ type OctaCoreScheduler struct {
     halted atomic.Bool
 }
 
-func NewScheduler(cfg SchedulerConfig, control ControlPublisher) (*OctaCoreScheduler, error) {
+func NewScheduler(cfg SchedulerConfig, control ControlPublisher, compute *supergpu.Runtime) (*OctaCoreScheduler, error) {
     if cfg.MaxInflight <= 0 { return nil, errors.New("MaxInflight must be positive") }
     if cfg.FailureThreshold <= 0 { return nil, errors.New("FailureThreshold must be positive") }
     if cfg.CircuitCooldown <= 0 { return nil, errors.New("CircuitCooldown must be positive") }
-    compute := supergpu.New(nil)
-    compute.Discover()
+    if compute == nil { compute = supergpu.New(nil); compute.Discover() }
     peers, err := mesh.NewPeerClient(nil)
     if err != nil { return nil, fmt.Errorf("create Mesh peer client: %w", err) }
     s := &OctaCoreScheduler{cfg: cfg, compute: compute, peers: peers, sara: backend.NewSARAProxy(backend.DefaultConfig()), control: control, slots: defaultSlots(), state: make(map[SlotID]*slotRuntimeState, 8), bucket: newTokenBucket(cfg.TokenCapacity, cfg.TokenRefillPerSec)}
