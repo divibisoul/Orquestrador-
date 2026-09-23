@@ -26,6 +26,34 @@ type FederatedContextResult struct {
     Barrier      string
 }
 
+func BuildFederatedPreJobs(input FederatedContextInput) []OctaCoreJob {
+    ttl := input.TTLMS
+    if ttl <= 0 {
+        ttl = 30_000
+    }
+    priority := input.Priority
+    if priority <= 0 {
+        priority = 90
+    }
+    jobs := []OctaCoreJob{
+        {
+            JobID: NewJobID(), CorrelationID: strings.TrimSpace(input.CorrelationID), Kind: KindResearch, Source: G6, Target: "G4",
+            BackendPrefs: []Backend{BackendRemoteMesh}, ParallelGroup: ptr("pre"), Barrier: ptr("pre"),
+            Payload: map[string]any{"capability": "context-orchestration", "payload": input.ResearchPayload},
+            Priority: priority, TTLMS: ttl,
+        },
+    }
+    if input.PerceptionPayload != nil {
+        jobs = append(jobs, OctaCoreJob{
+            JobID: NewJobID(), CorrelationID: strings.TrimSpace(input.CorrelationID), Kind: KindPerceive, Source: G6, Target: "G3",
+            BackendPrefs: []Backend{BackendRemoteMesh}, ParallelGroup: ptr("pre"), Barrier: ptr("pre"),
+            Payload: map[string]any{"capability": perceptionCapability(input.PerceptionPayload), "payload": input.PerceptionPayload},
+            Priority: priority, TTLMS: ttl,
+        })
+    }
+    return jobs
+}
+
 func (p *Processor) ExecuteFederatedContextCycle(ctx context.Context, input FederatedContextInput) FederatedContextResult {
     correlationID := strings.TrimSpace(input.CorrelationID)
     if correlationID == "" {
@@ -45,21 +73,10 @@ func (p *Processor) ExecuteFederatedContextCycle(ctx context.Context, input Fede
         priority = 90
     }
 
-    jobs := make([]OctaCoreJob, 0, 2)
-    jobs = append(jobs, OctaCoreJob{
-        JobID: NewJobID(), CorrelationID: correlationID, Kind: KindResearch, Source: G6, Target: "G4",
-        BackendPrefs: []Backend{BackendRemoteMesh}, ParallelGroup: ptr("pre"), Barrier: ptr("pre"),
-        Payload: map[string]any{"capability": "context-orchestration", "payload": input.ResearchPayload},
-        Priority: priority, TTLMS: ttl,
-    })
-    if input.PerceptionPayload != nil {
-        jobs = append(jobs, OctaCoreJob{
-            JobID: NewJobID(), CorrelationID: correlationID, Kind: KindPerceive, Source: G6, Target: "G3",
-            BackendPrefs: []Backend{BackendRemoteMesh}, ParallelGroup: ptr("pre"), Barrier: ptr("pre"),
-            Payload: map[string]any{"capability": perceptionCapability(input.PerceptionPayload), "payload": input.PerceptionPayload},
-            Priority: priority, TTLMS: ttl,
-        })
-    }
+    _ = priority
+    _ = ttl
+    jobs := BuildFederatedPreJobs(input)
+
 
     pre := p.Batch(ctx, jobs)
     var research map[string]any
