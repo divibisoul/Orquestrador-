@@ -91,12 +91,21 @@ func TestFederatedContextCycleFullContractFlow(t *testing.T) {
 				if nucleus == "N04" {
 					responsePayload = map[string]any{"executableCapabilities": []string{"octacore.execute", "mesh.describe"}}
 				} else if nucleus == "N03" {
-					responsePayload = map[string]any{"executableCapabilities": []string{"mesh.describe"}}
+					responsePayload = map[string]any{"executableCapabilities": []string{"octacore.execute", "mesh.describe"}}
 				}
 			case "octacore.execute":
-				responsePayload = map[string]any{
-					"research_snippets": []any{map[string]any{"source": "N04", "text": "contract-research"}},
-					"pipeline":          "research_ready",
+				innerCapability, _ := payload["capability"].(string)
+				if innerCapability == "context-orchestration" {
+					responsePayload = map[string]any{
+						"research_snippets": []any{map[string]any{"source": "N04", "text": "contract-research"}},
+						"pipeline":          "research_ready",
+					}
+				} else if innerCapability == "mesh.describe" {
+					responsePayload = map[string]any{
+						"perception": map[string]any{"prepared": true, "source": "N03"},
+					}
+				} else {
+					responsePayload = map[string]any{"capability": innerCapability}
 				}
 			}
 			response := protocol.MeshEnvelope{
