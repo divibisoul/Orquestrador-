@@ -1,0 +1,47 @@
+name: Octacore Focused Gate
+
+on:
+  push:
+    branches:
+      - feat/octacore-system-processor-r1
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'octacore/**'
+      - 'hortacore/**'
+      - 'mesh/**'
+      - 'backend/**'
+      - '.github/workflows/octacore-focused.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  focused:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.25.x'
+          cache: true
+      - name: Gofmt
+        run: |
+          set -euo pipefail
+          gofmt -w $(git ls-files '*.go')
+          git diff --exit-code -- $(git ls-files '*.go')
+      - name: Vet Octacore HortaCore
+        run: go vet ./octacore ./hortacore
+      - name: Octacore HortaCore tests
+        run: go test ./octacore ./hortacore -count=1
+      - name: Octacore race tests
+        run: go test -race ./octacore ./hortacore -count=1
+      - name: Federated preflow tests
+        run: go test ./octacore -run 'TestBuildFederatedPreJobs|TestFederatedContextCycle' -count=1
+      - name: Full build
+        run: go build ./...
