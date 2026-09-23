@@ -428,7 +428,7 @@ func (s *OctaCoreScheduler) executeSelected(ctx context.Context, job OctaCoreJob
 			}
 		case BackendWASM, BackendWebGPU:
 			continue
-		case BackendSARAHTTP:
+		case "SARA_HTTP":
 			return nil, "SARA_HTTP", errors.New("SARA_HTTP_ONLY_FOR_G0")
 		default:
 			return nil, "", fmt.Errorf("unsupported backend: %s", preferred)
@@ -452,29 +452,29 @@ func (s *OctaCoreScheduler) executeG0(ctx context.Context, job OctaCoreJob) (map
 	case KindSARACycle:
 		cycleID, _ := job.Payload["cycle_id"].(string)
 		out, err := s.sara.Cycle(ctx, input, cycleID, job.CorrelationID)
-		return out, string(BackendSARAHTTP), err
+		return out, "SARA_HTTP", err
 	}
 	operation, _ := job.Payload["operation"].(string)
 	switch strings.TrimSpace(operation) {
 	case "sara.audit":
 		out, err := s.sara.Audit(ctx, input, job.CorrelationID)
-		return out, string(BackendSARAHTTP), err
+		return out, "SARA_HTTP", err
 	case "sara.cycle":
 		cycleID, _ := job.Payload["cycle_id"].(string)
 		out, err := s.sara.Cycle(ctx, input, cycleID, job.CorrelationID)
-		return out, string(BackendSARAHTTP), err
+		return out, "SARA_HTTP", err
 	case "sara.regenerate":
 		out, err := s.sara.Regenerate(ctx, input, job.CorrelationID)
-		return out, string(BackendSARAHTTP), err
+		return out, "SARA_HTTP", err
 	case "sara.state":
 		out, err := s.sara.State(ctx, job.CorrelationID)
-		return out, string(BackendSARAHTTP), err
+		return out, "SARA_HTTP", err
 	case "sara.trace":
 		cycleID, _ := job.Payload["cycle_id"].(string)
 		out, err := s.sara.Trace(ctx, cycleID, job.CorrelationID)
-		return out, string(BackendSARAHTTP), err
+		return out, "SARA_HTTP", err
 	default:
-		return nil, string(BackendSARAHTTP), fmt.Errorf("SARA_OPERATION_UNSUPPORTED:%s", strings.TrimSpace(operation))
+		return nil, "SARA_HTTP", fmt.Errorf("SARA_OPERATION_UNSUPPORTED:%s", strings.TrimSpace(operation))
 	}
 }
 
