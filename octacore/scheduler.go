@@ -384,10 +384,14 @@ func (s *OctaCoreScheduler) ExecutePlan(ctx context.Context, jobs []OctaCoreJob)
 		for name, ids := range completedBarriers {
 			stillPending := false
 			for _, job := range pending {
-				if strings.TrimSpace(ptrString(job.Barrier)) == name {
-					stillPending = true
-					break
+				if strings.TrimSpace(ptrString(job.Barrier)) != name {
+					continue
 				}
+				if isBarrierConsumer(job) {
+					continue
+				}
+				stillPending = true
+				break
 			}
 			if !stillPending && !publishedBarriers[name] {
 				publishedBarriers[name] = true
@@ -396,6 +400,13 @@ func (s *OctaCoreScheduler) ExecutePlan(ctx context.Context, jobs []OctaCoreJob)
 		}
 	}
 	return results
+}
+
+func isBarrierConsumer(job OctaCoreJob) bool {
+	if job.Target != string(G0) {
+		return false
+	}
+	return job.Kind == KindSARAudit || job.Kind == KindSARACycle
 }
 
 func barrierReady(_ int, job OctaCoreJob, pending map[int]OctaCoreJob) bool {
@@ -550,7 +561,7 @@ func (s *OctaCoreScheduler) executeRemote(ctx context.Context, job OctaCoreJob, 
 	}
 	callCapability := capability
 	preflightCapability := capability
-	if slot.Slot == G2 || slot.Slot == G3 || slot.Slot == G4 || slot.Slot == G5 || slot.Slot == G6 {
+	if slot.Slot == G1 || slot.Slot == G2 || slot.Slot == G3 || slot.Slot == G4 || slot.Slot == G5 || slot.Slot == G6 {
 		preflightCapability = "octacore.execute"
 	}
 	probeCtx, cancel := context.WithTimeout(ctx, 3*time.Second)
@@ -565,7 +576,7 @@ func (s *OctaCoreScheduler) executeRemote(ctx context.Context, job OctaCoreJob, 
 	payload := cloneMap(job.Payload)
 	delete(payload, "capability")
 	payload["octacore"] = map[string]any{"job_id": job.JobID, "correlation_id": job.CorrelationID, "source": job.Source, "target": slot.Slot, "kind": job.Kind}
-	if slot.Slot == G2 || slot.Slot == G3 || slot.Slot == G4 || slot.Slot == G5 || slot.Slot == G6 {
+	if slot.Slot == G1 || slot.Slot == G2 || slot.Slot == G3 || slot.Slot == G4 || slot.Slot == G5 || slot.Slot == G6 {
 		callCapability = "octacore.execute"
 		payload = map[string]any{"capability": capability, "payload": cloneMap(job.Payload), "job_id": job.JobID}
 	}
@@ -593,15 +604,15 @@ func (s *OctaCoreScheduler) executeG7Compute(ctx context.Context, job OctaCoreJo
 	if err != nil {
 		return nil, string(BackendInProcess), err
 	}
-	if err := compute.Reserve(backendName.ID, job.JobID); err != nil {
-		return nil, string(BackendInProcess), err
-	}
-	defer compute.Release(backendName.ID, job.JobID)
-	result, err := compute.Execute(ctx, backendName, operation, values)
+	result, err := compute.ExecuteConcurrent(ctx, backendName, operation, values)
 	if err != nil {
 		return nil, string(BackendInProcess), err
 	}
-	return map[string]any{"operation": operation, "values": result, "backend": backendName.ID}, string(BackendInProcess), nil
+	return map[string]any{
+		"operation": operation,
+		"values": result,
+		"backend": backendName.ID,
+	}, string(BackendInProcess), nil
 }
 
 func (s *OctaCoreScheduler) acquireInflight(ctx context.Context, slot SlotID) error {
