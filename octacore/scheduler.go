@@ -638,6 +638,13 @@ func (s *OctaCoreScheduler) recordFailure(slot SlotID, latencyMS int64, message 
 	st.mu.Unlock()
 }
 
+func (s *OctaCoreScheduler) DiscoverPeer(ctx context.Context, nucleus string) (map[string]any, error) {
+    if s.peers == nil {
+        return nil, errors.New("MESH_UNAVAILABLE")
+    }
+    return s.peers.Discover(ctx, nucleus)
+}
+
 func (s *OctaCoreScheduler) Health() SchedulerHealth {
 	s.computeMu.RLock()
 	computeConnected := s.compute != nil
