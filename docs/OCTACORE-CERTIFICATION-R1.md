@@ -101,3 +101,9 @@ Plus is UNFROZEN for this integration stage. Its Android source now includes an 
 ### Remaining gate
 
 SARA G0 validation is still OPEN. The most recent SARA validation run exposed missing methods in OctaCoreG0Kernel that were themselves traced to an earlier accidental line-removal during fusion; those methods are being restored additively. No SARA production certification is declared until its own CI returns PASS.
+
+## G0 certification update — 2026-09-23
+
+SARA G0 now has two successful CI validations on commit `e7d5b595ac6713b7ffec85940cbe007cd0d4389e`: `35819484466` (SARA validation) and `35819484461` (SARA CI). The tests that originally exposed missing G0 runtime methods and incomplete Vagus integration were fixed additively and the full SARA suite returned PASS.
+
+The first-cycle Octacore code/contract gate is therefore complete through G0 at source/CI level. Android field commissioning and real distributed backend commissioning remain separate evidence gates.
