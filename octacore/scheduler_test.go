@@ -110,3 +110,21 @@ func TestOctaCoreCircuitBreakerOpensAfterFailures(t *testing.T) {
     health := s.Health()
     for _, slot := range health.Slots { if slot.Slot == G7 && slot.Circuit != string(CircuitOpen) { t.Fatalf("expected G7 open circuit, got %s", slot.Circuit) } }
 }
+
+
+func TestOctaCoreFinalSuperGPUConnectionIsExplicit(t *testing.T) {
+    s := testScheduler(t)
+    if s.SuperGPUConnected() {
+        t.Fatal("test scheduler must start without a connected SuperGPU runtime")
+    }
+    runtime := supergpu.New(nil)
+    if err := s.AttachSuperGPU(runtime); err != nil {
+        t.Fatal(err)
+    }
+    if !s.SuperGPUConnected() {
+        t.Fatal("expected canonical SuperGPU runtime to be connected")
+    }
+    if !s.Health().SuperGPUConnected {
+        t.Fatal("health must expose SuperGPU connectivity")
+    }
+}
