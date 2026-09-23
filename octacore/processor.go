@@ -43,6 +43,14 @@ func (p *Processor) Inventory() []OctaCoreSlot { return p.scheduler.Inventory() 
 
 func (p *Processor) Scheduler() *OctaCoreScheduler { return p.scheduler }
 
+func (p *Processor) ConnectSuperGPU(runtime *supergpu.Runtime) error {
+    return p.scheduler.AttachSuperGPU(runtime)
+}
+
+func (p *Processor) SuperGPUConnected() bool {
+    return p.scheduler.SuperGPUConnected()
+}
+
 func (p *Processor) SetThrottle(level int) error { return p.scheduler.SetThrottle(level) }
 
 func (p *Processor) Halt() { p.scheduler.Halt() }
