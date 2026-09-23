@@ -14,7 +14,6 @@ const (
 	BackendWASM       Backend = "WEBASSEMBLY"
 	BackendWebGPU     Backend = "WEBGPU"
 	BackendRemoteMesh Backend = "REMOTE_MESH"
-	BackendSARAHTTP   Backend = "SARA_HTTP"
 )
 
 type JobKind string
@@ -138,6 +137,16 @@ func (j OctaCoreJob) Validate() error {
 	}
 	if j.TTLMS <= 0 {
 		return errors.New("ttl_ms must be positive")
+	}
+	if j.Kind != KindSARACycle && j.Kind != KindSARAudit {
+		if len(j.BackendPrefs) == 0 {
+			return errors.New("backend_prefs required for non-regenerative job")
+		}
+		for _, backend := range j.BackendPrefs {
+			if backend != BackendInProcess && backend != BackendWASM && backend != BackendWebGPU && backend != BackendRemoteMesh {
+				return fmt.Errorf("unsupported backend_pref: %s", backend)
+			}
+		}
 	}
 	if j.Kind != KindSARACycle && j.Kind != KindSARAudit && len(j.BackendPrefs) == 0 {
 		return errors.New("backend_prefs required for non-regenerative job")
