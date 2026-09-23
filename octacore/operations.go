@@ -28,7 +28,7 @@ func RegisterOctaCoreOperations(engine *orchestrator.Engine, processor *Processo
 	}
 	registrations := map[string]orchestrator.Handler{
 		OpDescribe: func(_ context.Context, message protocol.Message) (protocol.Result, error) {
-			raw, err := json.Marshal(map[string]any{"name": "Octacore", "type": "system_gpu_federated_processor", "silicon_gpu": false, "slots": processor.Inventory(), "backends": []string{"IN_PROCESS", "WEBASSEMBLY", "WEBGPU", "REMOTE_MESH", "SARA_HTTP"}})
+			raw, err := json.Marshal(map[string]any{"name": "Octacore", "type": "system_gpu_federated_processor", "silicon_gpu": false, "slots": processor.Inventory(), "backends": []string{"IN_PROCESS", "WEBASSEMBLY", "WEBGPU", "REMOTE_MESH"}})
 			return octaProtocolResult(message, raw, err)
 		},
 		OpHealth: func(_ context.Context, message protocol.Message) (protocol.Result, error) {
