@@ -78,17 +78,20 @@ func (p *Processor) ExecuteFederatedContextCycle(ctx context.Context, input Fede
 		if result.JobID == "" {
 			continue
 		}
-		if strings.HasPrefix(result.BackendUsed, string(BackendRemoteMesh)) {
+		jobsIndex := findJobByID(jobs, result.JobID)
+		if jobsIndex < 0 {
+			continue
+		}
+		switch jobs[jobsIndex].Target {
+		case "G4":
 			if result.OK && result.Output != nil {
-				if jobsIndex := findJobByID(jobs, result.JobID); jobsIndex >= 0 {
-					if jobs[jobsIndex].Target == "G4" {
-						research = result.Output
-					} else if jobs[jobsIndex].Target == "G3" {
-						perception = result.Output
-					}
-				}
-			} else if jobsIndex := findJobByID(jobs, result.JobID); jobsIndex >= 0 && jobs[jobsIndex].Target == "G4" {
+				research = result.Output
+			} else {
 				researchOK = false
+			}
+		case "G3":
+			if result.OK && result.Output != nil {
+				perception = result.Output
 			}
 		}
 	}
