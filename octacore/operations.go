@@ -12,11 +12,11 @@ import (
 )
 
 const (
-	OpDescribe = "octacore.describe@1.0.0"
-	OpHealth   = "octacore.health@1.0.0"
-	OpSubmit   = "octacore.submit@1.0.0"
-	OpBatch    = "octacore.batch@1.0.0"
-	OpSignal   = "octacore.signal@1.0.0"
+	OpDescribe              = "octacore.describe@1.0.0"
+	OpHealth                = "octacore.health@1.0.0"
+	OpSubmit                = "octacore.submit@1.0.0"
+	OpBatch                 = "octacore.batch@1.0.0"
+	OpSignal                = "octacore.signal@1.0.0"
 	OpFederatedContextCycle = "octacore.federated_context_cycle@1.0.0"
 )
 
@@ -84,11 +84,11 @@ func RegisterOctaCoreOperations(engine *orchestrator.Engine, processor *Processo
 				return octaProtocolResult(message, nil, errors.New("octacore_input is required"))
 			}
 			request := FederatedContextInput{
-				CorrelationID:      message.CorrelationID,
-				Input:              input,
+				CorrelationID:     message.CorrelationID,
+				Input:             input,
 				AllowResearchSkip: allowResearchSkip,
-				Priority:           90,
-				TTLMS:              30_000,
+				Priority:          90,
+				TTLMS:             30_000,
 			}
 			if raw := strings.TrimSpace(message.Metadata["research_payload_json"]); raw != "" {
 				if err := json.Unmarshal([]byte(raw), &request.ResearchPayload); err != nil {
