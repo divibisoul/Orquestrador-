@@ -43,7 +43,6 @@ func TestHortaCoreAuditRemainsSARAOwned(t *testing.T) {
 	}
 }
 
-
 func TestHortaCoreVagusSignalsControlSharedOctacoreProcessor(t *testing.T) {
 	processor, err := octacore.NewProcessor(octacore.DefaultSchedulerConfig(), nil)
 	if err != nil {
