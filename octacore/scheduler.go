@@ -365,7 +365,11 @@ func barrierReady(_ int, job OctaCoreJob, pending map[int]OctaCoreJob) bool {
 }
 
 func isBarrierConsumer(job OctaCoreJob) bool {
-	return job.Target == string(G0) || job.Kind == KindSARAudit || job.Kind == KindSARACycle
+	if job.Target == string(G0) || job.Kind == KindSARAudit || job.Kind == KindSARACycle {
+		return true
+	}
+	role, _ := job.Payload["barrier_role"].(string)
+	return strings.EqualFold(strings.TrimSpace(role), "consumer")
 }
 
 func (s *OctaCoreScheduler) resolveSlot(job OctaCoreJob) (OctaCoreSlot, error) {
