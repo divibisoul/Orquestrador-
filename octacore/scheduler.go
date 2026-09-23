@@ -154,7 +154,7 @@ func NewScheduler(cfg SchedulerConfig, control ControlPublisher, compute *superg
 func defaultSlots() map[SlotID]OctaCoreSlot {
 	return map[SlotID]OctaCoreSlot{
 		G0: {Slot: G0, Nucleus: "SARA", Role: "regenerative compute kernel", Status: SlotImplemented, Capabilities: []string{"sara.cycle", "sara.audit", "sara.regenerate", "sara.state", "sara.trace"}, Execution: []Backend{BackendSARAHTTP}},
-		G1: {Slot: G1, Nucleus: "N01", Role: "edge ingress / host gateway kernels", Status: SlotAdapterReady, Capabilities: []string{"octacore.submit", "octacore.batch", "octacore.health", "octacore.inventory"}, Execution: []Backend{BackendInProcess}},
+		G1: {Slot: G1, Nucleus: "N01", Role: "edge ingress / host gateway kernels", Status: SlotAdapterReady, Capabilities: []string{"octacore.execute", "mesh.ping", "mesh.health", "mesh.discovery", "mesh.capability.resolve", "mesh.supergpu.describe", "mesh.supergpu.execute", "mesh.supergpu.parallel", "inference.intent"}, Execution: []Backend{BackendRemoteMesh}},
 		G2: {Slot: G2, Nucleus: "N02", Role: "conversation turn kernels", Status: SlotAdapterReady, Capabilities: []string{"octacore.execute"}, Execution: []Backend{BackendRemoteMesh}},
 		G3: {Slot: G3, Nucleus: "N03", Role: "perception / multimodal prep kernels", Status: SlotAdapterReady, Capabilities: []string{"octacore.execute"}, Execution: []Backend{BackendRemoteMesh}},
 		G4: {Slot: G4, Nucleus: "N04", Role: "tools / documents / research kernels", Status: SlotAdapterReady, Capabilities: []string{"octacore.execute"}, Execution: []Backend{BackendRemoteMesh}},
