@@ -133,17 +133,14 @@ func (j OctaCoreJob) Validate() error {
 	if _, ok := validJobKinds[j.Kind]; !ok {
 		return fmt.Errorf("job kind invalid: %s", j.Kind)
 	}
-	if len(j.Payload) == 0 {
-		return errors.New("payload is required")
-	}
 	if j.Priority < 0 || j.Priority > 100 {
 		return errors.New("priority must be between 0 and 100")
 	}
 	if j.TTLMS <= 0 {
 		return errors.New("ttl_ms must be positive")
 	}
-	if len(j.BackendPrefs) == 0 && j.Target == "scheduler" && j.Kind != KindSARACycle && j.Kind != KindSARAudit {
-		return errors.New("backend_prefs required for scheduler-routed job")
+	if j.Kind != KindSARACycle && j.Kind != KindSARAudit && len(j.BackendPrefs) == 0 {
+		return errors.New("backend_prefs required for non-regenerative job")
 	}
 	return nil
 }
