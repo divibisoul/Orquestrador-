@@ -205,14 +205,37 @@ func (s *OctaCoreScheduler) ExecutePlan(ctx context.Context, jobs []OctaCoreJob)
     blockedBarriers := make(map[string]string)
     for len(pending) > 0 {
         ready := make([]int, 0, len(pending))
-        for i, job := range pending { if barrierReady(i, job, pending) { ready = append(ready, i) } }
+        for i, job := range pending {
+            if name := strings.TrimSpace(ptrString(job.Barrier)); name != "" {
+                if reason, blocked := blockedBarriers[name]; blocked {
+                    results[i] = failedResult(job, "BARRIER_DEPENDENCY_FAILED", errors.New(reason), 0, 0)
+                    delete(pending, i)
+                    continue
+                }
+            }
+            if barrierReady(i, job, pending) {
+                ready = append(ready, i)
+            }
+        }
         if len(ready) == 0 { for i, job := range pending { results[i] = failedResult(job, "BARRIER_DEADLOCK", errors.New("barrier dependency has no executable frontier"), 0, 0) }; break }
         sort.SliceStable(ready, func(i, j int) bool { if jobs[ready[i]].Priority != jobs[ready[j]].Priority { return jobs[ready[i]].Priority > jobs[ready[j]].Priority }; return ready[i] < ready[j] })
         var wg sync.WaitGroup; var mu sync.Mutex
         for _, i := range ready { i := i; job := pending[i]; wg.Add(1); go func(){ defer wg.Done(); result := s.Execute(ctx, job); mu.Lock(); results[i] = result; mu.Unlock() }() }
         wg.Wait()
         completedBarriers := map[string][]string{}
-        for _, i := range ready { delete(pending, i); if name := strings.TrimSpace(ptrString(jobs[i].Barrier)); name != "" { completedBarriers[name] = append(completedBarriers[name], jobs[i].JobID) } }
+        for _, i := range ready {
+            delete(pending, i)
+            if name := strings.TrimSpace(ptrString(jobs[i].Barrier)); name != "" {
+                completedBarriers[name] = append(completedBarriers[name], jobs[i].JobID)
+                if !results[i].OK && blockedBarriers[name] == "" {
+                    reason := "barrier dependency failed"
+                    if results[i].Error != nil {
+                        reason = results[i].Error.Code + ":" + results[i].Error.Message
+                    }
+                    blockedBarriers[name] = reason
+                }
+            }
+        }
         for name, ids := range completedBarriers { stillPending := false; for _, job := range pending { if strings.TrimSpace(ptrString(job.Barrier)) == name { stillPending = true; break } }; if !stillPending { s.publish(ctx, newVagusEvent("gpu.barrier", "G7", "G6", 100, 1, barrierCorrelation(jobs, name), map[string]any{"barrier": name, "completed_job_ids": ids, "joined": true})) } }
     }
     return results
