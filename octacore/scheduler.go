@@ -45,15 +45,15 @@ type SlotHealth struct {
 }
 
 type SchedulerHealth struct {
-	Status             string       `json:"status"`
-	ThrottleLevel      int          `json:"throttle_level"`
-	Inflight           int          `json:"inflight"`
-	QueueDepth         int          `json:"queue_depth"`
-	ControlPlane       string       `json:"control_plane"`
-	SuperGPUConnected  bool         `json:"supergpu_connected"`
+	Status             string         `json:"status"`
+	ThrottleLevel      int            `json:"throttle_level"`
+	Inflight           int            `json:"inflight"`
+	QueueDepth         int            `json:"queue_depth"`
+	ControlPlane       string         `json:"control_plane"`
+	SuperGPUConnected  bool           `json:"supergpu_connected"`
 	SuperGPUHealth     map[string]any `json:"supergpu_health,omitempty"`
-	ParallelismEnabled bool         `json:"parallelism_enabled"`
-	Slots              []SlotHealth `json:"slots"`
+	ParallelismEnabled bool           `json:"parallelism_enabled"`
+	Slots              []SlotHealth   `json:"slots"`
 }
 
 type slotRuntimeState struct {
