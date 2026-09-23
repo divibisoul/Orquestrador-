@@ -501,7 +501,7 @@ func (s *OctaCoreScheduler) executeRemote(ctx context.Context, job OctaCoreJob, 
 	}
 	callCapability := capability
 	preflightCapability := capability
-	if slot.Slot == G4 || slot.Slot == G6 {
+	if slot.Slot == G2 || slot.Slot == G3 || slot.Slot == G4 || slot.Slot == G5 || slot.Slot == G6 {
 		preflightCapability = "octacore.execute"
 	}
 	probeCtx, cancel := context.WithTimeout(ctx, 3*time.Second)
@@ -516,7 +516,7 @@ func (s *OctaCoreScheduler) executeRemote(ctx context.Context, job OctaCoreJob, 
 	payload := cloneMap(job.Payload)
 	delete(payload, "capability")
 	payload["octacore"] = map[string]any{"job_id": job.JobID, "correlation_id": job.CorrelationID, "source": job.Source, "target": slot.Slot, "kind": job.Kind}
-	if slot.Slot == G4 || slot.Slot == G6 {
+	if slot.Slot == G2 || slot.Slot == G3 || slot.Slot == G4 || slot.Slot == G5 || slot.Slot == G6 {
 		callCapability = "octacore.execute"
 		payload = map[string]any{"capability": capability, "payload": cloneMap(job.Payload), "job_id": job.JobID}
 	}
