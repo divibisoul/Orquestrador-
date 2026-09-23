@@ -166,11 +166,6 @@ func TestOctaCoreThrottleReducesInflight(t *testing.T) {
 	if elapsed < 90*time.Millisecond {
 		t.Fatalf("throttle did not reduce concurrency: elapsed=%v", elapsed)
 	}
-	var starts, ends [2]time.Time
-	var mu sync.Mutex
-	_ = mu
-	_ = starts
-	_ = ends
 }
 
 func TestOctaCoreCircuitBreakerOpensAfterFailures(t *testing.T) {
