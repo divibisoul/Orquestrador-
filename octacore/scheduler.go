@@ -117,11 +117,11 @@ func NewScheduler(cfg SchedulerConfig, control ControlPublisher) (*OctaCoreSched
     if cfg.FailureThreshold <= 0 { return nil, errors.New("FailureThreshold must be positive") }
     if cfg.CircuitCooldown <= 0 { return nil, errors.New("CircuitCooldown must be positive") }
     compute := supergpu.New(nil)
-    if err := compute.Discover(); err != nil { return nil, fmt.Errorf("discover SuperGPU backends: %w", err) }
+    compute.Discover()
     peers, err := mesh.NewPeerClient(nil)
     if err != nil { return nil, fmt.Errorf("create Mesh peer client: %w", err) }
     s := &OctaCoreScheduler{cfg: cfg, compute: compute, peers: peers, sara: backend.NewSARAProxy(backend.DefaultConfig()), control: control, slots: defaultSlots(), state: make(map[SlotID]*slotRuntimeState, 8), bucket: newTokenBucket(cfg.TokenCapacity, cfg.TokenRefillPerSec)}
-    for slot := G0; slot <= G7; slot++ { s.state[slot] = &slotRuntimeState{circuit: string(CircuitClosed)} }
+    for _, slot := range []SlotID{G0, G1, G2, G3, G4, G5, G6, G7} { s.state[slot] = &slotRuntimeState{circuit: string(CircuitClosed)} }
     return s, nil
 }
 
@@ -231,7 +231,7 @@ func (s *OctaCoreScheduler) executeRemote(ctx context.Context, job OctaCoreJob, 
 
 func (s *OctaCoreScheduler) executeG7Compute(ctx context.Context, job OctaCoreJob) (map[string]any, string, error) {
     operation, _ := job.Payload["operation"].(string); operation = strings.TrimSpace(operation); values, err := numberArray(job.Payload["values"]); if err != nil { return nil, string(BackendInProcess), err }; if operation == "" { return nil, string(BackendInProcess), errors.New("IN_PROCESS_OPERATION_REQUIRED") }
-    backendName, err := s.compute.Select(""); if err != nil { return nil, string(BackendInProcess), err }; lease, err := s.compute.Reserve(job.JobID, backendName.ID); if err != nil { return nil, string(BackendInProcess), err }; defer s.compute.Release(lease.ID)
+    backendName, err := s.compute.Select(""); if err != nil { return nil, string(BackendInProcess), err }; if err := s.compute.Reserve(backendName.ID, job.JobID); err != nil { return nil, string(BackendInProcess), err }; defer s.compute.Release(backendName.ID, job.JobID)
     result, err := s.compute.Execute(ctx, backendName.ID, operation, values); if err != nil { return nil, string(BackendInProcess), err }; return map[string]any{"operation": operation, "values": result, "backend": backendName.ID}, string(BackendInProcess), nil
 }
 
