@@ -58,8 +58,23 @@ func main() {
 		}
 	}
 
+	control := octacore.NewSARAControlPublisher(cfg.SARAServiceURL, cfg.SARAServiceToken, cfg.SARARequestTimeout)
+	octaProcessor, err := octacore.NewProcessorWithRuntime(octacore.DefaultSchedulerConfig(), control, nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+	if err := octacore.RegisterOctaCoreOperations(e, octaProcessor); err != nil {
+		log.Fatal(err)
+	}
+
+	// Final wiring: Octacore G7 reuses the already-created canonical N07 SuperGPU runtime.
+	if err := octaProcessor.ConnectSuperGPU(g); err != nil {
+		log.Fatal(err)
+	}
+
 	unified := backend.NewUnified(e, cfg)
 	mux := http.NewServeMux()
+	mux.Handle("/v1/octacore/", octacore.HTTPHandler(octaProcessor))
 	mux.Handle("/v1/", unified.Handler())
 	mux.Handle("/api/health/dashboard", health.Handler())
 	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) { writeJSON(w, http.StatusOK, e.Health()) })
