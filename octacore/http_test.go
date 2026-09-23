@@ -1,7 +1,7 @@
 package octacore
 
 import (
-    "context"
+    "bytes"
     "encoding/json"
     "net/http"
     "net/http/httptest"
@@ -37,7 +37,6 @@ func TestOctaCoreHTTPSubmitUsesExistingSuperGPU(t *testing.T) {
     if err := json.Unmarshal(rec.Body.Bytes(), &result); err != nil { t.Fatal(err) }
     if !result.OK || result.BackendUsed != string(BackendInProcess) { t.Fatalf("unexpected result: %#v", result) }
     if result.CorrelationID != job.CorrelationID { t.Fatalf("correlation lost: %s", result.CorrelationID) }
-    _ = context.Background()
 }
 
 func TestOctaCoreHTTPRejectsCorrelationMismatch(t *testing.T) {
