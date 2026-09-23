@@ -124,13 +124,17 @@ func RegisterOctaCoreOperations(engine *orchestrator.Engine, processor *Processo
 				if _, err := fmt.Sscan(levelText, &level); err != nil {
 					return octaProtocolResult(message, nil, errors.New("signal level must be integer 0..3"))
 				}
-				if err := processor.SetThrottle(level); err != nil {
+				if err := processor.SetThrottleWithContext(context.Background(), level, message.CorrelationID); err != nil {
 					return octaProtocolResult(message, nil, err)
 				}
 			case "halt":
-				processor.Halt()
+				if err := processor.HaltWithContext(context.Background(), message.CorrelationID); err != nil {
+					return octaProtocolResult(message, nil, err)
+				}
 			case "resume":
-				processor.Resume()
+				if err := processor.ResumeWithContext(context.Background(), message.CorrelationID); err != nil {
+					return octaProtocolResult(message, nil, err)
+				}
 			default:
 				return octaProtocolResult(message, nil, errors.New("unsupported Octacore signal"))
 			}
