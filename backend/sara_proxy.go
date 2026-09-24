@@ -187,7 +187,8 @@ func contextFromMessage(message protocol.Message, defaultClient string) (map[str
 	if err := json.Unmarshal([]byte(raw), &contextPayload); err != nil {
 		return nil, fmt.Errorf("invalid sara_context_json: %w", err)
 	}
-	if client := strings.TrimSpace(fmt.Sprint(contextPayload["client"])); client == "" {
+	clientValue, hasClient := contextPayload["client"].(string)
+	if !hasClient || strings.TrimSpace(clientValue) == "" {
 		contextPayload["client"] = defaultClient
 	}
 	return contextPayload, nil
