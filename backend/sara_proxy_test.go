@@ -88,6 +88,37 @@ func TestSARAProxyPropagatesCorrelationHeader(t *testing.T) {
 	}
 }
 
+func TestSARAProxyCycleWithContextPropagatesProbabilisticContext(t *testing.T) {
+	var gotBody map[string]any
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if err := json.NewDecoder(r.Body).Decode(&gotBody); err != nil {
+			t.Fatalf("decode request: %v", err)
+		}
+		w.Header().Set("X-Correlation-ID", r.Header.Get("X-Correlation-ID"))
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"cycle_id":"c-context","correlation_id":"corr-context"}`))
+	}))
+	defer server.Close()
+
+	proxy := NewSARAProxy(Config{SARAServiceURL: server.URL, SARAServiceToken: "token"})
+	contextPayload := map[string]any{
+		"session_id": "session-001",
+		"client": "n07",
+		"probabilistic": map[string]any{"nodes": []any{map[string]any{"name": "uncertainty", "provenance": "USER"}}},
+	}
+	_, err := proxy.CycleWithContext(context.Background(), "input", "cycle-context", "corr-context", contextPayload)
+	if err != nil {
+		t.Fatal(err)
+	}
+	contextBody, ok := gotBody["context"].(map[string]any)
+	if !ok {
+		t.Fatalf("expected context object, got %#v", gotBody["context"])
+	}
+	if contextBody["client"] != "n07" {
+		t.Fatalf("expected client n07, got %#v", contextBody["client"])
+	}
+}
+
 func TestSARAProxyLiveCycleIsOptIn(t *testing.T) {
 	baseURL := strings.TrimSpace(os.Getenv("SARA_E2E_URL"))
 	token := strings.TrimSpace(os.Getenv("SARA_E2E_TOKEN"))

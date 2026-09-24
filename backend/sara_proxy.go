@@ -83,6 +83,9 @@ func (p *SARAProxy) request(ctx context.Context, method, path string, body any, 
 	if err := json.NewDecoder(limited).Decode(&payload); err != nil {
 		return fmt.Errorf("decode SARA response: %w", err)
 	}
+	if echoed := strings.TrimSpace(resp.Header.Get("X-Correlation-ID")); echoed != "" && echoed != correlationID {
+		return fmt.Errorf("SARA correlation mismatch: got %q want %q", echoed, correlationID)
+	}
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		if errValue, ok := payload["error"]; ok {
 			return fmt.Errorf("SARA HTTP %d: %v", resp.StatusCode, errValue)
@@ -118,9 +121,29 @@ func (p *SARAProxy) CycleWithContext(ctx context.Context, input, cycleID, correl
 	return out, err
 }
 
+func (p *SARAProxy) AuditWithContext(ctx context.Context, input, correlationID string, contextPayload map[string]any) (map[string]any, error) {
+	body := map[string]any{"input": input}
+	if contextPayload != nil {
+		body["context"] = contextPayload
+	}
+	var out map[string]any
+	err := p.request(ctx, http.MethodPost, "/v1/audit", body, correlationID, &out)
+	return out, err
+}
+
 func (p *SARAProxy) Audit(ctx context.Context, input, correlationID string) (map[string]any, error) {
 	var out map[string]any
 	err := p.request(ctx, http.MethodPost, "/v1/audit", map[string]any{"input": input}, correlationID, &out)
+	return out, err
+}
+
+func (p *SARAProxy) RegenerateWithContext(ctx context.Context, input, correlationID string, contextPayload map[string]any) (map[string]any, error) {
+	body := map[string]any{"input": input}
+	if contextPayload != nil {
+		body["context"] = contextPayload
+	}
+	var out map[string]any
+	err := p.request(ctx, http.MethodPost, "/v1/regenerate", body, correlationID, &out)
 	return out, err
 }
 
@@ -152,6 +175,25 @@ func (p *SARAProxy) Trace(ctx context.Context, cycleID, correlationID string) (m
 	return out, err
 }
 
+func contextFromMessage(message protocol.Message, defaultClient string) (map[string]any, error) {
+	raw := strings.TrimSpace(message.Metadata["sara_context_json"])
+	if raw == "" {
+		return map[string]any{"client": defaultClient}, nil
+	}
+	if len(raw) > 256*1024 {
+		return nil, errors.New("metadata.sara_context_json exceeds 256 KiB")
+	}
+	var contextPayload map[string]any
+	if err := json.Unmarshal([]byte(raw), &contextPayload); err != nil {
+		return nil, fmt.Errorf("invalid sara_context_json: %w", err)
+	}
+	clientValue, hasClient := contextPayload["client"].(string)
+	if !hasClient || strings.TrimSpace(clientValue) == "" {
+		contextPayload["client"] = defaultClient
+	}
+	return contextPayload, nil
+}
+
 func RegisterSARAOperations(e *orchestrator.Engine, proxy *SARAProxy) error {
 	if e == nil {
 		return errors.New("orchestrator engine is required")
@@ -170,7 +212,11 @@ func RegisterSARAOperations(e *orchestrator.Engine, proxy *SARAProxy) error {
 			if input == "" {
 				return protocol.Result{}, errors.New("metadata.sara_input is required")
 			}
-			out, err := proxy.Cycle(ctx, input, cycleID, message.CorrelationID)
+			contextPayload, contextErr := contextFromMessage(message, "n07")
+			if contextErr != nil {
+				return protocol.Result{}, contextErr
+			}
+			out, err := proxy.CycleWithContext(ctx, input, cycleID, message.CorrelationID, contextPayload)
 			return saraResult(message, out, err)
 		}},
 		{"sara.audit@1.0.0", func(ctx context.Context, message protocol.Message) (protocol.Result, error) {
@@ -178,7 +224,11 @@ func RegisterSARAOperations(e *orchestrator.Engine, proxy *SARAProxy) error {
 			if input == "" {
 				return protocol.Result{}, errors.New("metadata.sara_input is required")
 			}
-			out, err := proxy.Audit(ctx, input, message.CorrelationID)
+			contextPayload, contextErr := contextFromMessage(message, "n07")
+			if contextErr != nil {
+				return protocol.Result{}, contextErr
+			}
+			out, err := proxy.AuditWithContext(ctx, input, message.CorrelationID, contextPayload)
 			return saraResult(message, out, err)
 		}},
 		{"sara.regenerate@1.0.0", func(ctx context.Context, message protocol.Message) (protocol.Result, error) {
@@ -186,7 +236,11 @@ func RegisterSARAOperations(e *orchestrator.Engine, proxy *SARAProxy) error {
 			if input == "" {
 				return protocol.Result{}, errors.New("metadata.sara_input is required")
 			}
-			out, err := proxy.Regenerate(ctx, input, message.CorrelationID)
+			contextPayload, contextErr := contextFromMessage(message, "n07")
+			if contextErr != nil {
+				return protocol.Result{}, contextErr
+			}
+			out, err := proxy.RegenerateWithContext(ctx, input, message.CorrelationID, contextPayload)
 			return saraResult(message, out, err)
 		}},
 		{"sara.state@1.0.0", func(ctx context.Context, message protocol.Message) (protocol.Result, error) {
