@@ -104,9 +104,7 @@ func TestSARAProxyCycleWithContextPropagatesProbabilisticContext(t *testing.T) {
 	contextPayload := map[string]any{
 		"session_id": "session-001",
 		"client": "n07",
-		"probabilistic": map[string]any{
-			"nodes": []any{map[string]any{"name": "uncertainty", "provenance": "USER"}},
-		},
+		"probabilistic": map[string]any{"nodes": []any{map[string]any{"name": "uncertainty", "provenance": "USER"}}},
 	}
 	_, err := proxy.CycleWithContext(context.Background(), "input", "cycle-context", "corr-context", contextPayload)
 	if err != nil {
