@@ -13,7 +13,7 @@ const ContractVersion = "1.0.0"
 
 type Metrics struct {
 	CapturedAtMs int64 `json:"capturedAtMs"`
-	Nodes struct {
+	Nodes        struct {
 		Total   int `json:"total"`
 		Active  int `json:"active"`
 		Errored int `json:"errored"`
@@ -23,26 +23,26 @@ type Metrics struct {
 		Open  int `json:"open"`
 	} `json:"channels"`
 	Packets struct {
-		Ingested int64 `json:"ingested"`
+		Ingested  int64 `json:"ingested"`
 		Processed int64 `json:"processed"`
-		Dropped int64 `json:"dropped"`
-		Errored int64 `json:"errored"`
-		InFlight int64 `json:"inFlight"`
+		Dropped   int64 `json:"dropped"`
+		Errored   int64 `json:"errored"`
+		InFlight  int64 `json:"inFlight"`
 	} `json:"packets"`
 	LatencyMs struct {
 		Last float64 `json:"last"`
-		P50 float64 `json:"p50"`
-		P95 float64 `json:"p95"`
-		Max float64 `json:"max"`
+		P50  float64 `json:"p50"`
+		P95  float64 `json:"p95"`
+		Max  float64 `json:"max"`
 	} `json:"latencyMs"`
 	UptimeMs int64 `json:"uptimeMs"`
 }
 
 type Bridge struct {
-	mu sync.Mutex
-	started int64
+	mu                                              sync.Mutex
+	started                                         int64
 	ingested, processed, dropped, errored, inFlight int64
-	latencies []float64
+	latencies                                       []float64
 }
 
 var Default = &Bridge{started: time.Now().UnixMilli()}
