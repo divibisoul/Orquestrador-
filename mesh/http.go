@@ -6,8 +6,10 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"github.com/divibisoul/Orquestrador-/clareira"
 	"github.com/divibisoul/Orquestrador-/orchestrator"
 	"github.com/divibisoul/Orquestrador-/protocol"
+	"github.com/divibisoul/Orquestrador-/shared"
 	"net/http"
 	"os"
 	"strings"
@@ -261,6 +263,46 @@ func (g *HTTPGateway) Handler(w http.ResponseWriter, r *http.Request) {
 	capability := canonicalCapability(wire)
 	if capability == "" {
 		g.respond(w, http.StatusBadRequest, envelope, "ERROR", map[string]any{"error": "capability is required"})
+		return
+	}
+	if capability == "clareira.metrics" {
+		g.respond(w, http.StatusOK, envelope, "TASK_RESULT", map[string]any{"clareira": clareira.Default.Metrics()})
+		return
+	}
+	if capability == "clareira.ingest" {
+		nested := envelope.NestedPayload()
+		rawPacket, ok := nested["packet"]
+		if !ok {
+			g.respond(w, http.StatusBadRequest, envelope, "ERROR", map[string]any{"error": "clareira packet is required"})
+			return
+		}
+		raw, err := json.Marshal(rawPacket)
+		if err != nil {
+			g.respond(w, http.StatusBadRequest, envelope, "ERROR", map[string]any{"error": "invalid Clareira packet"})
+			return
+		}
+		var packet shared.ClareiraPacket
+		if err := json.Unmarshal(raw, &packet); err != nil {
+			g.respond(w, http.StatusBadRequest, envelope, "ERROR", map[string]any{"error": "invalid Clareira packet"})
+			return
+		}
+		result, err := clareira.Default.Ingest(packet)
+		if err != nil {
+			g.respond(w, http.StatusBadRequest, envelope, "ERROR", map[string]any{"error": err.Error()})
+			return
+		}
+		responsePayload := map[string]any{"clareira": result}
+		if requested, ok := packet.Metadata["regenerationRequested"].(bool); ok && requested {
+			saraMetadata := map[string]string{"sara_input": packet.Data, "sara_cycle_id": packet.CorrelationID, "correlation_id": packet.CorrelationID, "trace_id": packet.CorrelationID}
+			saraResult, saraErr := g.Engine.Execute(r.Context(), "sara.cycle@1.0.0", []float64{}, saraMetadata)
+			if saraErr != nil {
+				responsePayload["sara"] = map[string]any{"status": "error", "error": saraErr.Error(), "correlationId": packet.CorrelationID}
+				g.respond(w, http.StatusBadGateway, envelope, "ERROR", responsePayload)
+				return
+			}
+			responsePayload["sara"] = saraResult
+		}
+		g.respond(w, http.StatusOK, envelope, "TASK_RESULT", responsePayload)
 		return
 	}
 	if canonicalKind(wire) == "request" && (wire.Type == "PING" || capability == "mesh.ping") {
