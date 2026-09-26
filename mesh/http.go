@@ -291,7 +291,18 @@ func (g *HTTPGateway) Handler(w http.ResponseWriter, r *http.Request) {
 			g.respond(w, http.StatusBadRequest, envelope, "ERROR", map[string]any{"error": err.Error()})
 			return
 		}
-		g.respond(w, http.StatusOK, envelope, "TASK_RESULT", map[string]any{"clareira": result})
+		responsePayload := map[string]any{"clareira": result}
+		if requested, ok := packet.Metadata["regenerationRequested"].(bool); ok && requested {
+			saraMetadata := map[string]string{"sara_input": packet.Data, "sara_cycle_id": packet.CorrelationID, "correlation_id": packet.CorrelationID, "trace_id": packet.CorrelationID}
+			saraResult, saraErr := g.Engine.Execute(r.Context(), "sara.cycle@1.0.0", []float64{}, saraMetadata)
+			if saraErr != nil {
+				responsePayload["sara"] = map[string]any{"status": "error", "error": saraErr.Error(), "correlationId": packet.CorrelationID}
+				g.respond(w, http.StatusBadGateway, envelope, "ERROR", responsePayload)
+				return
+			}
+			responsePayload["sara"] = saraResult
+		}
+		g.respond(w, http.StatusOK, envelope, "TASK_RESULT", responsePayload)
 		return
 	}
 	if canonicalKind(wire) == "request" && (wire.Type == "PING" || capability == "mesh.ping") {
