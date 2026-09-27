@@ -21,7 +21,6 @@ func N07Agents() []AgentDescriptor {
 		{ID: "n07.validator", Role: "validator", Capabilities: []string{"result-validation", "contract-validation"}, Inputs: []string{"result", "correlationId", "contractVersion"}, Outputs: []string{"validated-result", "validation-error"}},
 		{ID: "n07.observer", Role: "observer", Capabilities: []string{"mesh.health", "metrics", "tracing"}, Inputs: []string{"events", "latency", "errors"}, Outputs: []string{"health", "metrics", "trace"}},
 		{ID: "n07.jev", Role: "decision-specialist", Capabilities: []string{"jev.systemone@1.0.0"}, Tools: []string{"Jev/System One"}, Inputs: []string{"state", "questions"}, Outputs: []string{"typed-decisions", "probabilities", "confidence"}},
-
 	}
 }
 

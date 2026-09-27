@@ -55,7 +55,7 @@ func RegisterJevOperations(e *Engine, client *jev.Client) error {
 			Metadata: map[string]string{
 				"decision_json": string(raw),
 				"answers_json":  mustJSON(response.Answers),
-				"model":        response.Model,
+				"model":         response.Model,
 			},
 		}, nil
 	})

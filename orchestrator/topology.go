@@ -36,6 +36,5 @@ func SOULTopology() map[string]any {
 		"mesh":           "canonical-soul-mesh",
 		"execution":      "prefrontal-admission→discovery→routing→delegation→decision(Jev)→hardware-lease/fusion→execution→response→correlation",
 		"decision_layer": map[string]any{"provider": "TypeSafe/Jev", "operation": "jev.systemone@1.0.0", "transport": "server-side HTTP", "enabled_when": "JEV_API_KEY configured"},
-
 	}
 }

@@ -354,11 +354,11 @@ func (s *Server) capabilities(w http.ResponseWriter, r *http.Request) {
 		"storage":    map[string]any{"configured": s.Storage.Configured(), "api": "web3.storage-compatible"},
 		"supabase":   map[string]any{"configured": s.Store.Configured()},
 		"jev": map[string]any{
-			"installed": true,
-			"configured": jevConfigured,
+			"installed":           true,
+			"configured":          jevConfigured,
 			"base_url_configured": strings.TrimSpace(os.Getenv("JEV_API_BASE_URL")) != "",
-			"model": envString("JEV_MODEL", "jev-latest"),
-			"operations": jevOperations,
+			"model":               envString("JEV_MODEL", "jev-latest"),
+			"operations":          jevOperations,
 		},
 		"sara": map[string]any{
 			"configured":          s.Config.SARAServiceURL != "" && s.Config.SARAServiceToken != "",

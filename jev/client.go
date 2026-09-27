@@ -17,7 +17,7 @@ import (
 const (
 	DefaultBaseURL = "https://api.typesafe.ai"
 	DefaultModel   = "jev-latest"
-	SystemOnePath = "/v1/systemone"
+	SystemOnePath  = "/v1/systemone"
 )
 
 type Client struct {
@@ -30,15 +30,15 @@ type Client struct {
 }
 
 type Request struct {
-	State     any                          `json:"state"`
-	Model     string                       `json:"model"`
-	Questions map[string]map[string]any    `json:"questions"`
+	State     any                       `json:"state"`
+	Model     string                    `json:"model"`
+	Questions map[string]map[string]any `json:"questions"`
 }
 
 type Response struct {
-	Model   string                      `json:"model"`
-	Answers map[string]map[string]any    `json:"answers"`
-	Usage   map[string]any               `json:"usage,omitempty"`
+	Model   string                    `json:"model"`
+	Answers map[string]map[string]any `json:"answers"`
+	Usage   map[string]any            `json:"usage,omitempty"`
 }
 
 func NewFromEnv() (*Client, error) {
@@ -57,12 +57,12 @@ func NewFromEnv() (*Client, error) {
 	retries := envInt("JEV_MAX_RETRIES", 2)
 	backoff := envDuration("JEV_RETRY_BACKOFF", 1*time.Second)
 	return &Client{
-		BaseURL: base,
-		APIKey: key,
-		Model: model,
+		BaseURL:    base,
+		APIKey:     key,
+		Model:      model,
 		HTTPClient: &http.Client{Timeout: 20 * time.Second},
 		MaxRetries: retries,
-		Backoff: backoff,
+		Backoff:    backoff,
 	}, nil
 }
 
