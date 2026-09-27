@@ -67,6 +67,15 @@ func NewFromEnv() (*Client, error) {
 }
 
 func (c *Client) SystemOne(ctx context.Context, state any, questions map[string]map[string]any) (Response, error) {
+	return c.systemOne(ctx, state, questions, strings.TrimSpace(c.Model))
+}
+
+// SystemOneWithModel executes one request with an explicit model without mutating shared client state.
+func (c *Client) SystemOneWithModel(ctx context.Context, state any, questions map[string]map[string]any, model string) (Response, error) {
+	return c.systemOne(ctx, state, questions, strings.TrimSpace(model))
+}
+
+func (c *Client) systemOne(ctx context.Context, state any, questions map[string]map[string]any, requestedModel string) (Response, error) {
 	if c == nil || strings.TrimSpace(c.APIKey) == "" {
 		return Response{}, errors.New("JEV_API_KEY is not configured")
 	}
@@ -80,7 +89,10 @@ func (c *Client) SystemOne(ctx context.Context, state any, questions map[string]
 		return Response{}, errors.New("questions are required")
 	}
 
-	model := strings.TrimSpace(c.Model)
+	model := requestedModel
+	if model == "" {
+		model = strings.TrimSpace(c.Model)
+	}
 	if model == "" {
 		model = DefaultModel
 	}
