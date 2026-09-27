@@ -141,13 +141,13 @@ func (h *OpenAICompatHandler) ServeChat(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]any{
-		"id": id,
-		"object": "chat.completion",
+		"id":      id,
+		"object":  "chat.completion",
 		"created": created,
-		"model": "soul-auto",
+		"model":   "soul-auto",
 		"choices": []map[string]any{{
-			"index": 0,
-			"message": map[string]string{"role": "assistant", "content": textValue},
+			"index":         0,
+			"message":       map[string]string{"role": "assistant", "content": textValue},
 			"finish_reason": "stop",
 		}},
 		"metadata": map[string]any{"n07_owner": owner, "correlation_id": correlation},
@@ -250,7 +250,7 @@ func serveSingleChunkStream(w http.ResponseWriter, id string, created int64, mod
 	}
 	writeChunk(map[string]any{
 		"id": id, "object": "chat.completion.chunk", "created": created, "model": modelID,
-		"choices": []map[string]any{{"index": 0, "delta": map[string]string{"role": "assistant", "content": textValue}, "finish_reason": nil}},
+		"choices":            []map[string]any{{"index": 0, "delta": map[string]string{"role": "assistant", "content": textValue}, "finish_reason": nil}},
 		"system_fingerprint": owner,
 	})
 	writeChunk(map[string]any{
