@@ -75,11 +75,10 @@ jobs:
           docker stop n07-commissioning || true
 
   configured-staging:
+    name: Configured staging / secrets diagnostic
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - name: Pull published image
-        run: docker pull ghcr.io/divibisoul/soul-n07-orquestrador:latest
       - name: Check required staging secrets
         env:
           N07_APP_TOKEN: ${{ secrets.N07_APP_TOKEN }}
@@ -88,11 +87,24 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: |
           set -euo pipefail
-          test -n "$N07_APP_TOKEN" || { echo 'missing secret: N07_APP_TOKEN'; exit 1; }
-          test -n "$WEB3_STORAGE_TOKEN" || { echo 'missing secret: WEB3_STORAGE_TOKEN'; exit 1; }
-          test -n "$SUPABASE_URL" || { echo 'missing secret: SUPABASE_URL'; exit 1; }
-          test -n "$SUPABASE_SERVICE_ROLE_KEY" || { echo 'missing secret: SUPABASE_SERVICE_ROLE_KEY'; exit 1; }
-          echo 'required staging secrets: present'
+          missing=0
+          for name in N07_APP_TOKEN WEB3_STORAGE_TOKEN SUPABASE_URL SUPABASE_SERVICE_ROLE_KEY; do
+            value="${!name:-}"
+            if [ -z "${value//[[:space:]]/}" ]; then
+              echo "BLOCKED: Missing $name"
+              missing=1
+            else
+              echo "PRESENT: $name"
+            fi
+          done
+          if [ "$missing" -ne 0 ]; then
+            echo 'BLOCKED: credentialed staging and external storage persistence cannot start until the missing GitHub Actions secrets are configured.'
+            exit 1
+          fi
+          echo 'READY: all required staging secrets are present'
+
+      - name: Pull published image
+        run: docker pull ghcr.io/divibisoul/soul-n07-orquestrador:latest
       - name: Start credentialed staging runtime
         env:
           N07_APP_TOKEN: ${{ secrets.N07_APP_TOKEN }}
