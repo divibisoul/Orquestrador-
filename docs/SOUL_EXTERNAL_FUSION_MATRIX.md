@@ -76,3 +76,38 @@ An OSS repository is consumed as a capability/adaptor, not copied wholesale into
 
 ## Current gate
 OSS integration is intentionally NOT started from this document alone. F2 must close the N07 current-main validation gap and N05 package/lock reconciliation first.
+## F2/F3 re-audit — 2026-09-27
+
+This is the authoritative current state after the first audited fusion pass. Historical snapshots above remain preserved.
+
+| Unit | Current main | Current state | Evidence |
+|---|---|---|---|
+| N01 | 462fc7d4fc95bdff3307649a3b0c9abd9cffe98d | OBSERVED / FROZEN | No change in this front |
+| N02 | 993ad528e5257b33f7fa6283a24a57a7d50f67ec | VALIDATED | Soul Mesh CI, validation diagnostics and Runner Forensics all SUCCESS on exact main |
+| N03 | 726a0f880d72d9fa7d6624742a69da568c6ad21b | MERGED / REVALIDATION NOT TRIGGERED | Main unchanged since prior merge; current CI snapshot not independently rerun |
+| N04 | 8c457291181b3295b50615bf3abe01599fe0226e | VALIDATED | Soul Mesh CI, N03 diagnostics and N04 CI SUCCESS |
+| N05 | a405dd02598fa8f74d2209f59b447dab63e821c4 | VALIDATED | N05/N07 Bridge, Soul Mesh CI and N04 diagnostics SUCCESS |
+| N06 | 5c11eaf3065bcc38c8d905d4806fbe17b3c11b5b | VALIDATED | Soul Mesh CI, Channel Contract and diagnostics SUCCESS |
+| N07 | a7f68f5a8673120e680d264070815b7a62fcee3c | VALIDATED / STAGING BLOCKED | Principal CI + container/image verification SUCCESS; staging commissioning lacks required secrets |
+| N07 PR #36 | cea7e7641010351afb237fcaa27ba3b5ce0741bf | OPEN / CI IN PROGRESS | Retargeted to main; integrity + verify SUCCESS; container job still running |
+| SARA | current main inspected live | TRANSVERSAL | ARA/ETR/ITR authority retained; no N08 introduced |
+
+### Merge record
+
+Merged in this pass:
+- N04 #23 → main, squash 8c457291181b3295b50615bf3abe01599fe0226e.
+- N06 #17 → main, squash 5c11eaf3065bcc38c8d905d4806fbe17b3c11b5b.
+- N02 #21 → main, squash 72656ea3e3c7432cdbdbc2d916951d7d52cfcecf, followed by additive CI/runtime-import fixes through 993ad528e5257b33f7fa6283a24a57a7d50f67ec.
+- N05 #21 → main, squash a405dd02598fa8f74d2209f59b447dab63e821c4.
+
+N03 #17 was already merged before this pass.
+
+### Interoperability corrections made
+
+- N02 provider/peer bridge now carries the top-level nonce, the nonce header, transport in canonicalization and verifies response HMAC.
+- N05 peer bridge now targets the canonical N07 /api/soul-mesh endpoint, includes contractVersion/transport in the envelope and verifies response identity/HMAC.
+- These corrections are additive and do not create another Mesh.
+
+### OSS gate
+
+Core provider coverage is now Gemini + Ollama behind N02. LiteLLM therefore remains conditional rather than being inserted as another provider authority. LangGraph and NeMo remain candidates for additive N07-side orchestration/evaluation bridges; implementation is gated on the N07 #36 merge and post-merge main validation.
