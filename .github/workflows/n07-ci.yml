@@ -38,36 +38,6 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  repair-format:
-    if: (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository) || (github.event_name == 'push' && github.ref != 'refs/heads/main')
-    permissions:
-      contents: write
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.head_ref }}
-          fetch-depth: 0
-      - uses: actions/setup-go@v5
-        with:
-          go-version: '1.25.x'
-          cache: true
-      - name: Normalize Go formatting on the feature branch
-        run: gofmt -w $(git ls-files '*.go')
-      - name: Persist formatting repair
-        run: |
-          set -euo pipefail
-          if git diff --quiet; then
-            echo 'Feature branch is already gofmt-clean.'
-            exit 0
-          fi
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add -- '*.go'
-          git commit -m 'style(n07): normalize Go formatting'
-          git push origin HEAD:${{ github.head_ref }}
-
   normalize-main:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main' && github.actor != 'github-actions[bot]'
     permissions:
@@ -98,8 +68,6 @@ jobs:
           git push origin HEAD:main
 
   integrity:
-    needs: repair-format
-    if: always() && (needs.repair-format.result == 'success' || needs.repair-format.result == 'skipped')
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
