@@ -423,6 +423,7 @@ func (s *Scheduler) acquire(ctx context.Context, slot SlotID) error {
 			return err
 		}
 		st := s.state[slot]
+		probe := false
 		st.mu.Lock()
 		now := time.Now()
 		if st.circuit == "open" {
@@ -436,6 +437,7 @@ func (s *Scheduler) acquire(ctx context.Context, slot SlotID) error {
 			}
 			st.circuit = "half-open"
 			st.halfOpenUse = true
+			probe = true
 		}
 		st.mu.Unlock()
 
@@ -443,8 +445,18 @@ func (s *Scheduler) acquire(ctx context.Context, slot SlotID) error {
 		if slot == G0 {
 			limit = 1
 		}
-		if int(s.inflight.Load()) < limit {
-			s.inflight.Add(1)
+		admitted := false
+		for {
+			current := s.inflight.Load()
+			if int(current) >= limit {
+				break
+			}
+			if s.inflight.CompareAndSwap(current, current+1) {
+				admitted = true
+				break
+			}
+		}
+		if admitted {
 			st.mu.Lock()
 			st.inflight++
 			st.mu.Unlock()
@@ -454,6 +466,15 @@ func (s *Scheduler) acquire(ctx context.Context, slot SlotID) error {
 		select {
 		case <-ctx.Done():
 			timer.Stop()
+			if probe {
+				st.mu.Lock()
+				if st.circuit == "half-open" {
+					st.circuit = "open"
+					st.halfOpenUse = false
+					st.retryAfter = time.Now().Add(s.cfg.CircuitCooldown)
+				}
+				st.mu.Unlock()
+			}
 			return ctx.Err()
 		case <-timer.C:
 		}
@@ -498,43 +519,61 @@ func (s *Scheduler) recordFailure(slot SlotID, latency int64, message string) {
 }
 
 func (s *Scheduler) run(ctx context.Context, job Job, slot Slot) (map[string]any, string, error) {
+	var lastErr error
 	for _, preferred := range job.BackendPrefs {
 		switch preferred {
 		case BackendRemoteMesh:
-			return s.runRemote(ctx, job, slot)
+			output, backendUsed, err := s.runRemote(ctx, job, slot)
+			if err == nil {
+				return output, backendUsed, nil
+			}
+			lastErr = err
 		case BackendInProcess:
 			if slot.Slot != G7 {
+				lastErr = errors.New("IN_PROCESS_NOT_SUPPORTED_FOR_SLOT")
 				continue
 			}
 			if s.compute == nil {
-				return nil, string(BackendInProcess), errors.New("SUPERGPU_UNAVAILABLE")
+				lastErr = errors.New("SUPERGPU_UNAVAILABLE")
+				continue
 			}
 			operation, _ := job.Payload["operation"].(string)
 			values, err := numericSlice(job.Payload["values"])
 			if err != nil {
-				return nil, string(BackendInProcess), err
+				lastErr = err
+				continue
 			}
 			if strings.TrimSpace(operation) == "" {
-				return nil, string(BackendInProcess), errors.New("IN_PROCESS_OPERATION_REQUIRED")
+				lastErr = errors.New("IN_PROCESS_OPERATION_REQUIRED")
+				continue
 			}
 			device, err := s.compute.Select("")
 			if err != nil {
-				return nil, string(BackendInProcess), err
+				lastErr = err
+				continue
 			}
 			if err := s.compute.Reserve(device.ID, job.JobID); err != nil {
-				return nil, string(BackendInProcess), err
+				lastErr = err
+				continue
 			}
-			defer s.compute.Release(device.ID, job.JobID)
 			out, err := s.compute.Execute(ctx, device, operation, values)
+			_ = s.compute.Release(device.ID, job.JobID)
 			if err != nil {
-				return nil, string(BackendInProcess), err
+				lastErr = err
+				continue
 			}
 			return map[string]any{"operation": operation, "values": out, "device": device.ID}, string(BackendInProcess), nil
 		case BackendWASM, BackendWebGPU:
-			return nil, string(preferred), fmt.Errorf("%s_BACKEND_UNAVAILABLE", preferred)
+			lastErr = fmt.Errorf("%s_BACKEND_UNAVAILABLE", preferred)
 		default:
-			return nil, string(preferred), fmt.Errorf("BACKEND_UNSUPPORTED:%s", preferred)
+			lastErr = fmt.Errorf("BACKEND_UNSUPPORTED:%s", preferred)
 		}
+		if ctx.Err() != nil {
+			return nil, string(preferred), ctx.Err()
+		}
+	}
+	if lastErr != nil {
+		return nil, "", lastErr
 	}
 	return nil, "", errors.New("BACKEND_PREFERENCE_EMPTY")
 }
