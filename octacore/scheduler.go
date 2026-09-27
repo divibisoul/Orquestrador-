@@ -624,11 +624,13 @@ func (s *Scheduler) executeG0(ctx context.Context, job Job) (map[string]any, str
 	}
 	switch job.Kind {
 	case KindSARAudit:
-		return s.sara.Audit(ctx, input, job.CorrelationID)
+		out, err := s.sara.Audit(ctx, input, job.CorrelationID)
+		return out, "SARA_HTTP", err
 	case KindSARACycle:
 		cycleID, _ := job.Payload["cycle_id"].(string)
 		contextPayload, _ := job.Payload["context"].(map[string]any)
-		return s.sara.CycleWithContext(ctx, input, cycleID, job.CorrelationID, contextPayload)
+		out, err := s.sara.CycleWithContext(ctx, input, cycleID, job.CorrelationID, contextPayload)
+		return out, "SARA_HTTP", err
 	default:
 		return nil, "SARA_HTTP", errors.New("G0_UNSUPPORTED_OPERATION")
 	}
