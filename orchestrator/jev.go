@@ -40,13 +40,7 @@ func RegisterJevOperations(e *Engine, client *jev.Client) error {
 			return protocol.Result{}, errors.New("metadata.questions_json must contain at least one question")
 		}
 
-		if model := strings.TrimSpace(message.Metadata["model"]); model != "" {
-			original := client.Model
-			client.Model = model
-			defer func() { client.Model = original }()
-		}
-
-		response, err := client.SystemOne(ctx, state, questions)
+		response, err := client.SystemOneWithModel(ctx, state, questions, message.Metadata["model"])
 		if err != nil {
 			return protocol.Result{}, err
 		}
