@@ -178,8 +178,8 @@ Open WebUI / OpenAI-compatible client
 → Soul Mesh / N02-N06
 → provider/tool/perception/cognition owners
 
-An optional LangGraph planner may sit outside that control path. It delegates to N07; it does not become an eighth nucleus, a second Mesh, a provider authority, or a second ingress. LangGraph 1.2.12 was selected from the current PyPI release and its StateGraph/START/END/compile model matches the required minimal graph. cite_placeholder_langgraph
+An optional LangGraph planner may sit outside that control path. It delegates to N07; it does not become an eighth nucleus, a second Mesh, a provider authority, or a second ingress. LangGraph 1.2.12 was selected from the current PyPI release and its StateGraph/START/END/compile model matches the required minimal graph. Official references: https://pypi.org/project/langgraph/1.2.12/ and https://github.com/langchain-ai/docs/blob/main/src/oss/langgraph/graph-api.mdx
 
-An optional NeMo Agent Toolkit environment is also external to N07's Go runtime. Official NVIDIA documentation describes nvidia-nat as framework-agnostic and provides a LangChain/LangGraph integration; the SOUL adapter uses only the stable 1.8.x package line and does not rewrite SARA. cite_placeholder_nemo
+An optional NeMo Agent Toolkit environment is also external to N07's Go runtime. Official NVIDIA documentation describes nvidia-nat as framework-agnostic and provides a LangChain/LangGraph integration; the SOUL adapter uses only the stable 1.8.x package line and does not rewrite SARA. Official reference: https://docs.nvidia.com/nemo/agent-toolkit/latest/quick-start/installing.html
 
 No production-online claim is inferred from these OSS integration checks.
