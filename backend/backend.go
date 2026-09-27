@@ -343,16 +343,22 @@ func (s *Server) capabilities(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusMethodNotAllowed, map[string]any{"error": "GET required"})
 		return
 	}
+	jevConfigured := strings.TrimSpace(os.Getenv("JEV_API_KEY")) != ""
+	jevOperations := []string{}
+	if jevConfigured {
+		jevOperations = []string{"jev.systemone@1.0.0"}
+	}
 	writeJSON(w, http.StatusOK, map[string]any{
 		"nucleus":    "N07",
 		"operations": s.Engine.Operations(),
 		"storage":    map[string]any{"configured": s.Storage.Configured(), "api": "web3.storage-compatible"},
 		"supabase":   map[string]any{"configured": s.Store.Configured()},
 		"jev": map[string]any{
-			"configured": strings.TrimSpace(os.Getenv("JEV_API_KEY")) != "",
+			"installed": true,
+			"configured": jevConfigured,
 			"base_url_configured": strings.TrimSpace(os.Getenv("JEV_API_BASE_URL")) != "",
 			"model": envString("JEV_MODEL", "jev-latest"),
-			"operations": []string{"jev.systemone@1.0.0"},
+			"operations": jevOperations,
 		},
 		"sara": map[string]any{
 			"configured":          s.Config.SARAServiceURL != "" && s.Config.SARAServiceToken != "",
