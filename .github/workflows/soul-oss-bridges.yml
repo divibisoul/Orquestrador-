@@ -1,0 +1,44 @@
+name: SOUL OSS Bridges
+
+on:
+  push:
+    paths:
+      - "integrations/langgraph/**"
+      - "integrations/nemo-agent-toolkit/**"
+      - ".github/workflows/soul-oss-bridges.yml"
+  pull_request:
+    paths:
+      - "integrations/langgraph/**"
+      - "integrations/nemo-agent-toolkit/**"
+      - ".github/workflows/soul-oss-bridges.yml"
+
+jobs:
+  langgraph:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+      - name: Install bridge
+        run: python -m pip install --disable-pip-version-check -e integrations/langgraph
+      - name: Compile graph
+        working-directory: integrations/langgraph
+        run: python -c "from graph import GRAPH; print(sorted(GRAPH.get_graph().nodes.keys()))"
+      - name: Pure graph tests
+        working-directory: integrations/langgraph
+        run: python -m unittest test_graph.py
+
+  nemo:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+      - name: Install stable toolkit line
+        run: python -m pip install --disable-pip-version-check -r integrations/nemo-agent-toolkit/requirements.txt
+      - name: Verify NAT CLI
+        run: nat --version
