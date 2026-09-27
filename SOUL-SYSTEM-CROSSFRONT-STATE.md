@@ -59,3 +59,37 @@ BLOCKED = a reproducible failure or missing environment evidence prevents valida
 ONLINE = only after real deployed peer/runtime smoke evidence.
 
 No state above uses simulated success.
+
+## F2/F3 completion snapshot — 2026-09-27
+
+### Current state ledger
+
+| Nucleus | Main | State |
+|---|---|---|
+| N01 | 462fc7d4fc95bdff3307649a3b0c9abd9cffe98d | OBSERVED / FROZEN |
+| N02 | 993ad528e5257b33f7fa6283a24a57a7d50f67ec | VALIDATED |
+| N03 | 726a0f880d72d9fa7d6624742a69da568c6ad21b | MERGED / REVALIDATION NOT TRIGGERED |
+| N04 | 8c457291181b3295b50615bf3abe01599fe0226e | VALIDATED |
+| N05 | a405dd02598fa8f74d2209f59b447dab63e821c4 | VALIDATED |
+| N06 | 5c11eaf3065bcc38c8d905d4806fbe17b3c11b5b | VALIDATED |
+| N07 | a7f68f5a8673120e680d264070815b7a62fcee3c | VALIDATED / STAGING BLOCKED |
+| N07 PR #36 | cea7e7641010351afb237fcaa27ba3b5ce0741bf | OPEN / CI IN PROGRESS |
+| SARA | current main inspected live | TRANSVERSAL; not N08 |
+
+### Hard boundaries verified
+
+1. One canonical Soul Mesh only.
+2. N07 is the sole public OpenAI-compatible ingress.
+3. N02 owns Gemini/Ollama provider bridges; no provider became a nucleus.
+4. CallBestDynamic remains capability/discovery/health/latency/failure-aware routing in N07.
+5. N01/Clareira is frozen in this front.
+6. SARA is not duplicated or promoted to N08.
+7. No physical SuperGPU claim was introduced.
+8. Random values were not introduced into health/readiness logic in this fusion pass.
+
+### Remaining gates
+
+- N03 current-main CI was not independently rerun in this pass because its main revision was unchanged; its prior merge remains historical evidence.
+- N07 PR #36 must not merge until its exact-head PR CI finishes green.
+- N07 staging remains BLOCKED until the environment supplies the existing required secrets.
+- OSS insertion remains behind the canonical boundaries. LiteLLM is still conditional; LangGraph/NeMo are additive candidates after #36 and its post-merge validation.
