@@ -3,7 +3,6 @@ package octacore
 import (
 	"context"
 	"errors"
-	"sync"
 	"time"
 
 	"github.com/divibisoul/Orquestrador-/backend"
@@ -63,6 +62,10 @@ func (p *Processor) Resume() { p.scheduler.resume() }
 
 func (p *Processor) SuperGPUHealth() map[string]any { return p.scheduler.superGPUHealth() }
 
+func (p *Processor) SetVagusPublisher(fn func(context.Context, VagusEnvelope) error) {
+	p.scheduler.setPublisher(fn)
+}
+
 func (p *Processor) WaitIdle(ctx context.Context) error {
 	if ctx == nil { return errors.New("context is nil") }
 	ticker := time.NewTicker(10 * time.Millisecond)
@@ -77,7 +80,3 @@ func (p *Processor) WaitIdle(ctx context.Context) error {
 	}
 }
 
-// Keep sync imported in this compilation unit for old tools that inspect the
-// processor package for concurrency primitives; runtime synchronization lives
-// in scheduler.go.
-var _ = sync.Once{}
