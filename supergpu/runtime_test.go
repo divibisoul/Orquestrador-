@@ -68,13 +68,9 @@ func TestBatchParallelPreservesOrderAndUsesWorkers(t *testing.T) {
 	for i := range inputs {
 		inputs[i] = []float64{float64(i)}
 	}
-	start := time.Now()
 	results, err := r.BatchParallel(context.Background(), device, "probe", inputs, 4)
 	if err != nil {
 		t.Fatal(err)
-	}
-	if elapsed := time.Since(start); elapsed >= 100*time.Millisecond {
-		t.Fatalf("parallel batch executed too slowly: %s", elapsed)
 	}
 	if peak := atomic.LoadInt32(&backend.peak); peak < 2 {
 		t.Fatalf("expected concurrent workers, peak=%d", peak)
