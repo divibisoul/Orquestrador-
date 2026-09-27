@@ -93,3 +93,24 @@ No state above uses simulated success.
 - N07 PR #36 must not merge until its exact-head PR CI finishes green.
 - N07 staging remains BLOCKED until the environment supplies the existing required secrets.
 - OSS insertion remains behind the canonical boundaries. LiteLLM is still conditional; LangGraph/NeMo are additive candidates after #36 and its post-merge validation.
+
+## F4 completion ledger — 2026-09-27
+
+| Layer | State |
+|---|---|
+| N01 Clareira/Aeternum | FROZEN in this front |
+| N02 Gemini + Ollama provider owner | VALIDATED |
+| N03 Gemini Live / multimodal | MERGED; current-main independent rerun still not triggered |
+| N04 Skills / documents | VALIDATED |
+| N05 Dispatch / topology | VALIDATED |
+| N06 Cognition / session | VALIDATED |
+| N07 federation / sole OpenAI ingress | CORE VALIDATED; post-F4 main CI running |
+| SARA | TRANSVERSAL; unchanged as authority |
+| LangGraph | MERGED / VALIDATED |
+| NeMo Agent Toolkit | MERGED / exact-PR validated; post-merge main validation pending |
+| LiteLLM | CONDITIONAL / not installed |
+| CrewAI / LlamaIndex | PENDING |
+
+### Explicit non-regressions
+
+One canonical Soul Mesh is preserved. N07 remains the only public OpenAI-compatible ingress. SARA is not duplicated or promoted to N08. SuperGPU remains logical. No existing nucleus was replaced or deleted.
