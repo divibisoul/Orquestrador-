@@ -20,10 +20,38 @@
     "legacyOnlyAsDeprecatedAdapters": true,
     "forbidParallelAuthorities": true
   },
+  "octacore": {
+    "type": "system-gpu-software-processor",
+    "siliconOctaCore": false,
+    "simulation": false,
+    "slots": ["G0:SARA", "G1:N01", "G2:N02", "G3:N03", "G4:N04", "G5:N05", "G6:N06", "G7:N07"],
+    "schedulerOwner": "N07",
+    "regenerativeAuthority": "SARA",
+    "controlPlane": "VagusBus",
+    "executionPlane": "canonical-soul-mesh",
+    "backends": ["IN_PROCESS", "WEBASSEMBLY", "WEBGPU", "REMOTE_MESH"],
+    "principle": "additive-preserve-optimize-connect"
+  },
   "fusion": {
     "topology": "linear-adjacent",
     "policy": "adjacent-only-dynamic",
     "bidirectionalChannelsPerEdge": 2
+  },
+  "hortacore": {
+    "type": "federated-composition-layer",
+    "owner": "N07",
+    "controlPlane": "VagusBus",
+    "executionPlane": "canonical-soul-mesh",
+    "octacoreOwner": "G7",
+    "regenerationAuthority": "SARA",
+    "processors": {
+      "codex": "PENDING_REPO",
+      "blueprint": "PENDING_REPO",
+      "eru": "DELEGATE_SARA",
+      "audit": "DELEGATE_SARA",
+      "guide": "PENDING_REPO"
+    },
+    "policy": "additive-preserve-optimize-connect"
   },
   "hardware": {
     "controlPlane": "N07",

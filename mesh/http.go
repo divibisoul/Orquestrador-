@@ -293,6 +293,16 @@ func (g *HTTPGateway) Handler(w http.ResponseWriter, r *http.Request) {
 				metadata["sara_cycle_id"] = v
 			}
 		}
+	} else if isLocalOperation(g.Engine, capability) {
+		if payload := envelope.NestedPayload(); payload != nil {
+			raw, err := json.Marshal(payload)
+			if err != nil {
+				g.respond(w, http.StatusBadRequest, envelope, "ERROR", map[string]any{"error": "invalid structured local payload"})
+				return
+			}
+			metadata["local_payload_json"] = string(raw)
+		}
+		values = []float64{}
 	} else {
 		var err error
 		values, err = payloadValues(envelope.NestedPayload())

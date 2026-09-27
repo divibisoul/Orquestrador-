@@ -140,6 +140,23 @@ func (p *PeerClient) invalidateDiscovery(nucleus string) {
 	p.discoveryMu.Unlock()
 }
 
+// SupportsCapability performs a real Mesh discovery before a remote Octacore dispatch.
+func (p *PeerClient) SupportsCapability(ctx context.Context, nucleus, capability string) (bool, error) {
+	if ctx == nil {
+		return false, errors.New("context is nil")
+	}
+	nucleus = strings.TrimSpace(nucleus)
+	capability = strings.TrimSpace(capability)
+	if nucleus == "" || capability == "" {
+		return false, errors.New("nucleus and capability are required")
+	}
+	description, err := p.Discover(ctx, nucleus)
+	if err != nil {
+		return false, err
+	}
+	return supportsDeclaredOrExecutableCapability(description, capability), nil
+}
+
 func (p *PeerClient) Call(ctx context.Context, nucleus, capability string, payload map[string]any) (map[string]any, error) {
 	return p.CallWithCorrelation(ctx, nucleus, capability, payload, protocol.NewTraceID())
 }
@@ -183,6 +200,33 @@ func (p *PeerClient) CallBest(ctx context.Context, capability string, payload ma
 		}
 	}
 	return nil, "", fmt.Errorf("no healthy peer exposes executable capability: %s", capability)
+}
+
+func supportsDeclaredOrExecutableCapability(description map[string]any, capability string) bool {
+	if supportsExecutableCapability(description, capability) {
+		return true
+	}
+	raw, ok := description["capabilities"]
+	if !ok {
+		if nested, nestedOK := description["payload"].(map[string]any); nestedOK {
+			raw = nested["capabilities"]
+		}
+	}
+	switch values := raw.(type) {
+	case []any:
+		for _, item := range values {
+			if value, ok := item.(string); ok && strings.TrimSpace(value) == capability {
+				return true
+			}
+		}
+	case []string:
+		for _, value := range values {
+			if strings.TrimSpace(value) == capability {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 func supportsExecutableCapability(description map[string]any, capability string) bool {
