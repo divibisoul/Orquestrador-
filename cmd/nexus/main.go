@@ -13,8 +13,10 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/divibisoul/Orquestrador-/api"
 	"github.com/divibisoul/Orquestrador-/api/health"
 	"github.com/divibisoul/Orquestrador-/backend"
+	"github.com/divibisoul/Orquestrador-/jev"
 	"github.com/divibisoul/Orquestrador-/mesh"
 	"github.com/divibisoul/Orquestrador-/neural"
 	"github.com/divibisoul/Orquestrador-/orchestrator"
@@ -50,6 +52,14 @@ func main() {
 	if err := orchestrator.RegisterAdvancedOperations(e); err != nil {
 		log.Fatal(err)
 	}
+	if client, err := jev.NewFromEnv(); err == nil {
+		if err := orchestrator.RegisterJevOperations(e, client); err != nil {
+			log.Fatal(err)
+		}
+		log.Printf("Jev decision capability enabled: %s", client.Model)
+	} else {
+		log.Printf("Jev decision capability disabled: %v", err)
+	}
 	cfg := backend.DefaultConfig()
 	if proxy := backend.NewSARAProxy(cfg); proxy.Configured() {
 		if err := backend.RegisterSARAOperations(e, proxy); err != nil {
@@ -58,7 +68,15 @@ func main() {
 	}
 
 	unified := backend.NewUnified(e, cfg)
+	peerClient, err := mesh.NewPeerClient(nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+	openAICompat := api.NewOpenAICompatHandler(peerClient)
+
 	mux := http.NewServeMux()
+	mux.HandleFunc("/v1/models", openAICompat.ServeModels)
+	mux.HandleFunc("/v1/chat/completions", openAICompat.ServeChat)
 	mux.Handle("/v1/", unified.Handler())
 	mux.Handle("/api/health/dashboard", health.Handler())
 	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) { writeJSON(w, http.StatusOK, e.Health()) })
@@ -162,7 +180,7 @@ func writeJSON(w http.ResponseWriter, status int, v any) {
 	_ = json.NewEncoder(w).Encode(v)
 }
 func writeMetrics(w http.ResponseWriter, s map[string]any) {
-	w.Header().Set("Content-Type", "text/plain; version=0.0.4")
+	w.Header().Set("Content-Type", "text/plain; version=0.4.0")
 	m, ok := s["metrics"].(map[string]any)
 	if !ok {
 		w.WriteHeader(http.StatusInternalServerError)

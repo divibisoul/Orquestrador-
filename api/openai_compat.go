@@ -70,7 +70,7 @@ func (h *OpenAICompatHandler) ServeModels(w http.ResponseWriter, r *http.Request
 	ctx, cancel := context.WithTimeout(r.Context(), 3*time.Second)
 	defer cancel()
 	description, err := h.peers.Discover(ctx, "N02")
-	if err != nil || !meshExecutable(description, "ai.generate") {
+	if err != nil || !meshExecutable(description, openAICapability()) {
 		writeJSON(w, http.StatusOK, map[string]any{"object": "list", "data": []any{}})
 		return
 	}
@@ -120,7 +120,7 @@ func (h *OpenAICompatHandler) ServeChat(w http.ResponseWriter, r *http.Request) 
 	}
 
 	correlation := fmt.Sprintf("openai-%d", time.Now().UnixNano())
-	result, owner, callErr := h.peers.CallBestDynamic(r.Context(), "ai.generate", map[string]any{
+	result, owner, callErr := h.peers.CallBestDynamic(r.Context(), openAICapability(), map[string]any{
 		"text": prompt, "source": "openai-compat", "model": "soul-auto",
 	}, correlation)
 	if callErr != nil {
@@ -210,6 +210,14 @@ func extractGeneratedText(result map[string]any) (string, error) {
 		}
 	}
 	return "", errors.New("N02 response did not expose textual output")
+}
+
+func openAICapability() string {
+	value := strings.TrimSpace(os.Getenv("N07_OPENAI_CAPABILITY"))
+	if value == "" {
+		return "ai.generate"
+	}
+	return value
 }
 
 func meshExecutable(description map[string]any, capability string) bool {
