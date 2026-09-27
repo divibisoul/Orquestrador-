@@ -161,13 +161,13 @@ func (s *Scheduler) publish(ctx context.Context, event VagusEnvelope) {
 
 func (s *Scheduler) health() map[string]any {
 	out := map[string]any{
-		"processor": "Octacore",
-		"status":    "READY",
-		"slots":     s.inventory(),
-		"inflight":  s.inflight.Load(),
-		"queue_depth": s.queue.Load(),
+		"processor":      "Octacore",
+		"status":         "READY",
+		"slots":          s.inventory(),
+		"inflight":       s.inflight.Load(),
+		"queue_depth":    s.queue.Load(),
 		"throttle_level": s.throttle.Load(),
-		"supergpu": s.superGPUHealth(),
+		"supergpu":       s.superGPUHealth(),
 	}
 	if s.halted.Load() {
 		out["status"] = "HALTED"
@@ -177,14 +177,14 @@ func (s *Scheduler) health() map[string]any {
 		st := s.state[slot.Slot]
 		st.mu.Lock()
 		slotHealth = append(slotHealth, map[string]any{
-			"slot":           slot.Slot,
-			"nucleus":        slot.Nucleus,
-			"status":         slot.Status,
-			"inflight":       st.inflight,
-			"failures":       st.failures,
-			"circuit":        st.circuit,
+			"slot":            slot.Slot,
+			"nucleus":         slot.Nucleus,
+			"status":          slot.Status,
+			"inflight":        st.inflight,
+			"failures":        st.failures,
+			"circuit":         st.circuit,
 			"last_latency_ms": st.lastLatency.Milliseconds(),
-			"last_error":     st.lastError,
+			"last_error":      st.lastError,
 		})
 		st.mu.Unlock()
 	}
@@ -595,11 +595,11 @@ func (s *Scheduler) runRemote(ctx context.Context, job Job, slot Slot) (map[stri
 	}
 	delete(payload, "capability")
 	payload["octacore"] = map[string]any{
-		"job_id": job.JobID,
+		"job_id":         job.JobID,
 		"correlation_id": job.CorrelationID,
-		"source": string(job.Source),
-		"target": string(slot.Slot),
-		"kind": string(job.Kind),
+		"source":         string(job.Source),
+		"target":         string(slot.Slot),
+		"kind":           string(job.Kind),
 	}
 	if slot.Slot == G0 {
 		return nil, string(BackendRemoteMesh), errors.New("G0_MUST_USE_SARA_AUTHORITY")
@@ -667,11 +667,11 @@ func failed(job Job, code string, err error, latency, queueWait int64) Result {
 		err = errors.New(code)
 	}
 	return Result{
-		JobID: job.JobID,
+		JobID:         job.JobID,
 		CorrelationID: job.CorrelationID,
-		OK: false,
-		Error: &Error{Code: code, Message: err.Error()},
-		Metrics: Metrics{LatencyMS: latency, QueueWaitMS: queueWait},
+		OK:            false,
+		Error:         &Error{Code: code, Message: err.Error()},
+		Metrics:       Metrics{LatencyMS: latency, QueueWaitMS: queueWait},
 	}
 }
 
@@ -705,14 +705,14 @@ func maxInt(a, b int) int {
 
 func makeVagus(typ, source, target string, priority int, ttl int64, correlation string, payload map[string]any) VagusEnvelope {
 	return VagusEnvelope{
-		VagusVersion: VagusVersion,
-		MessageID: NewJobID(),
+		VagusVersion:  VagusVersion,
+		MessageID:     NewJobID(),
 		CorrelationID: correlation,
-		Source: source,
-		Target: target,
-		Priority: priority,
-		TTL: ttl,
-		Type: typ,
-		Payload: payload,
+		Source:        source,
+		Target:        target,
+		Priority:      priority,
+		TTL:           ttl,
+		Type:          typ,
+		Payload:       payload,
 	}
 }

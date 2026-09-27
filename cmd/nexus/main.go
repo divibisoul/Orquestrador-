@@ -82,15 +82,15 @@ func main() {
 			return errors.New("VAGUS_CONTROL_SARA_UNCONFIGURED")
 		}
 		payload := map[string]any{
-			"vagus_version": event.VagusVersion,
-			"message_id": event.MessageID,
+			"vagus_version":  event.VagusVersion,
+			"message_id":     event.MessageID,
 			"correlation_id": event.CorrelationID,
-			"source": event.Source,
-			"target": event.Target,
-			"priority": event.Priority,
-			"ttl": event.TTL,
-			"type": event.Type,
-			"payload": event.Payload,
+			"source":         event.Source,
+			"target":         event.Target,
+			"priority":       event.Priority,
+			"ttl":            event.TTL,
+			"type":           event.Type,
+			"payload":        event.Payload,
 		}
 		_, err := saraProxy.PublishVagus(ctx, payload, event.CorrelationID)
 		return err

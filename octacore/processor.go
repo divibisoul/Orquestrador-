@@ -15,20 +15,20 @@ type Processor struct {
 }
 
 type Config struct {
-	MaxInflight int
-	TokenCapacity int
+	MaxInflight          int
+	TokenCapacity        int
 	TokenRefillPerSecond float64
-	FailureThreshold int
-	CircuitCooldown time.Duration
+	FailureThreshold     int
+	CircuitCooldown      time.Duration
 }
 
 func DefaultConfig() Config {
 	return Config{
-		MaxInflight: 8,
-		TokenCapacity: 8,
+		MaxInflight:          8,
+		TokenCapacity:        8,
 		TokenRefillPerSecond: 8,
-		FailureThreshold: 3,
-		CircuitCooldown: 30 * time.Second,
+		FailureThreshold:     3,
+		CircuitCooldown:      30 * time.Second,
 	}
 }
 
@@ -67,11 +67,15 @@ func (p *Processor) SetVagusPublisher(fn func(context.Context, VagusEnvelope) er
 }
 
 func (p *Processor) WaitIdle(ctx context.Context) error {
-	if ctx == nil { return errors.New("context is nil") }
+	if ctx == nil {
+		return errors.New("context is nil")
+	}
 	ticker := time.NewTicker(10 * time.Millisecond)
 	defer ticker.Stop()
 	for {
-		if p.scheduler.inflightCount() == 0 { return nil }
+		if p.scheduler.inflightCount() == 0 {
+			return nil
+		}
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
@@ -79,4 +83,3 @@ func (p *Processor) WaitIdle(ctx context.Context) error {
 		}
 	}
 }
-

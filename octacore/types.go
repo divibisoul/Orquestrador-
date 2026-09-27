@@ -8,26 +8,29 @@ import (
 )
 
 type Backend string
+
 const (
-	BackendInProcess Backend = "IN_PROCESS"
-	BackendWASM Backend = "WEBASSEMBLY"
-	BackendWebGPU Backend = "WEBGPU"
+	BackendInProcess  Backend = "IN_PROCESS"
+	BackendWASM       Backend = "WEBASSEMBLY"
+	BackendWebGPU     Backend = "WEBGPU"
 	BackendRemoteMesh Backend = "REMOTE_MESH"
 )
 
 type JobKind string
+
 const (
-	KindResearch JobKind = "research"
-	KindPerceive JobKind = "perceive"
-	KindTool JobKind = "tool"
+	KindResearch    JobKind = "research"
+	KindPerceive    JobKind = "perceive"
+	KindTool        JobKind = "tool"
 	KindSessionStep JobKind = "session_step"
-	KindSARAudit JobKind = "sara_audit"
-	KindSARACycle JobKind = "sara_cycle"
-	KindDispatch JobKind = "dispatch"
-	KindCustom JobKind = "custom"
+	KindSARAudit    JobKind = "sara_audit"
+	KindSARACycle   JobKind = "sara_cycle"
+	KindDispatch    JobKind = "dispatch"
+	KindCustom      JobKind = "custom"
 )
 
 type SlotID string
+
 const (
 	G0 SlotID = "G0"
 	G1 SlotID = "G1"
@@ -40,68 +43,69 @@ const (
 )
 
 type SlotStatus string
+
 const (
-	SlotImplemented SlotStatus = "IMPLEMENTED"
-	SlotAdapterReady SlotStatus = "ADAPTER_READY"
-	SlotRepoPresent SlotStatus = "REPO_PRESENT_RUNTIME_UNVERIFIED"
-	SlotPendingRepo SlotStatus = "PENDING_REPO"
+	SlotImplemented    SlotStatus = "IMPLEMENTED"
+	SlotAdapterReady   SlotStatus = "ADAPTER_READY"
+	SlotRepoPresent    SlotStatus = "REPO_PRESENT_RUNTIME_UNVERIFIED"
+	SlotPendingRepo    SlotStatus = "PENDING_REPO"
 	SlotPendingAdapter SlotStatus = "PENDING_KERNEL_ADAPTER"
 )
 
 type Slot struct {
-	Slot SlotID `json:"slot"`
-	Nucleus string `json:"nucleus"`
-	Role string `json:"role"`
-	Status SlotStatus `json:"status"`
-	Capabilities []string `json:"capabilities,omitempty"`
-	Execution []Backend `json:"execution,omitempty"`
+	Slot         SlotID     `json:"slot"`
+	Nucleus      string     `json:"nucleus"`
+	Role         string     `json:"role"`
+	Status       SlotStatus `json:"status"`
+	Capabilities []string   `json:"capabilities,omitempty"`
+	Execution    []Backend  `json:"execution,omitempty"`
 }
 
 type Job struct {
-	JobID string `json:"job_id"`
-	CorrelationID string `json:"correlation_id"`
-	Kind JobKind `json:"kind"`
-	Source SlotID `json:"source"`
-	Target string `json:"target"`
-	BackendPrefs []Backend `json:"backend_prefs"`
-	ParallelGroup *string `json:"parallel_group,omitempty"`
-	Barrier *string `json:"barrier,omitempty"`
-	Payload map[string]any `json:"payload"`
-	Priority int `json:"priority"`
-	TTLMS int64 `json:"ttl_ms"`
+	JobID         string         `json:"job_id"`
+	CorrelationID string         `json:"correlation_id"`
+	Kind          JobKind        `json:"kind"`
+	Source        SlotID         `json:"source"`
+	Target        string         `json:"target"`
+	BackendPrefs  []Backend      `json:"backend_prefs"`
+	ParallelGroup *string        `json:"parallel_group,omitempty"`
+	Barrier       *string        `json:"barrier,omitempty"`
+	Payload       map[string]any `json:"payload"`
+	Priority      int            `json:"priority"`
+	TTLMS         int64          `json:"ttl_ms"`
 }
 
 type Result struct {
-	JobID string `json:"job_id"`
-	CorrelationID string `json:"correlation_id"`
-	OK bool `json:"ok"`
-	BackendUsed string `json:"backend_used"`
-	Output map[string]any `json:"output,omitempty"`
-	Error *Error `json:"error,omitempty"`
-	Metrics Metrics `json:"metrics"`
+	JobID         string         `json:"job_id"`
+	CorrelationID string         `json:"correlation_id"`
+	OK            bool           `json:"ok"`
+	BackendUsed   string         `json:"backend_used"`
+	Output        map[string]any `json:"output,omitempty"`
+	Error         *Error         `json:"error,omitempty"`
+	Metrics       Metrics        `json:"metrics"`
 }
 
 type Error struct {
-	Code string `json:"code"`
-	Message string `json:"message"`
+	Code    string         `json:"code"`
+	Message string         `json:"message"`
 	Details map[string]any `json:"details,omitempty"`
 }
 
 type Metrics struct {
-	LatencyMS int64 `json:"latency_ms"`
+	LatencyMS   int64 `json:"latency_ms"`
 	QueueWaitMS int64 `json:"queue_wait_ms"`
 }
 
 type VagusEnvelope struct {
-	VagusVersion string `json:"vagus_version"`
-	MessageID string `json:"message_id"`
-	CorrelationID string `json:"correlation_id"`
-	Source string `json:"source"`
-	Target string `json:"target"`
-	Priority int `json:"priority"`
-	TTL int64 `json:"ttl"`
-	Type string `json:"type"`
-	Payload map[string]any `json:"payload"`
+	VagusVersion  string         `json:"vagus_version"`
+	MessageID     string         `json:"message_id"`
+	CorrelationID string         `json:"correlation_id"`
+	Source        string         `json:"source"`
+	Target        string         `json:"target"`
+	Priority      int            `json:"priority"`
+	TTL           int64          `json:"ttl"`
+	Type          string         `json:"type"`
+	Payload       map[string]any `json:"payload"`
 }
 
 const VagusVersion = "1.0"

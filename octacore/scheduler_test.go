@@ -34,11 +34,11 @@ func newTestScheduler(t *testing.T) *Scheduler {
 		t.Fatal(err)
 	}
 	return newScheduler(Config{
-		MaxInflight:            8,
-		TokenCapacity:          8,
+		MaxInflight:          8,
+		TokenCapacity:        8,
 		TokenRefillPerSecond: 1000,
-		FailureThreshold:      2,
-		CircuitCooldown:        100 * time.Millisecond,
+		FailureThreshold:     2,
+		CircuitCooldown:      100 * time.Millisecond,
 	}, runtime, peers, nil)
 }
 
