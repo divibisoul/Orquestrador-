@@ -39,7 +39,7 @@ concurrency:
 
 jobs:
   repair-format:
-    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+    if: (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository) || (github.event_name == 'push' && github.ref != 'refs/heads/main')
     permissions:
       contents: write
     runs-on: ubuntu-latest
@@ -99,6 +99,7 @@ jobs:
 
   integrity:
     needs: repair-format
+    if: always() && (needs.repair-format.result == 'success' || needs.repair-format.result == 'skipped')
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
