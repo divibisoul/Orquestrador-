@@ -44,6 +44,7 @@ type parallelProbeBackend struct {
 
 func (b *parallelProbeBackend) Supports(Device) bool         { return true }
 func (b *parallelProbeBackend) Capabilities(Device) []string { return []string{"probe"} }
+func (b *parallelProbeBackend) ConcurrentSafe() bool { return true }
 func (b *parallelProbeBackend) Execute(ctx context.Context, _ Device, _ string, in []float64) ([]float64, error) {
 	now := atomic.AddInt32(&b.active, 1)
 	for {
