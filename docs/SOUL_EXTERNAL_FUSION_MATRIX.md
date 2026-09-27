@@ -111,3 +111,19 @@ N03 #17 was already merged before this pass.
 ### OSS gate
 
 Core provider coverage is now Gemini + Ollama behind N02. LiteLLM therefore remains conditional rather than being inserted as another provider authority. LangGraph and NeMo remain candidates for additive N07-side orchestration/evaluation bridges; implementation is gated on the N07 #36 merge and post-merge main validation.
+
+## F4 post-merge snapshot — 2026-09-27
+
+PR #37 (OSS bridges) is merged into main as squash commit c55a01c4f88c2bbd7c6b55b5427f3edf5b96bdc6.
+
+| OSS | Placement | State | Real evidence |
+|---|---|---|---|
+| LangGraph | optional N07-side planner/state bridge | VALIDATED | PR #37 exact-head OSS CI SUCCESS; post-merge main LangGraph job SUCCESS; pinned 1.2.12 |
+| NeMo Agent Toolkit | optional N07-side observation/evaluation environment | INTEGRATED / VALIDATION IN PROGRESS | PR #37 exact-head OSS CI SUCCESS; post-merge main install still running at this snapshot |
+| LiteLLM | N02 provider layer/private sidecar only | CONDITIONAL | Gemini + Ollama already cover the current provider requirement; no second public ingress added |
+| CrewAI | N02/N06 adapter | PENDING | gated behind earlier integrations |
+| LlamaIndex | N04 RAG/docs | PENDING | gated behind earlier integrations |
+
+LangGraph route semantics remain deliberately bounded: the graph does not select peers or become a Mesh participant. Its route node calls the existing authenticated N07 OpenAI-compatible endpoint, whose N07 implementation invokes CallBestDynamic. This preserves a single routing authority.
+
+NeMo is kept outside the production Go binary and outside SARA. Its current use is installation/evaluation readiness only; actual model-backed workflow execution requires credentials and a defined target environment.
