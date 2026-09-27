@@ -62,3 +62,30 @@ N01: finish Android exact validation, then merge PR #40 only with required green
 N03: record post-merge main revalidation after current lock synchronization.
 N07 staging: blocked by missing deployment secrets.
 LiteLLM: conditional only. CrewAI/LlamaIndex/Letta/Agent Framework/AgentScope/CAMEL/Dify remain pending until a concrete non-overlapping capability is proven.
+
+
+## Re-audit update — 2026-09-27
+
+| Unit | Updated state |
+|---|---|
+| N01 | WEB/Mesh remediation VALIDATED; Android debug/release builds + artifact checks SUCCESS; instrumentation still running |
+| N02 | VALIDATED |
+| N03 | VALIDATED on post-merge main: Soul Mesh CI + N05 diagnostics SUCCESS |
+| N04 | VALIDATED |
+| N05 | VALIDATED |
+| N06 | VALIDATED |
+| N07 | CORE VALIDATED; staging secrets still BLOCKED |
+| SARA | TRANSVERSAL |
+
+### Current OSS research boundary
+
+The following repositories were rechecked against GitHub metadata on 2026-09-27 and remain candidates without automatic insertion:
+- Microsoft Agent Framework — MIT; orchestration/workflows; potential N07 adapter, but overlapping with LangGraph.
+- Letta — Apache-2.0; agent memory; potential N06 adapter after memory authority is mapped.
+- AgentScope — Apache-2.0; multi-modal/multi-agent/realtime capabilities; potential N06/N07 adapter.
+- CAMEL — Apache-2.0; multi-agent society/role composition; potential later N02/N06 adapter.
+- smolagents — Apache-2.0; lightweight agent/tool execution; useful as an executor experiment, but it overlaps existing N04/N06 tool ownership.
+- Dify — repository reports NOASSERTION license metadata; requires package-level license review before any dependency decision.
+- LiteLLM — repository reports NOASSERTION metadata and is a gateway/proxy; remains conditional because N02 already has Gemini + Ollama and N07 must remain the sole public ingress.
+
+No candidate above is installed merely because it is popular. Similarity of function, ownership, dependency cost and non-duplication are required before insertion.
