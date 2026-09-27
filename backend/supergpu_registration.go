@@ -1,15 +1,10 @@
 package backend
 
-import (
-	"sync"
-
-	"github.com/divibisoul/Orquestrador-/orchestrator"
-)
-
-var registerSuperGPUOnce sync.Once
+import "github.com/divibisoul/Orquestrador-/orchestrator"
 
 func (s *Server) ensureSuperGPUOperations() {
-	registerSuperGPUOnce.Do(func() {
-		_ = orchestrator.RegisterSuperGPUOperations(s.Engine)
-	})
+	if s == nil || s.Engine == nil {
+		return
+	}
+	_ = orchestrator.RegisterSuperGPUOperations(s.Engine)
 }
