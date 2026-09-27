@@ -34,7 +34,9 @@
   "governance": {
     "externalSourceRefsAreExactHeadAssertions": true,
     "selfSourceRefPolicy": "release-identity",
-    "masterContract": "SOUL_MASTER_ENGINEERING_CONTRACT.md"
+    "masterContract": "SOUL_MASTER_ENGINEERING_CONTRACT.md",
+    "lastReconciledAt": "2026-09-24",
+    "sourceRefBasis": "latest observed default-branch commit verified during federated audit"
   },
   "nuclei": {
     "N01": {
@@ -56,8 +58,8 @@
         "N02"
       ],
       "manifestAuthority": "SOUL-FUSION-MANIFEST.json",
-      "sourceRef": "22ba873e9c833362bc1edea8625eb53e42b92492",
-      "status": "evidence-present-ci-not-proven"
+      "sourceRef": "480ad4d8ed8814e4aa2c3d69043390d90658e52c",
+      "status": "current-main-observed-in-source-control"
     },
     "N02": {
       "repository": "divibisoul/Eternium-",
@@ -79,8 +81,8 @@
         "N03"
       ],
       "manifestAuthority": "SOUL-FUSION-MANIFEST.json",
-      "sourceRef": "ef1f54e776ab73ca16fef8dad6e8d8bf0113c77e",
-      "status": "ci-infrastructure-failure-evidence"
+      "sourceRef": "6078e31b049e6433f31296b38e04b89f4946dc14",
+      "status": "current-main-observed-in-source-control"
     },
     "N03": {
       "repository": "divibisoul/nexus-aeternum-fusion",
@@ -103,8 +105,8 @@
         "N04"
       ],
       "manifestAuthority": "SOUL-FUSION-MANIFEST.json",
-      "sourceRef": "4b620396daf96ae3a581d01b9692217798adb08c",
-      "status": "main-live-dual-protocol"
+      "sourceRef": "6a25196d6f7984528698232dc45db5d776849b62",
+      "status": "current-main-observed-in-source-control"
     },
     "N04": {
       "repository": "divibisoul/nextjs-ai-chatbots",
@@ -126,8 +128,8 @@
         "N05"
       ],
       "manifestAuthority": "SOUL-FUSION-MANIFEST.json",
-      "sourceRef": "3479f9f44d7ffd85ebbfdfea22b630058dd34838",
-      "status": "main-live-ci-not-proven"
+      "sourceRef": "11c0e081b63a8abc7026cf88de8985375f9c07b5",
+      "status": "current-main-observed-in-source-control"
     },
     "N05": {
       "repository": "divibisoul/nextjs-ai-chatbot",
@@ -150,8 +152,8 @@
         "N06"
       ],
       "manifestAuthority": "SOUL-FUSION-MANIFEST.json",
-      "sourceRef": "14c1de0403002ce18709bb69de6a1365e228e467",
-      "status": "main-live-ci-not-proven"
+      "sourceRef": "f45a2bdc1fbdbb662b83d1c7b050c66d273c09f1",
+      "status": "current-main-observed-in-source-control"
     },
     "N06": {
       "repository": "divibisoul/nextjs-ai-chatbot-2000",
@@ -174,8 +176,8 @@
         "N07"
       ],
       "manifestAuthority": "SOUL-FUSION-MANIFEST.json",
-      "sourceRef": "d566bbf9643e5d20b1435718270d5af0514522e5",
-      "status": "main-live-single-authority-implementation"
+      "sourceRef": "3498383a0d9d649cc31da4280c26862901da709f",
+      "status": "current-main-observed-in-source-control"
     },
     "N07": {
       "repository": "divibisoul/Orquestrador-",
