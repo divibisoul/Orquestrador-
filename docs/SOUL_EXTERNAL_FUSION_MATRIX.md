@@ -127,3 +127,27 @@ PR #37 (OSS bridges) is merged into main as squash commit c55a01c4f88c2bbd7c6b55
 LangGraph route semantics remain deliberately bounded: the graph does not select peers or become a Mesh participant. Its route node calls the existing authenticated N07 OpenAI-compatible endpoint, whose N07 implementation invokes CallBestDynamic. This preserves a single routing authority.
 
 NeMo is kept outside the production Go binary and outside SARA. Its current use is installation/evaluation readiness only; actual model-backed workflow execution requires credentials and a defined target environment.
+
+## Current live state — 2026-09-27
+
+| Unit | State now | Evidence |
+|---|---|---|
+| N01 | REMEDIATION VALIDATING | Web/Mesh + Deno validation SUCCESS on head 657780…; Android final workflow still running |
+| N02 | VALIDATED | Main 993ad… with Mesh, diagnostics and forensics SUCCESS |
+| N03 | VALIDATED | Post-merge main 7b625… with Soul Mesh CI + N05 diagnostics SUCCESS |
+| N04 | VALIDATED | Main 8c457… checks SUCCESS |
+| N05 | VALIDATED | Main a405… Bridge/Mesh/diagnostics SUCCESS |
+| N06 | VALIDATED | Main 5c11… Mesh/Channel/diagnostics SUCCESS |
+| N07 | CORE VALIDATED | Main CI and container verification SUCCESS; staging secrets remain BLOCKED |
+| SARA | TRANSVERSAL | No N08 introduced |
+
+### Provider boundary audit
+
+- N01 legacy Supabase chat now routes to N07 /v1/chat/completions; the direct Lovable chat gateway path is removed on the remediation branch.
+- N03 soul-voice-processing uses OpenAI audio endpoints for STT/TTS only. This is a perception provider surface, not an OpenAI-compatible chat ingress.
+- N02 Ollama is a provider client and not a public ingress.
+- N07 remains the sole public OpenAI-compatible chat ingress.
+
+### Candidate policy after F4
+
+LangGraph and NeMo are integrated as external N07-side adapters. LlamaIndex remains a pending N04 RAG candidate because the current N04 repository has document/tool capabilities but no verified vector/embedding pipeline to attach it to without inventing a new authority. LiteLLM remains conditional because Gemini + Ollama already cover the current provider requirement.
