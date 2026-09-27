@@ -297,12 +297,12 @@ func (s *Scheduler) execute(ctx context.Context, job Job) Result {
 
 func (s *Scheduler) executePlan(ctx context.Context, jobs []Job) []Result {
 	results := make([]Result, len(jobs))
+	if len(jobs) == 0 {
+		return results
+	}
 	pending := make(map[int]Job, len(jobs))
 	for i, job := range jobs {
 		pending[i] = job
-	}
-	if len(jobs) == 0 {
-		return results
 	}
 
 	for len(pending) > 0 {
@@ -339,10 +339,10 @@ func (s *Scheduler) executePlan(ctx context.Context, jobs []Job) []Result {
 		for _, index := range ready {
 			delete(pending, index)
 		}
+
 		barrierSignals := barriersForReady(jobs, results, ready)
-		for name, signal := range barrierSignals {
+		for _, signal := range barrierSignals {
 			s.publish(ctx, signal)
-			_ = name
 		}
 	}
 	return results
@@ -353,22 +353,14 @@ func barrierReady(index int, job Job, pending map[int]Job) bool {
 		return true
 	}
 	barrier := strings.TrimSpace(*job.Barrier)
-	consumerGroup := ""
-	if job.ParallelGroup != nil {
-		consumerGroup = strings.TrimSpace(*job.ParallelGroup)
-	}
-	for i, other := range pending {
-		if i == index || other.Barrier == nil || strings.TrimSpace(*other.Barrier) != barrier {
+	for otherIndex, other := range pending {
+		if otherIndex == index || other.ParallelGroup == nil {
 			continue
 		}
-		otherGroup := ""
-		if other.ParallelGroup != nil {
-			otherGroup = strings.TrimSpace(*other.ParallelGroup)
+		group := strings.TrimSpace(*other.ParallelGroup)
+		if group == barrier {
+			return false
 		}
-		if otherGroup == consumerGroup {
-			continue
-		}
-		return false
 	}
 	return true
 }
@@ -382,12 +374,19 @@ func barriersForReady(jobs []Job, results []Result, ready []int) map[string]Vagu
 		}
 		name := strings.TrimSpace(*job.Barrier)
 		corr := job.CorrelationID
-		ok := results[index].OK
-		out[name] = makeVagus("gpu.barrier", "G7", string(job.Source), job.Priority, job.TTLMS, corr, map[string]any{
-			"barrier": name,
-			"job_id":  job.JobID,
-			"ok":      ok,
-		})
+		out[name] = makeVagus(
+			"gpu.barrier",
+			"G7",
+			string(job.Source),
+			job.Priority,
+			job.TTLMS,
+			corr,
+			map[string]any{
+				"barrier": name,
+				"job_id":  job.JobID,
+				"ok":      results[index].OK,
+			},
+		)
 	}
 	return out
 }
