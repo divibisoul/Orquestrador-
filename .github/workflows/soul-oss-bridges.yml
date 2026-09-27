@@ -28,7 +28,7 @@ jobs:
         run: python -c "from graph import GRAPH; print(sorted(GRAPH.get_graph().nodes.keys()))"
       - name: Pure graph tests
         working-directory: integrations/langgraph
-        run: python -m unittest discover -s . -p 'test_graph.py'
+        run: python -m unittest test_graph.py
 
   nemo:
     runs-on: ubuntu-latest
