@@ -518,6 +518,10 @@ func (s *Scheduler) recordFailure(slot SlotID, latency int64, message string) {
 }
 
 func (s *Scheduler) run(ctx context.Context, job Job, slot Slot) (map[string]any, string, error) {
+	if slot.Slot == G0 {
+		output, backendUsed, err := s.executeG0(ctx, job)
+		return output, backendUsed, err
+	}
 	var lastErr error
 	for _, preferred := range job.BackendPrefs {
 		switch preferred {
@@ -635,7 +639,7 @@ func (s *Scheduler) executeG0(ctx context.Context, job Job) (map[string]any, str
 	}
 }
 
-func (s *Scheduler) expired(now time.Time, ttl int64) bool {
+func (s *Scheduler) expired(_ time.Time, ttl int64) bool {
 	return ttl <= 0
 }
 
@@ -676,6 +680,8 @@ func classifyError(err error) string {
 	switch {
 	case strings.HasPrefix(msg, "SARA_"):
 		return strings.SplitN(msg, ":", 2)[0]
+	case strings.Contains(msg, "BACKEND_UNAVAILABLE"):
+		return "BACKEND_UNAVAILABLE"
 	case strings.Contains(msg, "UNAVAILABLE"):
 		return "DEPENDENCY_UNAVAILABLE"
 	default:
