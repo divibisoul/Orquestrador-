@@ -11,6 +11,8 @@ import (
 
 type slowBackend struct{}
 
+func (slowBackend) ConcurrentSafe() bool { return true }
+
 func (slowBackend) Execute(ctx context.Context, _ supergpu.Device, _ string, input []float64) ([]float64, error) {
 	timer := time.NewTimer(75 * time.Millisecond)
 	defer timer.Stop()
@@ -97,8 +99,8 @@ func TestOctacoreBarrierWaitsForIndependentGroup(t *testing.T) {
 
 	start := time.Now()
 	results := s.executePlan(context.Background(), []Job{
-		job("p1", G7, G7, &producerGroup, &barrier),
-		job("p2", G7, G7, &producerGroup, &barrier),
+		job("p1", G7, G7, &producerGroup, nil),
+		job("p2", G7, G7, &producerGroup, nil),
 		{
 			JobID:         "consumer",
 			CorrelationID: "corr-consumer",
