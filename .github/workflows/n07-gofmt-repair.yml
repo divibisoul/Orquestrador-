@@ -1,46 +1,25 @@
 name: N07 Go Format Repair
 
 on:
-  push:
-    branches:
-      - feat/soul-federation-expansion
-  pull_request:
-    branches:
-      - main
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
-  gofmt-repair:
-    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+  verify:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - name: Checkout branch
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ github.head_ref || github.ref_name }}
-          fetch-depth: 0
-          persist-credentials: true
-
-      - name: Setup Go
-        uses: actions/setup-go@v5
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
         with:
           go-version: '1.25.x'
-
-      - name: Format all Go sources
-        run: gofmt -w $(git ls-files '*.go')
-
-      - name: Commit formatting repair
+      - name: Verify Go formatting
         run: |
-          if git diff --quiet; then
-            echo "No gofmt changes required."
-            exit 0
+          set -euo pipefail
+          files="$(gofmt -l $(git ls-files '*.go'))"
+          if [ -n "$files" ]; then
+            printf '%s\n' "$files"
+            exit 1
           fi
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -- '*.go'
-          git commit -m "fix: apply gofmt to N07 Go sources"
-          git push origin HEAD:${{ github.head_ref || github.ref_name }}
