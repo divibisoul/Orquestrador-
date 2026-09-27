@@ -167,3 +167,19 @@ Current post-merge main evidence:
 - N07 PR #36 has been retargeted to main and synchronized through a real merge commit; current exact-head PR CI is validating the complete federation/OpenAI ingress delta.
 
 No claim of online runtime readiness is made from static source or structural CI alone.
+
+## F4 post-merge architecture — 2026-09-27
+
+The current additive topology is:
+
+Open WebUI / OpenAI-compatible client
+→ N07 sole /v1/chat/completions ingress
+→ existing CallBestDynamic
+→ Soul Mesh / N02-N06
+→ provider/tool/perception/cognition owners
+
+An optional LangGraph planner may sit outside that control path. It delegates to N07; it does not become an eighth nucleus, a second Mesh, a provider authority, or a second ingress. LangGraph 1.2.12 was selected from the current PyPI release and its StateGraph/START/END/compile model matches the required minimal graph. cite_placeholder_langgraph
+
+An optional NeMo Agent Toolkit environment is also external to N07's Go runtime. Official NVIDIA documentation describes nvidia-nat as framework-agnostic and provides a LangChain/LangGraph integration; the SOUL adapter uses only the stable 1.8.x package line and does not rewrite SARA. cite_placeholder_nemo
+
+No production-online claim is inferred from these OSS integration checks.
