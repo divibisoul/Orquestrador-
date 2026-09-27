@@ -89,3 +89,16 @@ The following repositories were rechecked against GitHub metadata on 2026-09-27 
 - LiteLLM — repository reports NOASSERTION metadata and is a gateway/proxy; remains conditional because N02 already has Gemini + Ollama and N07 must remain the sole public ingress.
 
 No candidate above is installed merely because it is popular. Similarity of function, ownership, dependency cost and non-duplication are required before insertion.
+
+## HMAC audit update — N06
+
+N06 had a concrete bidirectional-contract gap: request signing existed, but the active response path did not expose or verify top-level response nonce/HMAC consistently, and the N06 canonicalizer omitted contractVersion.
+
+PR #18 now adds:
+- contractVersion to N06 HMAC canonicalization
+- top-level nonce/hmac response fields
+- response signing in N06 route and shared endpoint
+- response verification in peer-client and N06PeerAdapter
+- deterministic HMAC tests in Soul Mesh CI
+
+State: IN VALIDATION until exact-head CI is green.
