@@ -142,6 +142,17 @@ func (p *SARAProxy) Capabilities(ctx context.Context, correlationID string) (map
 	return out, err
 }
 
+func (p *SARAProxy) PublishVagus(ctx context.Context, event map[string]any, correlationID string) (map[string]any, error) {
+	var out map[string]any
+	if event == nil {
+		return nil, errors.New("Vagus event is required")
+	}
+	if err := p.request(ctx, http.MethodPost, "/v1/vagus", event, correlationID, &out); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (p *SARAProxy) Trace(ctx context.Context, cycleID, correlationID string) (map[string]any, error) {
 	cycleID = strings.TrimSpace(cycleID)
 	if cycleID == "" {

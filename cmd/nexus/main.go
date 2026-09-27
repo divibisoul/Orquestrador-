@@ -19,6 +19,7 @@ import (
 	"github.com/divibisoul/Orquestrador-/jev"
 	"github.com/divibisoul/Orquestrador-/mesh"
 	"github.com/divibisoul/Orquestrador-/neural"
+	"github.com/divibisoul/Orquestrador-/octacore"
 	"github.com/divibisoul/Orquestrador-/orchestrator"
 	"github.com/divibisoul/Orquestrador-/prefrontal"
 	"github.com/divibisoul/Orquestrador-/supergpu"
@@ -61,17 +62,44 @@ func main() {
 		log.Printf("Jev decision capability disabled: %v", err)
 	}
 	cfg := backend.DefaultConfig()
-	if proxy := backend.NewSARAProxy(cfg); proxy.Configured() {
-		if err := backend.RegisterSARAOperations(e, proxy); err != nil {
+	saraProxy := backend.NewSARAProxy(cfg)
+	if saraProxy.Configured() {
+		if err := backend.RegisterSARAOperations(e, saraProxy); err != nil {
 			log.Fatal(err)
 		}
 	}
 
-	unified := backend.NewUnified(e, cfg)
 	peerClient, err := mesh.NewPeerClient(nil)
 	if err != nil {
 		log.Fatal(err)
 	}
+	octacoreProcessor, err := octacore.NewProcessor(octacore.DefaultConfig(), g, peerClient, saraProxy)
+	if err != nil {
+		log.Fatal(err)
+	}
+	octacoreProcessor.SetVagusPublisher(func(ctx context.Context, event octacore.VagusEnvelope) error {
+		if !saraProxy.Configured() {
+			return errors.New("VAGUS_CONTROL_SARA_UNCONFIGURED")
+		}
+		payload := map[string]any{
+			"vagus_version": event.VagusVersion,
+			"message_id": event.MessageID,
+			"correlation_id": event.CorrelationID,
+			"source": event.Source,
+			"target": event.Target,
+			"priority": event.Priority,
+			"ttl": event.TTL,
+			"type": event.Type,
+			"payload": event.Payload,
+		}
+		_, err := saraProxy.PublishVagus(ctx, payload, event.CorrelationID)
+		return err
+	})
+	if err := octacore.RegisterOperations(e, octacoreProcessor); err != nil {
+		log.Fatal(err)
+	}
+
+	unified := backend.NewUnified(e, cfg)
 	openAICompat := api.NewOpenAICompatHandler(peerClient)
 
 	mux := http.NewServeMux()

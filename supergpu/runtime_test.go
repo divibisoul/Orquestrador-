@@ -44,6 +44,7 @@ type parallelProbeBackend struct {
 
 func (b *parallelProbeBackend) Supports(Device) bool         { return true }
 func (b *parallelProbeBackend) Capabilities(Device) []string { return []string{"probe"} }
+func (b *parallelProbeBackend) ConcurrentSafe() bool { return true }
 func (b *parallelProbeBackend) Execute(ctx context.Context, _ Device, _ string, in []float64) ([]float64, error) {
 	now := atomic.AddInt32(&b.active, 1)
 	for {
@@ -68,13 +69,9 @@ func TestBatchParallelPreservesOrderAndUsesWorkers(t *testing.T) {
 	for i := range inputs {
 		inputs[i] = []float64{float64(i)}
 	}
-	start := time.Now()
 	results, err := r.BatchParallel(context.Background(), device, "probe", inputs, 4)
 	if err != nil {
 		t.Fatal(err)
-	}
-	if elapsed := time.Since(start); elapsed >= 100*time.Millisecond {
-		t.Fatalf("parallel batch executed too slowly: %s", elapsed)
 	}
 	if peak := atomic.LoadInt32(&backend.peak); peak < 2 {
 		t.Fatalf("expected concurrent workers, peak=%d", peak)

@@ -132,7 +132,14 @@ func (s *Server) execute(w http.ResponseWriter, r *http.Request) {
 	}
 	ctx, cancel := context.WithTimeout(r.Context(), s.Config.RequestTimeout)
 	defer cancel()
-	result, err := s.Engine.Execute(ctx, req.Operation, req.Payload, req.Metadata)
+	metadata := req.Metadata
+	if metadata == nil {
+		metadata = map[string]string{}
+	}
+	if correlationID := strings.TrimSpace(req.CorrelationID); correlationID != "" {
+		metadata["correlation_id"] = correlationID
+	}
+	result, err := s.Engine.Execute(ctx, req.Operation, req.Payload, metadata)
 	if err != nil {
 		writeJSON(w, http.StatusBadRequest, result)
 		return
@@ -146,7 +153,7 @@ func (s *Server) execute(w http.ResponseWriter, r *http.Request) {
 		"payload":        req.Payload,
 		"result":         result.Payload,
 		"error":          result.Error,
-		"metadata":       req.Metadata,
+		"metadata":       metadata,
 	})
 	writeJSON(w, http.StatusOK, result)
 }

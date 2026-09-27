@@ -45,7 +45,14 @@ type Runtime struct {
 	discoveryTTL time.Duration
 	running      sync.WaitGroup
 }
+type ConcurrentBackend interface {
+	Backend
+	ConcurrentSafe() bool
+}
+
 type CPUBackend struct{}
+
+func (CPUBackend) ConcurrentSafe() bool { return true }
 
 func (CPUBackend) Supports(d Device) bool       { return d.Backend == "cpu" }
 func (CPUBackend) Capabilities(Device) []string { return []string{"fp32", "fp64", "scalar", "vector"} }
@@ -161,9 +168,9 @@ func (r *Runtime) Select(preferred string) (Device, error) {
 	}
 	for _, d := range r.devices {
 		if d.Backend == "cpu" && d.Available {
-			if _, busy := r.reserved[d.ID]; !busy {
-				return d, nil
-			}
+			// Host CPU is a shared execution resource. Multiple software kernels
+			// may execute concurrently; accelerator reservations remain exclusive.
+			return d, nil
 		}
 	}
 	return Device{}, errors.New("no compute device available")
@@ -179,14 +186,20 @@ func (r *Runtime) Reserve(deviceID, owner string) error {
 	}
 	r.expireReservationsLocked()
 	var available bool
+	sharedCPU := false
 	for _, d := range r.devices {
 		if d.ID == deviceID {
 			available = d.Available
+			sharedCPU = d.Backend == "cpu"
 			break
 		}
 	}
 	if !available {
 		return errors.New("device unavailable")
+	}
+	if sharedCPU {
+		// CPU execution is intentionally shareable; no exclusive lease is stored.
+		return nil
 	}
 	if current, ok := r.reserved[deviceID]; ok && current.Owner != owner {
 		return errors.New("device already reserved")
@@ -211,24 +224,34 @@ func (r *Runtime) Execute(ctx context.Context, device Device, operation string, 
 	if ctx == nil {
 		return nil, errors.New("context is nil")
 	}
-	r.runMu.Lock()
 	r.mu.RLock()
 	closed, backend := r.closed, r.backend
 	r.mu.RUnlock()
 	if closed {
-		r.runMu.Unlock()
 		return nil, errors.New("runtime closed")
 	}
 	if !device.Available {
-		r.runMu.Unlock()
 		return nil, errors.New("device unavailable")
 	}
 	if cb, ok := backend.(CapabilityBackend); ok && !cb.Supports(device) {
-		r.runMu.Unlock()
 		return nil, errors.New("backend does not support selected device")
 	}
+	runningConcurrent := false
+	if cb, ok := backend.(ConcurrentBackend); ok {
+		runningConcurrent = cb.ConcurrentSafe()
+	}
+	if !runningConcurrent {
+		r.runMu.Lock()
+		defer r.runMu.Unlock()
+		// Re-check closure after waiting for the serialized backend lane.
+		r.mu.RLock()
+		closed = r.closed
+		r.mu.RUnlock()
+		if closed {
+			return nil, errors.New("runtime closed")
+		}
+	}
 	r.running.Add(1)
-	r.runMu.Unlock()
 	defer r.running.Done()
 	return backend.Execute(ctx, device, operation, input)
 }
