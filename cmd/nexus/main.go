@@ -16,6 +16,7 @@ import (
 	"github.com/divibisoul/Orquestrador-/api/health"
 	"github.com/divibisoul/Orquestrador-/backend"
 	"github.com/divibisoul/Orquestrador-/mesh"
+	"github.com/divibisoul/Orquestrador-/jev"
 	"github.com/divibisoul/Orquestrador-/neural"
 	"github.com/divibisoul/Orquestrador-/orchestrator"
 	"github.com/divibisoul/Orquestrador-/prefrontal"
@@ -49,6 +50,14 @@ func main() {
 	}
 	if err := orchestrator.RegisterAdvancedOperations(e); err != nil {
 		log.Fatal(err)
+	}
+	if client, err := jev.NewFromEnv(); err == nil {
+		if err := orchestrator.RegisterJevOperations(e, client); err != nil {
+			log.Fatal(err)
+		}
+		log.Printf("Jev decision capability enabled: %s", client.Model)
+	} else {
+		log.Printf("Jev decision capability disabled: %v", err)
 	}
 	cfg := backend.DefaultConfig()
 	if proxy := backend.NewSARAProxy(cfg); proxy.Configured() {
