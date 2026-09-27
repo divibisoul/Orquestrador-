@@ -180,7 +180,7 @@ func writeJSON(w http.ResponseWriter, status int, v any) {
 	_ = json.NewEncoder(w).Encode(v)
 }
 func writeMetrics(w http.ResponseWriter, s map[string]any) {
-	w.Header().Set("Content-Type", "text/plain; version=0.4")
+	w.Header().Set("Content-Type", "text/plain; version=0.4.0")
 	m, ok := s["metrics"].(map[string]any)
 	if !ok {
 		w.WriteHeader(http.StatusInternalServerError)
