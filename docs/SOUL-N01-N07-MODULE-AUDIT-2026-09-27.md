@@ -102,3 +102,21 @@ PR #18 now adds:
 - deterministic HMAC tests in Soul Mesh CI
 
 State: IN VALIDATION until exact-head CI is green.
+## Latest remediation state — 2026-09-27
+
+| Unit | State | Latest evidence |
+|---|---|---|
+| N01 | VALIDATED WEB/MESH; ANDROID IN VALIDATION | exact N01 remediation head `cdfada9b...`: web/Mesh/official PR checks green; Android debug/release + APK verification green; instrumentation still executing |
+| N02 | VALIDATED | main `993ad528...` all N02 checks green after runtime-import repair |
+| N03 | VALIDATED | post-merge main `7b625...` Soul Mesh + diagnostics green |
+| N04 | VALIDATED | main `8c457291...` checks green |
+| N05 | VALIDATED / HMAC REMEDIATED | PR #22 merged as `7b998984...`; adapter type, request nonce and response HMAC now validated by CI |
+| N06 | VALIDATED / HMAC REMEDIATED | PR #18 merged as `1e29f630...`; bidirectional canonical HMAC checks green |
+| N07 | CORE VALIDATED | federation, sole ingress, container checks green; staging remains environment-blocked |
+| SARA | TRANSVERSAL | unchanged authority; no N08 |
+
+### Current HMAC parity
+N04, N05, N06 and N07 now expose the intended bidirectional request/response HMAC contract at their active Mesh boundaries, including nonce and correlation validation. Residual legacy adapters are treated as defects when they bypass this contract.
+
+### Merge discipline
+All merges in this pass were made only after exact-head CI evidence was green. N01 remains unmerged until its outstanding Android instrumentation gate finishes.
