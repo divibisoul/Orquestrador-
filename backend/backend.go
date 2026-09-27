@@ -210,6 +210,8 @@ func operationForTool(tool string) string {
 		return "cognitive.execute@1.0.0"
 	case "supergpu.execute":
 		return "supergpu.execute@1.0.0"
+	case "jev.systemone":
+		return "jev.systemone@1.0.0"
 	case "supergpu.parallel":
 		return "supergpu.parallel@1.0.0"
 	case "sara.cycle", "sara.audit", "sara.regenerate", "sara.state", "sara.capabilities", "sara.trace":
@@ -262,6 +264,36 @@ func mapIntent(tool string, input map[string]any) ([]float64, map[string]string,
 			metadata["workers"] = strconv.Itoa(int(workers))
 		}
 		return []float64{1}, metadata, nil
+	case "jev.systemone":
+		if input == nil {
+			return nil, nil, errors.New("Jev intent input is required")
+		}
+		state, ok := input["state"]
+		if !ok || state == nil {
+			return nil, nil, errors.New("Jev intent requires state")
+		}
+		questions, ok := input["questions"]
+		if !ok || questions == nil {
+			return nil, nil, errors.New("Jev intent requires questions")
+		}
+		questionsMap, ok := questions.(map[string]any)
+		if !ok || len(questionsMap) == 0 {
+			return nil, nil, errors.New("Jev intent questions must be a non-empty object")
+		}
+		stateJSON, err := json.Marshal(state)
+		if err != nil {
+			return nil, nil, errors.New("Jev state cannot be serialized")
+		}
+		questionsJSON, err := json.Marshal(questionsMap)
+		if err != nil {
+			return nil, nil, errors.New("Jev questions cannot be serialized")
+		}
+		metadata["state_json"] = string(stateJSON)
+		metadata["questions_json"] = string(questionsJSON)
+		if model, ok := input["model"].(string); ok && strings.TrimSpace(model) != "" {
+			metadata["model"] = strings.TrimSpace(model)
+		}
+		return []float64{0}, metadata, nil
 	case "sara.cycle", "sara.audit", "sara.regenerate":
 		value, ok := input["input"].(string)
 		if !ok || strings.TrimSpace(value) == "" {
@@ -311,11 +343,23 @@ func (s *Server) capabilities(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusMethodNotAllowed, map[string]any{"error": "GET required"})
 		return
 	}
+	jevConfigured := strings.TrimSpace(os.Getenv("JEV_API_KEY")) != ""
+	jevOperations := []string{}
+	if jevConfigured {
+		jevOperations = []string{"jev.systemone@1.0.0"}
+	}
 	writeJSON(w, http.StatusOK, map[string]any{
 		"nucleus":    "N07",
 		"operations": s.Engine.Operations(),
 		"storage":    map[string]any{"configured": s.Storage.Configured(), "api": "web3.storage-compatible"},
 		"supabase":   map[string]any{"configured": s.Store.Configured()},
+		"jev": map[string]any{
+			"installed": true,
+			"configured": jevConfigured,
+			"base_url_configured": strings.TrimSpace(os.Getenv("JEV_API_BASE_URL")) != "",
+			"model": envString("JEV_MODEL", "jev-latest"),
+			"operations": jevOperations,
+		},
 		"sara": map[string]any{
 			"configured":          s.Config.SARAServiceURL != "" && s.Config.SARAServiceToken != "",
 			"base_url_configured": s.Config.SARAServiceURL != "",
