@@ -187,7 +187,7 @@ func TestOctacoreWebGPUIsExplicitlyUnavailable(t *testing.T) {
 	if result.OK {
 		t.Fatal("WebGPU cannot be marked available without a real backend")
 	}
-	if result.Error == nil || result.Error.Code != "EXECUTION_ERROR" {
+	if result.Error == nil || result.Error.Code != "BACKEND_UNAVAILABLE" {
 		t.Fatalf("unexpected WebGPU error: %#v", result.Error)
 	}
 }
