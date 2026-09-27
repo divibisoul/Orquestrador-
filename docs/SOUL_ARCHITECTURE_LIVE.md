@@ -112,3 +112,40 @@ Every parallel front must record, in a commit or update to this file or another 
 `WHAT_CHANGED / WHAT_WAS_FOUND / WHAT_REMAINS / EXACT_REVISION / CI_EVIDENCE / NEXT_ACTION`
 
 This document is a map, not a substitute for tests. The repositories and their exact revisions remain the source of executable truth.
+
+
+## Live audit addendum — 2026-09-27
+
+This addendum records the current repository/PR evidence without replacing the historical architecture map above.
+
+### Exact current revisions
+
+| Nucleus | main revision observed | Relevant PR | PR state at audit |
+|---|---|---|---|
+| N01 | 462fc7d4fc95bdff3307649a3b0c9abd9cffe98d | none in this front | FROZEN |
+| N02 | f3dc0bd2630d6d5c77873edc0986262820c3b93a | #21 / fbfde114cef56ccfaa65de956b0c707ee55f3731 | OPEN / CI GREEN |
+| N03 | 726a0f880d72d9fa7d6624742a69da568c6ad21b | #17 / d8c4fb956f37c325bbdba09250e852e2ed0590a9 | MERGED / REVALIDATE MAIN |
+| N04 | 258f0a9dc3c6237fdab138f3fbeda929305cc126 | #23 / 03c1f8d60e3c17f09ff810b73863f87aca19fa6d | OPEN / CI GREEN |
+| N05 | aa99fda429463759512ceb649f590ab505a58778 | #21 / 2a9bc1a7fcdb2e8c116260820afcb62baa0ec578 | OPEN / CI GREEN / LOCK REVIEW |
+| N06 | e987f607d73f11751ab1a1a4b9a75950012dd200 | #17 / f850de6bd17dd89ea3a3a2a761eabf4d7f77044d | OPEN / CI GREEN |
+| N07 | eb01a35400400321b9156433b681d40c29abd2b2 | #36 / bee3247b80c2c0263fa112f39be90050151b69d4 | OPEN / non-main base |
+
+### Current N07 evidence boundary
+
+PR #36 is based on feat/jev-soul-integration, not main. Its exact delta is 14 commits, 12 files, +429/-36. The PR head had a successful N07 Orquestrador CI run, but this cannot be used as proof that current main contains the same complete state.
+
+Current main has the OpenAI-compatible handler at api/openai_compat.go and the main branch was subsequently normalized by a formatting commit. The latest pre-normalization N07 CI failed because api/openai_compat.go required gofmt. The latest N07 E2E commissioning also exposed two independent environment/code issues: missing staging secrets and an undefined writeJSON symbol in api/openai_compat.go on the main revision tested. These are tracked as F2 blockers until a new exact-head run proves closure.
+
+### Canonical routing rule
+
+OpenAI-compatible ingress remains N07-only. The request path is:
+
+client -> N07 /v1/chat/completions -> canonical Soul Mesh -> CallBestDynamic -> N02 capability -> configured Gemini/Ollama provider.
+
+No provider is a nucleus. No second public /v1 ingress is introduced. SARA remains transversal.
+
+### OSS boundary
+
+OSS integrations are deferred until the minimum F2 closure. LangGraph is mapped to N07 orchestration, LiteLLM remains conditional behind N02/private sidecar, and NeMo Agent Toolkit remains an optional N07 bridge. CrewAI/LlamaIndex/Letta/Agent Framework/AgentScope/CAMEL/Dify remain research candidates until the earlier gates are green.
+
+See docs/SOUL_EXTERNAL_FUSION_MATRIX.md for the complete mapping and exact audit snapshot.
