@@ -1,5 +1,5 @@
-name: N07 E2E Commissioning
 
+name: N07 E2E Commissioning
 on:
   push:
     branches: [main]
@@ -28,6 +28,12 @@ jobs:
         with:
           go-version: '1.25.x'
           cache: true
+      - name: Generate ephemeral local app token
+        run: |
+          set -euo pipefail
+          token="$(openssl rand -hex 24)"
+          echo "::add-mask::$token"
+          echo "N07_APP_TOKEN=$token" >> "$GITHUB_ENV"
       - name: Go vet
         run: go vet ./...
       - name: Go tests
@@ -41,15 +47,9 @@ jobs:
       - name: Pull published image
         run: docker pull ghcr.io/divibisoul/soul-n07-orquestrador:latest
       - name: Start published image as staging runtime
-        env:
-          N07_APP_TOKEN: ${{ secrets.N07_APP_TOKEN }}
         run: |
           set -euo pipefail
-          docker run -d --rm --name n07-commissioning \
-            -p 18080:8080 \
-            -e N07_APP_TOKEN="$N07_APP_TOKEN" \
-            -e N07_HTTP_ADDR=:8080 \
-            ghcr.io/divibisoul/soul-n07-orquestrador:latest
+          docker run -d --rm --name n07-commissioning             -p 18080:8080             -e N07_APP_TOKEN="$N07_APP_TOKEN"             -e N07_HTTP_ADDR=:8080             ghcr.io/divibisoul/soul-n07-orquestrador:latest
           for i in $(seq 1 30); do
             if curl -fsS http://127.0.0.1:18080/health; then break; fi
             sleep 2
@@ -58,21 +58,246 @@ jobs:
         run: |
           set -euxo pipefail
           curl -i http://127.0.0.1:18080/health
-          curl -i -H 'Authorization: Bearer commissioning-local-token' http://127.0.0.1:18080/status
+          curl -i -H "Authorization: Bearer $N07_APP_TOKEN" http://127.0.0.1:18080/status
           curl -i http://127.0.0.1:18080/identity
           curl -i http://127.0.0.1:18080/topology
       - name: Authenticated execution evidence
         run: |
           set -euxo pipefail
-          curl -i -H 'Authorization: Bearer commissioning-local-token' \
-            -H 'Content-Type: application/json' \
-            -X POST http://127.0.0.1:18080/execute \
-            -d '{"operation":"neural.forward@1.0.0","payload":[0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8],"metadata":{"source":"commissioning"}}'
+          curl -i -H "Authorization: Bearer $N07_APP_TOKEN"             -H 'Content-Type: application/json'             -X POST http://127.0.0.1:18080/execute             -d '{"operation":"neural.forward@1.0.0","payload":[0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8],"metadata":{"source":"commissioning"}}'
       - name: Stop runtime and emit logs
         if: always()
         run: |
           docker logs n07-commissioning || true
           docker stop n07-commissioning || true
+
+  real-mesh-federation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - name: Checkout N07
+        uses: actions/checkout@v4
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.25.x'
+          cache: true
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.12.3
+      - name: Generate ephemeral commissioning secrets
+        run: |
+          set -euo pipefail
+          mesh_secret="$(openssl rand -hex 32)"
+          auth_secret="$(openssl rand -hex 32)"
+          echo "::add-mask::$mesh_secret"
+          echo "::add-mask::$auth_secret"
+          {
+            echo "SOUL_MESH_HMAC_SECRET=${mesh_secret}"
+            echo "COMMISSIONING_AUTH_SECRET=${auth_secret}"
+          } >> "$GITHUB_ENV"
+      - name: Checkout real N04 runtime
+        uses: actions/checkout@v4
+        with:
+          repository: divibisoul/nextjs-ai-chatbots
+          ref: main
+          path: .commissioning/n04
+      - name: Checkout real N05 runtime
+        uses: actions/checkout@v4
+        with:
+          repository: divibisoul/nextjs-ai-chatbot
+          ref: main
+          path: .commissioning/n05
+      - name: Checkout real N06 runtime
+        uses: actions/checkout@v4
+        with:
+          repository: divibisoul/nextjs-ai-chatbot-2000
+          ref: main
+          path: .commissioning/n06
+      - name: Record commissioning source revisions
+        run: |
+          set -euo pipefail
+          {
+            echo "N07=$(git rev-parse HEAD)"
+            echo "N04=$(git -C .commissioning/n04 rev-parse HEAD)"
+            echo "N05=$(git -C .commissioning/n05 rev-parse HEAD)"
+            echo "N06=$(git -C .commissioning/n06 rev-parse HEAD)"
+          } | tee "$RUNNER_TEMP/soul-mesh-source-heads.txt"
+      - name: Install N04 dependencies
+        run: pnpm --dir .commissioning/n04 install --frozen-lockfile --ignore-scripts
+      - name: Install N05 dependencies
+        run: pnpm --dir .commissioning/n05 install --frozen-lockfile --ignore-scripts
+      - name: Install N06 dependencies
+        run: pnpm --dir .commissioning/n06 install --frozen-lockfile --ignore-scripts
+      - name: Build real N04
+        env:
+          NODE_ENV: production
+          NEXT_TELEMETRY_DISABLED: '1'
+          AUTH_SECRET: ${{ env.COMMISSIONING_AUTH_SECRET }}
+          AUTH_TRUST_HOST: 'true'
+        run: pnpm --dir .commissioning/n04 run build
+      - name: Build real N05
+        env:
+          NODE_ENV: production
+          NEXT_TELEMETRY_DISABLED: '1'
+          AUTH_SECRET: ${{ env.COMMISSIONING_AUTH_SECRET }}
+          AUTH_TRUST_HOST: 'true'
+        run: pnpm --dir .commissioning/n05 run build
+      - name: Build real N06 web runtime
+        env:
+          NODE_ENV: production
+          NEXT_TELEMETRY_DISABLED: '1'
+          AUTH_SECRET: ${{ env.COMMISSIONING_AUTH_SECRET }}
+          AUTH_TRUST_HOST: 'true'
+        run: pnpm --dir .commissioning/n06 run build:web
+      - name: Start real N04 N05 N06 runtimes
+        env:
+          NODE_ENV: production
+          NEXT_TELEMETRY_DISABLED: '1'
+          AUTH_SECRET: ${{ env.COMMISSIONING_AUTH_SECRET }}
+          AUTH_TRUST_HOST: 'true'
+          SOUL_MESH_HMAC_SECRET: ${{ env.SOUL_MESH_HMAC_SECRET }}
+        run: |
+          set -euo pipefail
+          nohup pnpm --dir .commissioning/n04 run start -- -p 18084 > "$RUNNER_TEMP/n04.log" 2>&1 &
+          echo $! > "$RUNNER_TEMP/n04.pid"
+          nohup pnpm --dir .commissioning/n05 run start -- -p 18085 > "$RUNNER_TEMP/n05.log" 2>&1 &
+          echo $! > "$RUNNER_TEMP/n05.pid"
+          nohup pnpm --dir .commissioning/n06 run start -- -p 18086 > "$RUNNER_TEMP/n06.log" 2>&1 &
+          echo $! > "$RUNNER_TEMP/n06.pid"
+      - name: Wait for local peer runtimes
+        run: |
+          set -euo pipefail
+          wait_http() {
+            local name="$1"
+            local port="$2"
+            for i in $(seq 1 60); do
+              code="$(curl -sS -o /dev/null -w '%{http_code}' "http://127.0.0.1:${port}/api/soul-mesh" || true)"
+              case "$code" in
+                2*|3*|4*) echo "$name local endpoint reachable with HTTP $code"; return 0 ;;
+              esac
+              sleep 2
+            done
+            echo "$name did not become reachable"
+            cat "$RUNNER_TEMP/${name,,}.log" || true
+            return 1
+          }
+          wait_http N04 18084
+          wait_http N05 18085
+          wait_http N06 18086
+      - name: Install cloudflared Quick Tunnel client
+        run: |
+          set -euo pipefail
+          mkdir -p "$HOME/.local/bin"
+          curl -fsSL https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64             -o "$HOME/.local/bin/cloudflared"
+          chmod +x "$HOME/.local/bin/cloudflared"
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          cloudflared version
+      - name: Create ephemeral public Mesh URLs
+        run: |
+          set -euo pipefail
+          start_tunnel() {
+            local name="$1"
+            local port="$2"
+            local log="$RUNNER_TEMP/${name,,}-tunnel.log"
+            cloudflared tunnel --url "http://127.0.0.1:$port" > "$log" 2>&1 &
+            echo $! > "$RUNNER_TEMP/${name,,}-tunnel.pid"
+          }
+          start_tunnel N04 18084
+          start_tunnel N05 18085
+          start_tunnel N06 18086
+          read_url() {
+            local name="$1"
+            local log="$RUNNER_TEMP/${name,,}-tunnel.log"
+            local url=""
+            for i in $(seq 1 45); do
+              url="$(grep -Eo 'https://[[:alnum:]-]+\.trycloudflare\.com' "$log" | head -n1 || true)"
+              if [ -n "$url" ]; then
+                printf '%s' "$url"
+                return 0
+              fi
+              sleep 1
+            done
+            echo "Quick Tunnel URL not found for $name" >&2
+            cat "$log" >&2 || true
+            return 1
+          }
+          n04_url="$(read_url N04)"
+          n05_url="$(read_url N05)"
+          n06_url="$(read_url N06)"
+          echo "::add-mask::${n04_url}"
+          echo "::add-mask::${n05_url}"
+          echo "::add-mask::${n06_url}"
+          {
+            echo "SOUL_MESH_N04_URL=${n04_url}"
+            echo "SOUL_MESH_N05_URL=${n05_url}"
+            echo "SOUL_MESH_N06_URL=${n06_url}"
+          } >> "$GITHUB_ENV"
+          {
+            echo "N04_URL=${n04_url}"
+            echo "N05_URL=${n05_url}"
+            echo "N06_URL=${n06_url}"
+          } > "$RUNNER_TEMP/soul-mesh-public-endpoints.txt"
+      - name: Verify Quick Tunnel reachability before Mesh gate
+        run: |
+          set -euo pipefail
+          check_url() {
+            local name="$1"
+            local url="$2"
+            local code
+            code="$(curl -sS -o /dev/null -w '%{http_code}' --max-time 15 "$url/api/soul-mesh" || true)"
+            case "$code" in
+              2*|3*|4*) echo "$name public endpoint reachable with HTTP $code" ;;
+              *) echo "$name public endpoint unavailable: HTTP $code"; return 1 ;;
+            esac
+          }
+          check_url N04 "$SOUL_MESH_N04_URL"
+          check_url N05 "$SOUL_MESH_N05_URL"
+          check_url N06 "$SOUL_MESH_N06_URL"
+      - name: Real N07 to N04 N05 N06 native federation evidence
+        env:
+          SOUL_MESH_N04_URL: ${{ env.SOUL_MESH_N04_URL }}
+          SOUL_MESH_N05_URL: ${{ env.SOUL_MESH_N05_URL }}
+          SOUL_MESH_N06_URL: ${{ env.SOUL_MESH_N06_URL }}
+          SOUL_MESH_HMAC_SECRET: ${{ env.SOUL_MESH_HMAC_SECRET }}
+        run: |
+          set -euo pipefail
+          go test -tags=integration ./mesh             -run '^TestN07FederatesToRealN04N05N06NativeCapabilities$'             -count=1 -v
+      - name: Upload real Mesh commissioning evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: soul-mesh-real-commissioning-evidence
+          path: |
+            ${{ runner.temp }}/soul-mesh-source-heads.txt
+            ${{ runner.temp }}/soul-mesh-public-endpoints.txt
+            ${{ runner.temp }}/n04.log
+            ${{ runner.temp }}/n05.log
+            ${{ runner.temp }}/n06.log
+            ${{ runner.temp }}/n04-tunnel.log
+            ${{ runner.temp }}/n05-tunnel.log
+            ${{ runner.temp }}/n06-tunnel.log
+          if-no-files-found: ignore
+          retention-days: 7
+      - name: Stop real peer runtimes and tunnels
+        if: always()
+        run: |
+          set +e
+          for name in n04 n05 n06; do
+            if [ -f "$RUNNER_TEMP/$name.pid" ]; then kill "$(cat "$RUNNER_TEMP/$name.pid")" 2>/dev/null || true; fi
+            if [ -f "$RUNNER_TEMP/$name-tunnel.pid" ]; then kill "$(cat "$RUNNER_TEMP/$name-tunnel.pid")" 2>/dev/null || true; fi
+          done
+          for name in n04 n05 n06; do
+            echo "===== $name runtime log ====="
+            cat "$RUNNER_TEMP/$name.log" 2>/dev/null || true
+            echo "===== $name tunnel log ====="
+            cat "$RUNNER_TEMP/$name-tunnel.log" 2>/dev/null || true
+          done
 
   configured-staging:
     runs-on: ubuntu-latest
@@ -87,40 +312,23 @@ jobs:
           cache: true
       - name: Pull published image
         run: docker pull ghcr.io/divibisoul/soul-n07-orquestrador:latest
-      - name: Check required staging and Mesh secrets
+      - name: Check required staging secrets
         env:
           N07_APP_TOKEN: ${{ secrets.N07_APP_TOKEN }}
           WEB3_STORAGE_TOKEN: ${{ secrets.WEB3_STORAGE_TOKEN }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-          SOUL_MESH_N04_URL: ${{ secrets.SOUL_MESH_N04_URL }}
-          SOUL_MESH_N05_URL: ${{ secrets.SOUL_MESH_N05_URL }}
-          SOUL_MESH_N06_URL: ${{ secrets.SOUL_MESH_N06_URL }}
-          SOUL_MESH_HMAC_SECRET: ${{ secrets.SOUL_MESH_HMAC_SECRET }}
         run: |
           set -euo pipefail
           missing=0
-          for name in N07_APP_TOKEN WEB3_STORAGE_TOKEN SUPABASE_URL SUPABASE_SERVICE_ROLE_KEY SOUL_MESH_N04_URL SOUL_MESH_N05_URL SOUL_MESH_N06_URL SOUL_MESH_HMAC_SECRET; do
+          for name in N07_APP_TOKEN WEB3_STORAGE_TOKEN SUPABASE_URL SUPABASE_SERVICE_ROLE_KEY; do
             if [ -z "${!name}" ]; then
               echo "missing secret: $name"
               missing=1
             fi
           done
           test "$missing" -eq 0
-          test "${#SOUL_MESH_HMAC_SECRET}" -ge 16 || { echo 'SOUL_MESH_HMAC_SECRET must contain at least 16 characters'; exit 1; }
-          echo 'required staging and Mesh secrets: present'
-      - name: Real N07 to N04 N05 N06 native federation evidence
-        env:
-          SOUL_MESH_N01_URL: \${{ secrets.SOUL_MESH_N01_URL }}
-          SOUL_MESH_N02_URL: \${{ secrets.SOUL_MESH_N02_URL }}
-          SOUL_MESH_N03_URL: \${{ secrets.SOUL_MESH_N03_URL }}
-          SOUL_MESH_N04_URL: ${{ secrets.SOUL_MESH_N04_URL }}
-          SOUL_MESH_N05_URL: ${{ secrets.SOUL_MESH_N05_URL }}
-          SOUL_MESH_N06_URL: ${{ secrets.SOUL_MESH_N06_URL }}
-          SOUL_MESH_HMAC_SECRET: ${{ secrets.SOUL_MESH_HMAC_SECRET }}
-        run: |
-          set -euo pipefail
-          go test -tags=integration ./mesh -run '^TestN07FederatesToRealN04N05N06NativeCapabilities$' -count=1 -v
+          echo 'required credentialed staging secrets: present'
       - name: Start credentialed staging runtime
         env:
           N07_APP_TOKEN: ${{ secrets.N07_APP_TOKEN }}
@@ -132,17 +340,7 @@ jobs:
           N07_BACKEND_TIMEOUT: 30s
         run: |
           set -euo pipefail
-          docker run -d --rm --name n07-real-staging \
-            -p 18081:8080 \
-            -e N07_APP_TOKEN="$N07_APP_TOKEN" \
-            -e WEB3_STORAGE_TOKEN="$WEB3_STORAGE_TOKEN" \
-            -e SUPABASE_URL="$SUPABASE_URL" \
-            -e SUPABASE_SERVICE_ROLE_KEY="$SUPABASE_SERVICE_ROLE_KEY" \
-            -e SUPABASE_RUNS_TABLE="$SUPABASE_RUNS_TABLE" \
-            -e SUPABASE_ARTIFACTS_TABLE="$SUPABASE_ARTIFACTS_TABLE" \
-            -e N07_BACKEND_TIMEOUT="$N07_BACKEND_TIMEOUT" \
-            -e N07_HTTP_ADDR=:8080 \
-            ghcr.io/divibisoul/soul-n07-orquestrador:latest
+          docker run -d --rm --name n07-real-staging             -p 18081:8080             -e N07_APP_TOKEN="$N07_APP_TOKEN"             -e WEB3_STORAGE_TOKEN="$WEB3_STORAGE_TOKEN"             -e SUPABASE_URL="$SUPABASE_URL"             -e SUPABASE_SERVICE_ROLE_KEY="$SUPABASE_SERVICE_ROLE_KEY"             -e SUPABASE_RUNS_TABLE="$SUPABASE_RUNS_TABLE"             -e SUPABASE_ARTIFACTS_TABLE="$SUPABASE_ARTIFACTS_TABLE"             -e N07_BACKEND_TIMEOUT="$N07_BACKEND_TIMEOUT"             -e N07_HTTP_ADDR=:8080             ghcr.io/divibisoul/soul-n07-orquestrador:latest
           for i in $(seq 1 30); do
             if curl -fsS http://127.0.0.1:18081/health >/tmp/health.json; then break; fi
             sleep 2
@@ -155,19 +353,14 @@ jobs:
           set -euo pipefail
           curl -i http://127.0.0.1:18081/health
           curl -i -H "Authorization: Bearer $N07_APP_TOKEN" http://127.0.0.1:18081/v1/health
-          curl -i -H "Authorization: Bearer $N07_APP_TOKEN" \
-            -H 'Content-Type: application/json' \
-            -X POST http://127.0.0.1:18081/v1/execute \
-            -d '{"operation":"neural.forward@1.0.0","payload":[0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8],"metadata":{"source":"real-staging"}}'
+          curl -i -H "Authorization: Bearer $N07_APP_TOKEN"             -H 'Content-Type: application/json'             -X POST http://127.0.0.1:18081/v1/execute             -d '{"operation":"neural.forward@1.0.0","payload":[0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8],"metadata":{"source":"real-staging"}}'
       - name: Real Web3 storage round trip
         env:
           N07_APP_TOKEN: ${{ secrets.N07_APP_TOKEN }}
         run: |
           set -euo pipefail
           printf 'SOUL N07 real staging commissioning\n' > /tmp/n07-commissioning.txt
-          upload=$(curl -sS -i -H "Authorization: Bearer $N07_APP_TOKEN" \
-            -F 'file=@/tmp/n07-commissioning.txt;filename=n07-commissioning.txt' \
-            -X POST http://127.0.0.1:18081/v1/storage/upload)
+          upload=$(curl -sS -i -H "Authorization: Bearer $N07_APP_TOKEN"             -F 'file=@/tmp/n07-commissioning.txt;filename=n07-commissioning.txt'             -X POST http://127.0.0.1:18081/v1/storage/upload)
           printf '%s\n' "$upload"
           cid=$(printf '%s\n' "$upload" | sed -n 's/.*"cid":"\([^"]*\)".*/\1/p' | head -n1)
           test -n "$cid"
