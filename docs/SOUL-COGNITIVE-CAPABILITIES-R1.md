@@ -14,6 +14,7 @@ This layer is additive over the current N07 federation and does not replace N01-
 - SARA policy gate: irreversible goals require SARA audit when policy enforcement is enabled; missing SARA is fail-closed.
 - Long-term observation persistence: reuses the existing Supabase run store; no second database.
 - Feature flag: N07_COGNITIVE_LOOP_ENABLED=false by default.
+- Main-process registration: wired into cmd/nexus/main.go behind the explicit feature flag; disabled-by-default remains fail-closed.
 
 ## Authority
 
@@ -21,7 +22,6 @@ N07 remains orchestration/execution authority. Peer nuclei remain owners of thei
 
 ## Not yet claimed
 
-- Main-process registration is not yet wired into cmd/nexus/main.go on this branch because the current main runtime was deliberately left untouched during this additive stage.
 - Parallel execution of independent planned cognitive steps is not yet enabled by this layer; Octacore already owns bounded parallel waves.
 - Full input/output JSON Schema validation is not yet claimed because current peer discovery exposes executable capability names but does not consistently publish schemas.
 - Long-term memory read/recall is available at the Supabase store layer, but the cognitive loop has not yet promoted it to an automatic context-recall policy.
@@ -29,7 +29,7 @@ N07 remains orchestration/execution authority. Peer nuclei remain owners of thei
 
 ## State
 
-STRUCTURAL: code and unit tests exist on this branch.
+STRUCTURAL: code, unit tests and main-process registration exist on this branch.
 
 VALIDATED: requires exact-head CI format/vet/test/race/build evidence.
 
