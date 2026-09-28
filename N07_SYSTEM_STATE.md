@@ -15,7 +15,7 @@ N07 owns orchestration, neural federation, routing, capability composition and t
 | N04 | REAL | Latest N04 CI and Soul Mesh checks completed successfully on 2026-09-27 at head `8c457291181b3295b50615bf3abe01599fe0226e`. |
 | N05 | REAL | Latest N05 Mesh/bridge checks completed successfully on 2026-09-27 at head `2c934084e96e1831e845848cced498dc69f853d6`. |
 | N06 | REAL | Latest Mesh/authority/validation checks completed successfully on 2026-09-27 at head `1e29f630f47572945c08056c666a1b360d037972`. |
-| N07 | REAL / BLOCKED-ENV | Go vet/test/race/build and the local runtime checks pass on the current release line; the external peer gate is now self-provisioned in CI but remains unmeasured until a successful real run exists. |
+| N07 | REAL | Go vet/test/race/build and the local runtime checks pass on the current release line; the external peer gate is now self-provisioned in CI but remains unmeasured until a successful real run exists. |
 | SARA | REAL | Latest SARA CI and validation completed successfully on 2026-09-27 at head `4ae3e66e7cf7907cd6008e1f7e34e9919f193f9e`. |
 
 ## Critical forensic finding
@@ -31,9 +31,9 @@ The CI workflow now supplies those real URLs and HMAC at runtime by building the
 | Canonical protocol | REAL | N07 and peer code use `soul-mesh/1` and contract `1.1.0`. |
 | Correlation/HMAC | REAL | N07 PeerClient signs outbound requests and verifies response contract, correlation and HMAC. |
 | Real health/discovery surfaces | REAL | N01–N06 expose Mesh discovery/health surfaces in source; external reachability remains environment-dependent. |
-| Real N04 native execution | BLOCKED / NOT MEASURED | The self-provisioned CI gate targets native `core.health`; a successful workflow run is still required. |
-| Real N05 native execution | BLOCKED / NOT MEASURED | The self-provisioned CI gate targets native `core.health`; a successful workflow run is still required. |
-| Real N06 native execution | BLOCKED / NOT MEASURED | The self-provisioned CI gate targets native `support.mesh`; a successful workflow run is still required. |
+| Real N04 native execution | NOT MEASURED | The self-provisioned CI gate targets native `core.health`; a successful workflow run is still required. |
+| Real N05 native execution | NOT MEASURED | The self-provisioned CI gate targets native `core.health`; a successful workflow run is still required. |
+| Real N06 native execution | NOT MEASURED | The self-provisioned CI gate targets native `support.mesh`; a successful workflow run is still required. |
 | Real N07 execution | REAL | N07 CI validates engine/runtime, including vet/test/race/build. |
 | Real N01 native execution through N07 | NOT MEASURED | No N01 live URL is present in N07 environment configuration; no endpoint is inferred. |
 
