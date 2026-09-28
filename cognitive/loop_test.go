@@ -4,6 +4,7 @@ import (
  "context"
  "testing"
  "time"
+ "strings"
 
  "github.com/divibisoul/Orquestrador-/prefrontal"
 )
@@ -38,6 +39,9 @@ func TestRunPlannedFailsClosedWithoutDiscovery(t *testing.T){
  exec:=&testExecutor{}
  loop,err:=New(Config{Enabled:true,GoalTTL:time.Minute,WorkingMemoryTTL:time.Minute,WorkingMemoryItems:4},NewGoalStore(),NewWorkingMemory(DefaultConfig()),exec,critic,nil)
  if err!=nil{t.Fatal(err)}
- _,err=loop.Run(context.Background(),Goal{ID:"g",Objective:"x",Capabilities:[]string{"unregistered.capability"},CorrelationID:"c",ExpiresAt:time.Now().Add(time.Minute)})
- if err==nil{t.Fatal("expected execution result or discovery guard")}
+ obs,err:=loop.Run(context.Background(),Goal{ID:"g",Objective:"x",Capabilities:[]string{"unregistered.capability"},CorrelationID:"c",ExpiresAt:time.Now().Add(time.Minute)})
+ if err==nil{t.Fatal("expected discovery guard")}
+ if len(obs)!=1 || !strings.Contains(obs[0].Error,"no healthy peer exposes executable capability") {
+  t.Fatalf("expected discovery guard observation, got obs=%+v err=%v",obs,err)
+ }
 }
