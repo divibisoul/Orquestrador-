@@ -14,6 +14,9 @@ on:
       - 'scripts/soul-live-source-audit.mjs'
       - 'scripts/generate-crossfront-state.mjs'
       - '.github/workflows/n07-ci.yml'
+      - 'RELEASE_GATES.md'
+      - 'N07_SYSTEM_STATE.md'
+      - 'mesh/n01_n07_federation_e2e_test.go'
   pull_request:
     paths:
       - '**/*.go'
@@ -27,6 +30,9 @@ on:
       - 'scripts/soul-live-source-audit.mjs'
       - 'scripts/generate-crossfront-state.mjs'
       - '.github/workflows/n07-ci.yml'
+      - 'RELEASE_GATES.md'
+      - 'N07_SYSTEM_STATE.md'
+      - 'mesh/n01_n07_federation_e2e_test.go'
   workflow_dispatch:
 
 permissions:
@@ -39,7 +45,7 @@ concurrency:
 
 jobs:
   normalize-main:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && github.actor != 'github-actions[bot]'
+    if: ${{ github.event_name }} == 'push' && ${{ github.ref }} == 'refs/heads/main' && ${{ github.actor }} != 'github-actions[bot]'
     permissions:
       contents: write
     runs-on: ubuntu-latest
@@ -123,7 +129,6 @@ jobs:
           set -euo pipefail
           gofmt -w $(git ls-files '*.go')
           git diff --check
-
       - name: Vet
         run: go vet ./...
       - name: Test
@@ -134,12 +139,20 @@ jobs:
         run: go build ./...
       - name: Backend regression
         run: go test ./backend -run 'Test(Web3Storage|Supabase|Server|Intent)' -count=1
-      - name: Federation E2E N01 to N07 via N04 N05 N06
-        run: go test ./mesh -run '^TestN01ToN07FederatesAcrossN04N05N06$' -count=1
+      - name: Mesh regression suite
+        run: go test ./mesh -count=1 -v
+      - name: Assert real federation test is integration-only and contains no peer server doubles
+        run: |
+          set -euo pipefail
+          grep -q '^//go:build integration$' mesh/n01_n07_federation_e2e_test.go
+          if grep -qE 'httptest\.NewServer|e2e\.n04|e2e\.n05|e2e\.n06' mesh/n01_n07_federation_e2e_test.go; then
+            echo 'synthetic federation peer evidence detected'
+            exit 1
+          fi
 
   container:
     needs: verify
-    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    if: ${{ github.event_name }} != 'pull_request' || ${{ github.event.pull_request.head.repo.full_name }} == ${{ github.repository }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
