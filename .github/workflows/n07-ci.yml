@@ -18,6 +18,8 @@ on:
       - 'RELEASE_GATES.md'
       - 'N07_SYSTEM_STATE.md'
       - 'PHASE0_REPOSITORY_INVENTORY.md'
+      - 'COMMUNICATION_MATRIX.md'
+      - 'SOUL_EVOLUTION_PRESERVATION.md'
       - 'mesh/n01_n07_federation_e2e_test.go'
   pull_request:
     paths:
@@ -36,6 +38,8 @@ on:
       - 'RELEASE_GATES.md'
       - 'N07_SYSTEM_STATE.md'
       - 'PHASE0_REPOSITORY_INVENTORY.md'
+      - 'COMMUNICATION_MATRIX.md'
+      - 'SOUL_EVOLUTION_PRESERVATION.md'
       - 'mesh/n01_n07_federation_e2e_test.go'
   workflow_dispatch:
 
@@ -103,6 +107,17 @@ jobs:
           test -s SOUL-LIVE-SOURCE-AUDIT.json
           test -s SOUL-CROSSFRONT-EVIDENCE.json
           test -s SOUL-SYSTEM-CROSSFRONT-STATE.md
+      - name: Verify preservation and communication contracts
+        run: |
+          set -euo pipefail
+          test -s SOUL_EVOLUTION_PRESERVATION.md
+          test -s COMMUNICATION_MATRIX.md
+          grep -q '72 nódulos' SOUL_EVOLUTION_PRESERVATION.md
+          grep -q 'Clareira' SOUL_EVOLUTION_PRESERVATION.md
+          grep -q 'N07.*N04' COMMUNICATION_MATRIX.md
+          grep -q 'N07.*N05' COMMUNICATION_MATRIX.md
+          grep -q 'N07.*N06' COMMUNICATION_MATRIX.md
+          grep -q 'NOT MEASURED' COMMUNICATION_MATRIX.md
       - name: Upload Integrity Reports
         uses: actions/upload-artifact@v4
         with:
