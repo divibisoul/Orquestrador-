@@ -38,3 +38,6 @@ func result(m protocol.Message,raw []byte,err error)(protocol.Result,error){
  if err!=nil{r.Status="error";r.Error=err.Error()}
  return r,err
 }
+
+
+func ConfigFromEnv() Config { return cognitiveConfigFromEnv() }
