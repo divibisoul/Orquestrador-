@@ -69,6 +69,29 @@ func (s *SupabaseStore) RecordRun(ctx context.Context, row map[string]any) error
 	return s.insert(ctx, s.runsTable, row)
 }
 
+func (s *SupabaseStore) QueryRuns(ctx context.Context, correlationID string, limit int) ([]map[string]any, error) {
+ if !s.Configured() { return nil, errors.New("Supabase server credentials are not configured") }
+ if limit <= 0 || limit > 100 { limit = 100 }
+ query := "?select=*&order=created_at.desc&limit=" + strconv.Itoa(limit)
+ if strings.TrimSpace(correlationID) != "" {
+  query += "&correlation_id=eq." + url.QueryEscape(strings.TrimSpace(correlationID))
+ }
+ req, err := http.NewRequestWithContext(ctx, http.MethodGet, s.baseURL+"/rest/v1/"+url.PathEscape(s.runsTable)+query, nil)
+ if err != nil { return nil, err }
+ req.Header.Set("apikey", s.serviceKey)
+ req.Header.Set("Authorization", "Bearer "+s.serviceKey)
+ resp, err := s.client.Do(req)
+ if err != nil { return nil, err }
+ defer resp.Body.Close()
+ if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+  data, _ := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
+  return nil, fmt.Errorf("Supabase query failed: %s", strings.TrimSpace(string(data)))
+ }
+ var rows []map[string]any
+ if err := json.NewDecoder(io.LimitReader(resp.Body, 2<<20)).Decode(&rows); err != nil { return nil, err }
+ return rows, nil
+}
+
 func (s *SupabaseStore) RecordArtifact(ctx context.Context, row map[string]any) error {
 	if row == nil {
 		return errors.New("artifact row is required")
