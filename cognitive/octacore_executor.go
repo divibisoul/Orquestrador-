@@ -24,7 +24,9 @@ func NewOctaCoreExecutor(processor *octacore.Processor, peers *mesh.PeerClient) 
 func (e *OctaCoreExecutor) Execute(ctx context.Context, capability string, payload map[string]any, correlation string) (map[string]any, string, error) {
     capability = strings.TrimSpace(capability)
     if capability == "" || strings.TrimSpace(correlation) == "" { return nil, "", errors.New("capability and correlation are required") }
-    owner, err := NewPlanner(e.peers).DiscoverTool(ctx, capability)
+    planner, err := NewPlanner(e.peers)
+    if err != nil { return nil, "", err }
+    owner, err := planner.DiscoverTool(ctx, capability)
     if err != nil { return nil, "", err }
     step := Step{ID: octacore.NewJobID(), GoalID: "ad-hoc", Capability: capability, Target: owner.Owner, BackendPrefs: []string{string(octacore.BackendRemoteMesh)}, Kind: classifyKind(capability), Payload: cloneMap(payload), CorrelationID: correlation}
     obs := e.ExecuteStep(ctx, step)
@@ -48,7 +50,7 @@ func (e *OctaCoreExecutor) ExecuteSteps(ctx context.Context, steps []Step) []Obs
 
 func observationFromResult(step Step, result octacore.Result) Observation {
     peer := step.Target
-    obs := Observation{GoalID: step.GoalID, StepID: step.ID, Capability: step.Capability, OK: result.OK, Peer: peer, BackendUsed: result.BackendUsed, LatencyMS: result.Metrics.LatencyMS, QueueWaitMS: result.Metrics.QueueWaitMS, CorrelationID: result.CorrelationID, Output: result.Output, At: nowUTC()}
+    obs := Observation{GoalID: step.GoalID, StepID: step.ID, Capability: step.Capability, OK: result.OK, Peer: peer, BackendUsed: result.BackendUsed, LatencyMS: result.Metrics.LatencyMS, QueueWaitMS: result.Metrics.QueueWaitMS, CorrelationID: result.CorrelationID, Output: result.Output, At: time.Now().UTC()}
     if result.Error != nil { obs.Error = result.Error.Code + ":" + result.Error.Message }
     return obs
 }
