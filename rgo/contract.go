@@ -122,8 +122,8 @@ func (e Envelope) Validate() error {
 	if e.Epistemic.Mode == "" || e.Epistemic.Verification == "" { return errors.New("RGO_EPISTEMIC_REQUIRED") }
 	if e.Actionability.Status == "" { return errors.New("RGO_ACTIONABILITY_REQUIRED") }
 	if strings.TrimSpace(e.Failure.Type) == "" || strings.TrimSpace(e.Failure.Description) == "" || strings.TrimSpace(e.Failure.Nature) == "" { return errors.New("RGO_FAILURE_REQUIRED") }
-	if strings.TrimSpace(e.CorrectionBoundary.ProblemToResolve) == "" { return errors.New("RGO_CORRECTION_BOUNDARY_REQUIRED") }
-	if e.Dual.Status == DualDerived && (strings.TrimSpace(e.CorrectionBoundary.RequiredProperty) == "" || strings.TrimSpace(e.Dual.Property) == "") { return errors.New("RGO_DUAL_DERIVATION_REQUIRED") }
+	
+	if e.Dual.Status == DualDerived && (strings.TrimSpace(e.CorrectionBoundary.ProblemToResolve) == "" || strings.TrimSpace(e.CorrectionBoundary.RequiredProperty) == "" || strings.TrimSpace(e.Dual.Property) == "") { return errors.New("RGO_DUAL_DERIVATION_REQUIRED") }
 	if len(e.Evidence) == 0 { return errors.New("RGO_EVIDENCE_REQUIRED") }
 	if strings.TrimSpace(e.Provenance.Origin) == "" || strings.TrimSpace(e.Provenance.InputHash) == "" { return errors.New("RGO_PROVENANCE_REQUIRED") }
 	for _, ev := range e.Evidence {
@@ -133,7 +133,7 @@ func (e Envelope) Validate() error {
 }
 
 func DeriveDual(e Envelope) Envelope {
-	if strings.TrimSpace(e.CorrectionBoundary.RequiredProperty) == "" {
+	if strings.TrimSpace(e.CorrectionBoundary.ProblemToResolve) == "" || strings.TrimSpace(e.CorrectionBoundary.RequiredProperty) == "" {
 		e.Dual.Status = DualUnresolved
 		e.Dual.Property = ""
 		e.Dual.EvidenceRefs = nil
