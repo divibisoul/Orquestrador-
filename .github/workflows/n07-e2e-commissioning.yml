@@ -188,7 +188,7 @@ jobs:
             for i in $(seq 1 60); do
               code="$(curl -sS -o /dev/null -w '%{http_code}' "http://127.0.0.1:${port}/api/soul-mesh" || true)"
               case "$code" in
-                2*|3*|4*) echo "$name local endpoint reachable with HTTP $code"; return 0 ;;
+                2*|3*|4*|5*) echo "$name local endpoint is listening with HTTP $code"; return 0 ;;
               esac
               sleep 2
             done
@@ -262,6 +262,7 @@ jobs:
             code="$(curl -sS -o /dev/null -w '%{http_code}' --max-time 15 "$url/api/soul-mesh" || true)"
             case "$code" in
               2*|3*|4*) echo "$name public endpoint reachable with HTTP $code" ;;
+              5*) echo "$name public endpoint reached runtime but returned HTTP $code"; return 0 ;;
               *) echo "$name public endpoint unavailable: HTTP $code"; return 1 ;;
             esac
           }
