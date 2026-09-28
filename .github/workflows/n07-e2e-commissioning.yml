@@ -100,7 +100,7 @@ jobs:
         run: |
           set -euo pipefail
           missing=0
-          for name in N07_APP_TOKEN WEB3_STORAGE_TOKEN SUPABASE_URL SUPABASE_SERVICE_ROLE_KEY SOUL_MESH_N01_URL SOUL_MESH_N02_URL SOUL_MESH_N03_URL SOUL_MESH_N04_URL SOUL_MESH_N05_URL SOUL_MESH_N06_URL SOUL_MESH_HMAC_SECRET; do
+          for name in N07_APP_TOKEN WEB3_STORAGE_TOKEN SUPABASE_URL SUPABASE_SERVICE_ROLE_KEY SOUL_MESH_N04_URL SOUL_MESH_N05_URL SOUL_MESH_N06_URL SOUL_MESH_HMAC_SECRET; do
             if [ -z "${!name}" ]; then
               echo "missing secret: $name"
               missing=1
