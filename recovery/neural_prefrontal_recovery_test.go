@@ -51,7 +51,7 @@ func TestRecoveredNeuralAndPrefrontalRuntime(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if decision.CandidateID != candidate.ID {
+	if decision.ID != candidate.ID {
 		t.Fatalf("decision did not preserve candidate identity: %#v", decision)
 	}
 
