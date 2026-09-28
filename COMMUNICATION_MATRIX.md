@@ -26,7 +26,7 @@ All off-diagonal cells are directional: A→B is separate evidence from B→A.
 | **N04** | NOT MEASURED | NOT MEASURED | NOT MEASURED | LOCAL | NOT MEASURED | NOT MEASURED | NOT MEASURED | NOT MEASURED |
 | **N05** | NOT MEASURED | NOT MEASURED | NOT MEASURED | NOT MEASURED | LOCAL | NOT MEASURED | NOT MEASURED | NOT MEASURED |
 | **N06** | NOT MEASURED | NOT MEASURED | NOT MEASURED | NOT MEASURED | NOT MEASURED | LOCAL | NOT MEASURED | NOT MEASURED |
-| **N07** | NOT MEASURED | NOT MEASURED | NOT MEASURED | BLOCKED | BLOCKED | BLOCKED | LOCAL | NOT OPEN |
+| **N07** | NOT MEASURED | NOT MEASURED | NOT MEASURED | NOT MEASURED | NOT MEASURED | NOT MEASURED | LOCAL | NOT OPEN |
 | **SARA** | NOT MEASURED | NOT MEASURED | NOT MEASURED | NOT MEASURED | NOT MEASURED | NOT MEASURED | NOT OPEN | LOCAL |
 
 ### Blocked commissioning edges
@@ -39,7 +39,7 @@ The current Phase-1 N07 real integration gate explicitly commissions:
 
 The commissioning workflow now creates its own ephemeral HMAC secret and public Quick Tunnel URLs, so external Mesh URL/secrets are no longer a prerequisite for this CI path.
 
-The three edges remain BLOCKED / NOT MEASURED until a real workflow run executes the transactions successfully against the checked-out peer runtimes. The status is deliberately not upgraded by code inspection or workflow definition alone.
+The three edges remain NOT MEASURED until a real workflow run executes the transactions successfully against the checked-out peer runtimes. The status is deliberately not upgraded by code inspection or workflow definition alone.
 
 ### Why reverse directions remain NOT MEASURED
 
