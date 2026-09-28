@@ -37,7 +37,9 @@ The current Phase-1 N07 real integration gate explicitly commissions:
 - N07 → N05: native core.health
 - N07 → N06: native support.mesh
 
-These remain **BLOCKED** until the live peer URL secrets and HMAC secret are configured in the N07 commissioning environment.
+The commissioning workflow now creates its own ephemeral HMAC secret and public Quick Tunnel URLs, so external Mesh URL/secrets are no longer a prerequisite for this CI path.
+
+The three edges remain BLOCKED / NOT MEASURED until a real workflow run executes the transactions successfully against the checked-out peer runtimes. The status is deliberately not upgraded by code inspection or workflow definition alone.
 
 ### Why reverse directions remain NOT MEASURED
 
@@ -77,10 +79,6 @@ The broader architecture's 72 nódulos are protected scope. Their per-node statu
 Each upgraded cell should carry:
 
 `STATE | date | source HEAD | workflow/run | capability | correlationId | latency/error`
-
-Example:
-
-`PASS | YYYY-MM-DD | <sha> | <run-id> | <capability> | <correlation> | <latency-ms>`
 
 Do not fabricate example values in an actual status cell.
 
