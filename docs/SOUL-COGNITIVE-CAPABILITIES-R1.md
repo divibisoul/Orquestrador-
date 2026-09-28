@@ -36,3 +36,8 @@ VALIDATED: requires exact-head CI format/vet/test/race/build evidence.
 INTEGRATED: requires live N07 -> peer capability transaction with preserved correlation.
 
 ONLINE: not claimed.
+
+
+## 2026-09-28 reconciliation
+
+The main runtime registration is present behind the existing feature flag. A CI vet failure caused by a missing `strconv` import was corrected, followed by a planner contract correction that adds the preserved `Target` field to `Step`. Exact-head CI must still re-run and pass before this layer is considered VALIDATED.
