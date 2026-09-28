@@ -45,7 +45,7 @@ func(p *Planner) DiscoverTool(ctx context.Context,capability string)(ToolDescrip
 func(p *Planner) Plan(ctx context.Context,g Goal)([]Step,error){
  if ctx==nil{return nil,errors.New("context is nil")}
  if len(g.Capabilities)==0{return nil,errors.New("goal requires capabilities")}
- if len(g.Capabilities) > 8 {return nil,errors.New("goal exceeds cognitive parallel step limit")}
+ if len(g.Capabilities) > p.maxParallel {return nil,fmt.Errorf("goal exceeds cognitive parallel step limit:%d",p.maxParallel)}
  out:=make([]Step,0,len(g.Capabilities))
  for i,capability:=range g.Capabilities{
   tool,err:=p.DiscoverTool(ctx,capability);if err!=nil{return nil,err}
