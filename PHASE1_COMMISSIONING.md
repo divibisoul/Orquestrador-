@@ -6,9 +6,26 @@ This procedure commissions the current N07 real federation gate against live N04
 
 It does **not** declare SOUL fully ONLINE. N01 live execution, N02/N03 external execution and SARA handoff remain separate evidence gates.
 
-## Required GitHub Actions secrets
+## Automated GitHub Actions commissioning
 
-Configure these repository/environment secrets in the N07 repository:
+The canonical CI path now self-provisions the Phase-1 Mesh transport for the real federation gate:
+
+1. N07 checks out the current N04, N05 and N06 repositories from their `main` branches.
+2. Each real peer application is installed and production-built on the GitHub-hosted runner.
+3. N04, N05 and N06 start as real Next.js runtimes on isolated local ports.
+4. A fresh `SOUL_MESH_HMAC_SECRET` is generated for the run.
+5. Three Cloudflare Quick Tunnels create temporary public HTTPS origins for those local runtimes.
+6. The generated origins are injected into N07 as `SOUL_MESH_N04_URL`, `SOUL_MESH_N05_URL` and `SOUL_MESH_N06_URL`.
+7. The existing integration-only N07 test executes the real Mesh requests and validates discovery, native capability execution, correlation, source/target and response HMAC.
+8. Runtime logs and the participating source HEADs are retained as workflow artifacts.
+
+No Mesh URL, tunnel token, paid domain or permanent Mesh secret is required for this CI path.
+
+Cloudflare Quick Tunnels are intended for temporary development/testing and generate random `trycloudflare.com` origins. They are not the production ingress mechanism.
+
+## Manual external commissioning
+
+For an externally deployed environment, the original explicit variables remain supported:
 
 - `SOUL_MESH_N04_URL`
 - `SOUL_MESH_N05_URL`
@@ -45,19 +62,23 @@ Expected evidence is a separate subtest result for N04, N05 and N06 with preserv
 
 ## Fail-closed behavior
 
-Missing URL/HMAC configuration must fail the gate. An absent peer is never converted into PASS.
+Missing or unusable runtime configuration must fail the gate. An absent peer is never converted into PASS.
 
-A peer that cannot be discovered, authenticated, or executed is recorded as a real failure.
+In automated CI, a failed Quick Tunnel, unreachable peer, authentication failure or capability failure is a real failure of the commissioning job; it is never replaced with a synthetic peer.
 
 ## Evidence to preserve
 
 Preserve the complete Actions log for:
 
 1. dependency/toolchain setup;
-2. Mesh discovery;
-3. each native capability execution;
-4. correlation/source/target assertions;
-5. final test summary.
+2. peer source HEAD capture;
+3. real peer build/start;
+4. Mesh tunnel creation and reachability;
+5. Mesh discovery;
+6. each native capability execution;
+7. correlation/source/target assertions;
+8. response HMAC verification;
+9. final test summary.
 
 The log must not contain secret values.
 
@@ -65,9 +86,9 @@ The log must not contain secret values.
 
 | Gate | Current state |
 |---|---|
-| N04 real native E2E | BLOCKED until `SOUL_MESH_N04_URL` + `SOUL_MESH_HMAC_SECRET` exist in the commissioning environment |
-| N05 real native E2E | BLOCKED until `SOUL_MESH_N05_URL` + `SOUL_MESH_HMAC_SECRET` exist in the commissioning environment |
-| N06 real native E2E | BLOCKED until `SOUL_MESH_N06_URL` + `SOUL_MESH_HMAC_SECRET` exist in the commissioning environment |
+| N04 real native E2E | BLOCKED / NOT MEASURED until the new self-provisioned real federation job completes successfully |
+| N05 real native E2E | BLOCKED / NOT MEASURED until the new self-provisioned real federation job completes successfully |
+| N06 real native E2E | BLOCKED / NOT MEASURED until the new self-provisioned real federation job completes successfully |
 | N01 health/discovery | Source endpoint exists; live cross-runtime result is NOT MEASURED |
 | N02 | Mesh health endpoint exists; live cross-runtime result is NOT MEASURED |
 | N03 | Mesh API and native capabilities exist; live cross-runtime result is NOT MEASURED |
@@ -91,23 +112,8 @@ The broader architecture's 72 nódulos are protected scope. Their individual sta
 
 See SOUL_EVOLUTION_PRESERVATION.md and COMMUNICATION_MATRIX.md.
 
-## Human commissioning checklist
-
-Before running the real integration gate:
-
-1. Configure the four repository/environment secrets exactly as named above; never commit their values.
-2. Confirm N04, N05 and N06 are deployed and reachable from the GitHub Actions runner.
-3. Confirm each peer exposes /api/soul-mesh and accepts the configured Mesh contract/HMAC.
-4. Confirm the peer services are UP before starting the test; a service that starts after the test begins is not evidence of PASS.
-5. Run the exact integration command from this document.
-6. Preserve the complete Actions log and run ID. Do not redact away correlation IDs, source/target or capability names; do redact secrets if they ever appear unexpectedly.
-7. For each peer, verify the log identifies: discovery correlation, execution correlation, source=N04/N05/N06, target=N07, capability, contractVersion=1.1.0, and successful payload validation.
-8. A timeout, discovery failure, HMAC failure, correlation mismatch, wrong source/target or missing payload is FAIL/BLOCKED according to the actual cause; it is never converted to PASS.
-9. After a real run, update the corresponding cells in COMMUNICATION_MATRIX.md with date, source HEAD, run ID, capability, correlation ID and latency/error evidence.
-
 ### Current CI evidence
 
 A completed PASS exists for commit b139ac488137544e5a814be73305313603bf8ada (Actions run #875). That run is historical evidence for that exact commit; it is not a PASS claim for the current PR head.
 
-Current PR head: 954616ec8d21e494b83308fe7c06f9bbe1ff23be.
-Current runs for that head are still pending, so this runbook deliberately does not label the current head VALIDATED.
+The current PR head is still not marked VALIDATED until the self-provisioned real Mesh federation job has executed successfully.
