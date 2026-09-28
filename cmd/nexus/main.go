@@ -16,6 +16,7 @@ import (
 	"github.com/divibisoul/Orquestrador-/api"
 	"github.com/divibisoul/Orquestrador-/api/health"
 	"github.com/divibisoul/Orquestrador-/backend"
+	"github.com/divibisoul/Orquestrador-/cognitive"
 	"github.com/divibisoul/Orquestrador-/jev"
 	"github.com/divibisoul/Orquestrador-/mesh"
 	"github.com/divibisoul/Orquestrador-/neural"
@@ -72,6 +73,20 @@ func main() {
 	peerClient, err := mesh.NewPeerClient(nil)
 	if err != nil {
 		log.Fatal(err)
+	}
+
+	cognitiveCfg := cognitive.DefaultConfig()
+	cognitiveCfg.Enabled = strings.EqualFold(strings.TrimSpace(os.Getenv("N07_COGNITIVE_LOOP_ENABLED")), "true")
+	if cognitiveCfg.Enabled {
+		cognitiveStore := backend.NewSupabaseStore(cfg)
+		cognitiveLoop, err := cognitive.Build(cognitiveCfg, c, peerClient, saraProxy, cognitiveStore)
+		if err != nil {
+			log.Fatal(err)
+		}
+		if err := cognitive.RegisterOperations(e, cognitiveLoop); err != nil {
+			log.Fatal(err)
+		}
+		log.Printf("N07 cognitive Goal->Plan->Act loop registered through canonical Mesh")
 	}
 	octacoreProcessor, err := octacore.NewProcessor(octacore.DefaultConfig(), g, peerClient, saraProxy)
 	if err != nil {
