@@ -10,6 +10,15 @@ on:
       - 'Dockerfile'
       - 'mesh/**'
       - '.github/workflows/n07-e2e-commissioning.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - '**/*.go'
+      - 'go.mod'
+      - 'go.sum'
+      - 'Dockerfile'
+      - 'mesh/**'
+      - '.github/workflows/n07-e2e-commissioning.yml'
   workflow_dispatch:
 
 permissions:
@@ -300,6 +309,7 @@ jobs:
           done
 
   configured-staging:
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
