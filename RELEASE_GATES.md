@@ -14,13 +14,13 @@ This is the N07 release checklist. A gate is PASS only when its evidence is repr
 | G1 — N07 local runtime | PASS | Go vet/test/race/build | Current N07 validation path is green. |
 | G1 — SARA local authority | PASS | SARA CI + self-check | Current SARA CI is green. |
 | G1 — external staging | BLOCKED | Required staging credentials + live health/execution/storage | Current commissioning run stops during required-secret validation. |
-| G2 — seven-core smoke | NOT OPEN | Real response matrix for all configured/deployable peers | Must wait for Phase 1 real execution evidence. |
+| G2 — seven-core smoke | IMPLEMENTATION UNFROZEN / RUNTIME NOT OPEN | Real response matrix for all configured/deployable peers | Engineering may proceed; production promotion still waits for Phase 1 real execution evidence. |
 | G2 — fail closed | PASS | Missing/unreachable peer yields explicit failure | N07 PeerClient rejects unconfigured peers and opens a circuit after repeated failures. |
 | G2 — retry/timeout/circuit exercised | NOT MEASURED | Runtime/E2E evidence under failure | Implementation exists; real federation gate has not been commissioned. |
-| G3 — operational handoff | NOT OPEN | Task crosses >=2 nuclei + SARA with one correlation | No live evidence yet. |
-| G4 — planner DAG | NOT OPEN | Real decomposition + real execution | Must wait for G1/G2. |
-| G5 — learning loop | NOT OPEN | >=3 historical failures converted to permanent tests/capabilities | Requires preserved failure evidence. |
-| G6 — Super AGI gates | NOT OPEN | World state + meta-monitoring + governance + proof matrix | No operational claim before prior gates. |
+| G3 — operational handoff | IMPLEMENTATION UNFROZEN / RUNTIME NOT OPEN | Task crosses >=2 nuclei + SARA with one correlation | Implementation may proceed; no live claim yet. |
+| G4 — planner DAG | IMPLEMENTATION UNFROZEN / RUNTIME NOT OPEN | Real decomposition + real execution | PR #42 can be completed; runtime promotion waits for federation evidence. |
+| G5 — learning loop | IMPLEMENTATION UNFROZEN / RUNTIME NOT OPEN | >=3 historical failures converted to permanent tests/capabilities | Work may continue; evidence requirement remains. |
+| G6 — Super AGI gates | FOUNDATION WORK UNFROZEN / RUNTIME NOT OPEN | World state + meta-monitoring + governance + proof matrix | No operational claim before prior gates. |
 
 ## Hard release conditions
 
@@ -28,11 +28,11 @@ This is the N07 release checklist. A gate is PASS only when its evidence is repr
 2. No capability is operational from declaration alone; an executable transaction must succeed with correlation preserved.
 3. Integration tests that need live peers fail closed on missing configuration.
 4. Default/offline CI remains independent of external secrets and preserves legacy behavior.
-5. No later phase is opened by documentation alone.
+5. Downstream phases are unFROZEN for engineering, but no runtime/release gate is promoted by documentation alone.
 
 ## Current release decision
 
-**PHASE 1 PARTIAL — NOT FULLY ONLINE.**
+**PHASE 1 PARTIAL — DOWNSTREAM IMPLEMENTATION UNFROZEN — NOT FULLY ONLINE.**
 
 The repository family already contains real Mesh protocol handling, authentication, discovery, routing, retry/circuit logic and local runtime validation. The current work removes a synthetic federation proof from the N07 test path and replaces it with a real, opt-in integration gate. External peer URLs/secrets and the unresolved N03 dependency-review failure remain explicit blockers.
 
@@ -45,3 +45,8 @@ The repository family already contains real Mesh protocol handling, authenticati
 5. The 72-node architectural inventory is protected scope; node-level PASS is forbidden without source-backed enumeration.
 6. Clareira and other internal subsystems are part of the system surface even when the current Phase-1 E2E gate probes only a small native capability.
 
+
+
+## Current CI evidence for the communication foundation
+
+PR #41 head `f759cf58e3e77b46151aac654467f26367fbdfce` passed workflow #914 (id `36422726496`): integrity, verify and container all SUCCESS; normalize-main SKIPPED. Live N04/N05/N06 commissioning remains separately blocked until real URLs and HMAC are configured.
