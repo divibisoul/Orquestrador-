@@ -28,7 +28,7 @@ This is the N07 release checklist. A gate is PASS only when its evidence is repr
 2. No capability is operational from declaration alone; an executable transaction must succeed with correlation preserved.
 3. Integration tests that need live peers fail closed on missing configuration.
 4. Default/offline CI remains independent of external secrets and preserves legacy behavior.
-5. Downstream phases are unFROZEN for engineering, but no runtime/release gate is promoted by documentation alone.
+5. Downstream phases are UNFROZEN for engineering, but no runtime/release gate is promoted by documentation alone.
 
 ## Current release decision
 
