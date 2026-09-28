@@ -1,4 +1,4 @@
-package recovery_test
+package main
 
 import (
 	"context"
