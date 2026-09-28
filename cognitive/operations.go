@@ -26,7 +26,9 @@ func RegisterOperations(e *orchestrator.Engine,l *Loop) error{
   return result(m,rawOut,err)
  });err!=nil{return err}
  return e.Register(OpHealth,func(_ context.Context,m protocol.Message)(protocol.Result,error){
-  raw,_:=json.Marshal(map[string]any{"status":"READY","enabled":l.Enabled(),"working_memory_items":len(l.memory.Snapshot())})
+  status := "DISABLED"
+  if l.Enabled() { status = "READY" }
+  raw,_:=json.Marshal(map[string]any{"status":status,"enabled":l.Enabled(),"working_memory_items":len(l.memory.Snapshot()),"octacore":true})
   return result(m,raw,nil)
  })
 }
