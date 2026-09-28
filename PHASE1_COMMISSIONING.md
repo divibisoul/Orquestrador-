@@ -78,3 +78,15 @@ The log must not contain secret values.
 Do not change `PHASE 1 PARTIAL` to full ONLINE until the corresponding live transactions have produced reproducible evidence.
 
 Do not open the Goal→Plan→Act→Observe cognitive loop until the Phase 1 release gates are satisfied.
+
+## Preservation and uniform evolution invariant
+
+Commissioning the Mesh must not reduce the internal capability of any participating nucleus.
+
+Before a phase is promoted, record the participating nucleus' preserved native systems, adapted bridges, extended capabilities, measured communication paths and explicit blockers. The Mesh is the canonical communication substrate; it must not be duplicated by a second hidden bus.
+
+This includes Projeto Clareira and its native neural graph, ProcessingNodes, InformationChannels, HomeostasisManager and EventBus/bridge in N01, as well as native agents, tools, capabilities, registries and runtime services in N02–N07. SARA remains independent and authoritative for its regenerative/governance responsibilities.
+
+The broader architecture's 72 nódulos are protected scope. Their individual statuses must be source-enumerated before they are marked measured; no count is converted into fabricated execution evidence.
+
+See SOUL_EVOLUTION_PRESERVATION.md and COMMUNICATION_MATRIX.md.
