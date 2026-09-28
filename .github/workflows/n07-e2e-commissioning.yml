@@ -107,6 +107,7 @@ jobs:
             fi
           done
           test "$missing" -eq 0
+          test "${#SOUL_MESH_HMAC_SECRET}" -ge 16 || { echo 'SOUL_MESH_HMAC_SECRET must contain at least 16 characters'; exit 1; }
           echo 'required staging and Mesh secrets: present'
       - name: Real N07 to N04 N05 N06 native federation evidence
         env:
