@@ -40,9 +40,9 @@ func (l *Loop) RunPlanned(ctx context.Context,g Goal)([]Observation,error){
 
 func NewPlannerFromExecutor(e Executor)(*Planner,error){
  switch x:=e.(type){
- case *MeshExecutor:
+ case *OctaCoreExecutor:
   return NewPlanner(x.peers)
  default:
-  return nil,errors.New("planner requires the canonical MeshExecutor")
+  return nil,errors.New("planner requires the canonical Octacore executor")
  }
 }
