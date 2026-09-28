@@ -16,11 +16,19 @@ type ToolDescriptor struct {
  OutputSchema map[string]any `json:"output_schema,omitempty"`
 }
 
-type Planner struct{ peers *mesh.PeerClient }
+type Planner struct{ peers *mesh.PeerClient; maxParallel int }
 
 func NewPlanner(peers *mesh.PeerClient)(*Planner,error){
  if peers==nil{return nil,errors.New("mesh peer client is required")}
- return &Planner{peers:peers},nil
+ return &Planner{peers:peers,maxParallel:8},nil
+}
+
+
+func NewPlannerWithLimit(peers *mesh.PeerClient, limit int)(*Planner,error){
+ if limit <= 0 { return nil, errors.New("planner parallel limit must be positive") }
+ if limit > 64 { limit = 64 }
+ if peers == nil { return nil, errors.New("mesh peer client is required") }
+ return &Planner{peers:peers,maxParallel:limit},nil
 }
 
 func(p *Planner) DiscoverTool(ctx context.Context,capability string)(ToolDescriptor,error){
