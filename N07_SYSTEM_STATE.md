@@ -59,3 +59,13 @@ SOUL is **NOT ONLINE as a fully commissioned external federation** until the rea
 - No native capability is removed, renamed or replaced.
 - New federation execution evidence is opt-in via the `integration` build tag.
 - Existing default `go test ./...` remains the baseline regression gate.
+
+## Internal systems must rise with the Mesh
+
+The Mesh gate measures federation edges. It does not replace or subsume the internal systems of a nucleus.
+
+Every later phase must carry forward the preserved internal substrate of each participating nucleus. In particular, Clareira is an active N01 subsystem and must remain executable, observable and compatible as the federation advances. Its internal processing graph, homeostasis, channels and event path are protected from simplification or replacement.
+
+The system-design inventory also contains 72 nódulos as protected scope. This document does not invent a node-by-node runtime status where source evidence is absent.
+
+See SOUL_EVOLUTION_PRESERVATION.md for the change classification: PRESERVE / ADAPT / EXTEND / RETIRE-WITH-REPLACEMENT.
