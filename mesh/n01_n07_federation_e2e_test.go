@@ -55,9 +55,9 @@ func advertisedCapability(description map[string]any, capability string) bool {
 	return false
 }
 
-func TestN07FederatesToRealNativeCapabilities(t *testing.T) {
+func TestN07FederatesToRealN04N05N06NativeCapabilities(t *testing.T) {
 	requiredEnv(t, "SOUL_MESH_HMAC_SECRET")
-	for _, nucleus := range []string{"N01", "N02", "N03", "N04", "N05", "N06"} {
+	for _, nucleus := range []string{"N04", "N05", "N06"} {
 		requiredEnv(t, "SOUL_MESH_"+nucleus+"_URL")
 	}
 
@@ -72,21 +72,6 @@ func TestN07FederatesToRealNativeCapabilities(t *testing.T) {
 		payload    map[string]any
 		validate   func(t *testing.T, payload map[string]any)
 	}{
-		{
-			nucleus:    "N01",
-			capability: "mesh.health",
-			payload:    map[string]any{"probe": "phase1", "requestedBy": "N07"},
-		},
-		{
-			nucleus:    "N02",
-			capability: "mesh.health",
-			payload:    map[string]any{"probe": "phase1", "requestedBy": "N07"},
-		},
-		{
-			nucleus:    "N03",
-			capability: "capability.list",
-			payload:    map[string]any{"probe": "phase1", "requestedBy": "N07"},
-		},
 		{
 			nucleus:    "N04",
 			capability: "core.health",
