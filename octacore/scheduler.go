@@ -362,7 +362,7 @@ func (s *Scheduler) executePlan(ctx context.Context, jobs []Job) []Result {
 			}
 		}
 
-		barrierSignals := barriersForReady(jobs, results, ready)
+		barrierSignals := releasedBarriers(jobs, results, ready, pending)
 		for _, signal := range barrierSignals {
 			s.publish(ctx, signal)
 		}
@@ -745,4 +745,61 @@ func barrierName(job Job) string {
 		return ""
 	}
 	return strings.TrimSpace(*job.Barrier)
+}
+
+
+func releasedBarriers(jobs []Job, results []Result, ready []int, pending map[int]Job) []VagusEnvelope {
+	groups := make(map[string][]string)
+	for _, index := range ready {
+		group := ""
+		if jobs[index].ParallelGroup != nil {
+			group = strings.TrimSpace(*jobs[index].ParallelGroup)
+		}
+		if group == "" {
+			continue
+		}
+		if results[index].OK {
+			groups[group] = append(groups[group], jobs[index].JobID)
+		}
+	}
+	out := make([]VagusEnvelope, 0, len(groups))
+	for group, completedIDs := range groups {
+		stillProducing := false
+		for _, pendingJob := range pending {
+			if pendingJob.ParallelGroup != nil && strings.TrimSpace(*pendingJob.ParallelGroup) == group {
+				stillProducing = true
+				break
+			}
+		}
+		if stillProducing {
+			continue
+		}
+		correlation := barrierCorrelationID(jobs, group)
+		out = append(out, makeVagus(
+			"gpu.barrier",
+			"G7",
+			"scheduler",
+			100,
+			1000,
+			correlation,
+			map[string]any{
+				"barrier":            group,
+				"completed_job_ids":  completedIDs,
+				"joined":             true,
+			},
+		))
+	}
+	sort.SliceStable(out, func(i, j int) bool {
+		return out[i].Payload["barrier"].(string) < out[j].Payload["barrier"].(string)
+	})
+	return out
+}
+
+func barrierCorrelationID(jobs []Job, group string) string {
+	for _, job := range jobs {
+		if job.Barrier != nil && strings.TrimSpace(*job.Barrier) == group && strings.TrimSpace(job.CorrelationID) != "" {
+			return job.CorrelationID
+		}
+	}
+	return NewJobID()
 }
