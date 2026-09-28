@@ -90,3 +90,24 @@ This includes Projeto Clareira and its native neural graph, ProcessingNodes, Inf
 The broader architecture's 72 nódulos are protected scope. Their individual statuses must be source-enumerated before they are marked measured; no count is converted into fabricated execution evidence.
 
 See SOUL_EVOLUTION_PRESERVATION.md and COMMUNICATION_MATRIX.md.
+
+## Human commissioning checklist
+
+Before running the real integration gate:
+
+1. Configure the four repository/environment secrets exactly as named above; never commit their values.
+2. Confirm N04, N05 and N06 are deployed and reachable from the GitHub Actions runner.
+3. Confirm each peer exposes /api/soul-mesh and accepts the configured Mesh contract/HMAC.
+4. Confirm the peer services are UP before starting the test; a service that starts after the test begins is not evidence of PASS.
+5. Run the exact integration command from this document.
+6. Preserve the complete Actions log and run ID. Do not redact away correlation IDs, source/target or capability names; do redact secrets if they ever appear unexpectedly.
+7. For each peer, verify the log identifies: discovery correlation, execution correlation, source=N04/N05/N06, target=N07, capability, contractVersion=1.1.0, and successful payload validation.
+8. A timeout, discovery failure, HMAC failure, correlation mismatch, wrong source/target or missing payload is FAIL/BLOCKED according to the actual cause; it is never converted to PASS.
+9. After a real run, update the corresponding cells in COMMUNICATION_MATRIX.md with date, source HEAD, run ID, capability, correlation ID and latency/error evidence.
+
+### Current CI evidence
+
+A completed PASS exists for commit b139ac488137544e5a814be73305313603bf8ada (Actions run #875). That run is historical evidence for that exact commit; it is not a PASS claim for the current PR head.
+
+Current PR head: 954616ec8d21e494b83308fe7c06f9bbe1ff23be.
+Current runs for that head are still pending, so this runbook deliberately does not label the current head VALIDATED.
