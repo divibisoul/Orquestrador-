@@ -21,9 +21,9 @@ func requiredEnv(t *testing.T, key string) string {
 	return value
 }
 
-func describedCapability(description map[string]any, capability string) bool {
-	capability = strings.TrimSpace(capability)
-	for _, key := range []string{"executableCapabilities", "capabilities"} {
+func advertisedCapability(description map[string]any, capability string) bool {
+	capability = strings.SplitN(strings.TrimSpace(capability), "@", 2)[0]
+	for _, key := range []string{"executableCapabilities", "declaredCapabilities", "capabilities"} {
 		raw, ok := description[key]
 		if !ok {
 			if nested, ok := description["payload"].(map[string]any); ok {
@@ -35,18 +35,18 @@ func describedCapability(description map[string]any, capability string) bool {
 			for _, item := range items {
 				switch value := item.(type) {
 				case string:
-					if strings.SplitN(strings.TrimSpace(value), "@", 2)[0] == strings.SplitN(capability, "@", 2)[0] {
+					if strings.SplitN(strings.TrimSpace(value), "@", 2)[0] == capability {
 						return true
 					}
 				case map[string]any:
-					if id, _ := value["id"].(string); strings.TrimSpace(id) == strings.SplitN(capability, "@", 2)[0] {
+					if id, _ := value["id"].(string); strings.TrimSpace(id) == capability {
 						return true
 					}
 				}
 			}
 		case []string:
 			for _, value := range items {
-				if strings.SplitN(strings.TrimSpace(value), "@", 2)[0] == strings.SplitN(capability, "@", 2)[0] {
+				if strings.SplitN(strings.TrimSpace(value), "@", 2)[0] == capability {
 					return true
 				}
 			}
@@ -55,11 +55,11 @@ func describedCapability(description map[string]any, capability string) bool {
 	return false
 }
 
-func TestN07FederatesToRealN04N05N06NativeCapabilities(t *testing.T) {
+func TestN07FederatesToRealNativeCapabilities(t *testing.T) {
 	requiredEnv(t, "SOUL_MESH_HMAC_SECRET")
-	requiredEnv(t, "SOUL_MESH_N04_URL")
-	requiredEnv(t, "SOUL_MESH_N05_URL")
-	requiredEnv(t, "SOUL_MESH_N06_URL")
+	for _, nucleus := range []string{"N01", "N02", "N03", "N04", "N05", "N06"} {
+		requiredEnv(t, "SOUL_MESH_"+nucleus+"_URL")
+	}
 
 	client, err := NewPeerClient(&http.Client{Timeout: 15 * time.Second})
 	if err != nil {
@@ -72,6 +72,21 @@ func TestN07FederatesToRealN04N05N06NativeCapabilities(t *testing.T) {
 		payload    map[string]any
 		validate   func(t *testing.T, payload map[string]any)
 	}{
+		{
+			nucleus:    "N01",
+			capability: "mesh.health",
+			payload:    map[string]any{"probe": "phase1", "requestedBy": "N07"},
+		},
+		{
+			nucleus:    "N02",
+			capability: "mesh.health",
+			payload:    map[string]any{"probe": "phase1", "requestedBy": "N07"},
+		},
+		{
+			nucleus:    "N03",
+			capability: "capability.list",
+			payload:    map[string]any{"probe": "phase1", "requestedBy": "N07"},
+		},
 		{
 			nucleus:    "N04",
 			capability: "core.health",
@@ -105,10 +120,10 @@ func TestN07FederatesToRealN04N05N06NativeCapabilities(t *testing.T) {
 			describeCorrelation := fmt.Sprintf("phase1-n07-%s-describe", strings.ToLower(tc.nucleus))
 			description, err := client.CallWithCorrelation(ctx, tc.nucleus, "mesh.describe", map[string]any{"from": "N07"}, describeCorrelation)
 			if err != nil {
-				t.Fatalf("REAL_MESH_DISCOVERY_FAILED nucleus=%s: %v", tc.nucleus, err)
+				t.Fatalf("REAL_MESH_DISCOVERY_FAILED nucleus=%s correlation=%s: %v", tc.nucleus, describeCorrelation, err)
 			}
-			if !describedCapability(description, tc.capability) {
-				t.Fatalf("REAL_MESH_CAPABILITY_NOT_DECLARED_OR_EXECUTABLE nucleus=%s capability=%s description=%#v", tc.nucleus, tc.capability, description)
+			if !advertisedCapability(description, tc.capability) {
+				t.Fatalf("REAL_MESH_CAPABILITY_NOT_ADVERTISED nucleus=%s capability=%s description=%#v", tc.nucleus, tc.capability, description)
 			}
 
 			correlation := fmt.Sprintf("phase1-n07-%s", strings.ToLower(tc.nucleus))
