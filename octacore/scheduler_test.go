@@ -193,6 +193,23 @@ func TestOctacoreWebGPUIsExplicitlyUnavailable(t *testing.T) {
 }
 
 
+func newCPUScheduler(t *testing.T) *Scheduler {
+    t.Helper()
+    runtime := supergpu.New(supergpu.CPUBackend{})
+    runtime.Discover()
+    peers, err := mesh.NewPeerClient(nil)
+    if err != nil {
+        t.Fatal(err)
+    }
+    return newScheduler(Config{
+        MaxInflight:          8,
+        TokenCapacity:        8,
+        TokenRefillPerSecond: 1000,
+        FailureThreshold:     2,
+        CircuitCooldown:      100 * time.Millisecond,
+    }, runtime, peers, nil)
+}
+
 func TestOctacoreBarrierFailsClosedWhenProducerFails(t *testing.T) {
     s := newTestScheduler(t)
     producerGroup := "pre"
