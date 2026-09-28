@@ -2,6 +2,7 @@ package octacore
 
 import (
 	"context"
+	"errors"
 	"testing"
 	"time"
 
@@ -190,4 +191,45 @@ func TestOctacoreWebGPUIsExplicitlyUnavailable(t *testing.T) {
 	if result.Error == nil || result.Error.Code != "BACKEND_UNAVAILABLE" {
 		t.Fatalf("unexpected WebGPU error: %#v", result.Error)
 	}
+}
+
+
+func TestOctacoreBarrierFailsClosedAfterProducerFailure(t *testing.T) {
+	s := newTestScheduler(t)
+	producerGroup := "pre"
+	barrier := "pre"
+	consumerGroup := "post"
+	original := s.compute
+	s.compute = supergpu.New(failingBackend{})
+	s.compute.Discover()
+	defer func() { s.compute = original }()
+
+	results := s.executePlan(context.Background(), []Job{
+		job("failed-producer", G7, G7, &producerGroup, &barrier),
+		{
+			JobID: "consumer", CorrelationID: "corr-consumer",
+			Kind: KindCustom, Source: G7, Target: "G7",
+			BackendPrefs: []Backend{BackendInProcess},
+			ParallelGroup: &consumerGroup, Barrier: &barrier,
+			Payload: map[string]any{"operation":"identity", "values":[]float64{1}},
+			Priority: 40, TTLMS: 5000,
+		},
+	})
+	if results[0].OK {
+		t.Fatal("producer must fail")
+	}
+	if results[1].OK {
+		t.Fatal("consumer must not execute after failed barrier producer")
+	}
+	if results[1].Error == nil || results[1].Error.Code != "BARRIER_DEPENDENCY_FAILED" {
+		t.Fatalf("expected BARRIER_DEPENDENCY_FAILED, got %#v", results[1].Error)
+	}
+}
+
+type failingBackend struct{}
+
+func (failingBackend) ConcurrentSafe() bool { return true }
+
+func (failingBackend) Execute(context.Context, supergpu.Device, string, []float64) ([]float64, error) {
+	return nil, errors.New("forced_backend_failure")
 }
