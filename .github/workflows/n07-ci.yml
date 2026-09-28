@@ -16,6 +16,7 @@ on:
       - '.github/workflows/n07-ci.yml'
       - 'RELEASE_GATES.md'
       - 'N07_SYSTEM_STATE.md'
+      - 'PHASE0_REPOSITORY_INVENTORY.md'
       - 'mesh/n01_n07_federation_e2e_test.go'
   pull_request:
     paths:
@@ -32,6 +33,7 @@ on:
       - '.github/workflows/n07-ci.yml'
       - 'RELEASE_GATES.md'
       - 'N07_SYSTEM_STATE.md'
+      - 'PHASE0_REPOSITORY_INVENTORY.md'
       - 'mesh/n01_n07_federation_e2e_test.go'
   workflow_dispatch:
 
@@ -45,7 +47,7 @@ concurrency:
 
 jobs:
   normalize-main:
-    if: ${{ github.event_name }} == 'push' && ${{ github.ref }} == 'refs/heads/main' && ${{ github.actor }} != 'github-actions[bot]'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && github.actor != 'github-actions[bot]'
     permissions:
       contents: write
     runs-on: ubuntu-latest
@@ -152,7 +154,7 @@ jobs:
 
   container:
     needs: verify
-    if: ${{ github.event_name }} != 'pull_request' || ${{ github.event.pull_request.head.repo.full_name }} == ${{ github.repository }}
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
