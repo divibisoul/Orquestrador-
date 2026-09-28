@@ -16,6 +16,7 @@ import (
 	"github.com/divibisoul/Orquestrador-/api"
 	"github.com/divibisoul/Orquestrador-/api/health"
 	"github.com/divibisoul/Orquestrador-/backend"
+	"github.com/divibisoul/Orquestrador-/cognitive"
 	"github.com/divibisoul/Orquestrador-/jev"
 	"github.com/divibisoul/Orquestrador-/mesh"
 	"github.com/divibisoul/Orquestrador-/neural"
@@ -98,6 +99,24 @@ func main() {
 	if err := octacore.RegisterOperations(e, octacoreProcessor); err != nil {
 		log.Fatal(err)
 	}
+
+	cognitiveCfg := cognitive.ConfigFromEnv()
+	cognitiveStore := backend.NewSupabaseStore(cfg)
+	cognitiveLoop, cognitiveErr := cognitive.Build(
+		cognitiveCfg,
+		c,
+		peerClient,
+		octacoreProcessor,
+		saraProxy,
+		cognitiveStore,
+	)
+	if cognitiveErr != nil {
+		log.Fatal(cognitiveErr)
+	}
+	if err := cognitive.RegisterOperations(e, cognitiveLoop); err != nil {
+		log.Fatal(err)
+	}
+	log.Printf("N07 cognitive loop enabled=%t", cognitiveLoop.Enabled())
 
 	unified := backend.NewUnified(e, cfg)
 	openAICompat := api.NewOpenAICompatHandler(peerClient)
