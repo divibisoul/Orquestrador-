@@ -255,6 +255,9 @@ func (s *Scheduler) execute(ctx context.Context, job Job) Result {
 	}
 
 	deadline := start.Add(time.Duration(job.TTLMS) * time.Millisecond)
+	if !deadline.After(time.Now()) {
+		return failed(job, "TTL_EXPIRED", errors.New("job ttl expired before admission"), 0, time.Since(start).Milliseconds())
+	}
 	if parent, ok := ctx.Deadline(); !ok || deadline.Before(parent) {
 		var cancel context.CancelFunc
 		ctx, cancel = context.WithDeadline(ctx, deadline)
