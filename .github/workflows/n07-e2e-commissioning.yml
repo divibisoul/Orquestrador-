@@ -36,13 +36,13 @@ jobs:
         run: go test -race ./...
       - name: Go build
         run: go build ./...
-      - name: N01 to N07 federation E2E
-        run: go test ./mesh -run '^TestN01ToN07FederatesAcrossN04N05N06$' -count=1 -v
+      - name: Default Mesh test suite (integration excluded)
+        run: go test ./mesh -count=1 -v
       - name: Pull published image
         run: docker pull ghcr.io/divibisoul/soul-n07-orquestrador:latest
       - name: Start published image as staging runtime
         env:
-          N07_APP_TOKEN: commissioning-local-token
+          N07_APP_TOKEN: ${{ secrets.N07_APP_TOKEN }}
         run: |
           set -euo pipefail
           docker run -d --rm --name n07-commissioning \
@@ -80,19 +80,36 @@ jobs:
     steps:
       - name: Pull published image
         run: docker pull ghcr.io/divibisoul/soul-n07-orquestrador:latest
-      - name: Check required staging secrets
+      - name: Check required staging and Mesh secrets
         env:
           N07_APP_TOKEN: ${{ secrets.N07_APP_TOKEN }}
           WEB3_STORAGE_TOKEN: ${{ secrets.WEB3_STORAGE_TOKEN }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          SOUL_MESH_N04_URL: ${{ secrets.SOUL_MESH_N04_URL }}
+          SOUL_MESH_N05_URL: ${{ secrets.SOUL_MESH_N05_URL }}
+          SOUL_MESH_N06_URL: ${{ secrets.SOUL_MESH_N06_URL }}
+          SOUL_MESH_HMAC_SECRET: ${{ secrets.SOUL_MESH_HMAC_SECRET }}
         run: |
           set -euo pipefail
-          test -n "$N07_APP_TOKEN" || { echo 'missing secret: N07_APP_TOKEN'; exit 1; }
-          test -n "$WEB3_STORAGE_TOKEN" || { echo 'missing secret: WEB3_STORAGE_TOKEN'; exit 1; }
-          test -n "$SUPABASE_URL" || { echo 'missing secret: SUPABASE_URL'; exit 1; }
-          test -n "$SUPABASE_SERVICE_ROLE_KEY" || { echo 'missing secret: SUPABASE_SERVICE_ROLE_KEY'; exit 1; }
-          echo 'required staging secrets: present'
+          missing=0
+          for name in N07_APP_TOKEN WEB3_STORAGE_TOKEN SUPABASE_URL SUPABASE_SERVICE_ROLE_KEY SOUL_MESH_N04_URL SOUL_MESH_N05_URL SOUL_MESH_N06_URL SOUL_MESH_HMAC_SECRET; do
+            if [ -z "${!name}" ]; then
+              echo "missing secret: $name"
+              missing=1
+            fi
+          done
+          test "$missing" -eq 0
+          echo 'required staging and Mesh secrets: present'
+      - name: Real N07 to N04 N05 N06 native federation evidence
+        env:
+          SOUL_MESH_N04_URL: ${{ secrets.SOUL_MESH_N04_URL }}
+          SOUL_MESH_N05_URL: ${{ secrets.SOUL_MESH_N05_URL }}
+          SOUL_MESH_N06_URL: ${{ secrets.SOUL_MESH_N06_URL }}
+          SOUL_MESH_HMAC_SECRET: ${{ secrets.SOUL_MESH_HMAC_SECRET }}
+        run: |
+          set -euo pipefail
+          go test -tags=integration ./mesh -run '^TestN07FederatesToRealN04N05N06NativeCapabilities$' -count=1 -v
       - name: Start credentialed staging runtime
         env:
           N07_APP_TOKEN: ${{ secrets.N07_APP_TOKEN }}
