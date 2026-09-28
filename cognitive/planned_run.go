@@ -31,7 +31,7 @@ func (l *Loop) RunPlanned(ctx context.Context,g Goal)([]Observation,error){
   relevance:=1.0
   if !obs.OK{relevance=0.25;anyFailure=true}
   if err:=l.memory.Put(obs.StepID,map[string]any{"output":obs.Output,"observation":obs},relevance);err!=nil{return out,fmt.Errorf("WORKING_MEMORY_PERSISTENCE_FAILED:%w",err)}
-  if err:=l.persist(ctx,obs);err!=nil{return out,err}
+  l.persist(ctx,obs)
  }
  if anyFailure{return out,errors.New("COGNITIVE_STEP_FAILED")}
 
