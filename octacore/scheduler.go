@@ -305,9 +305,17 @@ func (s *Scheduler) executePlan(ctx context.Context, jobs []Job) []Result {
 		pending[i] = job
 	}
 
+	blockedBarriers := make(map[string]string)
 	for len(pending) > 0 {
 		ready := make([]int, 0, len(pending))
 		for i, job := range pending {
+			if barrier := barrierName(job); barrier != "" {
+				if reason, blocked := blockedBarriers[barrier]; blocked {
+					results[i] = failed(job, "BARRIER_DEPENDENCY_FAILED", errors.New(reason), 0, 0)
+					delete(pending, i)
+					continue
+				}
+			}
 			if barrierReady(i, job, pending) {
 				ready = append(ready, i)
 			}
@@ -338,6 +346,20 @@ func (s *Scheduler) executePlan(ctx context.Context, jobs []Job) []Result {
 
 		for _, index := range ready {
 			delete(pending, index)
+		}
+
+		for _, index := range ready {
+			name := barrierName(jobs[index])
+			if name == "" || results[index].OK {
+				continue
+			}
+			if _, exists := blockedBarriers[name]; !exists {
+				reason := "barrier producer failed"
+				if results[index].Error != nil {
+					reason = results[index].Error.Code + ":" + results[index].Error.Message
+				}
+				blockedBarriers[name] = reason
+			}
 		}
 
 		barrierSignals := barriersForReady(jobs, results, ready)
@@ -715,4 +737,12 @@ func makeVagus(typ, source, target string, priority int, ttl int64, correlation 
 		Type:          typ,
 		Payload:       payload,
 	}
+}
+
+
+func barrierName(job Job) string {
+	if job.Barrier == nil {
+		return ""
+	}
+	return strings.TrimSpace(*job.Barrier)
 }
