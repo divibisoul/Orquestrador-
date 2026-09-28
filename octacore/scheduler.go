@@ -304,20 +304,88 @@ func (s *Scheduler) executePlan(ctx context.Context, jobs []Job) []Result {
 	for i, job := range jobs {
 		pending[i] = job
 	}
+	producerIndices := make(map[string][]int)
+	for i, job := range jobs {
+		if job.ParallelGroup == nil {
+			continue
+		}
+		group := strings.TrimSpace(*job.ParallelGroup)
+		if group != "" {
+			producerIndices[group] = append(producerIndices[group], i)
+		}
+	}
+	barrierState := make(map[string]string) // pending|ok|failed
+	barrierEmitted := make(map[string]bool)
 
 	for len(pending) > 0 {
 		ready := make([]int, 0, len(pending))
+		blocked := false
+
 		for i, job := range pending {
-			if barrierReady(i, job, pending) {
+			barrier := ""
+			if job.Barrier != nil {
+				barrier = strings.TrimSpace(*job.Barrier)
+			}
+			if barrier == "" {
 				ready = append(ready, i)
+				continue
+			}
+
+			producerSet, exists := producerIndices[barrier]
+			if !exists || len(producerSet) == 0 {
+				results[i] = failed(job, "BARRIER_DEPENDENCY_NOT_FOUND", errors.New("no producer parallel_group exists for barrier: "+barrier), 0, 0)
+				delete(pending, i)
+				barrierState[barrier] = "failed"
+				blocked = true
+				continue
+			}
+
+			if state := barrierState[barrier]; state == "failed" {
+				results[i] = failed(job, "BARRIER_DEPENDENCY_FAILED", errors.New("barrier producer failed: "+barrier), 0, 0)
+				delete(pending, i)
+				blocked = true
+				continue
+			}
+
+			producersPending := false
+			producerFailed := false
+			for _, producerIndex := range producerSet {
+				if _, stillPending := pending[producerIndex]; stillPending {
+					producersPending = true
+					continue
+				}
+				if !results[producerIndex].OK {
+					producerFailed = true
+				}
+			}
+			if producerFailed {
+				barrierState[barrier] = "failed"
+				results[i] = failed(job, "BARRIER_DEPENDENCY_FAILED", errors.New("barrier producer failed: "+barrier), 0, 0)
+				delete(pending, i)
+				blocked = true
+				continue
+			}
+			if producersPending {
+				continue
+			}
+			barrierState[barrier] = "ok"
+			ready = append(ready, i)
+		}
+
+		if blocked {
+			s.emitBarrierStates(ctx, jobs, producerIndices, results, pending, barrierState, barrierEmitted)
+			if len(ready) == 0 {
+				continue
 			}
 		}
 		if len(ready) == 0 {
 			for i, job := range pending {
 				results[i] = failed(job, "BARRIER_DEADLOCK", errors.New("no executable frontier remains"), 0, 0)
+				delete(pending, i)
 			}
 			break
 		}
+
 		sort.SliceStable(ready, func(i, j int) bool {
 			if jobs[ready[i]].Priority != jobs[ready[j]].Priority {
 				return jobs[ready[i]].Priority > jobs[ready[j]].Priority
@@ -340,12 +408,74 @@ func (s *Scheduler) executePlan(ctx context.Context, jobs []Job) []Result {
 			delete(pending, index)
 		}
 
-		barrierSignals := barriersForReady(jobs, results, ready)
-		for _, signal := range barrierSignals {
-			s.publish(ctx, signal)
-		}
+		s.emitBarrierStates(ctx, jobs, producerIndices, results, pending, barrierState, barrierEmitted)
 	}
 	return results
+}
+
+func (s *Scheduler) emitBarrierStates(
+	ctx context.Context,
+	jobs []Job,
+	producerIndices map[string][]int,
+	results []Result,
+	pending map[int]Job,
+	barrierState map[string]string,
+	barrierEmitted map[string]bool,
+) {
+	for barrier, producerSet := range producerIndices {
+		if barrierEmitted[barrier] {
+			continue
+		}
+		allCompleted := true
+		ok := true
+		producerIDs := make([]string, 0, len(producerSet))
+		errorsList := make([]string, 0)
+		var correlation string
+		for _, index := range producerSet {
+			if _, stillPending := pending[index]; stillPending {
+				allCompleted = false
+				break
+			}
+			producerIDs = append(producerIDs, jobs[index].JobID)
+			if correlation == "" {
+				correlation = jobs[index].CorrelationID
+			}
+			if !results[index].OK {
+				ok = false
+				if results[index].Error != nil {
+					errorsList = append(errorsList, results[index].Error.Code+":"+results[index].Error.Message)
+				}
+			}
+		}
+		if !allCompleted {
+			continue
+		}
+		if correlation == "" {
+			correlation = NewJobID()
+		}
+		if !ok {
+			barrierState[barrier] = "failed"
+		} else {
+			barrierState[barrier] = "ok"
+		}
+		s.publish(ctx, makeVagus(
+			"gpu.barrier",
+			"G7",
+			"scheduler",
+			100,
+			1,
+			correlation,
+			map[string]any{
+				"barrier":            barrier,
+				"joined":             ok,
+				"producer_job_ids":   producerIDs,
+				"producer_errors":    errorsList,
+				"producer_count":     len(producerIDs),
+				"dependency_state":   barrierState[barrier],
+			},
+		))
+		barrierEmitted[barrier] = true
+	}
 }
 
 func barrierReady(index int, job Job, pending map[int]Job) bool {
