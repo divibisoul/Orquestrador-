@@ -47,6 +47,23 @@ The current integration test is an N07-originated transaction. It does not prove
 
 N07↔SARA handoff remains **NOT OPEN**. N07 already contains SARA proxy/capability paths in its broader runtime surface, but a live transaction is not claimed without commissioning evidence.
 
+### SARA capability handoff status
+
+Source evidence confirms that N07 has native SARA proxy/capability paths, but this is **source-level availability, not live federation evidence**.
+
+| Capability | Source status | Live N07↔SARA transaction |
+|---|---|---|
+| sara.cycle@1.0.0 | REGISTERED WHEN SARA CONFIGURED | NOT OPEN |
+| sara.audit@1.0.0 | REGISTERED WHEN SARA CONFIGURED | NOT OPEN |
+| sara.regenerate@1.0.0 | REGISTERED WHEN SARA CONFIGURED | NOT OPEN |
+| sara.state@1.0.0 | REGISTERED WHEN SARA CONFIGURED | NOT OPEN |
+| sara.capabilities@1.0.0 | REGISTERED WHEN SARA CONFIGURED | NOT OPEN |
+| sara.trace@1.0.0 | REFERENCED BY N07 SARA/backend surface | NOT OPEN |
+
+Required configuration for live SARA handoff is SARA_SERVICE_URL plus SARA_SERVICE_TOKEN. These values are not invented or embedded in this branch.
+
+The SARA path must continue through the canonical Mesh/PeerClient authority where applicable; no second public Mesh or replacement SARA core is permitted.
+
 ## Internal-subsystem preservation
 
 The matrix measures federation edges; it does not replace the inventories inside each nucleus.
