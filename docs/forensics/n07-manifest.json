@@ -81,9 +81,11 @@
     {
       "id": "capability-registry",
       "terms": [
+        "capability",
         "CapabilityRegistry",
         "canonicalFusionRegistry",
-        "capability"
+        "fusion.NewRegistry",
+        "Registry"
       ],
       "paths": [
         "cmd",
