@@ -86,9 +86,9 @@ The log must not contain secret values.
 
 | Gate | Current state |
 |---|---|
-| N04 real native E2E | BLOCKED / NOT MEASURED until the new self-provisioned real federation job completes successfully |
-| N05 real native E2E | BLOCKED / NOT MEASURED until the new self-provisioned real federation job completes successfully |
-| N06 real native E2E | BLOCKED / NOT MEASURED until the new self-provisioned real federation job completes successfully |
+| N04 real native E2E | NOT MEASURED until the new self-provisioned real federation job completes successfully |
+| N05 real native E2E | NOT MEASURED until the new self-provisioned real federation job completes successfully |
+| N06 real native E2E | NOT MEASURED until the new self-provisioned real federation job completes successfully |
 | N01 health/discovery | Source endpoint exists; live cross-runtime result is NOT MEASURED |
 | N02 | Mesh health endpoint exists; live cross-runtime result is NOT MEASURED |
 | N03 | Mesh API and native capabilities exist; live cross-runtime result is NOT MEASURED |
