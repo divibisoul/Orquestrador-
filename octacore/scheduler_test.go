@@ -211,7 +211,7 @@ func newCPUScheduler(t *testing.T) *Scheduler {
 }
 
 func TestOctacoreBarrierFailsClosedWhenProducerFails(t *testing.T) {
-    s := newTestScheduler(t)
+    s := newCPUScheduler(t)
     producerGroup := "pre"
     barrier := "pre"
     consumerGroup := "post"
