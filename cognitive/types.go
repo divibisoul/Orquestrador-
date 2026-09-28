@@ -34,6 +34,7 @@ type Step struct {
  ID string `json:"step_id"`
  GoalID string `json:"goal_id"`
  Capability string `json:"capability"`
+ Target string `json:"target,omitempty"`
  Payload map[string]any `json:"payload"`
  ParallelGroup string `json:"parallel_group,omitempty"`
  CorrelationID string `json:"correlation_id"`
