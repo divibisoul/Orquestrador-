@@ -35,3 +35,13 @@ This is the N07 release checklist. A gate is PASS only when its evidence is repr
 **PHASE 1 PARTIAL — NOT FULLY ONLINE.**
 
 The repository family already contains real Mesh protocol handling, authentication, discovery, routing, retry/circuit logic and local runtime validation. The current work removes a synthetic federation proof from the N07 test path and replaces it with a real, opt-in integration gate. External peer URLs/secrets and the unresolved N03 dependency-review failure remain explicit blockers.
+
+## Conservation / evolution gate
+
+1. A phase change must preserve the native internal systems of every affected nucleus.
+2. New Mesh or cognitive functionality must use the canonical Mesh/PeerClient path rather than a second communication bus.
+3. A native module, agent, tool or capability is never removed merely to make a gate pass.
+4. Any exceptional retirement requires evidence of the old behavior, an explicit replacement, compatibility analysis and regression coverage.
+5. The 72-node architectural inventory is protected scope; node-level PASS is forbidden without source-backed enumeration.
+6. Clareira and other internal subsystems are part of the system surface even when the current Phase-1 E2E gate probes only a small native capability.
+
