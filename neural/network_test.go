@@ -57,3 +57,35 @@ func TestNetworkRejectsNonFiniteAndMalformedAttention(t *testing.T) {
 		t.Fatal("mismatched attention vectors accepted")
 	}
 }
+
+func TestNetworkExposesCanonicalParameters(t *testing.T) {
+	n, err := New(3, .1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	params := n.Parameters()
+	if params.Size != 3 || params.LearningRate != .1 {
+		t.Fatalf("unexpected core parameters: %+v", params)
+	}
+	if params.Optimizer != "adam" || params.Regularization != 1e-6 || params.GradientClip != 1.0 || params.Heads != 1 || params.BatchCache != 128 {
+		t.Fatalf("unexpected optimizer parameters: %+v", params)
+	}
+	if len(params.Layers) != 1 || params.Layers[0].Activation != "tanh" {
+		t.Fatalf("unexpected layer parameters: %+v", params.Layers)
+	}
+	health := n.Health()
+	if health["learning_rate"] != .1 || health["regularization"] != 1e-6 || health["gradient_clip"] != 1.0 || health["batch_cache"] != 128 {
+		t.Fatalf("health does not expose current parameters: %#v", health)
+	}
+}
+
+func TestNetworkUsesCanonicalDefaultConfiguration(t *testing.T) {
+	n, err := NewDefault()
+	if err != nil {
+		t.Fatal(err)
+	}
+	params := n.Parameters()
+	if params.Size != DefaultNetworkSize || params.LearningRate != DefaultNetworkLearningRate {
+		t.Fatalf("unexpected default parameters: %+v", params)
+	}
+}
