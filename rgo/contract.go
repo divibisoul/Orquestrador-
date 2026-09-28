@@ -106,7 +106,7 @@ type Envelope struct {
 		State CapabilityState `json:"state,omitempty"`
 	} `json:"capability"`
 	Evidence []EvidenceRef `json:"evidence"`
-	Extensions map[string]any ` + "`json:"extensions,omitempty"`" + `
+	Extensions map[string]any `json:"extensions,omitempty"`
 	Provenance struct {
 		Origin string `json:"origin"`
 		ParentIDs []string `json:"parent_ids,omitempty"`
