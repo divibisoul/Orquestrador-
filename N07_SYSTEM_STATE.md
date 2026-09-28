@@ -1,7 +1,7 @@
 # N07 system state
 
 ## Current phase
-PHASE 1 — MESH ONLINE MINIMUM (PARTIAL)
+PHASE 1 — MESH ONLINE MINIMUM (PARTIAL) + DOWNSTREAM IMPLEMENTATION UNFROZEN
 
 ## Ownership
 N07 owns orchestration, neural federation, routing, capability composition and the SuperGPU control plane. N01–N06 remain independent runtimes. SARA remains the independent Python regenerative authority.
@@ -36,19 +36,19 @@ That test is now integration-only (`//go:build integration`) and no longer start
 | Real N01 native execution through N07 | NOT MEASURED | No N01 live URL is present in N07 environment configuration; no endpoint is inferred. |
 
 ## Phase 2
-NOT STARTED. Circuit breaker/retry/timeout code exists and has unit/runtime coverage, but the seven-core real smoke gate is not opened until Phase 1 external execution evidence exists.
+UNFROZEN FOR IMPLEMENTATION. The seven-core real smoke gate remains NOT OPEN until Phase 1 external execution evidence exists.
 
 ## Phase 3
-NOT STARTED. Shared context and N07↔SARA handoff remain bounded by their existing contracts. No claim of cross-runtime operational handoff is made without live evidence.
+UNFROZEN FOR IMPLEMENTATION. Memory/handoff engineering may continue against existing contracts; production handoff remains NOT OPEN without live evidence.
 
 ## Phase 4
-NOT STARTED. No planner/DAG feature is activated before the Phase 1 real Mesh gate closes.
+UNFROZEN FOR IMPLEMENTATION. The cognitive Goal→Plan→Act layer may be completed and tested, but production activation remains gated by the real Mesh evidence.
 
 ## Phase 5
-NOT STARTED. Failure→Finding→correction→test remains the governing workflow. Historical failures may be converted into permanent tests/capabilities only after their concrete failure evidence is preserved.
+UNFROZEN FOR IMPLEMENTATION. Failure→Finding→correction→test work may proceed under SARA/RGO authority; historical failures require preserved evidence before becoming regression gates.
 
 ## Phase 6
-NOT STARTED. No Super AGI gate is marked operational.
+UNFROZEN FOR FOUNDATION WORK. Super AGI capability gaps may be implemented and integrated additively, but no Super AGI gate is marked operational until all prerequisite evidence exists.
 
 ## Release rule
 SOUL is **NOT ONLINE as a fully commissioned external federation** until the real integration gate has executed successfully against configured live peers. Missing URLs/secrets are reported as BLOCKED, never simulated as green.
@@ -69,3 +69,14 @@ Every later phase must carry forward the preserved internal substrate of each pa
 The system-design inventory also contains 72 nódulos as protected scope. This document does not invent a node-by-node runtime status where source evidence is absent.
 
 See SOUL_EVOLUTION_PRESERVATION.md for the change classification: PRESERVE / ADAPT / EXTEND / RETIRE-WITH-REPLACEMENT.
+
+
+## Exact current Phase-1 CI evidence
+
+PR #41 head `f759cf58e3e77b46151aac654467f26367fbdfce` completed workflow run #914 (run id `36422726496`) with:
+- integrity: SUCCESS
+- verify: SUCCESS
+- container: SUCCESS
+- normalize-main: SKIPPED
+
+This closes the current N07 source/CI verification layer. It does not constitute live peer commissioning.
