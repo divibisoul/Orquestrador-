@@ -191,3 +191,44 @@ func TestOctacoreWebGPUIsExplicitlyUnavailable(t *testing.T) {
 		t.Fatalf("unexpected WebGPU error: %#v", result.Error)
 	}
 }
+
+
+func newCPUScheduler(t *testing.T) *Scheduler {
+    t.Helper()
+    runtime := supergpu.New(supergpu.CPUBackend{})
+    runtime.Discover()
+    peers, err := mesh.NewPeerClient(nil)
+    if err != nil {
+        t.Fatal(err)
+    }
+    return newScheduler(Config{
+        MaxInflight:          8,
+        TokenCapacity:        8,
+        TokenRefillPerSecond: 1000,
+        FailureThreshold:     2,
+        CircuitCooldown:      100 * time.Millisecond,
+    }, runtime, peers, nil)
+}
+
+func TestOctacoreBarrierFailsClosedWhenProducerFails(t *testing.T) {
+    s := newCPUScheduler(t)
+    producerGroup := "pre"
+    barrier := "pre"
+    consumerGroup := "post"
+
+    producer := job("failed-producer", G7, G7, &producerGroup, nil)
+    producer.Payload["operation"] = "operation-that-does-not-exist"
+
+    consumer := job("consumer-after-failure", G7, G7, &consumerGroup, &barrier)
+    results := s.executePlan(context.Background(), []Job{producer, consumer})
+
+    if results[0].OK {
+        t.Fatal("producer must fail")
+    }
+    if results[1].OK {
+        t.Fatal("barrier consumer must not execute after producer failure")
+    }
+    if results[1].Error == nil || results[1].Error.Code != "BARRIER_DEPENDENCY_FAILED" {
+        t.Fatalf("expected BARRIER_DEPENDENCY_FAILED, got %#v", results[1].Error)
+    }
+}
