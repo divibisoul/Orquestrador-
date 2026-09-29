@@ -2,6 +2,7 @@ package aeternum
 
 import (
 	"context"
+	"strings"
 	"testing"
 
 	"github.com/divibisoul/Orquestrador-/neural"
@@ -64,5 +65,28 @@ func TestHortaCoreUsesOnlyRegisteredNativeOperation(t *testing.T) {
 	}
 	if result["status"] != string(StatusNative) {
 		t.Fatalf("unexpected module status: %#v", result["status"])
+	}
+}
+
+func TestN02AdapterMappingsAreExplicitAndFailClosed(t *testing.T) {
+	h := newHortaCoreForTest(t)
+
+	cases := map[string]string{
+		"bnc_v2": "neural.bnc_v2",
+		"csae":   "cognitive.csae",
+		"dcrs":   "resource.dcrs",
+	}
+	for moduleID, want := range cases {
+		got, ok := h.AdapterCapability(moduleID)
+		if !ok {
+			t.Fatalf("%s should expose an explicit adapter capability", moduleID)
+		}
+		if got != want {
+			t.Fatalf("%s maps to %q, want %q", moduleID, got, want)
+		}
+		_, err := h.Execute(context.Background(), moduleID, []float64{1, 2, 3, 4}, map[string]string{"input": "continuity-check"})
+		if err == nil || !strings.HasPrefix(err.Error(), "AETERNUM_PEER_REQUIRED:N02:") {
+			t.Fatalf("%s should fail closed without a configured Mesh peer, got %v", moduleID, err)
+		}
 	}
 }
