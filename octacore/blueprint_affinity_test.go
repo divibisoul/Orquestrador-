@@ -12,6 +12,18 @@ func TestBlueprintAffinityExposedThroughProcessor(t *testing.T) {
 		t.Fatalf("expected N1_PERCEPTION primary, got %#v", matches)
 	}
 
+	executable, err := processor.ResolveExecutableBlueprint("ethics governance memory trace", 8)
+	if err != nil {
+		t.Fatalf("ResolveExecutableBlueprint failed: %v", err)
+	}
+	for _, match := range executable {
+		for _, affinity := range match.Affinities {
+			if affinity.Status == "PARTIAL_EXTERNAL_CONDITIONAL" {
+				t.Fatalf("non-executable affinity leaked into executable result: %#v", affinity)
+			}
+		}
+	}
+
 	plan, err := processor.ComposeBlueprint("ethics governance memory trace", 4)
 	if err != nil {
 		t.Fatalf("ComposeBlueprint failed: %v", err)
