@@ -126,3 +126,32 @@ Próxima correção: comparar cada capability publicada com seu proprietário ef
 | SARA | Chimera + OctaCore/Vagus/Mesh recovery | `50c9d0f12a42f518994eba8ee99ea1c40035b38a` | MERGED |
 
 **Important:** this table records repository state, not online runtime availability. E2E commissioning remains a separate proof layer.
+
+## Runtime reintegration metrics — updated 2026-09-29
+
+Estas métricas são gates reproduzíveis definidos nesta frente, não percentuais históricos previamente armazenados.
+
+| Componente | Baseline desta frente | Antes da prova executável | Depois da prova |
+|---|---:|---:|---:|
+| Composição N03→N05→N04 | 9/15 = 60% | 15/15 = 100% estrutural | 15/15 = 100% estrutural; E2E externo ainda separado |
+| N01 NeuralManagementCore | 0/5 | 4/5 | 5/5 — gate CI PASS |
+| SARA Bayesian runtime | 0/5 | 4/5 | 5/5 — gate CI PASS |
+| Source refs N01–N07 + SARA | não protegido | 6/8 consistentes; N01 apontava para um main anterior e SARA ainda não estava rastreado no manifesto | 8/8 — gate CI PASS |
+
+### N01 NeuralManagementCore — evidência
+
+PR #61 foi incorporado ao N01 main após o gate específico passar.
+O gate encontrou e corrigiu dois defeitos reais antes da aprovação:
+1. resolução do nervoVago legado em GenesisModule;
+2. expectativa incorreta de largura 4; a implementação real da RecursiveNeuralLattice possui 3 nós de saída, e o teste foi alinhado ao runtime observado.
+
+O resultado não cria um segundo EventBus, não substitui a lattice e não usa telemetria sintética.
+
+### SARA Bayesian runtime — evidência
+
+PR #25 foi incorporado ao SARA main após o gate específico passar.
+Os parâmetros prior, evidence_weight e confidence_threshold agora são primeira classe no BayesianMetaLearner e aparecem na descrição/avaliação do runtime.
+
+### Regra de não regressão
+
+O novo scripts/verify-soul-mainline-refs.mjs consulta git ls-remote dos repositórios externos e falha quando qualquer sourceRef diverge do main atual. O SARA agora é explicitamente rastreado como transversal.SARA.
