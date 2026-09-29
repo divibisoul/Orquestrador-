@@ -77,6 +77,10 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	if err := rgo.RegisterTrinityOperation(e, saraProxy, peerClient); err != nil {
+		log.Fatal(err)
+	}
+
 	octacoreProcessor, err := octacore.NewProcessor(octacore.DefaultConfig(), g, peerClient, saraProxy)
 	if err != nil {
 		log.Fatal(err)
