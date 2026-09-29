@@ -18,7 +18,9 @@ func TestBlueprintAffinityExposedThroughProcessor(t *testing.T) {
 	}
 	for _, match := range executable {
 		for _, affinity := range match.Affinities {
-			if affinity.Status == "PARTIAL_EXTERNAL_CONDITIONAL" {
+			switch affinity.Status {
+			case "IMPLEMENTED", "LOCAL_EXECUTABLE", "EXECUTABLE", "BUILTIN_RUNTIME", "REAL":
+			default:
 				t.Fatalf("non-executable affinity leaked into executable result: %#v", affinity)
 			}
 		}
