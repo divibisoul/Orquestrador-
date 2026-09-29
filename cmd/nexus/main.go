@@ -22,6 +22,7 @@ import (
 	"github.com/divibisoul/Orquestrador-/octacore"
 	"github.com/divibisoul/Orquestrador-/orchestrator"
 	"github.com/divibisoul/Orquestrador-/prefrontal"
+	"github.com/divibisoul/Orquestrador-/rgo"
 	"github.com/divibisoul/Orquestrador-/supergpu"
 )
 
@@ -67,6 +68,9 @@ func main() {
 		if err := backend.RegisterSARAOperations(e, saraProxy); err != nil {
 			log.Fatal(err)
 		}
+	}
+	if err := rgo.RegisterOperation(e, saraProxy); err != nil {
+		log.Fatal(err)
 	}
 
 	peerClient, err := mesh.NewPeerClient(nil)
