@@ -109,7 +109,7 @@ func ResolveExecutable(query string, limit int) ([]Match, error) {
 		executable := matches[i].Affinities[:0]
 		for _, affinity := range matches[i].Affinities {
 			switch strings.ToUpper(strings.TrimSpace(affinity.Status)) {
-			case "IMPLEMENTED", "LOCAL_EXECUTABLE", "EXECUTABLE", "BUILTIN_RUNTIME", "REAL", "CONNECTED", "CANONICAL_OWNER", "REGISTERED", "DECLARED_EXECUTABLE_BOUNDARY":
+			case "IMPLEMENTED", "LOCAL_EXECUTABLE", "EXECUTABLE", "BUILTIN_RUNTIME", "REAL":
 				executable = append(executable, affinity)
 			}
 		}
