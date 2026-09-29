@@ -37,3 +37,14 @@ Infrastructure failures such as runner provisioning failures, missing workflow l
 
 ## Non-destructive convergence
 Before integrating any branch or PR, compare its base, head, changed files, ancestry, tests, CI evidence, and responsibilities against the current canonical `main`. Complementary work is merged; duplicate authority is consolidated; unsafe or unverified work remains outside the canonical line until corrected.
+
+## 16. Conservation and uniform evolution
+
+Each nucleus must retain ownership and operational continuity of its native modules, agents, tools, capabilities, data paths and interfaces while federation phases advance.
+
+"Uniform evolution" means no functional layer is left behind; it does not mean identical implementation or identical performance. Integration changes are PRESERVE, ADAPT or EXTEND by default. RETIRE-WITH-REPLACEMENT requires evidence, compatibility analysis and regression coverage.
+
+The communication substrate must remain singular and canonical. Cognitive, orchestration or governance layers must consume the existing Mesh rather than create a parallel hidden channel.
+
+The broader architecture's 72 nódulos are protected scope. Their exact per-node state must be established from source evidence before being marked measured. Projeto Clareira is explicitly protected as an active N01 subsystem, including its native processing graph, channels, homeostasis and EventBus/bridge integration.
+

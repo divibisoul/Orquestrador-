@@ -14,6 +14,13 @@ on:
       - 'scripts/soul-live-source-audit.mjs'
       - 'scripts/generate-crossfront-state.mjs'
       - '.github/workflows/n07-ci.yml'
+      - '.github/workflows/n07-e2e-commissioning.yml'
+      - 'RELEASE_GATES.md'
+      - 'N07_SYSTEM_STATE.md'
+      - 'PHASE0_REPOSITORY_INVENTORY.md'
+      - 'COMMUNICATION_MATRIX.md'
+      - 'SOUL_EVOLUTION_PRESERVATION.md'
+      - 'mesh/n01_n07_federation_e2e_test.go'
   pull_request:
     paths:
       - '**/*.go'
@@ -27,6 +34,13 @@ on:
       - 'scripts/soul-live-source-audit.mjs'
       - 'scripts/generate-crossfront-state.mjs'
       - '.github/workflows/n07-ci.yml'
+      - '.github/workflows/n07-e2e-commissioning.yml'
+      - 'RELEASE_GATES.md'
+      - 'N07_SYSTEM_STATE.md'
+      - 'PHASE0_REPOSITORY_INVENTORY.md'
+      - 'COMMUNICATION_MATRIX.md'
+      - 'SOUL_EVOLUTION_PRESERVATION.md'
+      - 'mesh/n01_n07_federation_e2e_test.go'
   workflow_dispatch:
 
 permissions:
@@ -93,6 +107,17 @@ jobs:
           test -s SOUL-LIVE-SOURCE-AUDIT.json
           test -s SOUL-CROSSFRONT-EVIDENCE.json
           test -s SOUL-SYSTEM-CROSSFRONT-STATE.md
+      - name: Verify preservation and communication contracts
+        run: |
+          set -euo pipefail
+          test -s SOUL_EVOLUTION_PRESERVATION.md
+          test -s COMMUNICATION_MATRIX.md
+          grep -q '72 nódulos' SOUL_EVOLUTION_PRESERVATION.md
+          grep -q 'Clareira' SOUL_EVOLUTION_PRESERVATION.md
+          grep -q 'N07.*N04' COMMUNICATION_MATRIX.md
+          grep -q 'N07.*N05' COMMUNICATION_MATRIX.md
+          grep -q 'N07.*N06' COMMUNICATION_MATRIX.md
+          grep -q 'NOT MEASURED' COMMUNICATION_MATRIX.md
       - name: Upload Integrity Reports
         uses: actions/upload-artifact@v4
         with:
@@ -123,7 +148,6 @@ jobs:
           set -euo pipefail
           gofmt -w $(git ls-files '*.go')
           git diff --check
-
       - name: Vet
         run: go vet ./...
       - name: Test
@@ -134,8 +158,16 @@ jobs:
         run: go build ./...
       - name: Backend regression
         run: go test ./backend -run 'Test(Web3Storage|Supabase|Server|Intent)' -count=1
-      - name: Federation E2E N01 to N07 via N04 N05 N06
-        run: go test ./mesh -run '^TestN01ToN07FederatesAcrossN04N05N06$' -count=1
+      - name: Mesh regression suite
+        run: go test ./mesh -count=1 -v
+      - name: Assert real federation test is integration-only and contains no peer server doubles
+        run: |
+          set -euo pipefail
+          grep -q '^//go:build integration$' mesh/n01_n07_federation_e2e_test.go
+          if grep -qE 'httptest\.NewServer|e2e\.n04|e2e\.n05|e2e\.n06' mesh/n01_n07_federation_e2e_test.go; then
+            echo 'synthetic federation peer evidence detected'
+            exit 1
+          fi
 
   container:
     needs: verify
