@@ -56,7 +56,7 @@
         "N02"
       ],
       "manifestAuthority": "SOUL-FUSION-MANIFEST.json",
-      "sourceRef": "15b40a206caf9fa2012e68d94f7d32ecc68bd65f",
+      "sourceRef": "99fb9d22ddea3439c8b5be396ccae9e11ae3f66e",
       "status": "main-live-recovery-and-hortacore-bridge-merged"
     },
     "N02": {
@@ -200,6 +200,19 @@
       "manifestAuthority": "soul-nuclei.json",
       "sourceRef": "release-identity:self",
       "status": "self-audited-current-main-composition-ledger-merged"
+    }
+  },
+  "transversal": {
+    "SARA": {
+      "repository": "divibisoul/SARA",
+      "role": "transversal-regeneration-audit-governance-memory-bayesian",
+      "entrypoints": [
+        "pyproject.toml",
+        "src/sara/__init__.py"
+      ],
+      "authority": "sara.meta / sara.core / sara.governance",
+      "sourceRef": "20d550029c5320bf559fe356af02ed7aa49cb4ad",
+      "status": "main-live-chimera-and-bayesian-runtime-merged"
     }
   }
 }
