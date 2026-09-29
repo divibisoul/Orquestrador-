@@ -78,6 +78,8 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	horta.SetPeerClient(peerClient)
+
 	octacoreProcessor, err := octacore.NewProcessor(octacore.DefaultConfig(), g, peerClient, saraProxy)
 	if err != nil {
 		log.Fatal(err)
