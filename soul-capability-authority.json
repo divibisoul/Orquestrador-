@@ -2,7 +2,7 @@
   "system": "SOUL",
   "schemaVersion": "1.0.0",
   "authorityModel": "exact-capability-id",
-  "generatedFrom": "GitHub mainline source inspection after N02 broad reintegration f411879ebd4f6104e795cd77bc11b1b0fabbfe54",
+  "generatedFrom": "GitHub mainline source inspection after N02 NeuralForge/ASC reintegration c2127f66539983780294b365ac026cea343491ac",
   "rules": {
     "oneCanonicalOwnerPerLeafCapability": true,
     "legacyAliasesPreserved": true,
@@ -32,7 +32,9 @@
       "resource.dcrs",
       "clareira.ingest",
       "clareira.metrics",
-      "octacore.execute"
+      "octacore.execute",
+      "neural_forge",
+      "asc"
     ],
     "N03": [
       "audio.transcribe",
@@ -252,6 +254,12 @@
         "ref": "main"
       },
       {
+        "id": "asc",
+        "repository": "divibisoul/Eternium-",
+        "path": "src/soul-mesh/SoulMeshCapabilities.ts",
+        "ref": "main"
+      },
+      {
         "id": "clareira.ingest",
         "repository": "divibisoul/Eternium-",
         "path": "src/soul-mesh/SoulMeshCapabilities.ts",
@@ -283,6 +291,12 @@
       },
       {
         "id": "mpvs",
+        "repository": "divibisoul/Eternium-",
+        "path": "src/soul-mesh/SoulMeshCapabilities.ts",
+        "ref": "main"
+      },
+      {
+        "id": "neural_forge",
         "repository": "divibisoul/Eternium-",
         "path": "src/soul-mesh/SoulMeshCapabilities.ts",
         "ref": "main"
