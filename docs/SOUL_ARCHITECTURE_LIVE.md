@@ -183,3 +183,66 @@ An optional LangGraph planner may sit outside that control path. It delegates to
 An optional NeMo Agent Toolkit environment is also external to N07's Go runtime. Official NVIDIA documentation describes nvidia-nat as framework-agnostic and provides a LangChain/LangGraph integration; the SOUL adapter uses only the stable 1.8.x package line and does not rewrite SARA. Official reference: https://docs.nvidia.com/nemo/agent-toolkit/latest/quick-start/installing.html
 
 No production-online claim is inferred from these OSS integration checks.
+
+
+## Primordial essence + composition continuity — 2026-09-29
+
+The system is now tracked on two distinct levels:
+
+1. **Primordial essence:** the native responsibility that exists before pairwise fusion. It remains owned by the original nucleus/runtime and is never replaced by the composition layer.
+2. **Composition:** the new executable workflow made possible when two or more native responsibilities exchange compatible capabilities, context, tools, agents and results.
+
+This separation prevents a recurring failure mode: a newer “super” layer can accidentally hide or abandon the native module that gave it the underlying capability.
+
+### Current mainline source state observed
+
+| Part | Exact mainline revision observed | Native essence | Current continuity state |
+|---|---|---|---|
+| N01 | `99fb9d22ddea3439c8b5be396ccae9e11ae3f66e` | core/gateway/runtime + intent/AGI | MERGED recovery + HortaCore continuity + NeuralManagementCore |
+| N02 | `f2fcbf9381c90a27d944794f1275b4bafa2f3516` | language/conversation/context | MERGED BNCv2 + CSAE + DCRS + VagusBus; further executor-evidence corrections present |
+| N03 | `9951485529c8480ff3bf4d7305538d152b6acdfe` | perception/audio/speech/multimodal | MERGED composition contract repair |
+| N04 | `ed4e2a75b772d1efaed2457c392f52bddaffbfa8` | tools/documents/artifacts/execution | MERGED tool.execute compatibility boundary |
+| N05 | `e0c8778bebaba4a4b821bc6923c2a51dcfc431ca` | inference/conversation/dispatch | MERGED executable capability catalog |
+| N06 | `bdcb099166701453b6cb62672fa6a642addbd9b0` | cognition/synthesis/planning/validation | MERGED composition-target repair |
+| N07 | `abf01b43611a582bf0205be49818c5925fccde0f` | orchestration/fusion/SuperGPU control | MAIN composition authority + current recovery/authority fronts |
+| SARA | `20d550029c5320bf559fe356af02ed7aa49cb4ad` | regeneration/audit/governance/memory/Bayesian | MERGED Chimera/Vagus/OctaCore recovery + Bayesian runtime |
+
+### What the connections reveal
+
+The first useful pattern is not “more modules = more AI”. It is **functional closure**: one nucleus produces something that the next nucleus can actually consume without taking ownership away from the producer.
+
+The strongest currently evidenced chain is:
+
+`N03 perception → N02 reasoning/context → N04 tool/artifact execution`
+
+N03 already contains the dual-fusion path that combines N02 cognition and N04 action. N02's restored BNCv2/CSAE/DCRS pipeline supplies an additional internal processing chain before provider-backed generation. N04 provides the execution boundary needed to turn a reasoning result into an artifact/tool operation.
+
+A second closure is:
+
+`N05 inference → N06 planning/validation → N04 execution`
+
+That is materially different from simply connecting three endpoints: inference produces an intermediate semantic result, N06 transforms it into a constrained plan and validation stage, and N04 owns the actual tool/document/artifact execution.
+
+A third closure is transversal:
+
+`N01 context/gateway → N07 routing/composition → N02..N06 native capability → SARA audit/regeneration/governance`
+
+Here SARA is not another copy of a nucleus. Its value comes from observing and governing the composed workflow while the specialized runtime continues to own execution.
+
+### Engineering invariant derived from this audit
+
+Every new optimization must leave a bridge in both directions:
+
+`ORIGIN → CONSUMER → RESULT → NEXT CONSUMER → EVIDENCE`
+
+The origin module remains addressable. The consumer is explicit. The produced result is retained with correlation/provenance. The next consumer is explicit. The evidence level is recorded independently from the architecture claim.
+
+This is the continuity mechanism designed to prevent future fronts from burying a repaired module when they optimize another layer.
+
+### Evidence boundary
+
+The composition entries above are **STRUCTURAL** unless a real cross-runtime execution trace promotes them to `EXECUTED`, `VERIFIED` or `FUSED`. CI can prove code/contract behavior; it does not prove that every remote service is simultaneously online.
+
+### Historical preservation rule
+
+Older architecture notes in this file remain historical records. This section is the current reconciliation layer and must be updated additively when mainline revisions change; historical evidence is not to be deleted merely because the implementation evolved.
