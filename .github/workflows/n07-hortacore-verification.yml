@@ -25,6 +25,6 @@ jobs:
           go-version: "1.24.x"
           cache: true
       - name: Verify HortaCore tests
-        run: go test ./aeternum -run 'TestCatalogIsCompleteAndNonDuplicated|TestHortaCoreDoesNotFabricateBlockedModuleExecution|TestHortaCoreUsesOnlyRegisteredNativeOperation' -count=1
+        run: go test ./aeternum -run 'TestCatalogIsCompleteAndNonDuplicated|TestHortaCoreDoesNotFabricateBlockedModuleExecution|TestHortaCoreUsesOnlyRegisteredNativeOperation|TestN02AdapterMappingsAreExplicitAndFailClosed' -count=1
       - name: Verify N07 build
         run: go build ./cmd/nexus
