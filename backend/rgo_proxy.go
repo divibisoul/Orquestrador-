@@ -2,6 +2,8 @@ package backend
 
 import (
 	"context"
+	"errors"
+	"net/http"
 
 	"github.com/divibisoul/Orquestrador-/rgo"
 )
