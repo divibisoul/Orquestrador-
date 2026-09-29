@@ -103,3 +103,11 @@ Esta correção não encerra a auditoria. Enquanto estes PRs são validados, a p
 - nenhum mock criado para representar execução real;
 - nenhum novo Mesh criado;
 - percentual calculado a partir de gates explícitos e reproduzíveis.
+
+## Pendência transversal preservada
+
+A cobertura de 100% acima é restrita aos **links de composição reparados nesta frente**. A auditoria global ainda encontrou manifests `SoulOwnership.yaml` históricos em múltiplos repositórios que divergem da autoridade consolidada em `N05OwnershipMatrix.ts`. Esses manifests não foram apagados nem sobrescritos nesta frente para não misturar migração de governança com correção de execução.
+
+Estado da pendência: **OPEN / GOVERNANCE-RECONCILIATION**.
+
+Próxima correção: comparar cada capability publicada com seu proprietário efetivamente executável e migrar os manifests legados de forma aditiva, preservando histórico e compatibilidade.
