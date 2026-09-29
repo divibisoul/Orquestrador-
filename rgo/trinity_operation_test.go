@@ -8,7 +8,6 @@ import (
 	"github.com/divibisoul/Orquestrador-/neural"
 	"github.com/divibisoul/Orquestrador-/orchestrator"
 	"github.com/divibisoul/Orquestrador-/prefrontal"
-	"github.com/divibisoul/Orquestrador-/protocol"
 	"github.com/divibisoul/Orquestrador-/supergpu"
 )
 
