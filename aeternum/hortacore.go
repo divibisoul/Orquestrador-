@@ -3,12 +3,15 @@ package aeternum
 import (
 	"context"
 	"errors"
+	"fmt"
 	"sort"
 	"strings"
 	"time"
 
 	"github.com/divibisoul/Orquestrador-/backend"
 	"github.com/divibisoul/Orquestrador-/orchestrator"
+	"github.com/divibisoul/Orquestrador-/mesh"
+	"github.com/divibisoul/Orquestrador-/protocol"
 )
 
 type Status string
@@ -41,6 +44,7 @@ type ModuleSpec struct {
 type HortaCore struct {
 	engine  *orchestrator.Engine
 	sara    *backend.SARAProxy
+	peers   *mesh.PeerClient
 	modules map[string]ModuleSpec
 }
 
@@ -66,6 +70,18 @@ func (h *HortaCore) Processors() []ProcessorSpec {
 		{ID: "audit", Function: "governance/validation/anomaly evidence", Authority: "SARA", Dependencies: []string{"GovernedSARA", "EthicalFilterChain", "CycleAuditor"}, Notes: "No keyword-only fake approval layer is introduced."},
 		{ID: "guide", Function: "capability discovery/architecture explanation", Authority: "N07 + SARA", Dependencies: []string{"Mesh discovery", "SARA capabilities"}, Notes: "Guidance exposes observed capability state, not fabricated liveness."},
 	}
+}
+
+func (h *HortaCore) SetPeerClient(peers *mesh.PeerClient) {
+	h.peers = peers
+}
+
+func (h *HortaCore) AdapterCapability(moduleID string) (string, bool) {
+	spec, ok := h.modules[strings.TrimSpace(moduleID)]
+	if !ok || spec.Status != StatusAdapter || strings.TrimSpace(spec.Operation) == "" {
+		return "", false
+	}
+	return spec.Operation, true
 }
 
 func (h *HortaCore) Capabilities() []ModuleSpec {
@@ -114,12 +130,51 @@ func (h *HortaCore) Execute(ctx context.Context, moduleID string, payload []floa
 		result, err := h.engine.Execute(ctx, spec.Operation, payload, metadata)
 		return map[string]any{"module": id, "status": string(spec.Status), "operation": spec.Operation, "result": result}, err
 	case StatusAdapter:
-		return nil, errors.New("AETERNUM_ADAPTER_REQUIRED:" + id)
+		return h.executeAdapter(ctx, spec, payload, metadata)
 	case StatusBlocked:
 		return nil, errors.New("AETERNUM_BLOCKED_INFRASTRUCTURE:" + id)
 	default:
 		return nil, errors.New("AETERNUM_UNMAPPED:" + id)
 	}
+}
+
+func (h *HortaCore) executeAdapter(ctx context.Context, spec ModuleSpec, payload []float64, metadata map[string]string) (map[string]any, error) {
+	if strings.TrimSpace(spec.Operation) == "" {
+		return nil, errors.New("AETERNUM_ADAPTER_REQUIRED:" + spec.ID)
+	}
+	if spec.Authority != "N02 native runtime" && spec.ID != "bnc_v2" && spec.ID != "csae" && spec.ID != "dcrs" {
+		return nil, errors.New("AETERNUM_ADAPTER_REQUIRED:" + spec.ID)
+	}
+	if h.peers == nil {
+		return nil, errors.New("AETERNUM_PEER_REQUIRED:N02:" + spec.ID)
+	}
+
+	correlation := strings.TrimSpace(metadata["correlationId"])
+	if correlation == "" {
+		correlation = protocol.NewTraceID()
+	}
+	input := strings.TrimSpace(metadata["input"])
+	if input == "" {
+		input = fmt.Sprintf("numeric-payload:%v", payload)
+	}
+	wirePayload := map[string]any{
+		"input": input,
+		"values": payload,
+		"module_id": spec.ID,
+		"source": "N07.AeternumHortaCore",
+	}
+	result, err := h.peers.CallWithCorrelation(ctx, "N02", spec.Operation, wirePayload, correlation)
+	if err != nil {
+		return nil, err
+	}
+	return map[string]any{
+		"module": spec.ID,
+		"status": "ADAPTER_EXECUTED",
+		"operation": spec.Operation,
+		"owner": "N02",
+		"correlationId": correlation,
+		"result": result["payload"],
+	}, nil
 }
 
 func moduleCatalog() []ModuleSpec {
@@ -138,15 +193,15 @@ func moduleCatalog() []ModuleSpec {
 		{ID: "biomolecular_designer", Group: "advanced", Function: "biomolecular design", Authority: "external scientific backend", Status: blocked, Notes: "Affinity and structure outputs require a real validated backend."},
 		{ID: "reality_synthesis", Group: "advanced", Function: "environment/physics synthesis", Authority: "external simulation/graphics backend", Status: blocked, Notes: "No fabricated physics engine is admitted."},
 		{ID: "strategic_planning", Group: "advanced", Function: "constraint-aware planning", Authority: "N07 Prefrontal + Orchestrator", Status: adapter, Notes: "Use prefrontal admission and orchestration contracts; no fixed optimality percentage."},
-		{ID: "csae", Group: "optimization", Function: "architecture optimization", Authority: "N07 fusion/orchestrator", Status: adapter, Notes: "Optimization must be backed by measured alternatives and execution evidence."},
-		{ID: "dcrs", Group: "optimization", Function: "resource allocation", Authority: "N07 SuperGPU/compute", Status: adapter, Notes: "Allocation is real only when a device lease is granted."},
+		{ID: "csae", Group: "optimization", Function: "architecture optimization", Authority: "N02 native runtime", Status: adapter, Operation: "cognitive.csae", Notes: "N07 delegates to the N02 CSAE owner through canonical Mesh; optimization remains evidence-backed."},
+		{ID: "dcrs", Group: "optimization", Function: "resource allocation", Authority: "N02 native runtime", Status: adapter, Operation: "resource.dcrs", Notes: "N07 delegates to the N02 DCRS owner through canonical Mesh; allocation evidence is returned by the owner."},
 		{ID: "adaptation_module", Group: "optimization", Function: "parameter adaptation", Authority: "N07 neural learning", Status: adapter, Notes: "Uses neural.learn when a concrete learning contract is supplied."},
 		{ID: "scre", Group: "optimization", Function: "code refactoring/generation", Authority: "code-capable peer or external provider", Status: adapter, Notes: "No placeholder source is accepted as refactoring."},
 		{ID: "ecas", Group: "optimization", Function: "component/architecture composition", Authority: "N07 mesh.fusion", Status: adapter, Notes: "Composition executes only through registered fusion components."},
 		{ID: "eus", Group: "cognitive", Function: "cross-domain knowledge synthesis", Authority: "SARA + N01..N07 capability graph", Status: adapter, Notes: "Knowledge must derive from real indexed evidence."},
 		{ID: "mlfg", Group: "cognitive", Function: "meta-learning framework generation", Authority: "N07 neural + external training runtime", Status: adapter, Notes: "No hardcoded framework name is treated as generated evidence."},
 		{ID: "emergent_cognition", Group: "cognitive", Function: "multi-capability synthesis", Authority: "N07 fusion", Status: adapter, Notes: "Confidence must derive from contributing component evidence."},
-		{ID: "bnc_v2", Group: "cognitive", Function: "plastic neural architecture", Authority: "N07 neural", Status: adapter, Notes: "Real metrics come from Neural.Health/LearningSteps, not fixed Hz."},
+		{ID: "bnc_v2", Group: "cognitive", Function: "plastic neural architecture", Authority: "N02 native runtime", Status: adapter, Operation: "neural.bnc_v2", Notes: "N07 delegates to the N02 BNCv2 owner through canonical Mesh; real neural metrics remain owner-side."},
 		{ID: "skill_acquisition", Group: "cognitive", Function: "skill learning", Authority: "N02/N07 learning runtime", Status: adapter, Notes: "Requires an explicit training/evaluation contract."},
 		{ID: "uci", Group: "infrastructure", Function: "protocol translation/interconnect", Authority: "N07 Mesh", Status: native, Operation: "supergpu.describe@1.0.0", Notes: "Exposes canonical Mesh health rather than synthetic throughput."},
 		{ID: "ethical_governance", Group: "governance", Function: "ethical/governance review", Authority: "SARA GovernedSARA", Status: adapter, Notes: "Delegates to real SARA governance; never hardcodes approval."},
