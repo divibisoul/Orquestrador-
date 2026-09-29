@@ -45,6 +45,8 @@ func RegisterTrinityOperation(e *orchestrator.Engine, source TrinitySource, hort
 			}, err
 		}
 
+		finalStatus, _ := out["final_status"].(string)
+		trinityValidated := finalStatus == "VALIDATED"
 		stages, _ := out["stages"].([]any)
 		hortaResults := make([]any, 0, len(stages))
 		hortaOK := horta != nil
@@ -72,15 +74,18 @@ func RegisterTrinityOperation(e *orchestrator.Engine, source TrinitySource, hort
 		}
 		out["hortacore_persisted"] = hortaOK
 		out["hortacore_results"] = hortaResults
-		if !hortaOK {
+		switch {
+		case !trinityValidated:
+			out["integration_status"] = "BLOCKED_TRINITY_NOT_VALIDATED"
+		case !hortaOK:
 			out["integration_status"] = "PARTIAL_BLOCKED_HORTA"
-		} else {
+		default:
 			out["integration_status"] = "VALIDATED_WITH_HORTA"
 		}
 
 		rawOut, _ := json.Marshal(out)
 		status := "ok"
-		if !hortaOK {
+		if !trinityValidated || !hortaOK {
 			status = "blocked"
 		}
 		return protocol.Result{
@@ -89,10 +94,13 @@ func RegisterTrinityOperation(e *orchestrator.Engine, source TrinitySource, hort
 			Status: status,
 			Metadata: map[string]string{"rgo_trinity_result_json": string(rawOut)},
 		}, func() error {
-			if hortaOK {
-				return nil
+			if !trinityValidated {
+				return errors.New("RGO_TRINITY_NOT_VALIDATED")
 			}
-			return errors.New("RGO_TRINITY_HORTACORE_BLOCKED")
+			if !hortaOK {
+				return errors.New("RGO_TRINITY_HORTACORE_BLOCKED")
+			}
+			return nil
 		}()
 	})
 }
