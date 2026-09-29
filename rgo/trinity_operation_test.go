@@ -13,7 +13,7 @@ import (
 
 type fakeTrinitySource struct{}
 func (fakeTrinitySource) RGOTrinity(_ context.Context, _ map[string]any, _ string) (map[string]any, error) {
-	return map[string]any{"stages":[]any{
+	return map[string]any{"final_status":"VALIDATED", "stages":[]any{
 		map[string]any{"stage":"RGO","cycle_id":"c1","finding_id":"f1","output_hash":"sha256:r","data":map[string]any{"ok":true}},
 	}}, nil
 }
@@ -47,5 +47,30 @@ func TestRegisterTrinityOperationPersistsEveryStageToHortaSink(t *testing.T) {
 	})
 	if err != nil || result.Status != "ok" || sink.calls != 1 {
 		t.Fatalf("unexpected result: %#v err=%v calls=%d", result, err, sink.calls)
+	}
+}
+
+
+type inconclusiveTrinitySource struct{}
+func (inconclusiveTrinitySource) RGOTrinity(_ context.Context, _ map[string]any, _ string) (map[string]any, error) {
+	return map[string]any{
+		"final_status": "INCONCLUSIVE",
+		"stages": []any{
+			map[string]any{"stage": "RGO", "cycle_id": "c2", "finding_id": "f2", "output_hash": "sha256:r2", "data": map[string]any{"ok": true}},
+		},
+	}, nil
+}
+
+func TestRegisterTrinityOperationBlocksUnvalidatedResult(t *testing.T) {
+	e := newTestEngine(t)
+	sink := &fakeHortaSink{}
+	if err := RegisterTrinityOperation(e, inconclusiveTrinitySource{}, sink); err != nil {
+		t.Fatal(err)
+	}
+	result, err := e.Execute(context.Background(), "rgo.trinity.process@1.0.0", []float64{0}, map[string]string{
+		"rgo_envelope_json": `{"schema_version":"1.0.0"}`,
+	})
+	if err == nil || result.Status != "blocked" {
+		t.Fatalf("expected blocked unvalidated result: %#v err=%v", result, err)
 	}
 }
