@@ -17,11 +17,7 @@
       "android.network",
       "android.events",
       "shizuku.bridge",
-      "brightness",
-      "wifi.state",
-      "bluetooth.state",
-      "airplane.state",
-      "background_process.request"
+      "brightness"
     ],
     "N02": [
       "ai.generate",
@@ -216,30 +212,6 @@
       },
       {
         "id": "brightness",
-        "repository": "divibisoul/aeternum-core-29",
-        "path": "docs/SOUL-CAPABILITY-MASTER-MAP.md",
-        "ref": "main"
-      },
-      {
-        "id": "wifi.state",
-        "repository": "divibisoul/aeternum-core-29",
-        "path": "docs/SOUL-CAPABILITY-MASTER-MAP.md",
-        "ref": "main"
-      },
-      {
-        "id": "bluetooth.state",
-        "repository": "divibisoul/aeternum-core-29",
-        "path": "docs/SOUL-CAPABILITY-MASTER-MAP.md",
-        "ref": "main"
-      },
-      {
-        "id": "airplane.state",
-        "repository": "divibisoul/aeternum-core-29",
-        "path": "docs/SOUL-CAPABILITY-MASTER-MAP.md",
-        "ref": "main"
-      },
-      {
-        "id": "background_process.request",
         "repository": "divibisoul/aeternum-core-29",
         "path": "docs/SOUL-CAPABILITY-MASTER-MAP.md",
         "ref": "main"
@@ -485,5 +457,47 @@
         "ref": "main"
       }
     ]
-  }
+  },
+  "unverifiedN01Labels": [
+    {
+      "id": "wifi.state",
+      "owner": "N01",
+      "status": "DOCUMENTED_LABEL_NOT_NORMALIZED",
+      "source": {
+        "repository": "divibisoul/aeternum-core-29",
+        "path": "docs/SOUL-CAPABILITY-MASTER-MAP.md",
+        "ref": "main"
+      }
+    },
+    {
+      "id": "bluetooth.state",
+      "owner": "N01",
+      "status": "DOCUMENTED_LABEL_NOT_NORMALIZED",
+      "source": {
+        "repository": "divibisoul/aeternum-core-29",
+        "path": "docs/SOUL-CAPABILITY-MASTER-MAP.md",
+        "ref": "main"
+      }
+    },
+    {
+      "id": "airplane.state",
+      "owner": "N01",
+      "status": "DOCUMENTED_LABEL_NOT_NORMALIZED",
+      "source": {
+        "repository": "divibisoul/aeternum-core-29",
+        "path": "docs/SOUL-CAPABILITY-MASTER-MAP.md",
+        "ref": "main"
+      }
+    },
+    {
+      "id": "background_process.request",
+      "owner": "N01",
+      "status": "DOCUMENTED_LABEL_NOT_NORMALIZED",
+      "source": {
+        "repository": "divibisoul/aeternum-core-29",
+        "path": "docs/SOUL-CAPABILITY-MASTER-MAP.md",
+        "ref": "main"
+      }
+    }
+  ]
 }
