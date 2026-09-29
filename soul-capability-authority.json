@@ -1,0 +1,489 @@
+{
+  "system": "SOUL",
+  "schemaVersion": "1.0.0",
+  "authorityModel": "exact-capability-id",
+  "generatedFrom": "GitHub mainline source inspection",
+  "rules": {
+    "oneCanonicalOwnerPerLeafCapability": true,
+    "legacyAliasesPreserved": true,
+    "declaredDoesNotImplyExecutable": true,
+    "sourceEvidenceRequired": true
+  },
+  "owners": {
+    "N01": [
+      "android.device_info",
+      "android.battery",
+      "android.memory",
+      "android.network",
+      "android.events",
+      "shizuku.bridge",
+      "brightness",
+      "wifi.state",
+      "bluetooth.state",
+      "airplane.state",
+      "background_process.request"
+    ],
+    "N02": [
+      "ai.generate",
+      "ai.multimodal",
+      "cognitive-processing",
+      "ai.generate.ollama"
+    ],
+    "N03": [
+      "audio.transcribe",
+      "speech.synthesize",
+      "audio.analyze.emotion"
+    ],
+    "N04": [
+      "ai-pilot",
+      "tool-execution",
+      "tool.execute",
+      "artifact-processing",
+      "document-processing",
+      "context-orchestration",
+      "tool.run",
+      "document.create",
+      "document.edit"
+    ],
+    "N05": [
+      "ai.infer",
+      "inference.reason",
+      "inference.analyze",
+      "inference.summarize",
+      "inference.translate",
+      "inference.classify",
+      "conversation.chat",
+      "conversation.memory"
+    ],
+    "N06": [
+      "support.context",
+      "support.artifacts",
+      "support.documents",
+      "support.tool-execution",
+      "support.streaming",
+      "support.mesh",
+      "support.ai-pilot"
+    ],
+    "N07": [
+      "orchestration",
+      "federation",
+      "supergpu"
+    ],
+    "SARA": [
+      "sara.health",
+      "sara.cycle",
+      "sara.audit",
+      "sara.regenerate",
+      "sara.state",
+      "sara.capabilities",
+      "sara.trace"
+    ]
+  },
+  "aliases": [
+    {
+      "canonical": "tool-execution",
+      "alias": "tool.execute",
+      "owner": "N04",
+      "reason": "compatibility alias; same runtime boundary"
+    },
+    {
+      "canonical": "ai.infer",
+      "alias": "inference.reason",
+      "owner": "N05",
+      "reason": "specialized inference capability exposed by N05 runtime"
+    }
+  ],
+  "declaredNotExecutable": [
+    {
+      "id": "audio.summarize",
+      "owner": "N03",
+      "evidence": {
+        "repository": "divibisoul/nexus-aeternum-fusion",
+        "path": "src/mesh/N03AudioCapabilityRegistry.ts",
+        "ref": "main"
+      }
+    },
+    {
+      "id": "audio.listen.continuous",
+      "owner": "N03",
+      "evidence": {
+        "repository": "divibisoul/nexus-aeternum-fusion",
+        "path": "src/mesh/N03AudioCapabilityRegistry.ts",
+        "ref": "main"
+      }
+    },
+    {
+      "id": "audio.denoise",
+      "owner": "N03",
+      "evidence": {
+        "repository": "divibisoul/nexus-aeternum-fusion",
+        "path": "src/mesh/N03AudioCapabilityRegistry.ts",
+        "ref": "main"
+      }
+    },
+    {
+      "id": "speaker.identify",
+      "owner": "N03",
+      "evidence": {
+        "repository": "divibisoul/nexus-aeternum-fusion",
+        "path": "src/mesh/N03AudioCapabilityRegistry.ts",
+        "ref": "main"
+      }
+    },
+    {
+      "id": "artifact.analyze",
+      "owner": "N04",
+      "evidence": {
+        "repository": "divibisoul/nextjs-ai-chatbots",
+        "path": "lib/soul-core/Nucleus04Capabilities.ts",
+        "ref": "main"
+      }
+    },
+    {
+      "id": "batch.process",
+      "owner": "N04",
+      "evidence": {
+        "repository": "divibisoul/nextjs-ai-chatbots",
+        "path": "lib/soul-core/Nucleus04Capabilities.ts",
+        "ref": "main"
+      }
+    },
+    {
+      "id": "workflow.execute",
+      "owner": "N04",
+      "evidence": {
+        "repository": "divibisoul/nextjs-ai-chatbots",
+        "path": "lib/soul-core/Nucleus04Capabilities.ts",
+        "ref": "main"
+      }
+    },
+    {
+      "id": "schedule.task",
+      "owner": "N04",
+      "evidence": {
+        "repository": "divibisoul/nextjs-ai-chatbots",
+        "path": "lib/soul-core/Nucleus04Capabilities.ts",
+        "ref": "main"
+      }
+    },
+    {
+      "id": "parallel.map",
+      "owner": "N04",
+      "evidence": {
+        "repository": "divibisoul/nextjs-ai-chatbots",
+        "path": "lib/soul-core/Nucleus04Capabilities.ts",
+        "ref": "main"
+      }
+    }
+  ],
+  "evidence": {
+    "N01": [
+      {
+        "id": "android.device_info",
+        "repository": "divibisoul/aeternum-core-29",
+        "path": "docs/SOUL-CAPABILITY-MASTER-MAP.md",
+        "ref": "main"
+      },
+      {
+        "id": "android.battery",
+        "repository": "divibisoul/aeternum-core-29",
+        "path": "docs/SOUL-CAPABILITY-MASTER-MAP.md",
+        "ref": "main"
+      },
+      {
+        "id": "android.memory",
+        "repository": "divibisoul/aeternum-core-29",
+        "path": "docs/SOUL-CAPABILITY-MASTER-MAP.md",
+        "ref": "main"
+      },
+      {
+        "id": "android.network",
+        "repository": "divibisoul/aeternum-core-29",
+        "path": "docs/SOUL-CAPABILITY-MASTER-MAP.md",
+        "ref": "main"
+      },
+      {
+        "id": "android.events",
+        "repository": "divibisoul/aeternum-core-29",
+        "path": "docs/SOUL-CAPABILITY-MASTER-MAP.md",
+        "ref": "main"
+      },
+      {
+        "id": "shizuku.bridge",
+        "repository": "divibisoul/aeternum-core-29",
+        "path": "docs/SOUL-CAPABILITY-MASTER-MAP.md",
+        "ref": "main"
+      },
+      {
+        "id": "brightness",
+        "repository": "divibisoul/aeternum-core-29",
+        "path": "docs/SOUL-CAPABILITY-MASTER-MAP.md",
+        "ref": "main"
+      },
+      {
+        "id": "wifi.state",
+        "repository": "divibisoul/aeternum-core-29",
+        "path": "docs/SOUL-CAPABILITY-MASTER-MAP.md",
+        "ref": "main"
+      },
+      {
+        "id": "bluetooth.state",
+        "repository": "divibisoul/aeternum-core-29",
+        "path": "docs/SOUL-CAPABILITY-MASTER-MAP.md",
+        "ref": "main"
+      },
+      {
+        "id": "airplane.state",
+        "repository": "divibisoul/aeternum-core-29",
+        "path": "docs/SOUL-CAPABILITY-MASTER-MAP.md",
+        "ref": "main"
+      },
+      {
+        "id": "background_process.request",
+        "repository": "divibisoul/aeternum-core-29",
+        "path": "docs/SOUL-CAPABILITY-MASTER-MAP.md",
+        "ref": "main"
+      }
+    ],
+    "N02": [
+      {
+        "id": "ai.generate",
+        "repository": "divibisoul/Eternium-",
+        "path": "src/soul-mesh/SoulMeshCapabilities.ts",
+        "ref": "main"
+      },
+      {
+        "id": "ai.multimodal",
+        "repository": "divibisoul/Eternium-",
+        "path": "src/soul-mesh/SoulMeshCapabilities.ts",
+        "ref": "main"
+      },
+      {
+        "id": "cognitive-processing",
+        "repository": "divibisoul/Eternium-",
+        "path": "src/soul-mesh/SoulMeshCapabilities.ts",
+        "ref": "main"
+      },
+      {
+        "id": "ai.generate.ollama",
+        "repository": "divibisoul/Eternium-",
+        "path": "src/soul-mesh/SoulMeshCapabilities.ts",
+        "ref": "main"
+      }
+    ],
+    "N03": [
+      {
+        "id": "audio.transcribe",
+        "repository": "divibisoul/nexus-aeternum-fusion",
+        "path": "src/mesh/N03AudioCapabilityRegistry.ts",
+        "ref": "main"
+      },
+      {
+        "id": "speech.synthesize",
+        "repository": "divibisoul/nexus-aeternum-fusion",
+        "path": "src/mesh/N03AudioCapabilityRegistry.ts",
+        "ref": "main"
+      },
+      {
+        "id": "audio.analyze.emotion",
+        "repository": "divibisoul/nexus-aeternum-fusion",
+        "path": "src/mesh/N03AudioCapabilityRegistry.ts",
+        "ref": "main"
+      }
+    ],
+    "N04": [
+      {
+        "id": "ai-pilot",
+        "repository": "divibisoul/nextjs-ai-chatbots",
+        "path": "lib/soul-mesh/SoulMeshCapabilities.ts",
+        "ref": "main"
+      },
+      {
+        "id": "tool-execution",
+        "repository": "divibisoul/nextjs-ai-chatbots",
+        "path": "lib/soul-mesh/SoulMeshCapabilities.ts",
+        "ref": "main"
+      },
+      {
+        "id": "tool.execute",
+        "repository": "divibisoul/nextjs-ai-chatbots",
+        "path": "lib/soul-mesh/SoulMeshCapabilities.ts",
+        "ref": "main"
+      },
+      {
+        "id": "artifact-processing",
+        "repository": "divibisoul/nextjs-ai-chatbots",
+        "path": "lib/soul-mesh/SoulMeshCapabilities.ts",
+        "ref": "main"
+      },
+      {
+        "id": "document-processing",
+        "repository": "divibisoul/nextjs-ai-chatbots",
+        "path": "lib/soul-mesh/SoulMeshCapabilities.ts",
+        "ref": "main"
+      },
+      {
+        "id": "context-orchestration",
+        "repository": "divibisoul/nextjs-ai-chatbots",
+        "path": "lib/soul-mesh/SoulMeshCapabilities.ts",
+        "ref": "main"
+      },
+      {
+        "id": "tool.run",
+        "repository": "divibisoul/nextjs-ai-chatbots",
+        "path": "lib/soul-core/Nucleus04Capabilities.ts",
+        "ref": "main"
+      },
+      {
+        "id": "document.create",
+        "repository": "divibisoul/nextjs-ai-chatbots",
+        "path": "lib/soul-core/Nucleus04Capabilities.ts",
+        "ref": "main"
+      },
+      {
+        "id": "document.edit",
+        "repository": "divibisoul/nextjs-ai-chatbots",
+        "path": "lib/soul-core/Nucleus04Capabilities.ts",
+        "ref": "main"
+      }
+    ],
+    "N05": [
+      {
+        "id": "ai.infer",
+        "repository": "divibisoul/nextjs-ai-chatbot",
+        "path": "src/mesh/N05Capabilities.ts",
+        "ref": "main"
+      },
+      {
+        "id": "inference.reason",
+        "repository": "divibisoul/nextjs-ai-chatbot",
+        "path": "lib/soul-mesh/SoulMeshCapabilities.ts",
+        "ref": "main"
+      },
+      {
+        "id": "inference.analyze",
+        "repository": "divibisoul/nextjs-ai-chatbot",
+        "path": "lib/soul-mesh/SoulMeshCapabilities.ts",
+        "ref": "main"
+      },
+      {
+        "id": "inference.summarize",
+        "repository": "divibisoul/nextjs-ai-chatbot",
+        "path": "lib/soul-mesh/SoulMeshCapabilities.ts",
+        "ref": "main"
+      },
+      {
+        "id": "inference.translate",
+        "repository": "divibisoul/nextjs-ai-chatbot",
+        "path": "lib/soul-mesh/SoulMeshCapabilities.ts",
+        "ref": "main"
+      },
+      {
+        "id": "inference.classify",
+        "repository": "divibisoul/nextjs-ai-chatbot",
+        "path": "lib/soul-mesh/SoulMeshCapabilities.ts",
+        "ref": "main"
+      },
+      {
+        "id": "conversation.chat",
+        "repository": "divibisoul/nextjs-ai-chatbot",
+        "path": "lib/soul-mesh/SoulMeshCapabilities.ts",
+        "ref": "main"
+      },
+      {
+        "id": "conversation.memory",
+        "repository": "divibisoul/nextjs-ai-chatbot",
+        "path": "lib/soul-mesh/SoulMeshCapabilities.ts",
+        "ref": "main"
+      }
+    ],
+    "N06": [
+      {
+        "id": "support.context",
+        "repository": "divibisoul/nextjs-ai-chatbot-2000",
+        "path": "lib/soul-core/Nucleus06Capabilities.ts",
+        "ref": "main"
+      },
+      {
+        "id": "support.artifacts",
+        "repository": "divibisoul/nextjs-ai-chatbot-2000",
+        "path": "lib/soul-core/Nucleus06Capabilities.ts",
+        "ref": "main"
+      },
+      {
+        "id": "support.documents",
+        "repository": "divibisoul/nextjs-ai-chatbot-2000",
+        "path": "lib/soul-core/Nucleus06Capabilities.ts",
+        "ref": "main"
+      },
+      {
+        "id": "support.tool-execution",
+        "repository": "divibisoul/nextjs-ai-chatbot-2000",
+        "path": "lib/soul-core/Nucleus06Capabilities.ts",
+        "ref": "main"
+      },
+      {
+        "id": "support.streaming",
+        "repository": "divibisoul/nextjs-ai-chatbot-2000",
+        "path": "lib/soul-core/Nucleus06Capabilities.ts",
+        "ref": "main"
+      },
+      {
+        "id": "support.mesh",
+        "repository": "divibisoul/nextjs-ai-chatbot-2000",
+        "path": "lib/soul-core/Nucleus06Capabilities.ts",
+        "ref": "main"
+      },
+      {
+        "id": "support.ai-pilot",
+        "repository": "divibisoul/nextjs-ai-chatbot-2000",
+        "path": "lib/soul-core/Nucleus06Capabilities.ts",
+        "ref": "main"
+      }
+    ],
+    "SARA": [
+      {
+        "id": "sara.health",
+        "repository": "divibisoul/SARA",
+        "path": "src/sara/meta/soul_federation.py",
+        "ref": "main"
+      },
+      {
+        "id": "sara.cycle",
+        "repository": "divibisoul/SARA",
+        "path": "src/sara/meta/soul_federation.py",
+        "ref": "main"
+      },
+      {
+        "id": "sara.audit",
+        "repository": "divibisoul/SARA",
+        "path": "src/sara/meta/soul_federation.py",
+        "ref": "main"
+      },
+      {
+        "id": "sara.regenerate",
+        "repository": "divibisoul/SARA",
+        "path": "src/sara/meta/soul_federation.py",
+        "ref": "main"
+      },
+      {
+        "id": "sara.state",
+        "repository": "divibisoul/SARA",
+        "path": "src/sara/meta/soul_federation.py",
+        "ref": "main"
+      },
+      {
+        "id": "sara.capabilities",
+        "repository": "divibisoul/SARA",
+        "path": "src/sara/meta/soul_federation.py",
+        "ref": "main"
+      },
+      {
+        "id": "sara.trace",
+        "repository": "divibisoul/SARA",
+        "path": "src/sara/meta/soul_federation.py",
+        "ref": "main"
+      }
+    ]
+  }
+}
