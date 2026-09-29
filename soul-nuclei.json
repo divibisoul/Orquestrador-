@@ -56,12 +56,12 @@
         "N02"
       ],
       "manifestAuthority": "SOUL-FUSION-MANIFEST.json",
-      "sourceRef": "22ba873e9c833362bc1edea8625eb53e42b92492",
-      "status": "evidence-present-ci-not-proven"
+      "sourceRef": "15b40a206caf9fa2012e68d94f7d32ecc68bd65f",
+      "status": "main-live-recovery-and-hortacore-bridge-merged"
     },
     "N02": {
       "repository": "divibisoul/Eternium-",
-      "role": "conversation-interaction",
+      "role": "conversation-generation-neural-context",
       "entrypoints": [
         "api/soul-mesh.ts"
       ],
@@ -79,8 +79,8 @@
         "N03"
       ],
       "manifestAuthority": "SOUL-FUSION-MANIFEST.json",
-      "sourceRef": "ef1f54e776ab73ca16fef8dad6e8d8bf0113c77e",
-      "status": "ci-infrastructure-failure-evidence"
+      "sourceRef": "4f95c50b2841829daf2904fdb7c7a8171e1a9113",
+      "status": "main-live-bncv2-csae-dcrs-reintegrated"
     },
     "N03": {
       "repository": "divibisoul/nexus-aeternum-fusion",
@@ -103,8 +103,8 @@
         "N04"
       ],
       "manifestAuthority": "SOUL-FUSION-MANIFEST.json",
-      "sourceRef": "4b620396daf96ae3a581d01b9692217798adb08c",
-      "status": "main-live-dual-protocol"
+      "sourceRef": "9951485529c8480ff3bf4d7305538d152b6acdfe",
+      "status": "main-live-composition-contract-reconciled"
     },
     "N04": {
       "repository": "divibisoul/nextjs-ai-chatbots",
@@ -126,12 +126,12 @@
         "N05"
       ],
       "manifestAuthority": "SOUL-FUSION-MANIFEST.json",
-      "sourceRef": "3479f9f44d7ffd85ebbfdfea22b630058dd34838",
-      "status": "main-live-ci-not-proven"
+      "sourceRef": "ed4e2a75b772d1efaed2457c392f52bddaffbfa8",
+      "status": "main-live-tool-capability-alias-reconciled"
     },
     "N05": {
       "repository": "divibisoul/nextjs-ai-chatbot",
-      "role": "orchestration-dispatch-execution",
+      "role": "inference-conversation-dispatch-execution",
       "entrypoints": [
         "app/api/soul-mesh/route.ts",
         "lib/soul-mesh/peer-client.ts"
@@ -150,8 +150,8 @@
         "N06"
       ],
       "manifestAuthority": "SOUL-FUSION-MANIFEST.json",
-      "sourceRef": "14c1de0403002ce18709bb69de6a1365e228e467",
-      "status": "main-live-ci-not-proven"
+      "sourceRef": "e0c8778bebaba4a4b821bc6923c2a51dcfc431ca",
+      "status": "main-live-inference-capability-catalog-reconciled"
     },
     "N06": {
       "repository": "divibisoul/nextjs-ai-chatbot-2000",
@@ -174,8 +174,8 @@
         "N07"
       ],
       "manifestAuthority": "SOUL-FUSION-MANIFEST.json",
-      "sourceRef": "d566bbf9643e5d20b1435718270d5af0514522e5",
-      "status": "main-live-single-authority-implementation"
+      "sourceRef": "bdcb099166701453b6cb62672fa6a642addbd9b0",
+      "status": "main-live-composition-targets-reconciled"
     },
     "N07": {
       "repository": "divibisoul/Orquestrador-",
@@ -199,7 +199,7 @@
       ],
       "manifestAuthority": "soul-nuclei.json",
       "sourceRef": "release-identity:self",
-      "status": "self-audited-current-main"
+      "status": "self-audited-current-main-composition-ledger-merged"
     }
   }
 }
