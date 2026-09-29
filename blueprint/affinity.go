@@ -100,6 +100,38 @@ func Resolve(query string, limit int) ([]Match, error) {
 	return matches, nil
 }
 
+func ResolveExecutable(query string, limit int) ([]Match, error) {
+	matches, err := Resolve(query, limit)
+	if err != nil {
+		return nil, err
+	}
+	for i := range matches {
+		executable := matches[i].Affinities[:0]
+		for _, affinity := range matches[i].Affinities {
+			switch strings.ToUpper(strings.TrimSpace(affinity.Status)) {
+			case "IMPLEMENTED", "LOCAL_EXECUTABLE", "EXECUTABLE", "BUILTIN_RUNTIME", "REAL", "CONNECTED", "CANONICAL_OWNER", "REGISTERED", "DECLARED_EXECUTABLE_BOUNDARY":
+				executable = append(executable, affinity)
+			}
+		}
+		matches[i].Affinities = executable
+	}
+	matches = filterMatchesWithAffinities(matches)
+	if len(matches) == 0 {
+		return nil, errors.New("no executable blueprint affinity matched the query")
+	}
+	return matches, nil
+}
+
+func filterMatchesWithAffinities(matches []Match) []Match {
+	out := matches[:0]
+	for _, match := range matches {
+		if len(match.Affinities) > 0 {
+			out = append(out, match)
+		}
+	}
+	return out
+}
+
 func ResolveFamily(family string) (Match, error) {
 	want := strings.TrimSpace(strings.ToUpper(family))
 	if want == "" {
