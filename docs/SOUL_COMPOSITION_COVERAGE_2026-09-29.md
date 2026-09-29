@@ -136,7 +136,7 @@ Estas métricas são gates reproduzíveis definidos nesta frente, não percentua
 | Composição N03→N05→N04 | 9/15 = 60% | 15/15 = 100% estrutural | 15/15 = 100% estrutural; E2E externo ainda separado |
 | N01 NeuralManagementCore | 0/5 | 4/5 | 5/5 — gate CI PASS |
 | SARA Bayesian runtime | 0/5 | 4/5 | 5/5 — gate CI PASS |
-| Source refs N01–N07 + SARA | não protegido | 7/8 consistentes; SARA ainda não rastreado no manifesto | 8/8 — gate CI PASS |
+| Source refs N01–N07 + SARA | não protegido | 6/8 consistentes; N01 apontava para um main anterior e SARA ainda não estava rastreado no manifesto | 8/8 — gate CI PASS |
 
 ### N01 NeuralManagementCore — evidência
 
