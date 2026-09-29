@@ -111,3 +111,18 @@ A cobertura de 100% acima é restrita aos **links de composição reparados nest
 Estado da pendência: **OPEN / GOVERNANCE-RECONCILIATION**.
 
 Próxima correção: comparar cada capability publicada com seu proprietário efetivamente executável e migrar os manifests legados de forma aditiva, preservando histórico e compatibilidade.
+
+## Mainline recovery state — verified 2026-09-29
+
+| Center | Mainline change now present | Exact main SHA | Status |
+|---|---|---|---|
+| N01 | Aeternum buried module recovery + HortaCore/EventBus continuity | `15b40a206caf9fa2012e68d94f7d32ecc68bd65f` | MERGED |
+| N02 | BNCv2 + CSAE + DCRS + VagusBus recovery | `4f95c50b2841829daf2904fdb7c7a8171e1a9113` | MERGED |
+| N03 | N03→N05→N04 composition contract repair | `9951485529c8480ff3bf4d7305538d152b6acdfe` | MERGED |
+| N04 | `tool.execute` compatibility boundary | `ed4e2a75b772d1efaed2457c392f52bddaffbfa8` | MERGED |
+| N05 | executable inference/conversation capability catalog | `e0c8778bebaba4a4b821bc6923c2a51dcfc431ca` | MERGED |
+| N06 | N05→N04 composition target repair | `bdcb099166701453b6cb62672fa6a642addbd9b0` | MERGED |
+| N07 | existing neural/prefrontal runtime verified on main; recovery PR was test-only | `3516c74c52da2b7d423290c92350787a788a341d` | RUNTIME ALREADY PRESENT |
+| SARA | Chimera + OctaCore/Vagus/Mesh recovery | `50c9d0f12a42f518994eba8ee99ea1c40035b38a` | MERGED |
+
+**Important:** this table records repository state, not online runtime availability. E2E commissioning remains a separate proof layer.
