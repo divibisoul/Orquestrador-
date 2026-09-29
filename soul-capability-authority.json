@@ -2,7 +2,7 @@
   "system": "SOUL",
   "schemaVersion": "1.0.0",
   "authorityModel": "exact-capability-id",
-  "generatedFrom": "GitHub mainline source inspection",
+  "generatedFrom": "GitHub mainline source inspection after N02 broad reintegration f411879ebd4f6104e795cd77bc11b1b0fabbfe54",
   "rules": {
     "oneCanonicalOwnerPerLeafCapability": true,
     "legacyAliasesPreserved": true,
@@ -23,7 +23,16 @@
       "ai.generate",
       "ai.multimodal",
       "cognitive-processing",
-      "ai.generate.ollama"
+      "ai.generate.ollama",
+      "acai",
+      "mpvs",
+      "einstein_code",
+      "neural.bnc_v2",
+      "cognitive.csae",
+      "resource.dcrs",
+      "clareira.ingest",
+      "clareira.metrics",
+      "octacore.execute"
     ],
     "N03": [
       "audio.transcribe",
@@ -219,7 +228,19 @@
     ],
     "N02": [
       {
+        "id": "acai",
+        "repository": "divibisoul/Eternium-",
+        "path": "src/soul-mesh/SoulMeshCapabilities.ts",
+        "ref": "main"
+      },
+      {
         "id": "ai.generate",
+        "repository": "divibisoul/Eternium-",
+        "path": "src/soul-mesh/SoulMeshCapabilities.ts",
+        "ref": "main"
+      },
+      {
+        "id": "ai.generate.ollama",
         "repository": "divibisoul/Eternium-",
         "path": "src/soul-mesh/SoulMeshCapabilities.ts",
         "ref": "main"
@@ -231,13 +252,55 @@
         "ref": "main"
       },
       {
+        "id": "clareira.ingest",
+        "repository": "divibisoul/Eternium-",
+        "path": "src/soul-mesh/SoulMeshCapabilities.ts",
+        "ref": "main"
+      },
+      {
+        "id": "clareira.metrics",
+        "repository": "divibisoul/Eternium-",
+        "path": "src/soul-mesh/SoulMeshCapabilities.ts",
+        "ref": "main"
+      },
+      {
         "id": "cognitive-processing",
         "repository": "divibisoul/Eternium-",
         "path": "src/soul-mesh/SoulMeshCapabilities.ts",
         "ref": "main"
       },
       {
-        "id": "ai.generate.ollama",
+        "id": "cognitive.csae",
+        "repository": "divibisoul/Eternium-",
+        "path": "src/soul-mesh/SoulMeshCapabilities.ts",
+        "ref": "main"
+      },
+      {
+        "id": "einstein_code",
+        "repository": "divibisoul/Eternium-",
+        "path": "src/soul-mesh/SoulMeshCapabilities.ts",
+        "ref": "main"
+      },
+      {
+        "id": "mpvs",
+        "repository": "divibisoul/Eternium-",
+        "path": "src/soul-mesh/SoulMeshCapabilities.ts",
+        "ref": "main"
+      },
+      {
+        "id": "neural.bnc_v2",
+        "repository": "divibisoul/Eternium-",
+        "path": "src/soul-mesh/SoulMeshCapabilities.ts",
+        "ref": "main"
+      },
+      {
+        "id": "octacore.execute",
+        "repository": "divibisoul/Eternium-",
+        "path": "src/soul-mesh/SoulMeshCapabilities.ts",
+        "ref": "main"
+      },
+      {
+        "id": "resource.dcrs",
         "repository": "divibisoul/Eternium-",
         "path": "src/soul-mesh/SoulMeshCapabilities.ts",
         "ref": "main"
