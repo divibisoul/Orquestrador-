@@ -214,5 +214,224 @@
       "sourceRef": "20d550029c5320bf559fe356af02ed7aa49cb4ad",
       "status": "main-live-chimera-and-bayesian-runtime-merged"
     }
+  },
+  "continuityLedgerVersion": 1,
+  "primordialEssence": {
+    "definition": "native responsibility preserved from each nucleus/base service before pairwise composition; this is a functional-identity record, not a claim about exact historical creation date",
+    "sourcePolicy": "derive from current mainline native runtime, capability ownership, agents/tools and executable entrypoints; never infer from filenames alone",
+    "preservationRule": "new work must declare origin, consumes, produces, and next consumers; existing native owners remain authoritative",
+    "statusStates": [
+      "STRUCTURAL",
+      "EXECUTABLE",
+      "VERIFIED",
+      "FUSED",
+      "BLOCKED"
+    ],
+    "essences": {
+      "N01": {
+        "nativeRole": "core-gateway-runtime",
+        "essence": "coordination, device/runtime context, intent/AGI processing and canonical Mesh gateway",
+        "evidence": [
+          "src/core/agi/index.ts",
+          "scripts/soul-mesh-server.mjs",
+          "src/core/EventBus.ts",
+          "src/core/hortaCore.ts"
+        ]
+      },
+      "N02": {
+        "nativeRole": "language-conversation-context",
+        "essence": "language, conversation, generation and contextual cognitive processing",
+        "evidence": [
+          "api/soul-mesh.ts",
+          "src/soul-mesh/N02AIProviderBridge.ts",
+          "src/cognitive/N02CognitivePipeline.ts"
+        ]
+      },
+      "N03": {
+        "nativeRole": "perception-voice-multimodal",
+        "essence": "audio/speech perception, multimodal context and signal analysis",
+        "evidence": [
+          "api/soul-mesh.ts",
+          "src/mesh/N03AudioCapabilityRegistry.ts",
+          "lib/soul-mesh/N03SynergyOrchestrator.ts"
+        ]
+      },
+      "N04": {
+        "nativeRole": "tools-documents-artifacts-execution",
+        "essence": "tool, document and artifact execution with bounded parallel work",
+        "evidence": [
+          "lib/soul-core/Nucleus04Capabilities.ts",
+          "lib/soul-mesh/N04SynergyEngine.ts",
+          "lib/soul-mesh/Nucleus04Runtime.ts"
+        ]
+      },
+      "N05": {
+        "nativeRole": "inference-dispatch-execution",
+        "essence": "inference, conversation, dispatch and execution coordination",
+        "evidence": [
+          "src/mesh/N05Capabilities.ts",
+          "lib/soul-mesh/Nucleus05Runtime.ts",
+          "src/mesh/N05N04Complement.ts",
+          "src/mesh/N05N06PairStage.ts"
+        ]
+      },
+      "N06": {
+        "nativeRole": "cognition-synthesis-validation",
+        "essence": "cognition, synthesis, planning, validation and audit-oriented support",
+        "evidence": [
+          "lib/soul-core/N06CapabilityEngine.ts",
+          "config/soul-neocortex-node.json",
+          "lib/soul-mesh/N06N05AgentSynergy.ts"
+        ]
+      },
+      "N07": {
+        "nativeRole": "orchestration-fusion-supergpu-control",
+        "essence": "discovery, routing, federation, composition, result aggregation, validation and bounded distributed compute",
+        "evidence": [
+          "orchestrator/identity.go",
+          "fusion/runtime.go",
+          "orchestrator/advanced_ops.go",
+          "soul-capability-authority.json"
+        ]
+      },
+      "SARA": {
+        "nativeRole": "transversal-regeneration-governance",
+        "essence": "audit, ethics, regeneration, memory, rollback, Bayesian reasoning and governance",
+        "evidence": [
+          "src/sara/regeneration/synergy_engine.py",
+          "src/sara/meta/soul_federation.py",
+          "README.md",
+          "docs/SARA_MODULE_LOGIC_MATRIX.md"
+        ]
+      }
+    },
+    "compositionSeeds": [
+      {
+        "participants": [
+          "N01",
+          "N02"
+        ],
+        "mode": "adjacent",
+        "derivedFunction": "intent-aware language generation",
+        "existingEvidence": [
+          "docs/SOUL-N01-N02-SYNERGY-FUSION.md"
+        ],
+        "status": "STRUCTURAL"
+      },
+      {
+        "participants": [
+          "N02",
+          "N03"
+        ],
+        "mode": "adjacent",
+        "derivedFunction": "perception-grounded contextual reasoning",
+        "existingEvidence": [
+          "src/soul-mesh/N02N03Synergy.ts"
+        ],
+        "status": "STRUCTURAL"
+      },
+      {
+        "participants": [
+          "N03",
+          "N04"
+        ],
+        "mode": "adjacent",
+        "derivedFunction": "perception-to-action artifact/tool workflow",
+        "existingEvidence": [
+          "docs/N03-DUAL-FUSION-HANDOFF.md"
+        ],
+        "status": "STRUCTURAL"
+      },
+      {
+        "participants": [
+          "N04",
+          "N05"
+        ],
+        "mode": "adjacent",
+        "derivedFunction": "inference-directed tool/document execution",
+        "existingEvidence": [
+          "src/mesh/N05N04Complement.ts"
+        ],
+        "status": "STRUCTURAL"
+      },
+      {
+        "participants": [
+          "N05",
+          "N06"
+        ],
+        "mode": "adjacent",
+        "derivedFunction": "reasoning-to-plan-to-validation pipeline",
+        "existingEvidence": [
+          "src/mesh/N05N06PairStage.ts",
+          "lib/soul-mesh/N06N05AgentSynergy.ts"
+        ],
+        "status": "STRUCTURAL"
+      },
+      {
+        "participants": [
+          "N06",
+          "N07"
+        ],
+        "mode": "adjacent",
+        "derivedFunction": "cognitive-plan-to-compute orchestration",
+        "existingEvidence": [
+          "docs/SOUL_ARCHITECTURE_LIVE.md",
+          "orchestrator/advanced_ops.go"
+        ],
+        "status": "STRUCTURAL"
+      },
+      {
+        "participants": [
+          "N07",
+          "SARA"
+        ],
+        "mode": "transversal",
+        "derivedFunction": "orchestration under regenerative audit/governance",
+        "existingEvidence": [
+          "README.md",
+          "docs/SARA_INTEGRATION.md"
+        ],
+        "status": "STRUCTURAL"
+      },
+      {
+        "participants": [
+          "N02",
+          "N03",
+          "N04"
+        ],
+        "mode": "higher-order",
+        "derivedFunction": "perceive → reason → act",
+        "existingEvidence": [
+          "docs/N03-DUAL-FUSION-HANDOFF.md"
+        ],
+        "status": "STRUCTURAL"
+      },
+      {
+        "participants": [
+          "N01",
+          "N05"
+        ],
+        "mode": "orchestrated",
+        "derivedFunction": "runtime context → inference/dispatch",
+        "existingEvidence": [
+          "docs/SOUL-N01-N02-SYNERGY-FUSION.md",
+          "N05_SOUL_MESH_ARCHITECTURE.md"
+        ],
+        "status": "STRUCTURAL"
+      },
+      {
+        "participants": [
+          "N04",
+          "SARA"
+        ],
+        "mode": "transversal",
+        "derivedFunction": "tool/artifact execution under governance and audit",
+        "existingEvidence": [
+          "docs/SOUL-CROSSNUCLEUS-MATRIX.md",
+          "docs/SARA_FEDERATION_BLUEPRINT.md"
+        ],
+        "status": "STRUCTURAL"
+      }
+    ]
   }
 }
