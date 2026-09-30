@@ -101,6 +101,15 @@ func main() {
 				return nil, fmt.Errorf("unsupported SARA synergy capability: %s", capability)
 			}
 		}
+		discoveryCtx, cancel := context.WithTimeout(ctx, 2*time.Second)
+		description, discoveryErr := peerClient.Discover(discoveryCtx, target)
+		cancel()
+		if discoveryErr != nil {
+			return nil, fmt.Errorf("synergy discovery failed for %s: %w", target, discoveryErr)
+		}
+		if !mesh.SupportsExecutableCapability(description, capability) {
+			return nil, fmt.Errorf("synergy capability not executable on %s: %s", target, capability)
+		}
 		return peerClient.CallWithCorrelation(ctx, target, capability, payload, correlation)
 	}))
 	octacoreProcessor, err := octacore.NewProcessor(octacore.DefaultConfig(), g, peerClient, saraProxy)
