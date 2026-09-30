@@ -19,7 +19,7 @@ func (f *fakePeers) Discover(_ context.Context, target string) (map[string]any, 
 	return value, nil
 }
 
-func (f *fakePeers) CallWithCorrelation(_ context.Context, _, _, _ string, _ string) (map[string]any, error) {
+func (f *fakePeers) CallWithCorrelation(_ context.Context, _, _ string, _ map[string]any, _ string) (map[string]any, error) {
 	f.calls++
 	return map[string]any{"ok": true}, nil
 }
