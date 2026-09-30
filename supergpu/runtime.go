@@ -258,8 +258,14 @@ func (r *Runtime) Reserve(deviceID, owner string) error {
 		// CPU execution is intentionally shareable; no exclusive lease is stored.
 		return nil
 	}
-	if current, ok := r.reserved[deviceID]; ok && current.Owner != owner {
-		return errors.New("device already reserved")
+	if current, ok := r.reserved[deviceID]; ok {
+		if current.Owner != owner {
+			return errors.New("device already reserved")
+		}
+		current.LeaseCount++
+		current.ExpiresAt = time.Now().Add(30 * time.Second)
+		r.reserved[deviceID] = current
+		return nil
 	}
 	r.reserved[deviceID] = Reservation{DeviceID: deviceID, Owner: owner, ExpiresAt: time.Now().Add(30 * time.Second), LeaseCount: 1}
 	return nil
