@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/divibisoul/Orquestrador-/protocol"
+	"github.com/divibisoul/Orquestrador-/supergpu"
 )
 
 // RegisterSuperGPUOperations exposes the existing SuperGPU runtime through the
