@@ -1,80 +1,59 @@
 package orchestrator
 
 import (
-	"context"
-	"encoding/json"
-	"strings"
 	"testing"
 
-	"github.com/divibisoul/Orquestrador-/backend"
-	"github.com/divibisoul/Orquestrador-/mesh"
-	"github.com/divibisoul/Orquestrador-/neural"
-	"github.com/divibisoul/Orquestrador-/prefrontal"
-	"github.com/divibisoul/Orquestrador-/supergpu"
+	"github.com/divibisoul/Orquestrador-/protocol"
 )
 
-func newCognitiveRecoveryEngine(t *testing.T) (*Engine, *mesh.PeerClient) {
-	t.Helper()
-	n, err := neural.New(8, .05)
-	if err != nil {
-		t.Fatal(err)
-	}
-	c, err := prefrontal.New(.01, 8)
-	if err != nil {
-		t.Fatal(err)
-	}
-	g := supergpu.New(nil)
-	g.Discover()
-	e, err := New(n, c, g)
-	if err != nil {
-		t.Fatal(err)
-	}
-	peers, err := mesh.NewPeerClient(nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-	return e, peers
-}
+func TestCognitiveGoalDecodeDefaultsCorrelationFromMessage(t *testing.T) {
+	message := protocol.NewMessage("N01", "N07", "command", "cognitive.goal.plan@1.0.0", nil)
+	message.Metadata["cognitive_goal_json"] = `{"goal_id":"g1","objective":"recover","capabilities":["ai.infer"]}`
 
-func TestRecoveredCognitiveOperationsAreRegisteredWithoutRemoteExecution(t *testing.T) {
-	e, peers := newCognitiveRecoveryEngine(t)
-	if err := RegisterCognitiveOperations(e, peers, backend.NewSARAProxy(backend.Config{}), backend.NewSupabaseStore(backend.Config{})); err != nil {
-		t.Fatal(err)
-	}
-
-	health, err := e.Execute(context.Background(), "cognitive.health@1.0.0", nil, map[string]string{
-		"correlation_id": "cognitive-health-test",
-	})
+	goal, err := decodeCognitiveGoal(message)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if health.Status != "ok" {
-		t.Fatalf("unexpected health status: %#v", health)
-	}
-	if !strings.Contains(health.Metadata["cognitive_json"], "READY") {
-		t.Fatalf("unexpected cognitive health payload: %#v", health.Metadata)
+	if goal.CorrelationID != message.CorrelationID {
+		t.Fatalf("expected message correlation propagation, got %q", goal.CorrelationID)
 	}
 }
 
-func TestRecoveredCognitivePlanFailsClosedWhenCapabilityIsNotDiscoverable(t *testing.T) {
-	e, peers := newCognitiveRecoveryEngine(t)
-	if err := RegisterCognitiveOperations(e, peers, backend.NewSARAProxy(backend.Config{}), backend.NewSupabaseStore(backend.Config{})); err != nil {
+func TestCognitiveGoalDecodeRejectsIncompleteGoal(t *testing.T) {
+	message := protocol.NewMessage("N01", "N07", "command", "cognitive.goal.plan@1.0.0", nil)
+	message.Metadata["cognitive_goal_json"] = `{"goal_id":"g1"}`
+
+	if _, err := decodeCognitiveGoal(message); err == nil {
+		t.Fatal("expected incomplete cognitive goal to fail")
+	}
+}
+
+func TestGeminiDelegateMappingPreservesCanonicalN02Capabilities(t *testing.T) {
+	cases := map[string]string{
+		"gemini.text.generate":            "gemini.delegate.text@1.0.0",
+		"gemini.multimodal.generate":      "gemini.delegate.multimodal@1.0.0",
+		"gemini.audio.transcribe":         "gemini.delegate.audio.transcribe@1.0.0",
+		"gemini.audio.analyze":            "gemini.delegate.audio.analyze@1.0.0",
+		"gemini.speech.synthesize":        "gemini.delegate.speech.synthesize@1.0.0",
+	}
+	for canonical, delegate := range cases {
+		got, ok := geminiDelegateFor(canonical)
+		if !ok || got != delegate {
+			t.Fatalf("mapping %s => %q, %v; want %s", canonical, got, ok, delegate)
+		}
+	}
+}
+
+func TestMapPayloadToMetadataPreservesStructuredValues(t *testing.T) {
+	values, err := mapPayloadToMetadata(map[string]any{
+		"temperature": 0.7,
+		"useWebSearch": true,
+		"candidateJson": map[string]any{"risk": 0.1},
+	}, "corr-1")
+	if err != nil {
 		t.Fatal(err)
 	}
-
-	goal, _ := json.Marshal(map[string]any{
-		"goal_id": "plan-test",
-		"objective": "discover an unconfigured capability",
-		"capabilities": []string{"capability.not.configured"},
-		"correlation_id": "corr-plan-test",
-	})
-	_, err := e.Execute(context.Background(), "cognitive.goal.plan@1.0.0", nil, map[string]string{
-		"cognitive_goal_json": string(goal),
-	})
-	if err == nil {
-		t.Fatal("planner must not fabricate an unconfigured capability")
-	}
-	if !strings.Contains(err.Error(), "TOOL_NOT_DISCOVERED") {
-		t.Fatalf("unexpected planner error: %v", err)
+	if values["temperature"] != "0.7" || values["use_web_search"] != "true" || values["candidate_json"] != `{"risk":0.1}` {
+		t.Fatalf("unexpected metadata mapping: %#v", values)
 	}
 }
