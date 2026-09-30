@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"math/rand"
 	"sync"
 	"time"
 )
@@ -41,6 +42,7 @@ type NetworkStats struct {
 
 type Network struct {
 	mu           sync.RWMutex
+	trainMu      sync.Mutex
 	size         int
 	edges        map[int][]Edge
 	bias         []float64
@@ -52,6 +54,7 @@ type Network struct {
 	edgeV        map[string]float64
 	stats        NetworkStats
 	cache        map[string][]float64
+	rng          *rand.Rand
 }
 
 func New(size int, learningRate float64) (*Network, error) {
@@ -71,6 +74,7 @@ func New(size int, learningRate float64) (*Network, error) {
 		edgeM:        make(map[string]float64),
 		edgeV:        make(map[string]float64),
 		cache:        make(map[string][]float64),
+		rng:          rand.New(rand.NewSource(1)),
 	}
 	if err := n.Configure(Config{
 		Layers:         []Layer{{Activation: "tanh"}},
@@ -309,6 +313,76 @@ func (n *Network) forwardTrace(ctx context.Context, inputs []float64) ([][]float
 	return states, preActivations, nil
 }
 
+func (n *Network) forwardTraceTraining(ctx context.Context, inputs []float64) ([][]float64, [][]float64, [][]float64, error) {
+	if ctx == nil {
+		return nil, nil, nil, errors.New("context is nil")
+	}
+	if len(inputs) != n.size {
+		return nil, nil, nil, errors.New("input size mismatch")
+	}
+	if err := finiteVector(inputs); err != nil {
+		return nil, nil, nil, errors.New("training input contains non-finite value")
+	}
+
+	n.mu.RLock()
+	bias := append([]float64(nil), n.bias...)
+	edges := make(map[int][]Edge, len(n.edges))
+	for from, es := range n.edges {
+		edges[from] = append([]Edge(nil), es...)
+	}
+	cfg := n.config
+	rng := n.rng
+	n.mu.RUnlock()
+
+	states := make([][]float64, len(cfg.Layers)+1)
+	preActivations := make([][]float64, len(cfg.Layers))
+	dropoutMasks := make([][]float64, len(cfg.Layers))
+	states[0] = append([]float64(nil), inputs...)
+
+	for pass, layer := range cfg.Layers {
+		select {
+		case <-ctx.Done():
+			return nil, nil, nil, ctx.Err()
+		default:
+		}
+		z := append([]float64(nil), bias...)
+		for i, value := range states[pass] {
+			z[i] += value
+		}
+		for from, es := range edges {
+			for _, e := range es {
+				z[e.To] += states[pass][from] * e.Weight
+			}
+		}
+
+		next := make([]float64, n.size)
+		mask := make([]float64, n.size)
+		keepScale := 1.0
+		if layer.DropoutRate > 0 {
+			keepScale = 1 / (1 - layer.DropoutRate)
+		}
+		for i := range z {
+			activated := activateValue(z[i], layer.Activation)
+			if layer.DropoutRate > 0 {
+				if rng.Float64() < layer.DropoutRate {
+					mask[i] = 0
+					next[i] = 0
+					continue
+				}
+				mask[i] = keepScale
+				next[i] = activated * keepScale
+			} else {
+				mask[i] = 1
+				next[i] = activated
+			}
+		}
+		preActivations[pass] = z
+		dropoutMasks[pass] = mask
+		states[pass+1] = next
+	}
+	return states, preActivations, dropoutMasks, nil
+}
+
 func (n *Network) Forward(ctx context.Context, inputs []float64) ([]float64, error) {
 	if ctx == nil {
 		return nil, errors.New("context is nil")
@@ -388,6 +462,9 @@ func mseLoss(pred, target []float64) (float64, error) {
 // parameter gradients are accumulated over all passes before the optimizer step.
 // The objective is mean half-squared error plus L2 regularization.
 func (n *Network) Learn(inputs, target []float64) error {
+	n.trainMu.Lock()
+	defer n.trainMu.Unlock()
+
 	if len(inputs) != n.size || len(target) != n.size {
 		return errors.New("training vector size mismatch")
 	}
@@ -398,7 +475,7 @@ func (n *Network) Learn(inputs, target []float64) error {
 		return errors.New("training data contains non-finite value")
 	}
 
-	states, pre, err := n.forwardTrace(context.Background(), inputs)
+	states, pre, dropoutMasks, err := n.forwardTraceTraining(context.Background(), inputs)
 	if err != nil {
 		return err
 	}
@@ -426,7 +503,7 @@ func (n *Network) Learn(inputs, target []float64) error {
 	for layer := len(cfg.Layers) - 1; layer >= 0; layer-- {
 		delta := make([]float64, n.size)
 		for i := 0; i < n.size; i++ {
-			delta[i] = gNext[i] * activationDerivative(pre[layer][i], states[layer+1][i], cfg.Layers[layer].Activation)
+			delta[i] = gNext[i] * activationDerivative(pre[layer][i], states[layer+1][i], cfg.Layers[layer].Activation) * dropoutMasks[layer][i]
 			gradBias[i] += delta[i]
 		}
 		for from, es := range edges {
@@ -702,6 +779,15 @@ func (n *Network) Attention(query, keys, values []float64) ([]float64, error) {
 	return out, nil
 }
 
+func dropoutConfigured(layers []Layer) bool {
+	for _, layer := range layers {
+		if layer.DropoutRate > 0 {
+			return true
+		}
+	}
+	return false
+}
+
 func (n *Network) Health() map[string]any {
 	n.mu.RLock()
 	defer n.mu.RUnlock()
@@ -729,5 +815,6 @@ func (n *Network) Health() map[string]any {
 		"layers":          len(n.config.Layers),
 		"gradient_clip":   n.config.GradientClip,
 		"regularization": n.config.Regularization,
+		"dropout_enabled": dropoutConfigured(n.config.Layers),
 	}
 }
