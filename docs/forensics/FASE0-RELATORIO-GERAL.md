@@ -130,3 +130,34 @@ Health não é transação.
 5. Qual é o fluxo canônico de usuário ponta a ponta?
 6. O que formalmente transforma um contrato de conexão em ACTIVE?
 7. Quais endpoints reais deverão ser usados futuramente no smoke LIVE? Não enviar secrets pelo chat.
+
+
+## RODADA COOPERATIVA — 2026-09-30
+
+A auditoria deixou de tratar as frentes congeladas como terminais. Elas foram reabertas por reconciliação sobre o MAIN atual, preservando as PRs/commits históricos.
+
+### Autoridade funcional AETERNUM
+A autoridade funcional passa a ser derivada do grafo real de conexões do AETERNUM, separando:
+- dono de execução;
+- autoridade de governança;
+- centralidade funcional por dependências diretas/transitivas.
+
+No grafo observado, M1_CORE é âncora estrutural, M2_ORCHESTRATION é mediador e M6_IMMUNITY mantém execução em N07 e governança em SARA. Isto não cria uma hierarquia global nem desloca ownership.
+
+### Frentes congeladas descongeladas
+- SARA #24 → reconciliação executável em #27.
+- N01 #60 → reconciliação executável em #72.
+- N07 #54 → reconciliação executável em #71.
+
+As PRs antigas permanecem como registro histórico.
+
+### Cooperação com frentes ativas
+- N07 #64: falha Mesh→Prefrontal identificada e corrigida no teste cooperativamente; CI final do commit corretivo passou integralmente.
+- N04 #29: frente conflitante recomposta em #32 no MAIN atual; composição runtime + Gemini Skills foram recuperados. O primeiro CI da reconciliação encontrou erro sintático na lista de capacidades e integridade incorreta de lockfile; ambos foram corrigidos e o segundo ciclo está em nova execução.
+- N02 #31, N03 #26, N05 #31 e SARA #26 permanecem fronts ativas observadas; nenhuma implementação paralela foi criada sobre elas.
+
+### Evidência
+CI verde foi confirmado para as reconciliações SARA #27, N01 #72 e N07 #71 nos commits observados. A prova continua limitada a CI/build/test quando não há endpoints reais; isto não é prova de LIVE.
+
+### Estado de merge
+Nenhuma destas reconciliações foi mergeada nesta rodada. A integração permanece revisável e baseada em evidência.
