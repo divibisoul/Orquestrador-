@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"math"
+	"time"
 )
 
 // NeuralSignalProvider is the minimal neural-network boundary required by the
@@ -81,4 +82,25 @@ func (n *Neocortex) Health() map[string]any {
 	h["neural_binding"] = n.neural != nil
 	h["role"] = "planning-decision-inhibition-global-synthesis"
 	return h
+}
+
+func (n *Neocortex) UpdateWorkingMemory(candidates []Candidate) error {
+	if n == nil || n.cortex == nil {
+		return errors.New("neocortex unavailable")
+	}
+	return n.cortex.UpdateWorkingMemory(candidates)
+}
+
+func (n *Neocortex) SwitchTask(taskID string) error {
+	if n == nil || n.cortex == nil {
+		return errors.New("neocortex unavailable")
+	}
+	return n.cortex.SwitchTask(taskID)
+}
+
+func (n *Neocortex) Monitor(now time.Time) map[string]any {
+	if n == nil || n.cortex == nil {
+		return map[string]any{"status": "degraded", "error": "neocortex unavailable"}
+	}
+	return n.cortex.Monitor(now)
 }
