@@ -97,6 +97,9 @@ func RegisterAdvancedOperations(e *Engine) error {
 	if err := registerPrefrontalExecutiveOperations(e); err != nil {
 		return err
 	}
+	if err := registerSynergyOperations(e); err != nil {
+		return err
+	}
 	for _, item := range registrations {
 		if err := e.Register(item.name, item.handler); err != nil {
 			return err
