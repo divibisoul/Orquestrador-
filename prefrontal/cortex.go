@@ -114,8 +114,12 @@ func (c *Cortex) Evaluate(candidates []Candidate) (Candidate, error) {
 			best, bestScore, found = v, s, true
 		}
 	}
+	duration := time.Since(start)
 	c.mu.Lock()
-	c.decisionNanos += uint64(time.Since(start).Nanoseconds())
+	ns := uint64(duration.Nanoseconds())
+	c.decisionNanos += ns
+	c.decisionCount++
+	c.evaluationNanos += ns
 	c.mu.Unlock()
 	if !found {
 		return Candidate{}, errors.New("no valid candidates")
@@ -238,7 +242,6 @@ func (c *Cortex) Commit(candidate Candidate, reason string) (Decision, error) {
 		c.decisions = c.decisions[len(c.decisions)-c.capacity:]
 	}
 	c.lastDecision = time.Now().UTC()
-	c.decisionNanos += uint64(time.Since(start).Nanoseconds())
 	return d, nil
 }
 func (c *Cortex) Recall(limit int) []Decision {
@@ -254,7 +257,6 @@ func (c *Cortex) Recall(limit int) []Decision {
 func (c *Cortex) Health() map[string]any {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
-	avg := 0.0
 avgDecision := 0.0
 	if c.decisionCount > 0 { avgDecision = float64(c.decisionNanos) / float64(c.decisionCount) / 1e6 }
 	avgEvaluate := 0.0
