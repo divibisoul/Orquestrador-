@@ -19,6 +19,36 @@ const (
 	cognitiveHealth   = "cognitive.health@1.0.0"
 )
 
+type cognitiveMeshAdapter struct {
+	peers *mesh.PeerClient
+}
+
+func (a cognitiveMeshAdapter) ConfiguredPeers() []cognitive.PeerDescriptor {
+	if a.peers == nil {
+		return nil
+	}
+	peers := a.peers.ConfiguredPeers()
+	out := make([]cognitive.PeerDescriptor, 0, len(peers))
+	for _, peer := range peers {
+		out = append(out, cognitive.PeerDescriptor{Nucleus: peer.Nucleus})
+	}
+	return out
+}
+
+func (a cognitiveMeshAdapter) Discover(ctx context.Context, nucleus string) (map[string]any, error) {
+	if a.peers == nil {
+		return nil, errors.New("mesh peer client unavailable")
+	}
+	return a.peers.Discover(ctx, nucleus)
+}
+
+func (a cognitiveMeshAdapter) CallBestDynamic(ctx context.Context, capability string, payload map[string]any, correlation string) (map[string]any, string, error) {
+	if a.peers == nil {
+		return nil, "", errors.New("mesh peer client unavailable")
+	}
+	return a.peers.CallBestDynamic(ctx, capability, payload, correlation)
+}
+
 func RegisterCognitiveOperations(
 	e *Engine,
 	peers *mesh.PeerClient,
@@ -55,7 +85,7 @@ func RegisterCognitiveOperations(
 		return out, "N07.gemini-gateway", err
 	}
 
-	loop, err := cognitive.Build(cfg, e.cortex, peers, sara, store, local)
+	loop, err := cognitive.Build(cfg, e.cortex, cognitiveMeshAdapter{peers: peers}, sara, store, local)
 	if err != nil {
 		return err
 	}
@@ -82,7 +112,7 @@ func RegisterCognitiveOperations(
 		if err != nil {
 			return cognitiveResult(message, nil, err)
 		}
-		planner, err := cognitive.NewPlanner(peers)
+		planner, err := cognitive.NewPlanner(cognitiveMeshAdapter{peers: peers})
 		if err != nil {
 			return cognitiveResult(message, nil, err)
 		}
