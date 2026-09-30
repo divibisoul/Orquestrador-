@@ -215,6 +215,12 @@ func operationForTool(tool string) string {
 		return "neural.learn@1.0.0"
 	case "learning.feedback":
 		return "learning.feedback@1.0.0"
+	case "memory.record":
+		return "memory.record@1.0.0"
+	case "memory.search":
+		return "memory.search@1.0.0"
+	case "gemini.delegate.text", "gemini.delegate.multimodal", "gemini.delegate.google-search", "gemini.delegate.code-execution", "gemini.delegate.url-context", "gemini.delegate.file-search", "gemini.delegate.google-maps", "gemini.delegate.audio.transcribe", "gemini.delegate.audio.analyze", "gemini.delegate.speech.synthesize":
+		return strings.ToLower(strings.TrimSpace(tool)) + "@1.0.0"
 	case "compute.execute":
 		return "compute.execute@1.0.0"
 	case "cognitive.execute":
