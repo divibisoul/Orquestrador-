@@ -48,6 +48,7 @@ type Cortex struct {
 	evaluated     uint64
 	decisionNanos uint64
 	lastDecision  time.Time
+	learningObservations uint64
 }
 
 func New(threshold float64, capacity int) (*Cortex, error) {
@@ -225,6 +226,7 @@ func (c *Cortex) ObserveOutcome(capability string, reward, confidence float64) {
 	defer c.mu.Unlock()
 	if len(c.decisions) == 0 { return }
 	outcome := "observed"
+	c.learningObservations++
 	if reward > 0 { outcome = "success" } else if reward < 0 { outcome = "failure" }
 	c.decisions[len(c.decisions)-1].Outcome = outcome
 	_ = capability
@@ -252,5 +254,5 @@ func (c *Cortex) Health() map[string]any {
 			return 0
 		}
 		return float64(c.inhibited) / float64(c.evaluated)
-	}(), "avg_decision_ms": avg, "last_decision": c.lastDecision}
+	}(), "avg_decision_ms": avg, "last_decision": c.lastDecision, "learning_observations": c.learningObservations}
 }
