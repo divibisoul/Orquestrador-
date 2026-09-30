@@ -23,6 +23,7 @@ import (
 	"github.com/divibisoul/Orquestrador-/neural"
 	"github.com/divibisoul/Orquestrador-/octacore"
 	"github.com/divibisoul/Orquestrador-/protocol"
+	"github.com/divibisoul/Orquestrador-/rgo"
 	"github.com/divibisoul/Orquestrador-/orchestrator"
 	"github.com/divibisoul/Orquestrador-/prefrontal"
 	"github.com/divibisoul/Orquestrador-/supergpu"
@@ -97,6 +98,9 @@ func main() {
 			log.Fatal(err)
 		}
 	}
+	if err := rgo.RegisterOperation(e, saraProxy); err != nil {
+		log.Fatal(err)
+	}
 
 	peerClient, err := mesh.NewPeerClient(nil)
 	if err != nil {
@@ -109,6 +113,9 @@ func main() {
 		log.Fatal(err)
 	}
 	hortaCore.SetPeerClient(peerClient)
+	if err := rgo.RegisterTrinityOperation(e, saraProxy, peerClient); err != nil {
+		log.Fatal(err)
+	}
 	clareiraReporter, err := mesh.NewClareiraReporter(peerClient)
 	if err != nil {
 		log.Fatal(err)
