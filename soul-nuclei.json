@@ -79,7 +79,7 @@
         "N03"
       ],
       "manifestAuthority": "SOUL-FUSION-MANIFEST.json",
-      "sourceRef": "4f95c50b2841829daf2904fdb7c7a8171e1a9113",
+      "sourceRef": "f2fcbf9381c90a27d944794f1275b4bafa2f3516",
       "status": "main-live-bncv2-csae-dcrs-reintegrated"
     },
     "N03": {
@@ -103,7 +103,7 @@
         "N04"
       ],
       "manifestAuthority": "SOUL-FUSION-MANIFEST.json",
-      "sourceRef": "9951485529c8480ff3bf4d7305538d152b6acdfe",
+      "sourceRef": "6a19a696326805a51c5b9fbdc63687fcdf167890",
       "status": "main-live-composition-contract-reconciled"
     },
     "N04": {
