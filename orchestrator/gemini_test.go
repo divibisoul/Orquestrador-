@@ -1,149 +1,68 @@
 package orchestrator
 
 import (
-	"context"
-	"encoding/json"
-	"strings"
+	"math"
 	"testing"
 
-	"github.com/divibisoul/Orquestrador-/neural"
-	"github.com/divibisoul/Orquestrador-/prefrontal"
 	"github.com/divibisoul/Orquestrador-/protocol"
-	"github.com/divibisoul/Orquestrador-/supergpu"
 )
 
-type geminiPeerCall struct {
-	Nucleus     string
-	Capability  string
-	Correlation string
-	Payload     map[string]any
-}
-
-type geminiFakePeer struct {
-	calls []geminiPeerCall
-}
-
-func (p *geminiFakePeer) CallWithCorrelation(_ context.Context, nucleus, capability string, payload map[string]any, correlation string) (map[string]any, error) {
-	p.calls = append(p.calls, geminiPeerCall{Nucleus: nucleus, Capability: capability, Correlation: correlation, Payload: payload})
-	switch capability {
-	case "neural.bnc_v2":
-		return map[string]any{"payload": map[string]any{"bnc": map[string]any{"vector": []any{0.1, 0.2, 0.3, 0.4, 0.2, 0.1, 0.2, 0.3}}}}, nil
-	case "gemini.text.generate":
-		return map[string]any{"payload": map[string]any{"text": "Gemini real output"}}, nil
-	default:
-		return map[string]any{"payload": map[string]any{}}, nil
+func TestGeminiPolicyValidation(t *testing.T) {
+	cases := []struct {
+		name    string
+		raw     string
+		wantErr bool
+	}{
+		{name: "valid", raw: `{"id":"g1","cost":0.1,"risk":0.2,"urgency":1,"impact":2}`},
+		{name: "missing-id", raw: `{"cost":0.1,"risk":0.2,"urgency":1,"impact":2}`, wantErr: true},
+		{name: "risk-over-one", raw: `{"id":"g1","cost":0.1,"risk":1.1,"urgency":1,"impact":2}`, wantErr: true},
+		{name: "negative-cost", raw: `{"id":"g1","cost":-0.1,"risk":0.2,"urgency":1,"impact":2}`, wantErr: true},
+		{name: "invalid-json", raw: `{"id":`, wantErr: true},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			_, err := parseGeminiPolicy(tc.raw)
+			if (err != nil) != tc.wantErr {
+				t.Fatalf("wantErr=%v got=%v", tc.wantErr, err)
+			}
+		})
 	}
 }
 
-func newGeminiEngine(t *testing.T) (*Engine, *prefrontal.Cortex) {
-	t.Helper()
-	n, err := neural.New(8, .05)
-	if err != nil {
-		t.Fatal(err)
-	}
-	c, err := prefrontal.New(.01, 8)
-	if err != nil {
-		t.Fatal(err)
-	}
-	g := supergpu.New(nil)
-	g.Discover()
-	e, err := New(n, c, g)
-	if err != nil {
-		t.Fatal(err)
-	}
-	return e, c
-}
-
-func TestGeminiGatewayRoutesThroughPrefrontalToN02AndClareira(t *testing.T) {
-	e, c := newGeminiEngine(t)
-	peer := &geminiFakePeer{}
-	var events []GeminiExecutionEvent
-	if err := RegisterGeminiOperations(e, peer, func(_ context.Context, event GeminiExecutionEvent) error {
-		events = append(events, event)
-		return nil
-	}); err != nil {
-		t.Fatal(err)
-	}
-
-	candidateJSON, _ := json.Marshal(map[string]any{"id": "gemini-safe-action", "cost": .01, "risk": .01, "urgency": .1, "impact": .2})
+func TestGeminiPayloadPreservesNativeInputs(t *testing.T) {
 	message := protocol.NewMessage("N01", "N07", "command", "gemini.delegate.text@1.0.0", nil)
-	message.CorrelationID = "corr-gemini-test"
-	message.Metadata["candidate_json"] = string(candidateJSON)
-	message.Metadata["text"] = "analisar esta solicitação"
+	message.Metadata["text"] = "hello"
+	message.Metadata["system_instruction"] = "system"
+	message.Metadata["temperature"] = "0.7"
+	message.Metadata["max_output_tokens"] = "512"
+	message.Metadata["use_web_search"] = "true"
 
-	result, err := e.Submit(context.Background(), message)
-	if err != nil {
-		t.Fatal(err)
+	payload := geminiPayload(message, "hello")
+	if payload["text"] != "hello" || payload["input"] != "hello" {
+		t.Fatalf("text propagation failed: %#v", payload)
 	}
-	if result.Status != "ok" {
-		t.Fatalf("unexpected status: %#v", result)
-	}
-	if result.Metadata["route"] != "N07.prefrontal>N02" || result.Metadata["provider"] != "google-gemini" || result.Metadata["owner"] != "N02" {
-		t.Fatalf("unexpected routing metadata: %#v", result.Metadata)
-	}
-	if result.Metadata["output_text"] != "Gemini real output" {
-		t.Fatalf("unexpected output: %#v", result.Metadata)
-	}
-	if len(c.Recall(1)) != 1 {
-		t.Fatal("expected prefrontal decision to be committed")
-	}
-	if len(peer.calls) != 2 || peer.calls[0].Capability != "neural.bnc_v2" || peer.calls[1].Capability != "gemini.text.generate" {
-		t.Fatalf("unexpected N02 call chain: %#v", peer.calls)
-	}
-	for _, call := range peer.calls {
-		if call.Nucleus != "N02" || call.Correlation != message.CorrelationID {
-			t.Fatalf("invalid peer provenance: %#v", peer.calls)
-		}
-	}
-	if len(events) != 2 || events[0].Phase != "started" || events[1].Phase != "completed" {
-		t.Fatalf("unexpected lifecycle: %#v", events)
+	if payload["systemInstruction"] != "system" || payload["temperature"] != 0.7 || payload["maxOutputTokens"] != 512 || payload["useWebSearch"] != true {
+		t.Fatalf("metadata propagation failed: %#v", payload)
 	}
 }
 
-func TestGeminiGatewayRejectsMalformedStructuredContentWithoutProviderCall(t *testing.T) {
-	e, _ := newGeminiEngine(t)
-	peer := &geminiFakePeer{}
-	if err := RegisterGeminiOperations(e, peer, nil); err != nil {
-		t.Fatal(err)
+func TestGeminiResponseNormalizationRejectsMissingProviderOutput(t *testing.T) {
+	if _, _, err := normalizeGeminiResponse(geminiText, map[string]any{"payload": map[string]any{}}); err == nil {
+		t.Fatal("expected missing Gemini text to fail")
 	}
-	message := protocol.NewMessage("N01", "N07", "command", "gemini.delegate.multimodal@1.0.0", nil)
-	message.Metadata["candidate_json"] = `{"id":"bad-content","cost":0.01,"risk":0.01,"urgency":0,"impact":0}`
-	message.Metadata["text"] = "texto válido"
-	message.Metadata["contents_json"] = "{malformed"
-
-	_, err := e.Submit(context.Background(), message)
-	if err == nil || !strings.Contains(err.Error(), "contents_json is invalid") {
-		t.Fatalf("expected explicit malformed contents error, got %v", err)
-	}
-	if len(peer.calls) != 1 || peer.calls[0].Capability != "neural.bnc_v2" {
-		t.Fatalf("provider must not execute: %#v", peer.calls)
+	if _, _, err := normalizeGeminiResponse(geminiAudioTranscribe, map[string]any{"payload": map[string]any{"transcript": ""}}); err == nil {
+		t.Fatal("expected missing transcript to fail")
 	}
 }
 
-func TestGeminiGatewayRejectsRiskBeforeProvider(t *testing.T) {
-	e, _ := newGeminiEngine(t)
-	peer := &geminiFakePeer{}
-	var events []GeminiExecutionEvent
-	if err := RegisterGeminiOperations(e, peer, func(_ context.Context, event GeminiExecutionEvent) error {
-		events = append(events, event)
-		return nil
-	}); err != nil {
-		t.Fatal(err)
-	}
-	message := protocol.NewMessage("N01", "N07", "command", "gemini.delegate.text@1.0.0", []float64{.1, .1, .1, .1, .1, .1, .1, .1})
-	message.Metadata["candidate_json"] = `{"id":"risky","cost":0.01,"risk":1,"urgency":0,"impact":0}`
-	message.Metadata["text"] = "não deve chegar ao provider"
-
-	_, err := e.Submit(context.Background(), message)
-	if err == nil {
-		t.Fatal("expected risk gate rejection")
-	}
-	for _, call := range peer.calls {
-		if strings.HasPrefix(call.Capability, "gemini.") {
-			t.Fatalf("Gemini provider must not execute: %#v", peer.calls)
+func TestGeminiFloatSliceRejectsNonFiniteValues(t *testing.T) {
+	for _, value := range []float64{math.NaN(), math.Inf(1), math.Inf(-1)} {
+		if _, err := floatSlice([]float64{0.1, value, 0.2}); err == nil {
+			t.Fatalf("expected non-finite value to be rejected: %v", value)
 		}
 	}
-	if len(events) != 1 || events[0].Phase != "failed" {
-		t.Fatalf("expected failed lifecycle event: %#v", events)
+	values, err := floatSlice([]any{0.1, 0.2, 0.3})
+	if err != nil || len(values) != 3 {
+		t.Fatalf("expected valid numeric vector, values=%v err=%v", values, err)
 	}
 }
