@@ -119,18 +119,7 @@ func main() {
 			correlationID = protocol.NewTraceID()
 		}
 		reportCtx := supergpu.WithCorrelationID(ctx, correlationID)
-		return clareiraReporter.Report(reportCtx, mesh.ExecutionEvent{
-			Phase: event.Phase,
-			Operation: event.Operation,
-			Provider: event.Backend,
-			Model: event.DeviceID,
-			Source: "N07.supergpu",
-			Owner: "N07",
-			CorrelationID: event.CorrelationID,
-			InputSize: event.InputSize,
-			OutputSize: event.OutputSize,
-			Error: event.Error,
-		})
+		return clareiraReporter.Report(reportCtx, event)
 	}))
 	octacoreProcessor.SetVagusPublisher(func(ctx context.Context, event octacore.VagusEnvelope) error {
 		if !saraProxy.Configured() {
