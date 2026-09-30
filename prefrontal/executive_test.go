@@ -1,6 +1,7 @@
 package prefrontal
 
 import (
+	"fmt"
 	"testing"
 	"time"
 )
@@ -23,4 +24,33 @@ func TestExecutiveControlFunctions(t *testing.T) {
 	if _, err := c.ObserveOutcome(decision.ID, "completed", 1); err != nil { t.Fatal(err) }
 	if len(c.PendingWithinHorizon(time.Now().UTC())) != 0 { t.Fatal("completed decision cannot be pending") }
 	if c.Monitor(time.Now().UTC())["status"] != "ready" { t.Fatal("monitor unhealthy") }
+}
+
+func TestPrefrontalPreservesDecisionHistoryBeyondWorkingCapacity(t *testing.T) {
+	c, err := New(.01, 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	candidate := Candidate{ID: "history-action", Utility: .9, Cost: .01, Risk: .01}
+	for i := 0; i < 3; i++ {
+		candidate.ID = fmt.Sprintf("history-action-%d", i)
+		if _, err := c.Commit(candidate, "history-test"); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if got := c.HistorySize(); got != 3 {
+		t.Fatalf("decision history was truncated: %d", got)
+	}
+
+	candidate.ID = "wm-a"
+	if err := c.UpdateWorkingMemory([]Candidate{candidate}); err != nil {
+		t.Fatal(err)
+	}
+	candidate.ID = "wm-b"
+	if err := c.UpdateWorkingMemory([]Candidate{candidate}); err != nil {
+		t.Fatal(err)
+	}
+	if got := len(c.WorkingMemoryHistory()); got == 0 {
+		t.Fatal("working-memory overflow was discarded without archive")
+	}
 }
