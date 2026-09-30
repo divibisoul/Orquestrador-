@@ -269,6 +269,13 @@ func (p *PeerClient) call(ctx context.Context, nucleus, capability string, paylo
 	}
 	p.mu.Unlock()
 
+	// Protect the half-open gate on every exit path, including local request
+	// construction/encoding failures and cancellation during retry backoff.
+	// Normal recordSuccess/recordFailure paths clear HalfOpenUse first.
+	if halfOpen {
+		defer p.abortHalfOpen(nucleus)
+	}
+
 	if p.secret == "" {
 		if halfOpen {
 			p.abortHalfOpen(nucleus)
