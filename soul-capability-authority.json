@@ -313,31 +313,31 @@
         "id": "gemini.text.generate",
         "repository": "divibisoul/Eternium-",
         "path": "src/soul-mesh/N02AIProviderBridge.ts",
-        "ref": "main"
+        "ref": "547e1ad2b7579b4756a6013308241834a03c3fde"
       },
       {
         "id": "gemini.multimodal.generate",
         "repository": "divibisoul/Eternium-",
         "path": "src/soul-mesh/N02AIProviderBridge.ts",
-        "ref": "main"
+        "ref": "547e1ad2b7579b4756a6013308241834a03c3fde"
       },
       {
         "id": "gemini.audio.transcribe",
         "repository": "divibisoul/Eternium-",
         "path": "src/soul-mesh/N02AIProviderBridge.ts",
-        "ref": "main"
+        "ref": "547e1ad2b7579b4756a6013308241834a03c3fde"
       },
       {
         "id": "gemini.audio.analyze",
         "repository": "divibisoul/Eternium-",
         "path": "src/soul-mesh/N02AIProviderBridge.ts",
-        "ref": "main"
+        "ref": "547e1ad2b7579b4756a6013308241834a03c3fde"
       },
       {
         "id": "gemini.speech.synthesize",
         "repository": "divibisoul/Eternium-",
         "path": "src/soul-mesh/N02AIProviderBridge.ts",
-        "ref": "main"
+        "ref": "547e1ad2b7579b4756a6013308241834a03c3fde"
       }
     ],
     "N03": [
@@ -363,19 +363,19 @@
         "id": "audio.summarize",
         "repository": "divibisoul/nexus-aeternum-fusion",
         "path": "src/mesh/N03AudioCapabilityRegistry.ts",
-        "ref": "f05a5ee545e5e97c808c367ac6401625654ff8a4"
+        "ref": "6890091d037123d176d452641f1ecb827ccda58d"
       },
       {
         "id": "speech.translate",
         "repository": "divibisoul/nexus-aeternum-fusion",
         "path": "src/mesh/N03AudioCapabilityRegistry.ts",
-        "ref": "f05a5ee545e5e97c808c367ac6401625654ff8a4"
+        "ref": "6890091d037123d176d452641f1ecb827ccda58d"
       },
       {
         "id": "speaker.identify",
         "repository": "divibisoul/nexus-aeternum-fusion",
         "path": "src/mesh/N03AudioCapabilityRegistry.ts",
-        "ref": "f05a5ee545e5e97c808c367ac6401625654ff8a4"
+        "ref": "6890091d037123d176d452641f1ecb827ccda58d"
       }
     ],
     "N04": [
