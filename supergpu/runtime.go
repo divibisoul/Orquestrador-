@@ -25,6 +25,7 @@ type Reservation struct {
 	ExpiresAt time.Time
 	Priority  int
 	Metadata  map[string]string
+	LeaseCount int
 }
 type Backend interface {
 	Execute(context.Context, Device, string, []float64) ([]float64, error)
@@ -260,7 +261,7 @@ func (r *Runtime) Reserve(deviceID, owner string) error {
 	if current, ok := r.reserved[deviceID]; ok && current.Owner != owner {
 		return errors.New("device already reserved")
 	}
-	r.reserved[deviceID] = Reservation{DeviceID: deviceID, Owner: owner, ExpiresAt: time.Now().Add(30 * time.Second)}
+	r.reserved[deviceID] = Reservation{DeviceID: deviceID, Owner: owner, ExpiresAt: time.Now().Add(30 * time.Second), LeaseCount: 1}
 	return nil
 }
 func (r *Runtime) Release(deviceID, owner string) error {
@@ -272,6 +273,11 @@ func (r *Runtime) Release(deviceID, owner string) error {
 	}
 	if current.Owner != owner {
 		return errors.New("reservation owner mismatch")
+	}
+	if current.LeaseCount > 1 {
+		current.LeaseCount--
+		r.reserved[deviceID] = current
+		return nil
 	}
 	delete(r.reserved, deviceID)
 	return nil
@@ -307,7 +313,13 @@ func (r *Runtime) Execute(ctx context.Context, device Device, operation string, 
 			return nil, errors.New("runtime closed")
 		}
 	}
+	r.mu.Lock()
+	if r.closed {
+		r.mu.Unlock()
+		return nil, errors.New("runtime closed")
+	}
 	r.running.Add(1)
+	r.mu.Unlock()
 	defer r.running.Done()
 
 	correlationID := CorrelationIDFromContext(ctx)
