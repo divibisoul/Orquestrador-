@@ -27,6 +27,7 @@ type Config struct {
 	SupabaseServiceKey     string
 	SupabaseRunsTable      string
 	SupabaseArtifactsTable string
+	SupabaseLearningTable string
 	Web3StorageURL         string
 	Web3StorageToken       string
 	IPFSGatewayURL         string
@@ -48,6 +49,7 @@ func DefaultConfig() Config {
 		SupabaseServiceKey:     strings.TrimSpace(getenv("SUPABASE_SERVICE_ROLE_KEY")),
 		SupabaseRunsTable:      envString("SUPABASE_RUNS_TABLE", "n07_runs"),
 		SupabaseArtifactsTable: envString("SUPABASE_ARTIFACTS_TABLE", "n07_artifacts"),
+		SupabaseLearningTable: envString("SUPABASE_LEARNING_TABLE", "n07_learning_experiences"),
 		Web3StorageURL:         strings.TrimRight(envString("WEB3_STORAGE_API_URL", "https://api.web3.storage"), "/"),
 		Web3StorageToken:       strings.TrimSpace(getenv("WEB3_STORAGE_TOKEN")),
 		IPFSGatewayURL:         strings.TrimRight(envString("N07_IPFS_GATEWAY_URL", "https://dweb.link/ipfs"), "/"),
