@@ -5,14 +5,13 @@ import (
 	"errors"
 	"fmt"
 	"strings"
-
 )
 
 type ToolDescriptor struct {
-	Capability  string         `json:"capability"`
-	Owner       string         `json:"owner"`
-	Executable  bool           `json:"executable"`
-	InputSchema map[string]any `json:"input_schema,omitempty"`
+	Capability   string         `json:"capability"`
+	Owner        string         `json:"owner"`
+	Executable   bool           `json:"executable"`
+	InputSchema  map[string]any `json:"input_schema,omitempty"`
 	OutputSchema map[string]any `json:"output_schema,omitempty"`
 }
 
@@ -38,7 +37,7 @@ func (p *Planner) DiscoverTool(ctx context.Context, capability string) (ToolDesc
 		if executable(description, capability) {
 			return ToolDescriptor{
 				Capability: capability, Owner: peer.Nucleus, Executable: true,
-				InputSchema: schema(description, capability, "input"),
+				InputSchema:  schema(description, capability, "input"),
 				OutputSchema: schema(description, capability, "output"),
 			}, nil
 		}

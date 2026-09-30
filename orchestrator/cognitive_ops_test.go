@@ -30,11 +30,11 @@ func TestCognitiveGoalDecodeRejectsIncompleteGoal(t *testing.T) {
 
 func TestGeminiDelegateMappingPreservesCanonicalN02Capabilities(t *testing.T) {
 	cases := map[string]string{
-		"gemini.text.generate":            "gemini.delegate.text@1.0.0",
-		"gemini.multimodal.generate":      "gemini.delegate.multimodal@1.0.0",
-		"gemini.audio.transcribe":         "gemini.delegate.audio.transcribe@1.0.0",
-		"gemini.audio.analyze":            "gemini.delegate.audio.analyze@1.0.0",
-		"gemini.speech.synthesize":        "gemini.delegate.speech.synthesize@1.0.0",
+		"gemini.text.generate":       "gemini.delegate.text@1.0.0",
+		"gemini.multimodal.generate": "gemini.delegate.multimodal@1.0.0",
+		"gemini.audio.transcribe":    "gemini.delegate.audio.transcribe@1.0.0",
+		"gemini.audio.analyze":       "gemini.delegate.audio.analyze@1.0.0",
+		"gemini.speech.synthesize":   "gemini.delegate.speech.synthesize@1.0.0",
 	}
 	for canonical, delegate := range cases {
 		got, ok := geminiDelegateFor(canonical)
@@ -46,8 +46,8 @@ func TestGeminiDelegateMappingPreservesCanonicalN02Capabilities(t *testing.T) {
 
 func TestMapPayloadToMetadataPreservesStructuredValues(t *testing.T) {
 	values, err := mapPayloadToMetadata(map[string]any{
-		"temperature": 0.7,
-		"useWebSearch": true,
+		"temperature":   0.7,
+		"useWebSearch":  true,
 		"candidateJson": map[string]any{"risk": 0.1},
 	}, "corr-1")
 	if err != nil {

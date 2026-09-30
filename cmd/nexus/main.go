@@ -39,7 +39,9 @@ type n07CognitiveMeshAdapter struct {
 }
 
 func (a n07CognitiveMeshAdapter) ConfiguredPeers() []cognitive.PeerDescriptor {
-	if a.peers == nil { return nil }
+	if a.peers == nil {
+		return nil
+	}
 	raw := a.peers.ConfiguredPeers()
 	out := make([]cognitive.PeerDescriptor, 0, len(raw))
 	for _, peer := range raw {
@@ -49,12 +51,16 @@ func (a n07CognitiveMeshAdapter) ConfiguredPeers() []cognitive.PeerDescriptor {
 }
 
 func (a n07CognitiveMeshAdapter) Discover(ctx context.Context, nucleus string) (map[string]any, error) {
-	if a.peers == nil { return nil, errors.New("mesh peer client unavailable") }
+	if a.peers == nil {
+		return nil, errors.New("mesh peer client unavailable")
+	}
 	return a.peers.Discover(ctx, nucleus)
 }
 
 func (a n07CognitiveMeshAdapter) CallBestDynamic(ctx context.Context, capability string, payload map[string]any, correlation string) (map[string]any, string, error) {
-	if a.peers == nil { return nil, "", errors.New("mesh peer client unavailable") }
+	if a.peers == nil {
+		return nil, "", errors.New("mesh peer client unavailable")
+	}
 	return a.peers.CallBestDynamic(ctx, capability, payload, correlation)
 }
 

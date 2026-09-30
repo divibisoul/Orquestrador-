@@ -26,11 +26,11 @@ type RunStore interface {
 }
 
 type Config struct {
-	Enabled                bool
-	WorkingMemoryItems     int
-	WorkingMemoryTTL       time.Duration
-	GoalTTL                time.Duration
-	RequireSaraForPolicy   bool
+	Enabled              bool
+	WorkingMemoryItems   int
+	WorkingMemoryTTL     time.Duration
+	GoalTTL              time.Duration
+	RequireSaraForPolicy bool
 }
 
 func DefaultConfig() Config {
@@ -44,19 +44,19 @@ func DefaultConfig() Config {
 }
 
 type Goal struct {
-	ID             string         `json:"goal_id"`
-	Objective      string         `json:"objective"`
-	SuccessCriteria []string      `json:"success_criteria"`
-	Capabilities   []string       `json:"capabilities"`
-	Input          map[string]any `json:"input"`
-	Risk           float64        `json:"risk"`
-	Cost           float64        `json:"cost"`
-	Urgency        float64        `json:"urgency"`
-	Impact         float64        `json:"impact"`
-	Irreversible   bool           `json:"irreversible"`
-	CorrelationID  string         `json:"correlation_id"`
-	CreatedAt      time.Time      `json:"created_at"`
-	ExpiresAt      time.Time      `json:"expires_at"`
+	ID              string         `json:"goal_id"`
+	Objective       string         `json:"objective"`
+	SuccessCriteria []string       `json:"success_criteria"`
+	Capabilities    []string       `json:"capabilities"`
+	Input           map[string]any `json:"input"`
+	Risk            float64        `json:"risk"`
+	Cost            float64        `json:"cost"`
+	Urgency         float64        `json:"urgency"`
+	Impact          float64        `json:"impact"`
+	Irreversible    bool           `json:"irreversible"`
+	CorrelationID   string         `json:"correlation_id"`
+	CreatedAt       time.Time      `json:"created_at"`
+	ExpiresAt       time.Time      `json:"expires_at"`
 }
 
 type Step struct {

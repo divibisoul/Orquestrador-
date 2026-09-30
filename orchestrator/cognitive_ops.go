@@ -17,7 +17,6 @@ const (
 	cognitiveHealth   = "cognitive.health@1.0.0"
 )
 
-
 func RegisterCognitiveOperations(
 	e *Engine,
 	peers cognitive.MeshPeer,
