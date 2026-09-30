@@ -241,3 +241,17 @@ func (p *concurrencyPeer) Invoke(ctx context.Context, nucleus, operation string,
 		return nil, ctx.Err()
 	}
 }
+
+func TestParallelFallsBackWhenSourceIsControlPlaneN07(t *testing.T) {
+	peer := &recordingPeer{}
+	fabric, err := NewFabric(peer)
+	if err != nil {
+		t.Fatal(err)
+	}
+	results := fabric.Parallel([]NeuralTask{
+		{ID: "n07-origin", Operation: "neural.forward@1.0.0", CorrelationID: "c-n07", Source: "N07"},
+	})
+	if len(results) != 1 || results[0].Nucleus == "N07" || results[0].Error != "" {
+		t.Fatalf("N07 origin must fall back to a registered remote member: %+v", results)
+	}
+}
