@@ -204,3 +204,68 @@ func TestHTTPGatewayHonorsContextCancellation(t *testing.T) {
 		t.Fatal("cancelled request must not be reported as a successful request")
 	}
 }
+
+func TestHTTPGatewayExposesFullPrefrontalExecutiveSurface(t *testing.T) {
+	h := newTestGateway(t)
+	candidate := map[string]any{
+		"ID": "mesh-exec-action", "Cost": .01, "Risk": .01, "Utility": .7,
+		"Uncertainty": .05, "Urgency": .4, "Impact": .6,
+	}
+	candidatesJSON, _ := json.Marshal([]map[string]any{candidate})
+	candidateJSON, _ := json.Marshal(candidate)
+
+	request := func(capability, correlation string, metadata map[string]string) testWire {
+		wire := canonicalRequest("request", capability, correlation, nil)
+		wire["metadata"] = metadata
+		got, code := postWire(t, h, wire)
+		if code != http.StatusOK {
+			t.Fatalf("%s failed: code=%d envelope=%+v", capability, code, got)
+		}
+		if got.CorrelationID != correlation || got.Source != "N07" || got.Target != "N01" || got.Kind != "response" {
+			t.Fatalf("%s returned invalid Mesh identity: %+v", capability, got)
+		}
+		if got.Payload["status"] != "ok" {
+			t.Fatalf("%s did not execute: %+v", capability, got.Payload)
+		}
+		return got
+	}
+
+	request("prefrontal.task.switch", "pfc-task", map[string]string{"task_id": "task-1"})
+	request("prefrontal.working-memory", "pfc-memory", map[string]string{
+		"candidates_json": string(candidatesJSON),
+	})
+	request("prefrontal.plan", "pfc-plan", map[string]string{
+		"candidates_json": string(candidatesJSON),
+	})
+	request("prefrontal.prioritize", "pfc-prioritize", map[string]string{
+		"candidates_json": string(candidatesJSON),
+	})
+	request("prefrontal.inhibit", "pfc-inhibit", map[string]string{
+		"candidate_json": string(candidateJSON),
+	})
+	request("prefrontal.select", "pfc-select", map[string]string{
+		"candidates_json": string(candidatesJSON),
+	})
+	request("prefrontal.validate", "pfc-validate", map[string]string{
+		"candidate_json": string(candidateJSON),
+	})
+	commit := request("prefrontal.commit", "pfc-commit", map[string]string{
+		"candidate_json": string(candidateJSON),
+		"reason": "mesh-executive-test",
+	})
+	commitMetadata, ok := commit.Payload["metadata"].(map[string]any)
+	if !ok {
+		t.Fatalf("commit response metadata missing: %#v", commit.Payload)
+	}
+	decisionID, ok := commitMetadata["decision_id"].(string)
+	if !ok || decisionID == "" {
+		t.Fatalf("decision id missing from commit response: %#v", commitMetadata)
+	}
+	request("prefrontal.outcome.observe", "pfc-outcome", map[string]string{
+		"decision_id": decisionID,
+		"outcome": "completed",
+		"value": "1",
+	})
+	request("prefrontal.recall", "pfc-recall", map[string]string{"limit": "8"})
+	request("prefrontal.monitor", "pfc-monitor", nil)
+}
