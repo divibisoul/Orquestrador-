@@ -4,8 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strings"
-	"time"
 )
 
 func (l *Loop) RunPlanned(ctx context.Context, g Goal) ([]Observation, error) {
