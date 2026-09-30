@@ -430,6 +430,34 @@ func (n *Network) Backprop(inputs, target []float64) ([]float64, error) {
 	n.mu.Unlock()
 	return grad, nil
 }
+
+type ParametersSnapshot struct {
+	Size           int      `json:"size"`
+	LearningRate   float64  `json:"learning_rate"`
+	Optimizer      string   `json:"optimizer"`
+	Regularization float64  `json:"regularization"`
+	GradientClip   float64  `json:"gradient_clip"`
+	Heads          int      `json:"heads"`
+	BatchCache     int      `json:"batch_cache"`
+	Layers         []Layer  `json:"layers"`
+}
+
+func (n *Network) Parameters() ParametersSnapshot {
+	n.mu.RLock()
+	defer n.mu.RUnlock()
+	layers := append([]Layer(nil), n.config.Layers...)
+	return ParametersSnapshot{
+		Size: n.size,
+		LearningRate: n.learningRate,
+		Optimizer: n.config.Optimizer,
+		Regularization: n.config.Regularization,
+		GradientClip: n.config.GradientClip,
+		Heads: n.config.Heads,
+		BatchCache: n.config.BatchCache,
+		Layers: layers,
+	}
+}
+
 func (n *Network) Health() map[string]any {
 	n.mu.RLock()
 	defer n.mu.RUnlock()
