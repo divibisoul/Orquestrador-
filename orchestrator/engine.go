@@ -12,6 +12,8 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/divibisoul/Orquestrador-/learning"
+	"github.com/divibisoul/Orquestrador-/memory"
 	"github.com/divibisoul/Orquestrador-/neural"
 	"github.com/divibisoul/Orquestrador-/observability"
 	"github.com/divibisoul/Orquestrador-/prefrontal"
@@ -59,6 +61,8 @@ type Engine struct {
 	neural           *neural.Network
 	cortex           *prefrontal.Cortex
 	compute          *supergpu.Runtime
+	learning         *learning.Machine
+	memory           memory.Store
 	running          atomic.Bool
 	sequence         atomic.Uint64
 	failures         atomic.Uint64
@@ -139,6 +143,9 @@ func New(n *neural.Network, c *prefrontal.Cortex, g *supergpu.Runtime) (*Engine,
 	}
 	e.running.Store(true)
 	if err := e.registerBuiltins(); err != nil {
+		return nil, err
+	}
+	if err := e.installCooperativeCapabilities(); err != nil {
 		return nil, err
 	}
 	return e, nil
@@ -496,6 +503,21 @@ func (e *Engine) registerBuiltins() error {
 		half := len(message.Payload) / 2
 		if half == 0 || half*2 != len(message.Payload) {
 			return protocol.Result{}, errors.New("learn payload must contain input and target halves")
+		}
+		if e.learning != nil {
+			exp := learning.Experience{
+				ID: message.TraceID, TraceID: message.TraceID, CorrelationID: message.CorrelationID,
+				Source: message.Source, Target: message.Metadata["learning_target"],
+				Capability: message.Metadata["learning_capability"], EventType: learning.EventSupervised,
+				Outcome: "supervised", Reward: 0, Confidence: 1,
+				Input: append([]float64(nil), message.Payload[:half]...),
+				TargetVector: append([]float64(nil), message.Payload[half:]...),
+				Provenance: "neural.learn", Metadata: message.Metadata,
+			}
+			if exp.Target == "" { exp.Target = "N07" }
+			if exp.Capability == "" { exp.Capability = "neural.learn" }
+			err := e.learning.Learn(ctx, exp)
+			return protocol.Result{TraceID: message.TraceID, CorrelationID: message.CorrelationID, Source: "N07.neural", Target: message.Source, Status: status(err), Error: errorText(err)}, err
 		}
 		err := e.neural.Learn(message.Payload[:half], message.Payload[half:])
 		return protocol.Result{TraceID: message.TraceID, CorrelationID: message.CorrelationID, Source: "N07.neural", Target: message.Source, Status: status(err), Error: errorText(err)}, err
