@@ -52,7 +52,6 @@ func main() {
 	if learningStore.Configured() { learningSink = learningStore }
 	e, err := orchestrator.New(n, c, g)
 	if err != nil { log.Fatal(err) }
-	if err := e.SetNeuralParametersOperation(); err != nil { log.Fatal(err) }
 	if learningSink != nil {
 		learningMachine, err := learning.New(n, c, learningSink)
 		if err != nil { log.Fatal(err) }
