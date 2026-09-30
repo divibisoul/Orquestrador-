@@ -46,18 +46,6 @@
           "capability": "gemini.multimodal.generate",
           "path": "src/soul-mesh/N02AIProviderBridge.ts",
           "status": "IMPLEMENTED"
-        },
-        {
-          "owner": "N03",
-          "capability": "gemini.audio.transcribe",
-          "path": "src/mesh/GeminiAudioAdapter.ts",
-          "status": "IMPLEMENTED"
-        },
-        {
-          "owner": "N03",
-          "capability": "gemini.audio.analyze",
-          "path": "src/mesh/GeminiAudioAdapter.ts",
-          "status": "IMPLEMENTED"
         }
       ]
     },
