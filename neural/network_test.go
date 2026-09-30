@@ -158,3 +158,38 @@ func TestNetworkConfigureValidatesExecutableConfig(t *testing.T) {
 		}
 	}
 }
+
+func TestLearnExecutesDropoutAndRemainsFinite(t *testing.T) {
+	n, err := New(4, .03)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := n.Configure(Config{
+		Layers: []Layer{
+			{Activation: "tanh", DropoutRate: .25},
+			{Activation: "linear", DropoutRate: .10},
+		},
+		Optimizer: "adam",
+		Regularization: 1e-6,
+		GradientClip: 1.0,
+		Heads: 1,
+		BatchCache: 16,
+	}); err != nil {
+		t.Fatal(err)
+	}
+	for i := 0; i < 8; i++ {
+		if err := n.Learn(
+			[]float64{1, 0, -1, .5},
+			[]float64{.2, -.1, .3, .4},
+		); err != nil {
+			t.Fatal(err)
+		}
+	}
+	health := n.Health()
+	if health["dropout_enabled"] != true {
+		t.Fatalf("dropout was configured but not reported enabled: %#v", health)
+	}
+	if loss, ok := health["last_loss"].(float64); !ok || math.IsNaN(loss) || math.IsInf(loss, 0) {
+		t.Fatalf("dropout training produced invalid loss: %#v", health["last_loss"])
+	}
+}
