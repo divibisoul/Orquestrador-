@@ -252,6 +252,7 @@ func (m *Machine) Learn(ctx context.Context, exp Experience) error {
 		return err
 	}
 	m.updateRoute(exp)
+	m.cortex.ObserveOutcome(exp.Capability, exp.Reward, exp.Confidence)
 	m.experiences.Add(1)
 	m.supervised.Add(1)
 	return m.persist(ctx, exp)
