@@ -59,6 +59,7 @@ type Cortex struct {
 	workingMemory map[string]workingMemoryEntry
 	taskFrames []TaskFrame
 	currentTask string
+	learningObservations []LearningObservation
 }
 
 func New(threshold float64, capacity int) (*Cortex, error) {
