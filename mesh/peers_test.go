@@ -108,11 +108,15 @@ func TestDiscoveryCacheExpires(t *testing.T) {
 }
 
 func TestPeerClientHalfOpenAllowsOnlyOneProbe(t *testing.T) {
-	requestStarted := make(chan struct{}, 2)
+	requestStarted := make(chan struct{}, 1)
 	release := make(chan struct{})
+	var requestCount atomic.Int32
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		requestStarted <- struct{}{}
-		<-release
+		count := requestCount.Add(1)
+		if count >= 4 {
+			requestStarted <- struct{}{}
+			<-release
+		}
 		http.Error(w, "probe failure", http.StatusServiceUnavailable)
 	}))
 	defer server.Close()
