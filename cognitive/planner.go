@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/divibisoul/Orquestrador-/mesh"
 )
 
 type ToolDescriptor struct {
@@ -17,9 +16,9 @@ type ToolDescriptor struct {
 	OutputSchema map[string]any `json:"output_schema,omitempty"`
 }
 
-type Planner struct{ peers *mesh.PeerClient }
+type Planner struct{ peers MeshPeer }
 
-func NewPlanner(peers *mesh.PeerClient) (*Planner, error) {
+func NewPlanner(peers MeshPeer) (*Planner, error) {
 	if peers == nil {
 		return nil, errors.New("mesh peer client is required")
 	}
