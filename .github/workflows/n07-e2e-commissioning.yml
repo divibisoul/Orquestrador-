@@ -77,7 +77,7 @@ jobs:
   # Real credentialed staging is only executable when the repository actually has all required secrets.
   # Missing secrets are an environment block, not a product-code failure.
   configured-staging:
-    if: ${{ secrets.N07_APP_TOKEN != '' && secrets.WEB3_STORAGE_TOKEN != '' && secrets.SUPABASE_URL != '' && secrets.SUPABASE_SERVICE_ROLE_KEY != '' }}
+    if: ${{ vars.N07_STAGING_CONFIGURED == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
