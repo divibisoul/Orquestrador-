@@ -2,7 +2,7 @@ name: N07 E2E Commissioning
 
 on:
   push:
-    branches: [main]
+    branches: [main, "fix/**"]
     paths:
       - '**/*.go'
       - 'go.mod'
@@ -83,7 +83,7 @@ jobs:
   # Real credentialed staging is only executable when the repository actually has all required secrets.
   # Missing secrets are an environment block, not a product-code failure.
   configured-staging:
-    if: ${{ false }}
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.run_credentialed_staging == true }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
