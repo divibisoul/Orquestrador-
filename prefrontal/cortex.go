@@ -51,6 +51,7 @@ type Cortex struct {
 	evaluated     uint64
 	decisionNanos uint64
 	lastDecision  time.Time
+	learningObservations uint64
 	inhibitionChecks uint64
 	commits uint64
 	decisionCount uint64
@@ -228,6 +229,19 @@ func (c *Cortex) Commit(candidate Candidate, reason string) (Decision, error) {
 	c.decisionNanos += uint64(time.Since(start).Nanoseconds())
 	return d, nil
 }
+func (c *Cortex) ObserveOutcome(capability string, reward, confidence float64) {
+	if c == nil || math.IsNaN(reward) || math.IsInf(reward, 0) || math.IsNaN(confidence) || math.IsInf(confidence, 0) { return }
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.learningObservations++
+	if len(c.decisions) == 0 { return }
+	outcome := "observed"
+	if reward > 0 { outcome = "success" } else if reward < 0 { outcome = "failure" }
+	c.decisions[len(c.decisions)-1].Outcome = outcome
+	_ = capability
+	_ = confidence
+}
+
 func (c *Cortex) Recall(limit int) []Decision {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
@@ -250,5 +264,5 @@ func (c *Cortex) Health() map[string]any {
 			return 0
 		}
 		return float64(c.inhibited) / float64(c.evaluated)
-	}(), "avg_decision_ms": avg, "last_decision": c.lastDecision}
+	}(), "avg_decision_ms": avg, "last_decision": c.lastDecision, "learning_observations": c.learningObservations}
 }
