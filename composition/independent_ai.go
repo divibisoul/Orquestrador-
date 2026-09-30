@@ -46,6 +46,7 @@ type CompositionPlan struct {
     ProvenanceRequired   bool     `json:"provenanceRequired"`
     IndependentMembers   bool     `json:"independentMembers"`
     NextGate             string   `json:"nextGate"`
+    SeedStatus            string   `json:"seedStatus,omitempty"`
 }
 
 func ResolveAIProfile(ledger Ledger, id string) (AIProfile, error) {
@@ -208,7 +209,8 @@ func ResolveComposition(ledger Ledger, participants ...string) (CompositionPlan,
     }
 
     if seed := seedForParticipants(ledger, normalized); seed != nil {
-        plan.Status = seed.Status
+        plan.SeedStatus = seed.Status
+        plan.Status = Seeded
         plan.Mode = seed.Mode
         plan.DerivedFunction = seed.DerivedFunction
         plan.ExistingEvidence = append([]string(nil), seed.ExistingEvidence...)
