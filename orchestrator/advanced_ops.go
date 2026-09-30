@@ -307,7 +307,8 @@ func RegisterAdvancedOperations(e *Engine) error {
 			if err != nil {
 				return protocol.Result{}, err
 			}
-			result, err := f.Execute(ctx, supergpu.FederatedRequest{Nucleus: strings.TrimSpace(m.Metadata["nucleus"]), Operation: strings.TrimSpace(m.Metadata["operation"]), Payload: m.Payload, Device: strings.TrimSpace(m.Metadata["device"])})
+			computeCtx := supergpu.WithCorrelationID(ctx, m.CorrelationID)
+			result, err := f.Execute(computeCtx, supergpu.FederatedRequest{Nucleus: strings.TrimSpace(m.Metadata["nucleus"]), Operation: strings.TrimSpace(m.Metadata["operation"]), Payload: m.Payload, Device: strings.TrimSpace(m.Metadata["device"])})
 			if err != nil {
 				return protocol.Result{TraceID: m.TraceID, CorrelationID: m.CorrelationID, Source: "N07.supergpu", Target: m.Source, Status: "error", Error: err.Error()}, err
 			}
