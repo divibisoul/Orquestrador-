@@ -4,6 +4,8 @@ import (
 	"context"
 	"testing"
 
+	"github.com/divibisoul/Orquestrador-/mesh"
+
 	"github.com/divibisoul/Orquestrador-/neural"
 	"github.com/divibisoul/Orquestrador-/prefrontal"
 	"github.com/divibisoul/Orquestrador-/protocol"
@@ -19,7 +21,9 @@ func TestBlueprintOperationsExposeAdditiveAffinityLayer(t *testing.T) {
 	g := supergpu.New(nil)
 	e, err := New(n, c, g)
 	if err != nil { t.Fatal(err) }
-	processor, err := octacore.NewProcessor(octacore.DefaultConfig(), g, nil, nil)
+	peers, err := mesh.NewPeerClient(nil)
+	if err != nil { t.Fatal(err) }
+	processor, err := octacore.NewProcessor(octacore.DefaultConfig(), g, peers, nil)
 	if err != nil { t.Fatal(err) }
 	if err := RegisterBlueprintOperations(e, processor); err != nil { t.Fatal(err) }
 	result, err := e.Execute(context.Background(), "blueprint.resolve@1.0.0", nil, map[string]string{"query":"audio multimodal perception"})
