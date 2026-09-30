@@ -78,7 +78,7 @@ func RegisterGeminiOperations(e *Engine, peer GeminiPeerCaller, reporter GeminiE
 	for _, item := range operations {
 		capability := item.capability
 		if err := e.Register(item.name, func(ctx context.Context, message protocol.Message) (protocol.Result, error) {
-			return executeGemini(e, peer, reporter, capability, message)
+			return executeGemini(e, peer, reporter, capability, message, ctx)
 		}); err != nil {
 			return err
 		}
@@ -92,9 +92,13 @@ func executeGemini(
 	reporter GeminiExecutionReporter,
 	capability string,
 	message protocol.Message,
+	ctx context.Context,
 ) (protocol.Result, error) {
-	if ctxErr := contextError(message); ctxErr != nil {
-		return protocol.Result{TraceID: message.TraceID, CorrelationID: message.CorrelationID, Source: "N07.gemini", Target: message.Source, Status: "rejected", Error: ctxErr.Error()}, ctxErr
+	if ctx == nil {
+		return protocol.Result{TraceID: message.TraceID, CorrelationID: message.CorrelationID, Source: "N07.gemini", Target: message.Source, Status: "rejected", Error: "context is nil"}, errors.New("context is nil")
+	}
+	if strings.TrimSpace(message.CorrelationID) == "" {
+		return protocol.Result{TraceID: message.TraceID, CorrelationID: message.CorrelationID, Source: "N07.gemini", Target: message.Source, Status: "rejected", Error: "correlation id is required"}, errors.New("correlation id is required")
 	}
 
 	policy, err := parseGeminiPolicy(message.Metadata["candidate_json"])
@@ -108,13 +112,6 @@ func executeGemini(
 		message.Metadata["speech_text"],
 		message.Metadata["transcript"],
 	)
-
-	if ctx == nil {
-		return protocol.Result{TraceID: message.TraceID, CorrelationID: message.CorrelationID, Source: "N07.gemini", Target: message.Source, Status: "rejected", Error: "context is nil"}, errors.New("context is nil")
-	}
-	if strings.TrimSpace(message.CorrelationID) == "" {
-		return protocol.Result{TraceID: message.TraceID, CorrelationID: message.CorrelationID, Source: "N07.gemini", Target: message.Source, Status: "rejected", Error: "correlation id is required"}, errors.New("correlation id is required")
-	}
 
 	neuralInput, err := resolveGeminiNeuralInput(ctx, peer, message, semanticText)
 	if err != nil {
