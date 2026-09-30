@@ -47,13 +47,14 @@ type geminiPolicy struct {
 }
 
 const (
-	geminiOwner           = "N02"
-	geminiProvider        = "google-gemini"
-	geminiText            = "gemini.text.generate"
-	geminiMultimodal      = "gemini.multimodal.generate"
-	geminiAudioTranscribe = "gemini.audio.transcribe"
-	geminiAudioAnalyze    = "gemini.audio.analyze"
-	geminiSpeechSynthesize = "gemini.speech.synthesize"
+	geminiProvider         = "google-gemini"
+	geminiText              = "ai.generate"
+	geminiMultimodal        = "ai.multimodal"
+	geminiGoogleSearch      = "gemini.google_search"
+	geminiCodeExecution     = "gemini.code_execution"
+	geminiAudioTranscribe   = "audio.transcribe"
+	geminiAudioAnalyze      = "audio.analyze.emotion"
+	geminiSpeechSynthesize  = "speech.synthesize"
 )
 
 func RegisterGeminiOperations(e *Engine, peer GeminiPeerCaller, reporter GeminiExecutionReporter) error {
@@ -70,6 +71,8 @@ func RegisterGeminiOperations(e *Engine, peer GeminiPeerCaller, reporter GeminiE
 	}{
 		{"gemini.delegate.text@1.0.0", geminiText},
 		{"gemini.delegate.multimodal@1.0.0", geminiMultimodal},
+		{"gemini.delegate.google-search@1.0.0", geminiGoogleSearch},
+		{"gemini.delegate.code-execution@1.0.0", geminiCodeExecution},
 		{"gemini.delegate.audio.transcribe@1.0.0", geminiAudioTranscribe},
 		{"gemini.delegate.audio.analyze@1.0.0", geminiAudioAnalyze},
 		{"gemini.delegate.speech.synthesize@1.0.0", geminiSpeechSynthesize},
@@ -101,6 +104,7 @@ func executeGemini(
 		return protocol.Result{TraceID: message.TraceID, CorrelationID: message.CorrelationID, Source: "N07.gemini", Target: message.Source, Status: "rejected", Error: "correlation id is required"}, errors.New("correlation id is required")
 	}
 
+	target := geminiTarget(capability)
 	policy, err := parseGeminiPolicy(message.Metadata["candidate_json"])
 	if err != nil {
 		return protocol.Result{TraceID: message.TraceID, CorrelationID: message.CorrelationID, Source: "N07.prefrontal", Target: message.Source, Status: "rejected", Error: err.Error()}, err
@@ -145,7 +149,7 @@ func executeGemini(
 	}
 	delete(payload, "contents_json_invalid")
 	delete(payload, "contents_json_error")
-	upstream, callErr := peer.CallWithCorrelation(ctx, geminiOwner, capability, payload, message.CorrelationID)
+	upstream, callErr := peer.CallWithCorrelation(ctx, target, capability, payload, message.CorrelationID)
 	if callErr != nil {
 		reportGeminiFailure(ctx, reporter, capability, message, callErr, len(neuralInput))
 		return protocol.Result{TraceID: message.TraceID, CorrelationID: message.CorrelationID, Source: "N07.gemini", Target: message.Source, Status: "error", Error: callErr.Error()}, callErr
@@ -158,8 +162,8 @@ func executeGemini(
 	}
 
 	metadata["provider"] = geminiProvider
-	metadata["owner"] = geminiOwner
-	metadata["route"] = "N07.prefrontal>N02"
+metadata["owner"] = target
+metadata["route"] = "N07.prefrontal>" + target
 	metadata["correlation_id"] = message.CorrelationID
 	metadata["prefrontal_decision_id"] = decision.ID
 	metadata["prefrontal_score"] = floatString(decision.Score)
@@ -228,7 +232,7 @@ func resolveGeminiNeuralInput(ctx context.Context, peer GeminiPeerCaller, messag
 		return nil, errors.New("prefrontal neural input is unavailable; provide payload, neural_input_json or text")
 	}
 
-	upstream, err := peer.CallWithCorrelation(ctx, geminiOwner, "neural.bnc_v2", map[string]any{"text": semanticText}, message.CorrelationID)
+	upstream, err := peer.CallWithCorrelation(ctx, "N02", "neural.bnc_v2", map[string]any{"text": semanticText}, message.CorrelationID)
 	if err != nil {
 		return nil, fmt.Errorf("N02 BNCv2 unavailable for prefrontal admission: %w", err)
 	}
@@ -301,7 +305,7 @@ func normalizeGeminiResponse(capability string, upstream map[string]any) (map[st
 	payload := responsePayload(upstream)
 	metadata := map[string]string{}
 	switch capability {
-	case geminiText, geminiMultimodal:
+	case geminiText, geminiMultimodal, geminiGoogleSearch, geminiCodeExecution:
 		textValue, ok := payload["text"].(string)
 		if !ok || strings.TrimSpace(textValue) == "" {
 			return nil, 0, errors.New("Gemini response did not expose text")
@@ -380,12 +384,14 @@ func firstNonEmpty(values ...string) string {
 
 func geminiModelFor(capability string) string {
 	switch capability {
-	case geminiText, geminiMultimodal, geminiAudioAnalyze:
+	case geminiText, geminiMultimodal, geminiGoogleSearch, geminiCodeExecution:
+		return "configured-by-N02"
+	case geminiAudioAnalyze:
 		return "gemini-3.8-flash"
 	case geminiAudioTranscribe:
-		return "gemini-3.5-transcribe"
+		return "configured-by-N03"
 	case geminiSpeechSynthesize:
-		return "gemini-3.8-flash-tts"
+		return "configured-by-N03"
 	default:
 		return "configured-by-N02"
 	}
@@ -410,7 +416,17 @@ func reportGemini(ctx context.Context, reporter GeminiExecutionReporter, event G
 func reportGeminiFailure(ctx context.Context, reporter GeminiExecutionReporter, capability string, message protocol.Message, err error, inputSize int) {
 	_ = reportGemini(ctx, reporter, GeminiExecutionEvent{
 		Phase: "failed", Capability: capability, Provider: geminiProvider, Model: geminiModelFor(capability),
-		Source: "N07.Orchestrator", Owner: geminiOwner, CorrelationID: message.CorrelationID,
+		Source: "N07.Orchestrator", Owner: geminiTarget(capability), CorrelationID: message.CorrelationID,
 		InputSize: inputSize, Error: err.Error(), At: time.Now().UTC(),
 	})
+}
+
+
+func geminiTarget(capability string) string {
+	switch capability {
+	case geminiAudioTranscribe, geminiAudioAnalyze, geminiSpeechSynthesize:
+		return "N03"
+	default:
+		return "N02"
+	}
 }
