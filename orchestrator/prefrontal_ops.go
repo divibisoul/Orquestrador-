@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"strconv"
 	"strings"
 	"time"
 
@@ -59,7 +60,7 @@ func registerPrefrontalExecutiveOperations(e *Engine) error {
 			if err := decodeMetadataJSON(m.Metadata["candidate_json"], &candidate); err != nil {
 				return protocol.Result{}, err
 			}
-			return protocol.Result{TraceID: m.TraceID, CorrelationID: m.CorrelationID, Source: "N07.prefrontal", Target: m.Source, Status: "ok", Metadata: map[string]string{"blocked": itoaBool(e.cortex.Inhibit(candidate))}}, nil
+			return protocol.Result{TraceID: m.TraceID, CorrelationID: m.CorrelationID, Source: "N07.prefrontal", Target: m.Source, Status: "ok", Metadata: map[string]string{"blocked": strconv.FormatBool(e.cortex.Inhibit(candidate))}}, nil
 		}},
 		{name: "prefrontal.select@1.0.0", handler: func(ctx context.Context, m protocol.Message) (protocol.Result, error) {
 			if err := ctx.Err(); err != nil {
