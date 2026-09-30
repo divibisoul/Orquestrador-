@@ -319,8 +319,10 @@ func (m *Machine) ObserveRoute(ctx context.Context, source, target, capability, 
 	if traceID == "" {
 		traceID = protocol.NewTraceID()
 	}
+	// Each real attempt is a distinct durable event. Correlation/trace preserve
+	// lineage; the UUID-like experience ID prevents retry collisions in storage.
 	return m.Feedback(ctx, Experience{
-		ID:            traceID + ":route:" + strings.TrimSpace(target) + ":" + outcome,
+		ID:            protocol.NewTraceID(),
 		TraceID:       traceID,
 		CorrelationID: strings.TrimSpace(correlation),
 		Source:        strings.TrimSpace(source),
