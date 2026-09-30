@@ -83,6 +83,18 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	if err := orchestrator.RegisterGeminiOperations(e, peerClient, func(ctx context.Context, event orchestrator.GeminiExecutionEvent) error {
+		return clareiraReporter.ReportCapability(ctx, mesh.CapabilityExecutionEvent{
+			Phase: event.Phase, Operation: event.Capability, Provider: event.Provider, Model: event.Model,
+			Source: event.Source, Owner: event.Owner, CorrelationID: event.CorrelationID,
+			InputSize: event.InputSize, OutputSize: event.OutputSize, Error: event.Error,
+		})
+	}); err != nil {
+		log.Fatal(err)
+	}
+	if err := orchestrator.RegisterCognitiveOperations(e, peerClient, saraProxy, backend.NewSupabaseStore(cfg)); err != nil {
+		log.Fatal(err)
+	}
 	g.SetExecutionReporter(supergpu.ReporterFunc(func(ctx context.Context, event supergpu.ExecutionEvent) error {
 		correlationID := event.CorrelationID
 		if strings.TrimSpace(correlationID) == "" {
