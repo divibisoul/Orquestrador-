@@ -134,8 +134,59 @@ jobs:
         run: go build ./...
       - name: Backend regression
         run: go test ./backend -run 'Test(Web3Storage|Supabase|Server|Intent)' -count=1
-      - name: Federation E2E N01 to N07 via N04 N05 N06
-        run: go test ./mesh -run '^TestN01ToN07FederatesAcrossN04N05N06$' -count=1
+      - name: Mesh regression suite
+        run: go test ./mesh -count=1 -v
+      - name: Assert real federation test is integration-only and contains no peer server doubles
+        run: |
+          set -euo pipefail
+          grep -q '^//go:build integration
+  container:
+    needs: verify
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build production image
+        run: docker build --pull --tag n07-orquestrador:ci .
+      - name: Inspect image without starting the server
+        run: |
+          set -euo pipefail
+          docker image inspect n07-orquestrador:ci >/dev/null
+          test "$(docker run --rm --entrypoint /bin/sh n07-orquestrador:ci -c 'test -x /app/n07 && test -x /usr/local/bin/guppy && echo ok')" = ok
+ mesh/n01_n07_federation_e2e_test.go
+          if grep -qE 'httptest\\.NewServer|e2e\\.n04|e2e\\.n05|e2e\\.n06' mesh/n01_n07_federation_e2e_test.go; then
+            echo 'synthetic federation peer evidence detected'
+            exit 1
+          fi
+      - name: Real federation E2E when credentials and endpoints are configured
+        env:
+          SOUL_MESH_HMAC_SECRET: ${{ secrets.SOUL_MESH_HMAC_SECRET }}
+          SOUL_MESH_N04_URL: ${{ secrets.SOUL_MESH_N04_URL }}
+          SOUL_MESH_N05_URL: ${{ secrets.SOUL_MESH_N05_URL }}
+          SOUL_MESH_N06_URL: ${{ secrets.SOUL_MESH_N06_URL }}
+        run: |
+          set -euo pipefail
+          if [ -z "$SOUL_MESH_HMAC_SECRET" ] || [ -z "$SOUL_MESH_N04_URL" ] || [ -z "$SOUL_MESH_N05_URL" ] || [ -z "$SOUL_MESH_N06_URL" ]; then
+            echo 'REAL_MESH_E2E: BLOCKED_ENV — required endpoint/secret secrets are not configured; no online proof is claimed.'
+            exit 0
+          fi
+          go test -tags integration ./mesh -run '^TestN07FederatesToRealN04N05N06NativeCapabilities
+  container:
+    needs: verify
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build production image
+        run: docker build --pull --tag n07-orquestrador:ci .
+      - name: Inspect image without starting the server
+        run: |
+          set -euo pipefail
+          docker image inspect n07-orquestrador:ci >/dev/null
+          test "$(docker run --rm --entrypoint /bin/sh n07-orquestrador:ci -c 'test -x /app/n07 && test -x /usr/local/bin/guppy && echo ok')" = ok
+ -count=1 -v
 
   container:
     needs: verify
