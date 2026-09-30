@@ -1,0 +1,23 @@
+{
+  "schemaVersion": "1.0.0",
+  "system": "SOUL",
+  "layer": "AETERNUM",
+  "purpose": "Cross-front evidence projection for connection-derived functional authority",
+  "source": {
+    "repository": "divibisoul/aeternum-core-29",
+    "ref": "eb9e39134896903b86f3fc36a2ee679971c8c8c3",
+    "path": "docs/aeternum-functional-authority.snapshot.json"
+  },
+  "semantics": {
+    "executionOwner": "native capability execution authority",
+    "governanceAuthority": "separate governance authority",
+    "connectionScore": "2*directDependents + transitiveDependents",
+    "rule": "functional centrality is derived from real AETERNUM dependency connections; it is not a global replacement hierarchy"
+  },
+  "fusion": {
+    "nvodProtocol": "nvod-fusion/1",
+    "nvodContractVersion": "1.0.0",
+    "canonicalTransport": "soul-mesh/1",
+    "canonicalTransportVersion": "1.1.0"
+  }
+}
