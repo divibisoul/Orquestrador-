@@ -101,6 +101,8 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	peerClient.SetRouteScorer(learningMachine)
+	peerClient.SetRouteOutcomeObserver(learningMachine)
 	clareiraReporter, err := mesh.NewClareiraReporter(peerClient)
 	if err != nil {
 		log.Fatal(err)
