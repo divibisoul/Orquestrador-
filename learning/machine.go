@@ -275,6 +275,7 @@ func (m *Machine) Feedback(ctx context.Context, exp Experience) error {
 	default:
 	}
 	m.updateRoute(exp)
+	m.cortex.ObserveOutcome(exp.Capability, exp.Reward, exp.Confidence)
 	m.experiences.Add(1)
 	m.feedback.Add(1)
 	return m.persist(ctx, exp)
