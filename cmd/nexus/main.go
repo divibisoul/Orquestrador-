@@ -74,6 +74,34 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	e.SetSynergyInvoker(orchestrator.SynergyInvokerFunc(func(ctx context.Context, target, capability string, payload map[string]any, correlation string) (map[string]any, error) {
+		target = strings.TrimSpace(strings.ToUpper(target))
+		capability = strings.TrimSpace(capability)
+		if target == "SARA" {
+			switch capability {
+			case "sara.cycle":
+				input, _ := payload["input"].(string)
+				cycleID, _ := payload["cycle_id"].(string)
+				return saraProxy.CycleWithContext(ctx, input, cycleID, correlation, payload)
+			case "sara.audit":
+				input, _ := payload["input"].(string)
+				return saraProxy.Audit(ctx, input, correlation)
+			case "sara.regenerate":
+				input, _ := payload["input"].(string)
+				return saraProxy.Regenerate(ctx, input, correlation)
+			case "sara.state":
+				return saraProxy.State(ctx, correlation)
+			case "sara.capabilities":
+				return saraProxy.Capabilities(ctx, correlation)
+			case "sara.trace":
+				cycleID, _ := payload["cycle_id"].(string)
+				return saraProxy.Trace(ctx, cycleID, correlation)
+			default:
+				return nil, fmt.Errorf("unsupported SARA synergy capability: %s", capability)
+			}
+		}
+		return peerClient.CallWithCorrelation(ctx, target, capability, payload, correlation)
+	}))
 	octacoreProcessor, err := octacore.NewProcessor(octacore.DefaultConfig(), g, peerClient, saraProxy)
 	if err != nil {
 		log.Fatal(err)
