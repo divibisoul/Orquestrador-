@@ -407,19 +407,19 @@
           "owner": "N01",
           "capability": "memory.gemini.embedding",
           "path": "scripts/SupabaseVectorMemory.ts",
-          "status": "IMPLEMENTED"
+          "status": "BRANCH_IMPLEMENTED"
         },
         {
           "owner": "N01",
           "capability": "memory.semantic.vector.recall",
           "path": "scripts/SupabaseVectorMemory.ts",
-          "status": "IMPLEMENTED"
+          "status": "BRANCH_IMPLEMENTED"
         },
         {
           "owner": "N01",
           "capability": "memory.semantic.vector.remember",
           "path": "scripts/SupabaseVectorMemory.ts",
-          "status": "IMPLEMENTED"
+          "status": "BRANCH_IMPLEMENTED"
         }
       ]
     }
