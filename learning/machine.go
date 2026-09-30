@@ -40,21 +40,21 @@ type Experience struct {
 }
 
 type PersistedExperience struct {
-	ID            string
-	TraceID       string
-	CorrelationID string
-	Source        string
-	Target        string
-	Capability    string
+	ID            string `json:"id"`
+	TraceID       string `json:"trace_id"`
+	CorrelationID string `json:"correlation_id"`
+	Source        string `json:"source"`
+	Target        string `json:"target"`
+	Capability    string `json:"capability"`
 	EventType     string `json:"event_type"`
-	Outcome       string
-	Reward        float64
-	Confidence    float64
-	Input         []float64
-	TargetVector  []float64
-	Provenance    string
-	Timestamp     time.Time
-	Metadata      map[string]string
+	Outcome       string `json:"outcome"`
+	Reward        float64 `json:"reward"`
+	Confidence    float64 `json:"confidence"`
+	Input         []float64 `json:"input"`
+	TargetVector  []float64 `json:"target_vector"`
+	Provenance    string `json:"provenance"`
+	Timestamp     time.Time `json:"created_at"`
+	Metadata      map[string]string `json:"metadata"`
 }
 
 type Store interface {
