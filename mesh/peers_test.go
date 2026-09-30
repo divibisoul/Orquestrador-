@@ -3,7 +3,9 @@ package mesh
 import (
 	"context"
 	"net/http"
+	"net/http/httptest"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
@@ -102,5 +104,53 @@ func TestDiscoveryCacheExpires(t *testing.T) {
 	time.Sleep(2 * time.Millisecond)
 	if _, ok := p.discoveryFromCache(protocol.N01); ok {
 		t.Fatal("expected expired discovery cache entry")
+	}
+}
+
+func TestPeerClientHalfOpenAllowsOnlyOneProbe(t *testing.T) {
+	requestStarted := make(chan struct{}, 2)
+	release := make(chan struct{})
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		requestStarted <- struct{}{}
+		<-release
+		http.Error(w, "probe failure", http.StatusServiceUnavailable)
+	}))
+	defer server.Close()
+
+	for _, n := range []string{protocol.N01, protocol.N02, protocol.N03, protocol.N04, protocol.N05, protocol.N06} {
+		t.Setenv("SOUL_MESH_"+n+"_URL", server.URL)
+	}
+	t.Setenv("SOUL_MESH_HMAC_SECRET", "0123456789abcdef0123456789abcdef")
+	p, err := NewPeerClient(&http.Client{Timeout: 2 * time.Second})
+	if err != nil {
+		t.Fatal(err)
+	}
+	p.maxRetry = 1
+	p.cooldown = 10 * time.Millisecond
+	ctx := context.Background()
+
+	for i := 0; i < 3; i++ {
+		_, _ = p.Call(ctx, protocol.N01, "mesh.ping", map[string]any{})
+	}
+
+	time.Sleep(15 * time.Millisecond)
+	probeDone := make(chan error, 1)
+	go func() {
+		_, err := p.Call(ctx, protocol.N01, "mesh.ping", map[string]any{})
+		probeDone <- err
+	}()
+
+	select {
+	case <-requestStarted:
+	case <-time.After(time.Second):
+		t.Fatal("half-open probe never reached peer")
+	}
+
+	if _, err := p.Call(ctx, protocol.N01, "mesh.ping", map[string]any{}); err == nil || !strings.Contains(err.Error(), "half-open probe busy") {
+		t.Fatalf("second half-open probe was not rejected: %v", err)
+	}
+	close(release)
+	if err := <-probeDone; err == nil {
+		t.Fatal("probe should fail against forced 503")
 	}
 }

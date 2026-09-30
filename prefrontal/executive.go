@@ -60,6 +60,7 @@ func (c *Cortex) UpdateWorkingMemory(candidates []Candidate) error {
 			entries = entries[1:]
 			for id, entry := range c.workingMemory {
 				if entry.UpdatedAt.Equal(oldest.UpdatedAt) && entry.Candidate.ID == oldest.Candidate.ID {
+					c.workingMemoryArchive = append(c.workingMemoryArchive, entry)
 					delete(c.workingMemory, id)
 					break
 				}
@@ -67,6 +68,19 @@ func (c *Cortex) UpdateWorkingMemory(candidates []Candidate) error {
 		}
 	}
 	return nil
+}
+
+func (c *Cortex) WorkingMemoryHistory() []Candidate {
+	if c == nil {
+		return nil
+	}
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	out := make([]Candidate, 0, len(c.workingMemoryArchive))
+	for _, entry := range c.workingMemoryArchive {
+		out = append(out, cloneCandidate(entry.Candidate))
+	}
+	return out
 }
 
 func (c *Cortex) WorkingMemory(limit int) []Candidate {

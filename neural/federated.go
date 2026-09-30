@@ -183,9 +183,10 @@ func (f *Fabric) ParallelContext(ctx context.Context, tasks []NeuralTask) []Fede
 					}
 					task := tasks[index]
 					target := task.Target
-					// Preserve the historical Source-as-routing-hint behavior when
-					// Target is omitted; explicit Target always takes precedence.
-					if target == "" {
+					// Preserve the historical Source-as-routing-hint behavior only
+					// when Source is actually a registered remote member. N07 is
+					// normally the origin and is intentionally not a federation member.
+					if target == "" && containsMember(members, task.Source) {
 						target = task.Source
 					}
 					if target == "" {
@@ -274,4 +275,13 @@ dispatch:
 		}
 	}
 	return results
+}
+
+func containsMember(members []string, candidate string) bool {
+	for _, member := range members {
+		if member == candidate {
+			return true
+		}
+	}
+	return false
 }

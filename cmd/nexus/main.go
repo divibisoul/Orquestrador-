@@ -74,6 +74,54 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	e.SetSynergyInvoker(orchestrator.SynergyInvokerFunc(func(ctx context.Context, target, capability string, payload map[string]any, correlation string) (map[string]any, error) {
+		target = strings.TrimSpace(strings.ToUpper(target))
+		capability = strings.TrimSpace(capability)
+		if target == "SARA" {
+			capability = strings.TrimSuffix(capability, "@1.0.0")
+			if !saraProxy.Configured() {
+				return nil, errors.New("synergy SARA service is not configured")
+			}
+			saraCapabilities, err := saraProxy.Capabilities(ctx, correlation)
+			if err != nil {
+				return nil, fmt.Errorf("synergy SARA capability discovery failed: %w", err)
+			}
+			if !supportsSARAExecutableCapability(saraCapabilities, capability) {
+				return nil, fmt.Errorf("synergy capability not executable on SARA: %s", capability)
+			}
+			switch capability {
+			case "sara.cycle":
+				input, _ := payload["input"].(string)
+				cycleID, _ := payload["cycle_id"].(string)
+				return saraProxy.CycleWithContext(ctx, input, cycleID, correlation, payload)
+			case "sara.audit":
+				input, _ := payload["input"].(string)
+				return saraProxy.Audit(ctx, input, correlation)
+			case "sara.regenerate":
+				input, _ := payload["input"].(string)
+				return saraProxy.Regenerate(ctx, input, correlation)
+			case "sara.state":
+				return saraProxy.State(ctx, correlation)
+			case "sara.capabilities":
+				return saraProxy.Capabilities(ctx, correlation)
+			case "sara.trace":
+				cycleID, _ := payload["cycle_id"].(string)
+				return saraProxy.Trace(ctx, cycleID, correlation)
+			default:
+				return nil, fmt.Errorf("unsupported SARA synergy capability: %s", capability)
+			}
+		}
+		discoveryCtx, cancel := context.WithTimeout(ctx, 2*time.Second)
+		description, discoveryErr := peerClient.Discover(discoveryCtx, target)
+		cancel()
+		if discoveryErr != nil {
+			return nil, fmt.Errorf("synergy discovery failed for %s: %w", target, discoveryErr)
+		}
+		if !mesh.SupportsExecutableCapability(description, capability) {
+			return nil, fmt.Errorf("synergy capability not executable on %s: %s", target, capability)
+		}
+		return peerClient.CallWithCorrelation(ctx, target, capability, payload, correlation)
+	}))
 	octacoreProcessor, err := octacore.NewProcessor(octacore.DefaultConfig(), g, peerClient, saraProxy)
 	if err != nil {
 		log.Fatal(err)
@@ -219,6 +267,33 @@ func main() {
 	_ = e.Shutdown(shutdown)
 	_ = srv.Shutdown(shutdown)
 }
+func supportsSARAExecutableCapability(description map[string]any, capability string) bool {
+	capability = strings.TrimSpace(strings.TrimSuffix(capability, "@1.0.0"))
+	if capability == "" || description == nil {
+		return false
+	}
+	if operations, ok := description["operations"].([]any); ok {
+		for _, item := range operations {
+			name, ok := item.(string)
+			if ok && strings.TrimSpace(strings.TrimSuffix(name, "@1.0.0")) == capability {
+				return true
+			}
+		}
+	}
+	if descriptors, ok := description["capability_descriptors"].([]any); ok {
+		for _, item := range descriptors {
+			if descriptor, ok := item.(map[string]any); ok {
+				name, _ := descriptor["name"].(string)
+				status, _ := descriptor["status"].(string)
+				if strings.TrimSpace(name) == capability && strings.EqualFold(strings.TrimSpace(status), "IMPLEMENTED") {
+					return true
+				}
+			}
+		}
+	}
+	return false
+}
+
 func syncMeshSecretAlias() {
 	primary := strings.TrimSpace(os.Getenv("SOUL_MESH_HMAC_SECRET"))
 	legacy := strings.TrimSpace(os.Getenv("SOUL_MESH_SECRET"))

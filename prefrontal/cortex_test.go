@@ -1,6 +1,9 @@
 package prefrontal
 
-import "testing"
+import (
+	"math"
+	"testing"
+)
 
 func TestCortexRuntime(t *testing.T) {
 	c, err := New(0.1, 4)
@@ -35,5 +38,23 @@ func TestCortexRuntime(t *testing.T) {
 	}
 	if c.Health()["status"] != "ready" {
 		t.Fatal("cortex unhealthy")
+	}
+}
+
+func TestScoreNormalizationIsContinuousAtOne(t *testing.T) {
+	values := []float64{.999999, 1, 1.000001, 2, 10}
+	prev := -1.0
+	for _, value := range values {
+		got := boundedPositive(value)
+		if got < 0 || got >= 1 {
+			t.Fatalf("boundedPositive(%g)=%g outside [0,1)", value, got)
+		}
+		if got < prev {
+			t.Fatalf("boundedPositive is not monotonic: prev=%g current=%g", prev, got)
+		}
+		prev = got
+	}
+	if diff := math.Abs(boundedPositive(1.000001)-boundedPositive(.999999)); diff > 2e-6 {
+		t.Fatalf("normalization has a discontinuity near 1: diff=%g", diff)
 	}
 }

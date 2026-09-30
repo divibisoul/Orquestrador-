@@ -68,6 +68,7 @@ type Engine struct {
 	routeTTL         time.Duration
 	failureThreshold uint64
 	breakerUntil     time.Time
+	synergyInvoker   SynergyInvoker
 	breakerMu        sync.Mutex
 }
 
@@ -142,6 +143,21 @@ func New(n *neural.Network, c *prefrontal.Cortex, g *supergpu.Runtime) (*Engine,
 		return nil, err
 	}
 	return e, nil
+}
+
+
+// SetSynergyInvoker binds the existing Mesh/SARA transport boundary to the
+// compositional route layer without creating a second transport authority.
+func (e *Engine) SetSynergyInvoker(invoker SynergyInvoker) {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	e.synergyInvoker = invoker
+}
+
+func (e *Engine) synergy() SynergyInvoker {
+	e.mu.RLock()
+	defer e.mu.RUnlock()
+	return e.synergyInvoker
 }
 
 func (e *Engine) Register(operation string, handler Handler) error {

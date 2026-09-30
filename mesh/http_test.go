@@ -204,3 +204,119 @@ func TestHTTPGatewayHonorsContextCancellation(t *testing.T) {
 		t.Fatal("cancelled request must not be reported as a successful request")
 	}
 }
+
+func TestHTTPGatewayExposesFullPrefrontalExecutiveSurface(t *testing.T) {
+	h := newTestGateway(t)
+	candidate := map[string]any{
+		"ID": "mesh-exec-action", "Cost": .01, "Risk": .01, "Utility": .7,
+		"Uncertainty": .05, "Urgency": .4, "Impact": .6,
+	}
+	candidatesJSON, _ := json.Marshal([]map[string]any{candidate})
+	candidateJSON, _ := json.Marshal(candidate)
+
+	request := func(capability, correlation string, metadata map[string]string) testWire {
+		wire := canonicalRequest("request", capability, correlation, nil)
+		wire["metadata"] = metadata
+		got, code := postWire(t, h, wire)
+		if code != http.StatusOK {
+			t.Fatalf("%s failed: code=%d envelope=%+v", capability, code, got)
+		}
+		if got.CorrelationID != correlation || got.Source != "N07" || got.Target != "N01" || got.Kind != "response" {
+			t.Fatalf("%s returned invalid Mesh identity: %+v", capability, got)
+		}
+		if got.Payload["status"] != "ok" {
+			t.Fatalf("%s did not execute: %+v", capability, got.Payload)
+		}
+		return got
+	}
+
+	request("prefrontal.task.switch", "pfc-task", map[string]string{"task_id": "task-1"})
+	request("prefrontal.working-memory", "pfc-memory", map[string]string{
+		"candidates_json": string(candidatesJSON),
+	})
+	request("prefrontal.plan", "pfc-plan", map[string]string{
+		"candidates_json": string(candidatesJSON),
+	})
+	request("prefrontal.prioritize", "pfc-prioritize", map[string]string{
+		"candidates_json": string(candidatesJSON),
+	})
+	request("prefrontal.inhibit", "pfc-inhibit", map[string]string{
+		"candidate_json": string(candidateJSON),
+	})
+	request("prefrontal.select", "pfc-select", map[string]string{
+		"candidates_json": string(candidatesJSON),
+	})
+	request("prefrontal.validate", "pfc-validate", map[string]string{
+		"candidate_json": string(candidateJSON),
+	})
+	commit := request("prefrontal.commit", "pfc-commit", map[string]string{
+		"candidate_json": string(candidateJSON),
+		"reason": "mesh-executive-test",
+	})
+	commitMetadata, ok := commit.Payload["metadata"].(map[string]any)
+	if !ok {
+		t.Fatalf("commit response metadata missing: %#v", commit.Payload)
+	}
+	decisionID, ok := commitMetadata["decision_id"].(string)
+	if !ok || decisionID == "" {
+		t.Fatalf("decision id missing from commit response: %#v", commitMetadata)
+	}
+	request("prefrontal.outcome.observe", "pfc-outcome", map[string]string{
+		"decision_id": decisionID,
+		"outcome": "completed",
+		"value": "1",
+	})
+	request("prefrontal.recall", "pfc-recall", map[string]string{"limit": "8"})
+	request("prefrontal.monitor", "pfc-monitor", nil)
+}
+
+func TestHTTPGatewayHMACV2BindsOperationalFields(t *testing.T) {
+	t.Setenv("N07_MESH_HMAC_SECRET", testSecret)
+	t.Setenv("N07_MESH_ALLOW_UNAUTH_LOCAL", "false")
+	h := newTestGateway(t)
+	h.Secret = testSecret
+
+	wire := canonicalRequest("request", "prefrontal.monitor", "trace-hmac-v2", nil)
+	wire["metadata"] = map[string]string{"task_id": "signed-task", "role": "executive"}
+	wire["operation"] = "prefrontal.monitor@1.0.0"
+	raw := canonicalWireEnvelope{
+		Protocol: wire["protocol"].(string), ContractVersion: wire["contractVersion"].(string),
+		ID: wire["id"].(string), CorrelationID: wire["correlationId"].(string),
+		Source: wire["source"].(string), Target: wire["target"].(string), Kind: wire["kind"].(string),
+		Capability: wire["capability"].(string), Payload: wire["payload"].(map[string]any),
+		Timestamp: wire["timestamp"].(int64), Nonce: wire["nonce"].(string),
+		Metadata: map[string]string{"task_id": "signed-task", "role": "executive"},
+		Operation: "prefrontal.monitor@1.0.0",
+	}
+	canonical, err := canonicalN01BytesV2(raw, raw.Nonce)
+	if err != nil {
+		t.Fatal(err)
+	}
+	mac := hmac.New(sha256.New, []byte(testSecret))
+	_, _ = mac.Write(canonical)
+	sig := hex.EncodeToString(mac.Sum(nil))
+
+	body, _ := json.Marshal(wire)
+	req := httptest.NewRequest(http.MethodPost, "/api/soul-mesh", bytes.NewReader(body))
+	req.Header.Set("x-soul-mesh-nonce", raw.Nonce)
+	req.Header.Set("x-soul-mesh-hmac", sig)
+	req.Header.Set("x-soul-mesh-signature-version", "2")
+	rec := httptest.NewRecorder()
+	h.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("valid v2 request failed: %d %s", rec.Code, rec.Body.String())
+	}
+
+	tampered := wire
+	tampered["metadata"] = map[string]string{"task_id": "tampered", "role": "executive"}
+	tamperedBody, _ := json.Marshal(tampered)
+	tamperedReq := httptest.NewRequest(http.MethodPost, "/api/soul-mesh", bytes.NewReader(tamperedBody))
+	tamperedReq.Header.Set("x-soul-mesh-nonce", raw.Nonce+"-tamper")
+	tamperedReq.Header.Set("x-soul-mesh-hmac", sig)
+	tamperedReq.Header.Set("x-soul-mesh-signature-version", "2")
+	tamperedRec := httptest.NewRecorder()
+	h.ServeHTTP(tamperedRec, tamperedReq)
+	if tamperedRec.Code != http.StatusUnauthorized {
+		t.Fatalf("v2 accepted metadata tampering: %d %s", tamperedRec.Code, tamperedRec.Body.String())
+	}
+}

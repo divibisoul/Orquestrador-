@@ -141,3 +141,53 @@ func TestRuntimeExecutionReporterReceivesCorrelationAndLifecycle(t *testing.T) {
 		t.Fatalf("expected output size 2, got %d", events[1].OutputSize)
 	}
 }
+
+func TestReservationReferenceCountPreventsPrematureRelease(t *testing.T) {
+	r := New(nil)
+	devices := r.Discover()
+	if len(devices) == 0 {
+		t.Fatal("no device")
+	}
+	device := devices[0]
+	// CPU leases are intentionally shareable and do not use exclusive reservations.
+	if device.Backend == "cpu" {
+		device = Device{ID: "exclusive-0", Vendor: "test", Name: "exclusive", Available: true, Backend: "cpu-x"}
+		r.mu.Lock()
+		r.devices = append(r.devices, device)
+		r.mu.Unlock()
+	}
+	if err := r.Reserve(device.ID, "N01"); err != nil {
+		t.Fatal(err)
+	}
+	// Force an exclusive second reservation using the same owner.
+	r.mu.Lock()
+	r.reserved[device.ID] = Reservation{DeviceID: device.ID, Owner: "N01", ExpiresAt: time.Now().Add(time.Minute), LeaseCount: 1}
+	r.mu.Unlock()
+	if err := r.Reserve(device.ID, "N01"); err != nil {
+		t.Fatal(err)
+	}
+	if err := r.Release(device.ID, "N01"); err != nil {
+		t.Fatal(err)
+	}
+	r.mu.RLock()
+	_, stillReserved := r.reserved[device.ID]
+	leaseCount := r.reserved[device.ID].LeaseCount
+	r.mu.RUnlock()
+	if !stillReserved || leaseCount != 1 {
+		t.Fatalf("first release dropped a shared same-owner lease: reserved=%v count=%d", stillReserved, leaseCount)
+	}
+	if err := r.Release(device.ID, "N01"); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestShutdownRejectsExecutionAfterClose(t *testing.T) {
+	r := New(nil)
+	device := r.Discover()[0]
+	if err := r.Shutdown(); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := r.Execute(context.Background(), device, "identity", []float64{1}); err == nil {
+		t.Fatal("execution was accepted after shutdown")
+	}
+}

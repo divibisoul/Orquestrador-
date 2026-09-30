@@ -34,10 +34,11 @@ type PeerInfo struct {
 	URL        string
 	Healthy    bool
 	Latency    time.Duration
-	LastError  string
-	Failures   int
-	Circuit    CircuitState
-	RetryAfter time.Time
+	LastError    string
+	Failures     int
+	Circuit      CircuitState
+	RetryAfter   time.Time
+	HalfOpenUse  bool
 }
 
 type discoveryCacheEntry struct {
@@ -185,6 +186,13 @@ func (p *PeerClient) CallBest(ctx context.Context, capability string, payload ma
 	return nil, "", fmt.Errorf("no healthy peer exposes executable capability: %s", capability)
 }
 
+// SupportsExecutableCapability verifies that a discovery response explicitly
+// exposes the requested capability as executable. It is exported so composition
+// layers can fail closed without duplicating discovery semantics.
+func SupportsExecutableCapability(description map[string]any, capability string) bool {
+	return supportsExecutableCapability(description, capability)
+}
+
 func supportsExecutableCapability(description map[string]any, capability string) bool {
 	capability = strings.TrimSpace(capability)
 	if capability == "" || description == nil {
@@ -236,23 +244,52 @@ func (p *PeerClient) call(ctx context.Context, nucleus, capability string, paylo
 	if !ok {
 		return nil, errors.New("peer not configured: " + nucleus)
 	}
-	if peer.Circuit == CircuitOpen {
+	halfOpen := false
+	p.mu.Lock()
+	peer, ok = p.peers[nucleus]
+	if !ok {
+		p.mu.Unlock()
+		return nil, errors.New("peer not configured: " + nucleus)
+	}
+	switch peer.Circuit {
+	case CircuitOpen:
 		if time.Now().Before(peer.RetryAfter) {
+			p.mu.Unlock()
 			return nil, fmt.Errorf("peer circuit open: %s", nucleus)
 		}
-		p.mu.Lock()
-		peer = p.peers[nucleus]
+		if peer.HalfOpenUse {
+			p.mu.Unlock()
+			return nil, fmt.Errorf("peer circuit half-open probe busy: %s", nucleus)
+		}
 		peer.Circuit = CircuitHalfOpen
+		peer.HalfOpenUse = true
 		p.peers[nucleus] = peer
-		p.mu.Unlock()
+		halfOpen = true
+	case CircuitHalfOpen:
+		if peer.HalfOpenUse {
+			p.mu.Unlock()
+			return nil, fmt.Errorf("peer circuit half-open probe busy: %s", nucleus)
+		}
+		peer.HalfOpenUse = true
+		p.peers[nucleus] = peer
+		halfOpen = true
 	}
+	p.mu.Unlock()
+
 	if p.secret == "" {
+		if halfOpen {
+			p.abortHalfOpen(nucleus)
+		}
+
 		return nil, errors.New("SOUL_MESH_HMAC_SECRET is not configured")
 	}
 
 	var lastErr error
 	for attempt := 1; attempt <= p.maxRetry; attempt++ {
 		if err := ctx.Err(); err != nil {
+			if halfOpen {
+				p.abortHalfOpen(nucleus)
+			}
 			return nil, err
 		}
 		messageID := protocol.NewTraceID()
@@ -377,6 +414,19 @@ func waitBackoff(ctx context.Context, attempt int) error {
 	}
 }
 
+func (p *PeerClient) abortHalfOpen(nucleus string) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	peer, ok := p.peers[nucleus]
+	if !ok || peer.Circuit != CircuitHalfOpen || !peer.HalfOpenUse {
+		return
+	}
+	peer.Circuit = CircuitOpen
+	peer.HalfOpenUse = false
+	peer.RetryAfter = time.Now().Add(p.cooldown)
+	p.peers[nucleus] = peer
+}
+
 func (p *PeerClient) recordSuccess(nucleus string, latency time.Duration) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
@@ -389,6 +439,7 @@ func (p *PeerClient) recordSuccess(nucleus string, latency time.Duration) {
 	peer.LastError = ""
 	peer.Failures = 0
 	peer.Circuit = CircuitClosed
+	peer.HalfOpenUse = false
 	peer.RetryAfter = time.Time{}
 	p.peers[nucleus] = peer
 }
@@ -405,8 +456,14 @@ func (p *PeerClient) recordFailure(nucleus string, latency time.Duration, lastEr
 	peer.Latency = latency
 	peer.LastError = lastError
 	peer.Failures++
-	if peer.Failures >= 3 {
+	if peer.Circuit == CircuitHalfOpen {
+		// Any failed half-open probe re-opens the circuit immediately.
 		peer.Circuit = CircuitOpen
+		peer.HalfOpenUse = false
+		peer.RetryAfter = time.Now().Add(p.cooldown)
+	} else if peer.Failures >= 3 {
+		peer.Circuit = CircuitOpen
+		peer.HalfOpenUse = false
 		peer.RetryAfter = time.Now().Add(p.cooldown)
 	}
 	p.peers[nucleus] = peer
