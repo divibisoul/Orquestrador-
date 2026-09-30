@@ -39,13 +39,13 @@ type SynergySequence struct {
 // SARA is G0/system control and is therefore represented as a cross-plane node.
 func FavoriteSynergySequence() SynergySequence {
 	nodes := []SynergyNode{
-		{Target: "N01", Plane: "soul-mesh", Role: "reference-gateway-and-context"},
-		{Target: "N05", Plane: "soul-mesh", Role: "dispatch-inference-execution"},
-		{Target: "SARA", Plane: "g0-regenerative", Role: "audit-regeneration-governance"},
-		{Target: "N02", Plane: "soul-mesh", Role: "conversation-generation-cognition"},
-		{Target: "N03", Plane: "soul-mesh", Role: "audio-speech-multimodal-perception"},
-		{Target: "N06", Plane: "soul-mesh", Role: "cognition-synthesis-audit"},
-		{Target: "N04", Plane: "soul-mesh", Role: "tools-documents-artifacts"},
+		{Target: "N01", Plane: "soul-mesh", Role: "reference-gateway-and-context", Capabilities: []string{"memory.semantic.vector.recall"}},
+		{Target: "N05", Plane: "soul-mesh", Role: "dispatch-inference-execution", Capabilities: []string{"inference.analyze"}},
+		{Target: "SARA", Plane: "g0-regenerative", Role: "audit-regeneration-governance", Capabilities: []string{"sara.cycle@1.0.0"}},
+		{Target: "N02", Plane: "soul-mesh", Role: "conversation-generation-cognition", Capabilities: []string{"ai.generate"}},
+		{Target: "N03", Plane: "soul-mesh", Role: "audio-speech-multimodal-perception", Capabilities: []string{"audio.summarize"}},
+		{Target: "N06", Plane: "soul-mesh", Role: "cognition-synthesis-audit", Capabilities: []string{"support.context"}},
+		{Target: "N04", Plane: "soul-mesh", Role: "tools-documents-artifacts", Capabilities: []string{"tool.run"}},
 		{Target: "N07", Plane: "soul-mesh", Role: "orchestration-neural-compute"},
 	}
 	edges := make([]SynergyEdge, 0, len(nodes)-1)
@@ -162,6 +162,9 @@ func ExecuteSynergyRoute(ctx context.Context, sequence SynergySequence, invoker 
 		start := time.Now().UTC()
 		target := node.Target
 		capability := strings.TrimSpace(capabilities[target])
+		if capability == "" && len(node.Capabilities) > 0 {
+			capability = strings.TrimSpace(node.Capabilities[0])
+		}
 		if target == "N07" {
 			trace = append(trace, SynergyTraceStep{
 				Target: target, Capability: capability, CorrelationID: correlation,
