@@ -300,6 +300,20 @@ func (g *HTTPGateway) Handler(w http.ResponseWriter, r *http.Request) {
 			g.respond(w, http.StatusBadRequest, envelope, "ERROR", map[string]any{"error": err.Error()})
 			return
 		}
+		if capability == "learning.feedback" {
+			if payload := envelope.NestedPayload(); payload != nil {
+				for key, metadataKey := range map[string]string{
+					"target": "learning_target",
+					"capability": "learning_capability",
+					"outcome": "learning_outcome",
+					"provenance": "learning_provenance",
+				} {
+					if value, ok := payload[key].(string); ok && strings.TrimSpace(value) != "" {
+						metadata[metadataKey] = strings.TrimSpace(value)
+					}
+				}
+			}
+		}
 	}
 	metadata["mesh_contract_version"] = envelope.ContractVersion
 	metadata["mesh_transport"] = "HTTP"
