@@ -38,6 +38,9 @@ type Policy struct {
 	Epsilon           float64
 	Horizon           time.Duration
 }
+type workingMemoryEntry struct { Candidate Candidate; UpdatedAt time.Time }
+type TaskFrame struct { TaskID string; ActivatedAt time.Time }
+
 type Cortex struct {
 	mu            sync.RWMutex
 	decisions     []Decision
@@ -48,6 +51,14 @@ type Cortex struct {
 	evaluated     uint64
 	decisionNanos uint64
 	lastDecision  time.Time
+	inhibitionChecks uint64
+	commits uint64
+	decisionCount uint64
+	evaluationNanos uint64
+	commitNanos uint64
+	workingMemory map[string]workingMemoryEntry
+	taskFrames []TaskFrame
+	currentTask string
 }
 
 func New(threshold float64, capacity int) (*Cortex, error) {
@@ -57,7 +68,7 @@ func New(threshold float64, capacity int) (*Cortex, error) {
 	if capacity < 1 {
 		return nil, errors.New("capacity must be positive")
 	}
-	return &Cortex{threshold: threshold, capacity: capacity, policy: Policy{CostWeight: 1, RiskWeight: 1, UtilityWeight: 1, UncertaintyWeight: .25, UrgencyWeight: .1, ImpactWeight: .2, Epsilon: 0, Horizon: 15 * time.Minute}}, nil
+	return &Cortex{threshold: threshold, capacity: capacity, policy: Policy{CostWeight: 1, RiskWeight: 1, UtilityWeight: 1, UncertaintyWeight: .25, UrgencyWeight: .1, ImpactWeight: .2, Epsilon: 0, Horizon: 15 * time.Minute}, workingMemory: make(map[string]workingMemoryEntry)}, nil
 }
 func valid(v Candidate) error {
 	if v.ID == "" {
