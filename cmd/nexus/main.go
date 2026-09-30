@@ -140,6 +140,11 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	hortaCore, err := aeternum.NewHortaCore(e, saraProxy)
+	if err != nil {
+		log.Fatal(err)
+	}
+	hortaCore.SetPeerClient(peerClient)
 	if err := orchestrator.RegisterCognitiveOperations(e, n07CognitiveMeshAdapter{peers: peerClient}, saraProxy, backend.NewSupabaseStore(cfg)); err != nil {
 		log.Fatal(err)
 	}
