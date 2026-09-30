@@ -37,6 +37,7 @@ type testWire struct {
 func newTestGateway(t *testing.T) *HTTPGateway {
 	t.Helper()
 	t.Setenv("N07_MESH_HMAC_SECRET", "")
+	t.Setenv("SOUL_MESH_HMAC_SECRET", "")
 	t.Setenv("N07_MESH_ALLOW_UNAUTH_LOCAL", "true")
 	n, err := neural.New(8, .05)
 	if err != nil {
