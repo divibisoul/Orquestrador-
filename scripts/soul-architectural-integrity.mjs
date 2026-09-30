@@ -45,7 +45,14 @@ const matrix=await readJson(MATRIX_PATH);
 if (matrix?.system!=='SOUL') add(report.contractConflicts,{type:'system-invalid'});
 if (matrix?.canonicalMesh?.protocol!=='soul-mesh/1' || matrix?.canonicalMesh?.contractVersion!=='1.1.0') add(report.contractConflicts,{type:'canonical-mesh-invalid',expected:'soul-mesh/1@1.1.0'});
 if (!Array.isArray(matrix?.canonicalMesh?.nuclei) || matrix.canonicalMesh.nuclei.length!==7 || matrix.canonicalMesh.nuclei.some((id,i)=>id!==IDS[i])) add(report.topologyConflicts,{type:'seven-nucleus-order-invalid'});
-if (matrix?.fusion?.topology!=='linear-adjacent' || matrix?.fusion?.policy!=='adjacent-only-dynamic' || matrix?.fusion?.bidirectionalChannelsPerEdge!==2) add(report.topologyConflicts,{type:'fusion-policy-invalid'});
+if (
+  matrix?.fusion?.topology!=='linear-adjacent' ||
+  !['adjacent-only-dynamic','full-mesh-dynamic'].includes(matrix?.fusion?.policy) ||
+  matrix?.fusion?.bidirectionalChannelsPerEdge!==2
+) add(report.topologyConflicts,{type:'fusion-policy-invalid'});
+// Affinity strategy and transport reachability are separate invariants. The
+// peer lists below remain authoritative for Mesh reachability; full-mesh-dynamic
+// therefore must not be rejected when the canonical peer graph is symmetric.
 if (matrix?.hardware?.controlPlane!=='N07' || matrix?.hardware?.realHardwareOnly!==true || matrix?.hardware?.simulation!==false) add(report.contractConflicts,{type:'hardware-policy-invalid'});
 if (!(await fs.stat(MASTER_CONTRACT_PATH).then(s=>s.isFile()).catch(()=>false))) add(report.promptContract,{type:'master-contract-missing',path:'SOUL_MASTER_ENGINEERING_CONTRACT.md'});
 else report.promptContract.push({type:'master-contract-present'});
