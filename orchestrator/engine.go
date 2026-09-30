@@ -64,6 +64,7 @@ type Engine struct {
 	neocortex        *prefrontal.Neocortex
 	learning         *learning.Machine
 	memory           memory.Store
+	synergyInvoker   SynergyInvoker
 	compute          *supergpu.Runtime
 	running          atomic.Bool
 	sequence         atomic.Uint64
@@ -153,6 +154,31 @@ func New(n *neural.Network, c *prefrontal.Cortex, g *supergpu.Runtime) (*Engine,
 		return nil, err
 	}
 	return e, nil
+}
+
+func (e *Engine) SetSynergyInvoker(invoker SynergyInvoker) error {
+	if e == nil {
+		return errors.New("orchestrator engine is required")
+	}
+	if invoker == nil {
+		return errors.New("synergy invoker is required")
+	}
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	if e.synergyInvoker != nil {
+		return errors.New("synergy invoker already attached")
+	}
+	e.synergyInvoker = invoker
+	return nil
+}
+
+func (e *Engine) synergy() SynergyInvoker {
+	if e == nil {
+		return nil
+	}
+	e.mu.RLock()
+	defer e.mu.RUnlock()
+	return e.synergyInvoker
 }
 
 func (e *Engine) SetLearningMachine(machine *learning.Machine) error {
