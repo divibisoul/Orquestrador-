@@ -1,6 +1,29 @@
 package cognitive
 
-import "time"
+import (
+	"context"
+	"time"
+)
+
+type PeerDescriptor struct {
+	Nucleus string
+}
+
+type MeshPeer interface {
+	ConfiguredPeers() []PeerDescriptor
+	Discover(context.Context, string) (map[string]any, error)
+	CallBestDynamic(context.Context, string, map[string]any, string) (map[string]any, string, error)
+}
+
+type PolicyAuditor interface {
+	Configured() bool
+	Audit(context.Context, string, string) (map[string]any, error)
+}
+
+type RunStore interface {
+	Configured() bool
+	RecordRun(context.Context, map[string]any) error
+}
 
 type Config struct {
 	Enabled                bool
