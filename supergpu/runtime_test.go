@@ -99,3 +99,44 @@ func TestBatchParallelHonorsCancellation(t *testing.T) {
 		t.Fatal("expected cancellation error")
 	}
 }
+
+
+func TestRuntimeExecutionReporterReceivesCorrelationAndLifecycle(t *testing.T) {
+	r := New(nil)
+	r.Discover()
+
+	var events []ExecutionEvent
+	var mu sync.Mutex
+	r.SetExecutionReporter(ReporterFunc(func(_ context.Context, event ExecutionEvent) error {
+		mu.Lock()
+		defer mu.Unlock()
+		events = append(events, event)
+		return nil
+	}))
+
+	ctx := WithCorrelationID(context.Background(), "corr-clareira-1")
+	device, err := r.Select("")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := r.Execute(ctx, device, "square", []float64{2, 3}); err != nil {
+		t.Fatal(err)
+	}
+
+	mu.Lock()
+	defer mu.Unlock()
+	if len(events) != 2 {
+		t.Fatalf("expected started+completed reports, got %d", len(events))
+	}
+	if events[0].Phase != "started" || events[1].Phase != "completed" {
+		t.Fatalf("unexpected lifecycle: %#v", events)
+	}
+	for _, event := range events {
+		if event.CorrelationID != "corr-clareira-1" {
+			t.Fatalf("correlation not preserved: %#v", event)
+		}
+	}
+	if events[1].OutputSize != 2 {
+		t.Fatalf("expected output size 2, got %d", events[1].OutputSize)
+	}
+}
