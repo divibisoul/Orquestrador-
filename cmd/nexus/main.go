@@ -17,6 +17,7 @@ import (
 	"github.com/divibisoul/Orquestrador-/aeternum"
 	"github.com/divibisoul/Orquestrador-/api/health"
 	"github.com/divibisoul/Orquestrador-/backend"
+	"github.com/divibisoul/Orquestrador-/cooperation"
 	"github.com/divibisoul/Orquestrador-/jev"
 	"github.com/divibisoul/Orquestrador-/learning"
 	"github.com/divibisoul/Orquestrador-/mesh"
@@ -108,6 +109,13 @@ func main() {
 	}
 	peerClient.SetRouteScorer(learningMachine)
 	peerClient.SetRouteOutcomeObserver(learningMachine)
+	coordinator, err := cooperation.New(peerClient, learningMachine)
+	if err != nil {
+		log.Fatal(err)
+	}
+	if err := orchestrator.RegisterCooperationOperations(e, coordinator); err != nil {
+		log.Fatal(err)
+	}
 	hortaCore, err := aeternum.NewHortaCore(e, saraProxy)
 	if err != nil {
 		log.Fatal(err)
