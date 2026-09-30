@@ -39,7 +39,7 @@ func TestBlueprintOperationsExposeAdditiveAffinityLayer(t *testing.T) {
 	if result.Status != "ok" || result.Metadata["count"] == "0" {
 		t.Fatalf("blueprint resolve failed: %#v", result)
 	}
-	_ = e.Execute(context.Background(), "blueprint.compose@1.0.0", nil, map[string]string{"query":"ethics governance memory"})
+	_, _ = e.Execute(context.Background(), "blueprint.compose@1.0.0", nil, map[string]string{"query":"ethics governance memory"})
 }
 func TestBlueprintOperationMissingQueryFailsClosed(t *testing.T) {
 	n, _ := neural.New(2, .05)
