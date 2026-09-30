@@ -22,7 +22,7 @@
   },
   "fusion": {
     "topology": "linear-adjacent",
-    "policy": "adjacent-only-dynamic",
+    "policy": "full-mesh-dynamic",
     "bidirectionalChannelsPerEdge": 2
   },
   "hardware": {
