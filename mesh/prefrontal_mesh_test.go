@@ -38,7 +38,7 @@ func TestMeshRoutesIntoPrefrontalExecutiveAdmission(t *testing.T) {
 	if metadata["decision_id"] != "mesh-pfc-task" {
 		t.Fatalf("expected committed decision id, got %#v", metadata["decision_id"])
 	}
-	if metadata["neural_dimensions"] != float64(8) {
+	if metadata["neural_dimensions"] != "8" {
 		t.Fatalf("expected 8 neural dimensions, got %#v", metadata["neural_dimensions"])
 	}
 }
