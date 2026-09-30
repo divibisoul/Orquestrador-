@@ -116,6 +116,12 @@ type SynergyInvoker interface {
 	Invoke(context.Context, string, string, map[string]any, string) (map[string]any, error)
 }
 
+type SynergyInvokerFunc func(context.Context, string, string, map[string]any, string) (map[string]any, error)
+
+func (f SynergyInvokerFunc) Invoke(ctx context.Context, target, capability string, payload map[string]any, correlation string) (map[string]any, error) {
+	return f(ctx, target, capability, payload, correlation)
+}
+
 type SynergyTraceStep struct {
 	Target        string         `json:"target"`
 	Capability    string         `json:"capability"`
