@@ -25,4 +25,5 @@ jobs:
         with:
           node-version: 22
       - run: node scripts/verify-primordial-composition.mjs
+          node scripts/verify-primordial-essence.mjs
       - run: go test ./composition
