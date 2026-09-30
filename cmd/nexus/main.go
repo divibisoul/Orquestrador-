@@ -16,6 +16,7 @@ import (
 	"github.com/divibisoul/Orquestrador-/api"
 	"github.com/divibisoul/Orquestrador-/api/health"
 	"github.com/divibisoul/Orquestrador-/backend"
+	"github.com/divibisoul/Orquestrador-/cognitive"
 	"github.com/divibisoul/Orquestrador-/jev"
 	"github.com/divibisoul/Orquestrador-/mesh"
 	"github.com/divibisoul/Orquestrador-/neural"
@@ -30,6 +31,36 @@ type request struct {
 	Operation string            `json:"operation"`
 	Payload   []float64         `json:"payload"`
 	Metadata  map[string]string `json:"metadata"`
+}
+
+type n07CognitiveMeshAdapter struct {
+	peers *mesh.PeerClient
+}
+
+func (a n07CognitiveMeshAdapter) ConfiguredPeers() []cognitive.PeerDescriptor {
+	if a.peers == nil {
+		return nil
+	}
+	raw := a.peers.ConfiguredPeers()
+	out := make([]cognitive.PeerDescriptor, 0, len(raw))
+	for _, peer := range raw {
+		out = append(out, cognitive.PeerDescriptor{Nucleus: peer.Nucleus})
+	}
+	return out
+}
+
+func (a n07CognitiveMeshAdapter) Discover(ctx context.Context, nucleus string) (map[string]any, error) {
+	if a.peers == nil {
+		return nil, errors.New("mesh peer client unavailable")
+	}
+	return a.peers.Discover(ctx, nucleus)
+}
+
+func (a n07CognitiveMeshAdapter) CallBestDynamic(ctx context.Context, capability string, payload map[string]any, correlation string) (map[string]any, string, error) {
+	if a.peers == nil {
+		return nil, "", errors.New("mesh peer client unavailable")
+	}
+	return a.peers.CallBestDynamic(ctx, capability, payload, correlation)
 }
 
 func main() {
@@ -92,7 +123,7 @@ func main() {
 	}); err != nil {
 		log.Fatal(err)
 	}
-	if err := orchestrator.RegisterCognitiveOperations(e, peerClient, saraProxy, backend.NewSupabaseStore(cfg)); err != nil {
+	if err := orchestrator.RegisterCognitiveOperations(e, n07CognitiveMeshAdapter{peers: peerClient}, saraProxy, backend.NewSupabaseStore(cfg)); err != nil {
 		log.Fatal(err)
 	}
 	g.SetExecutionReporter(supergpu.ReporterFunc(func(ctx context.Context, event supergpu.ExecutionEvent) error {
