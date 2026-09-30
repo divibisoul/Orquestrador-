@@ -140,6 +140,11 @@ func executeGemini(
 	})
 
 	payload := geminiPayload(message, semanticText)
+	if invalid, _ := payload["contents_json_invalid"].(bool); invalid {
+		return protocol.Result{TraceID: message.TraceID, CorrelationID: message.CorrelationID, Source: "N07.gemini", Target: message.Source, Status: "rejected", Error: "contents_json is invalid"}, errors.New("contents_json is invalid")
+	}
+	delete(payload, "contents_json_invalid")
+	delete(payload, "contents_json_error")
 	upstream, callErr := peer.CallWithCorrelation(ctx, geminiOwner, capability, payload, message.CorrelationID)
 	if callErr != nil {
 		reportGeminiFailure(ctx, reporter, capability, message, callErr, len(neuralInput))
@@ -179,15 +184,6 @@ func executeGemini(
 	}, nil
 }
 
-func contextError(message protocol.Message) error {
-	if strings.TrimSpace(message.CorrelationID) == "" {
-		return errors.New("correlation id is required")
-	}
-	if !message.Deadline.IsZero() && time.Now().After(message.Deadline) {
-		return errors.New("message deadline exceeded")
-	}
-	return nil
-}
 
 func parseGeminiPolicy(raw string) (geminiPolicy, error) {
 	raw = strings.TrimSpace(raw)
@@ -290,9 +286,10 @@ func geminiPayload(message protocol.Message, semanticText string) map[string]any
 	if value := strings.TrimSpace(message.Metadata["contents_json"]); value != "" {
 		var contents []any
 		if err := json.Unmarshal([]byte(value), &contents); err != nil {
-			// Invalid structured contents must fail at the N02 provider boundary,
-			// not be replaced with a fabricated request.
-			payload["contents_json"] = value
+			// The caller supplied structured Gemini content but it is invalid.
+			// Fail explicitly rather than silently falling back to text generation.
+			payload["contents_json_invalid"] = true
+			payload["contents_json_error"] = err.Error()
 		} else {
 			payload["contents"] = contents
 		}
