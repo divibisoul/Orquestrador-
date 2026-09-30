@@ -38,9 +38,9 @@ func TestLearningReceiverAndNeuralParameters(t *testing.T) {
 	feedback.TraceID = "trace-learning-test"
 	feedback.CorrelationID = "corr-learning-test"
 	feedback.Metadata = map[string]string{
-		"learning_target": "N07",
+		"learning_target":     "N07",
 		"learning_capability": "neural.forward",
-		"learning_outcome": "success",
+		"learning_outcome":    "success",
 		"learning_provenance": "mesh-observed",
 	}
 	result, err := e.Submit(context.Background(), feedback)

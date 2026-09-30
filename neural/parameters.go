@@ -23,15 +23,15 @@ func (n *Network) Parameters() map[string]any {
 		updated = n.stats.LastUpdate.UTC().Format(time.RFC3339Nano)
 	}
 	return map[string]any{
-		"size":            n.size,
-		"learning_rate":   n.learningRate,
-		"optimizer":       n.config.Optimizer,
-		"regularization":  n.config.Regularization,
-		"gradient_clip":   n.config.GradientClip,
-		"heads":           n.config.Heads,
-		"batch_cache":     n.config.BatchCache,
-		"layers":          layers,
-		"learning_steps":  n.stats.LearningSteps,
-		"last_update":     updated,
+		"size":           n.size,
+		"learning_rate":  n.learningRate,
+		"optimizer":      n.config.Optimizer,
+		"regularization": n.config.Regularization,
+		"gradient_clip":  n.config.GradientClip,
+		"heads":          n.config.Heads,
+		"batch_cache":    n.config.BatchCache,
+		"layers":         layers,
+		"learning_steps": n.stats.LearningSteps,
+		"last_update":    updated,
 	}
 }

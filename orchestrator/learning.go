@@ -27,7 +27,7 @@ func RegisterLearningOperations(e *Engine, machine *learning.Machine, n *neural.
 			ID: message.TraceID, TraceID: message.TraceID, CorrelationID: message.CorrelationID,
 			Source: message.Source, Target: strings.TrimSpace(meta["learning_target"]),
 			Capability: strings.TrimSpace(meta["learning_capability"]),
-			EventType: learning.EventFeedback, Outcome: strings.TrimSpace(meta["learning_outcome"]),
+			EventType:  learning.EventFeedback, Outcome: strings.TrimSpace(meta["learning_outcome"]),
 			Reward: message.Payload[0], Confidence: message.Payload[1],
 			Provenance: strings.TrimSpace(meta["learning_provenance"]), Metadata: meta,
 		}

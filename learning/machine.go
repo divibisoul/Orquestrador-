@@ -39,20 +39,20 @@ type Experience struct {
 }
 
 type PersistedExperience struct {
-	ID            string    `json:"id"`
-	TraceID       string    `json:"trace_id"`
-	CorrelationID string    `json:"correlation_id"`
-	Source        string    `json:"source"`
-	Target        string    `json:"target"`
-	Capability    string    `json:"capability"`
-	EventType     string    `json:"event_type"`
-	Outcome       string    `json:"outcome"`
-	Reward        float64   `json:"reward"`
-	Confidence    float64   `json:"confidence"`
-	Input         []float64 `json:"input"`
-	TargetVector  []float64 `json:"target_vector"`
-	Provenance    string    `json:"provenance"`
-	Timestamp     time.Time `json:"created_at"`
+	ID            string            `json:"id"`
+	TraceID       string            `json:"trace_id"`
+	CorrelationID string            `json:"correlation_id"`
+	Source        string            `json:"source"`
+	Target        string            `json:"target"`
+	Capability    string            `json:"capability"`
+	EventType     string            `json:"event_type"`
+	Outcome       string            `json:"outcome"`
+	Reward        float64           `json:"reward"`
+	Confidence    float64           `json:"confidence"`
+	Input         []float64         `json:"input"`
+	TargetVector  []float64         `json:"target_vector"`
+	Provenance    string            `json:"provenance"`
+	Timestamp     time.Time         `json:"created_at"`
 	Metadata      map[string]string `json:"metadata"`
 }
 
@@ -71,13 +71,13 @@ type RouteState struct {
 }
 
 type Snapshot struct {
-	Status          string         `json:"status"`
-	Experiences     uint64         `json:"experiences"`
-	Supervised      uint64         `json:"supervised"`
-	Feedback        uint64         `json:"feedback"`
-	PersistFailures uint64         `json:"persist_failures"`
-	Restored        uint64         `json:"restored"`
-	LearnedRoutes   int            `json:"learned_routes"`
+	Status          string                `json:"status"`
+	Experiences     uint64                `json:"experiences"`
+	Supervised      uint64                `json:"supervised"`
+	Feedback        uint64                `json:"feedback"`
+	PersistFailures uint64                `json:"persist_failures"`
+	Restored        uint64                `json:"restored"`
+	LearnedRoutes   int                   `json:"learned_routes"`
 	Routes          map[string]RouteState `json:"routes"`
 }
 
@@ -155,14 +155,14 @@ func clampConfidence(v float64) float64 {
 
 func (m *Machine) admit(exp Experience) error {
 	candidate := prefrontal.Candidate{
-		ID: strings.TrimSpace(exp.ID),
-		Utility: 0.5 + 0.5*clampConfidence(exp.Confidence),
-		Cost: 0,
-		Risk: 0,
+		ID:          strings.TrimSpace(exp.ID),
+		Utility:     0.5 + 0.5*clampConfidence(exp.Confidence),
+		Cost:        0,
+		Risk:        0,
 		Uncertainty: 1 - clampConfidence(exp.Confidence),
-		Urgency: 0,
-		Impact: 0.2 * math.Abs(clampReward(exp.Reward)),
-		Context: map[string]any{"capability": exp.Capability, "learning": true, "event_type": string(exp.EventType)},
+		Urgency:     0,
+		Impact:      0.2 * math.Abs(clampReward(exp.Reward)),
+		Context:     map[string]any{"capability": exp.Capability, "learning": true, "event_type": string(exp.EventType)},
 	}
 	return m.cortex.ValidateAction(candidate)
 }
@@ -292,17 +292,17 @@ func (m *Machine) ObserveRoute(ctx context.Context, source, target, capability, 
 		id = time.Now().UTC().Format("20060102T150405.000000000Z07:00")
 	}
 	return m.Feedback(ctx, Experience{
-		ID: id + "-" + strings.TrimSpace(capability),
-		TraceID: correlation,
+		ID:            id + "-" + strings.TrimSpace(capability),
+		TraceID:       correlation,
 		CorrelationID: correlation,
-		Source: source,
-		Target: target,
-		Capability: capability,
-		Outcome: outcome,
-		Reward: reward,
-		Confidence: 1,
-		Provenance: "mesh-observed-route",
-		Metadata: map[string]string{"learning_origin": "mesh.call_best"},
+		Source:        source,
+		Target:        target,
+		Capability:    capability,
+		Outcome:       outcome,
+		Reward:        reward,
+		Confidence:    1,
+		Provenance:    "mesh-observed-route",
+		Metadata:      map[string]string{"learning_origin": "mesh.call_best"},
 	})
 }
 
@@ -372,14 +372,14 @@ func (m *Machine) Restore(ctx context.Context, limit int) error {
 
 func (m *Machine) Snapshot() Snapshot {
 	return Snapshot{
-		Status: "ready",
-		Experiences: m.experiences.Load(),
-		Supervised: m.supervised.Load(),
-		Feedback: m.feedback.Load(),
+		Status:          "ready",
+		Experiences:     m.experiences.Load(),
+		Supervised:      m.supervised.Load(),
+		Feedback:        m.feedback.Load(),
 		PersistFailures: m.persistFailures.Load(),
-		Restored: m.restored.Load(),
-		LearnedRoutes: len(m.Routes()),
-		Routes: m.Routes(),
+		Restored:        m.restored.Load(),
+		LearnedRoutes:   len(m.Routes()),
+		Routes:          m.Routes(),
 	}
 }
 
