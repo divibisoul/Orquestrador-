@@ -8,16 +8,6 @@ import (
 	"time"
 )
 
-type workingMemoryEntry struct {
-	Candidate Candidate
-	UpdatedAt time.Time
-}
-
-type TaskFrame struct {
-	TaskID      string
-	ActivatedAt time.Time
-}
-
 type OutcomeObservation struct {
 	DecisionID string
 	Outcome    string
