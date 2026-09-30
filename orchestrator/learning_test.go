@@ -53,6 +53,10 @@ func TestLearningReceiverAndNeuralParameters(t *testing.T) {
 	if m.Weight("N02", "N07", "neural.forward") <= 0.5 {
 		t.Fatal("learning route weight did not change")
 	}
+	prefrontalState := c.Health()
+	if got, ok := prefrontalState["learning_observations"].(uint64); !ok || got != 1 {
+		t.Fatalf("prefrontal learning observation was not recorded: %#v", prefrontalState)
+	}
 
 	parameters := protocol.NewMessage("N02", "N07", "command", "neural.parameters@1.0.0", nil)
 	parameters.TraceID = "trace-parameters-test"
