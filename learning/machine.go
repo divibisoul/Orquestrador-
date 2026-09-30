@@ -12,6 +12,7 @@ import (
 
 	"github.com/divibisoul/Orquestrador-/neural"
 	"github.com/divibisoul/Orquestrador-/prefrontal"
+	"github.com/divibisoul/Orquestrador-/protocol"
 )
 
 type EventType string
@@ -302,6 +303,39 @@ func (m *Machine) Feedback(ctx context.Context, exp Experience) error {
 	m.feedback.Add(1)
 
 	return m.persist(ctx, exp)
+}
+
+// ObserveRoute turns a real Mesh execution result into a bounded feedback
+// event. It updates route state immediately and uses the same durable learning
+// path as other feedback sources when a persistence sink is configured.
+func (m *Machine) ObserveRoute(ctx context.Context, source, target, capability, correlation string, success bool) error {
+	outcome := "route_failure"
+	reward := -1.0
+	if success {
+		outcome = "route_success"
+		reward = 1
+	}
+	traceID := strings.TrimSpace(correlation)
+	if traceID == "" {
+		traceID = protocol.NewTraceID()
+	}
+	return m.Feedback(ctx, Experience{
+		ID:            traceID + ":route:" + strings.TrimSpace(target) + ":" + outcome,
+		TraceID:       traceID,
+		CorrelationID: strings.TrimSpace(correlation),
+		Source:        strings.TrimSpace(source),
+		Target:        strings.TrimSpace(target),
+		Capability:    strings.TrimSpace(capability),
+		EventType:     EventFeedback,
+		Outcome:       outcome,
+		Reward:        reward,
+		Confidence:    1,
+		Provenance:    "mesh-observed-route",
+		Metadata: map[string]string{
+			"learning_origin": "mesh.call_best",
+			"route_target":    strings.TrimSpace(target),
+		},
+	})
 }
 
 func (m *Machine) Weight(source, target, capability string) float64 {
