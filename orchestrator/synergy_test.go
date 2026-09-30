@@ -58,3 +58,47 @@ func TestExecuteSynergyRouteUsesSharedCorrelationAndFinalizesAtN07(t *testing.T)
 		}
 	}
 }
+
+
+func TestFavoriteSynergySequenceCarriesNativeCapabilitySeeds(t *testing.T) {
+	sequence := FavoriteSynergySequence()
+	want := map[string]string{
+		"N01":  "memory.semantic.vector.recall",
+		"N05":  "inference.analyze",
+		"SARA": "sara.cycle@1.0.0",
+		"N02":  "ai.generate",
+		"N03":  "audio.summarize",
+		"N06":  "support.context",
+		"N04":  "tool.run",
+	}
+	for target, capability := range want {
+		found := false
+		for _, node := range sequence.Nodes {
+			if node.Target == target && len(node.Capabilities) > 0 && node.Capabilities[0] == capability {
+				found = true
+				break
+			}
+		}
+		if !found {
+			t.Fatalf("missing native capability seed %s:%s", target, capability)
+		}
+	}
+}
+
+func TestExecuteFavoriteSynergyRouteCanUseNativeCapabilitySeeds(t *testing.T) {
+	invoker := &recordingSynergyInvoker{}
+	result, err := ExecuteSynergyRoute(
+		context.Background(),
+		FavoriteSynergySequence(),
+		invoker,
+		"seeded-correlation",
+		map[string]string{},
+		map[string]any{"input": "probe"},
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Status != "ok" || len(invoker.calls) != 7 {
+		t.Fatalf("expected all seven remote seeded stages, result=%+v calls=%d", result, len(invoker.calls))
+	}
+}
