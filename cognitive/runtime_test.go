@@ -5,30 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/divibisoul/Orquestrador-/mesh"
 	"github.com/divibisoul/Orquestrador-/prefrontal"
 )
-
-type runtimePeerAdapter struct {
-	peers *mesh.PeerClient
-}
-
-func (a runtimePeerAdapter) ConfiguredPeers() []PeerDescriptor {
-	raw := a.peers.ConfiguredPeers()
-	out := make([]PeerDescriptor, 0, len(raw))
-	for _, peer := range raw {
-		out = append(out, PeerDescriptor{Nucleus: peer.Nucleus})
-	}
-	return out
-}
-
-func (a runtimePeerAdapter) Discover(ctx context.Context, nucleus string) (map[string]any, error) {
-	return a.peers.Discover(ctx, nucleus)
-}
-
-func (a runtimePeerAdapter) CallBestDynamic(ctx context.Context, capability string, payload map[string]any, correlation string) (map[string]any, string, error) {
-	return a.peers.CallBestDynamic(ctx, capability, payload, correlation)
-}
 
 func TestWorkingMemoryRetainsEvidenceAndEvictsLowRelevance(t *testing.T) {
 	cfg := DefaultConfig()
@@ -105,18 +83,9 @@ func TestCriticUsesExistingPrefrontalAndBlocksIrreversibleWithoutSARA(t *testing
 	}
 }
 
-func TestMeshExecutorRejectsMissingCorrelationWithoutNetworkCall(t *testing.T) {
-	peers, err := mesh.NewPeerClient(nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-	executor, err := NewMeshExecutor(runtimePeerAdapter{peers: peers})
-	if err != nil {
-		t.Fatal(err)
-	}
-	_, _, err = executor.Execute(context.Background(), "ai.infer", map[string]any{"input": "x"}, "")
-	if err == nil {
-		t.Fatal("missing correlation must be rejected before Mesh execution")
+func TestMeshExecutorRequiresPeerContract(t *testing.T) {
+	if _, err := NewMeshExecutor(nil); err == nil {
+		t.Fatal("MeshExecutor must require a real Mesh peer contract")
 	}
 }
 
