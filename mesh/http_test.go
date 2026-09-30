@@ -207,6 +207,9 @@ func TestHTTPGatewayHonorsContextCancellation(t *testing.T) {
 
 func TestHTTPGatewayExposesFullPrefrontalExecutiveSurface(t *testing.T) {
 	h := newTestGateway(t)
+	if err := orchestrator.RegisterAdvancedOperations(h.Engine); err != nil {
+		t.Fatal(err)
+	}
 	candidate := map[string]any{
 		"ID": "mesh-exec-action", "Cost": .01, "Risk": .01, "Utility": .7,
 		"Uncertainty": .05, "Urgency": .4, "Impact": .6,
