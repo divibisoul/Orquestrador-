@@ -4,14 +4,25 @@ import (
 	"context"
 	"testing"
 
-	"github.com/divibisoul/Orquestrador-/mesh"
+	"github.com/divibisoul/Orquestrador-/blueprint"
 
 	"github.com/divibisoul/Orquestrador-/neural"
 	"github.com/divibisoul/Orquestrador-/prefrontal"
 	"github.com/divibisoul/Orquestrador-/protocol"
 	"github.com/divibisoul/Orquestrador-/supergpu"
-	"github.com/divibisoul/Orquestrador-/octacore"
 )
+
+type TestBlueprintProcessor struct{}
+
+func (TestBlueprintProcessor) ResolveBlueprint(query string, limit int) ([]blueprint.Match, error) {
+	return blueprint.Resolve(query, limit)
+}
+func (TestBlueprintProcessor) ResolveExecutableBlueprint(query string, limit int) ([]blueprint.Match, error) {
+	return blueprint.ResolveExecutable(query, limit)
+}
+func (TestBlueprintProcessor) ComposeBlueprint(query string, limit int) (blueprint.RoutePlan, error) {
+	return blueprint.Compose(query, limit)
+}
 
 func TestBlueprintOperationsExposeAdditiveAffinityLayer(t *testing.T) {
 	n, err := neural.New(2, .05)
@@ -21,10 +32,7 @@ func TestBlueprintOperationsExposeAdditiveAffinityLayer(t *testing.T) {
 	g := supergpu.New(nil)
 	e, err := New(n, c, g)
 	if err != nil { t.Fatal(err) }
-	peers, err := mesh.NewPeerClient(nil)
-	if err != nil { t.Fatal(err) }
-	processor, err := octacore.NewProcessor(octacore.DefaultConfig(), g, peers, nil)
-	if err != nil { t.Fatal(err) }
+	processor := TestBlueprintProcessor{}
 	if err := RegisterBlueprintOperations(e, processor); err != nil { t.Fatal(err) }
 	result, err := e.Execute(context.Background(), "blueprint.resolve@1.0.0", nil, map[string]string{"query":"audio multimodal perception"})
 	if err != nil { t.Fatal(err) }
