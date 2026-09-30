@@ -1,3 +1,9 @@
+type fixedRouteScorer map[string]float64
+
+func (s fixedRouteScorer) Weight(_, target, _ string) float64 {
+	return s[target]
+}
+
 package mesh
 
 import (
@@ -9,6 +15,49 @@ import (
 
 	"github.com/divibisoul/Orquestrador-/protocol"
 )
+
+func TestPeerClientOrdersPeersByLearnedRouteWeight(t *testing.T) {
+	p := &PeerClient{
+		peers: map[string]PeerInfo{
+			protocol.N01: {Nucleus: protocol.N01, URL: "http://n01", Healthy: true, Latency: 50 * time.Millisecond},
+			protocol.N02: {Nucleus: protocol.N02, URL: "http://n02", Healthy: false, Latency: 5 * time.Millisecond},
+			protocol.N03: {Nucleus: protocol.N03, URL: "http://n03", Healthy: true, Latency: 10 * time.Millisecond},
+		},
+	}
+	p.SetRouteScorer(fixedRouteScorer{
+		protocol.N01: 0.20,
+		protocol.N02: 0.90,
+		protocol.N03: 0.90,
+	})
+
+	ordered := p.orderedPeers("ai.generate")
+	if len(ordered) != 3 {
+		t.Fatalf("expected three peers, got %d", len(ordered))
+	}
+	if ordered[0].Nucleus != protocol.N03 {
+		t.Fatalf("learned route weight did not lead selection: %+v", ordered)
+	}
+	if ordered[1].Nucleus != protocol.N02 || ordered[2].Nucleus != protocol.N01 {
+		t.Fatalf("unexpected deterministic route order: %+v", ordered)
+	}
+}
+
+func TestPeerClientSanitizesInvalidLearnedRouteWeight(t *testing.T) {
+	p := &PeerClient{
+		peers: map[string]PeerInfo{
+			protocol.N01: {Nucleus: protocol.N01, URL: "http://n01"},
+			protocol.N02: {Nucleus: protocol.N02, URL: "http://n02"},
+		},
+	}
+	p.SetRouteScorer(fixedRouteScorer{
+		protocol.N01: 2,
+		protocol.N02: 0.9,
+	})
+	ordered := p.orderedPeers("neural.forward")
+	if ordered[0].Nucleus != protocol.N02 {
+		t.Fatalf("invalid learned weight was not neutralized: %+v", ordered)
+	}
+}
 
 func TestPeerClientLoadsAllSixMeshPeers(t *testing.T) {
 	for _, n := range []string{protocol.N01, protocol.N02, protocol.N03, protocol.N04, protocol.N05, protocol.N06} {
