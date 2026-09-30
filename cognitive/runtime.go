@@ -3,12 +3,10 @@ package cognitive
 import (
 	"errors"
 
-	"github.com/divibisoul/Orquestrador-/backend"
-	"github.com/divibisoul/Orquestrador-/mesh"
 	"github.com/divibisoul/Orquestrador-/prefrontal"
 )
 
-func Build(cfg Config, cortex *prefrontal.Cortex, peers *mesh.PeerClient, sara *backend.SARAProxy, store *backend.SupabaseStore, local ...LocalExecutor) (*Loop, error) {
+func Build(cfg Config, cortex *prefrontal.Cortex, peers MeshPeer, sara PolicyAuditor, store RunStore, local ...LocalExecutor) (*Loop, error) {
 	if !cfg.Enabled {
 		return nil, errors.New("COGNITIVE_LOOP_DISABLED")
 	}
