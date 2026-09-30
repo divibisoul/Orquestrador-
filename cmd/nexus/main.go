@@ -220,6 +220,9 @@ func main() {
 	if err := octacore.RegisterOperations(e, octacoreProcessor); err != nil {
 		log.Fatal(err)
 	}
+	if err := orchestrator.RegisterBlueprintOperations(e, octacoreProcessor); err != nil {
+		log.Fatal(err)
+	}
 
 	unified := backend.NewUnified(e, cfg)
 	openAICompat := api.NewOpenAICompatHandler(peerClient)
