@@ -17,7 +17,10 @@
       "android.network",
       "android.events",
       "shizuku.bridge",
-      "brightness"
+      "brightness",
+      "memory.gemini.embedding",
+      "memory.semantic.vector.recall",
+      "memory.semantic.vector.remember"
     ],
     "N02": [
       "ai.generate",
@@ -215,6 +218,24 @@
         "id": "brightness",
         "repository": "divibisoul/aeternum-core-29",
         "path": "docs/SOUL-CAPABILITY-MASTER-MAP.md",
+        "ref": "main"
+      },
+      {
+        "id": "memory.gemini.embedding",
+        "repository": "divibisoul/aeternum-core-29",
+        "path": "scripts/SupabaseVectorMemory.ts",
+        "ref": "main"
+      },
+      {
+        "id": "memory.semantic.vector.recall",
+        "repository": "divibisoul/aeternum-core-29",
+        "path": "scripts/SupabaseVectorMemory.ts",
+        "ref": "main"
+      },
+      {
+        "id": "memory.semantic.vector.remember",
+        "repository": "divibisoul/aeternum-core-29",
+        "path": "scripts/SupabaseVectorMemory.ts",
         "ref": "main"
       }
     ],
