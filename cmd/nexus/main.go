@@ -17,6 +17,7 @@ import (
 	"github.com/divibisoul/Orquestrador-/api/health"
 	"github.com/divibisoul/Orquestrador-/backend"
 	"github.com/divibisoul/Orquestrador-/jev"
+	"github.com/divibisoul/Orquestrador-/learning"
 	"github.com/divibisoul/Orquestrador-/mesh"
 	"github.com/divibisoul/Orquestrador-/neural"
 	"github.com/divibisoul/Orquestrador-/octacore"
@@ -33,6 +34,7 @@ type request struct {
 
 func main() {
 	syncMeshSecretAlias()
+	cfg := backend.DefaultConfig()
 	n, err := neural.New(8, .05)
 	if err != nil {
 		log.Fatal(err)
@@ -43,8 +45,29 @@ func main() {
 	}
 	g := supergpu.New(nil)
 	g.Discover()
+	learningStore := backend.NewSupabaseStore(cfg)
+	var learningSink learning.Store
+	if learningStore.Configured() {
+		learningSink = learningStore
+	}
+	learningMachine, err := learning.New(n, c, learningSink)
+	if err != nil {
+		log.Fatal(err)
+	}
+	if learningSink != nil {
+		restoreCtx, restoreCancel := context.WithTimeout(context.Background(), 15*time.Second)
+		if err := learningMachine.Restore(restoreCtx, 5000); err != nil {
+			log.Printf("learning restore blocked: %v", err)
+		} else {
+			log.Printf("learning experiences restored: %v", learningMachine.Snapshot().Restored)
+		}
+		restoreCancel()
+	}
 	e, err := orchestrator.New(n, c, g)
 	if err != nil {
+		log.Fatal(err)
+	}
+	if err := e.SetLearningMachine(learningMachine); err != nil {
 		log.Fatal(err)
 	}
 	if err := orchestrator.RegisterSuperGPUOperations(e); err != nil {
@@ -61,7 +84,6 @@ func main() {
 	} else {
 		log.Printf("Jev decision capability disabled: %v", err)
 	}
-	cfg := backend.DefaultConfig()
 	saraProxy := backend.NewSARAProxy(cfg)
 	if saraProxy.Configured() {
 		if err := backend.RegisterSARAOperations(e, saraProxy); err != nil {
