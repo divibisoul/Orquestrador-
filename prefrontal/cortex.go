@@ -98,23 +98,18 @@ func boundedPositive(v float64) float64 {
 }
 
 func (c *Cortex) score(v Candidate) float64 {
-	weights := c.policy.CostWeight + c.policy.RiskWeight + c.policy.UtilityWeight + c.policy.UncertaintyWeight + c.policy.UrgencyWeight + c.policy.ImpactWeight
-	if weights <= 0 || math.IsNaN(weights) || math.IsInf(weights, 0) {
-		return -math.MaxFloat64
-	}
 	utility := boundedPositive(v.Utility)
 	cost := boundedPositive(v.Cost)
 	urgency := boundedPositive(v.Urgency)
 	impact := boundedPositive(v.Impact)
 	risk := boundedPositive(v.Risk)
 	uncertainty := boundedPositive(v.Uncertainty)
-	raw := c.policy.UtilityWeight*utility -
+	return c.policy.UtilityWeight*utility -
 		c.policy.CostWeight*cost -
 		c.policy.RiskWeight*risk -
 		c.policy.UncertaintyWeight*uncertainty +
 		c.policy.UrgencyWeight*urgency +
 		c.policy.ImpactWeight*impact
-	return raw / weights
 }
 func (c *Cortex) Evaluate(candidates []Candidate) (Candidate, error) {
 	start := time.Now()
