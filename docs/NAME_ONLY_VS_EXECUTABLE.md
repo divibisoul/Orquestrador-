@@ -78,6 +78,8 @@ RGO/Trinity/MMD/HortaCore:
 - N01 #60
 - N07 #54
 
+Fase 0 N01 Core continuity: PR #70, head 91e311924aa047af692b6701c60745d80e0ce08e. CI final do guard e validações principais do N01: SUCCESS. PR ainda OPEN; não mergeada.
+
 Até merge ordenado, esses handlers não fazem parte do MAIN.
 
 ## SIMULATED
