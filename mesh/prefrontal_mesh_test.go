@@ -18,6 +18,10 @@ func TestMeshRoutesIntoPrefrontalExecutiveAdmission(t *testing.T) {
 		"task_id":       "mesh-pfc-task",
 	}
 
+	// Keep this unit test explicitly local and unauthenticated; production Mesh remains fail-closed.
+	h.Secret = ""
+	h.AllowUnauthenticatedLocal = true
+
 	got, code := postWire(t, h, wire)
 	if code != 200 {
 		t.Fatalf("Mesh→Prefrontal request failed: code=%d envelope=%+v", code, got)
