@@ -12,9 +12,9 @@ O N01 é a fonte do grafo AETERNUM existente. Este repositório não copia o run
 
 ## Evidência
 
-Fonte exata: `divibisoul/aeternum-core-29@eb9e39134896903b86f3fc36a2ee679971c8c8c3`, snapshot gerado pelo resolvedor do N01.
+Fonte exata: `divibisoul/aeternum-core-29@928e7403453bbc8af921a596645e4d9cd9b4cf78`, snapshot gerado pelo resolvedor do N01.
 
-O snapshot é validado no CI do N07. Não é prova de runtime online e não é uma segunda matriz de ownership.
+O snapshot é validado no CI do N07. O `source.ref` aponta para o commit imutável do mapa AETERNUM que originou esta projeção. Não é prova de runtime online e não é uma segunda matriz de ownership.
 
 ## Relação com NVOD
 
