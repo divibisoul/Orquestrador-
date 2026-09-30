@@ -191,3 +191,73 @@ func TestOctacoreWebGPUIsExplicitlyUnavailable(t *testing.T) {
 		t.Fatalf("unexpected WebGPU error: %#v", result.Error)
 	}
 }
+
+type halfOpenBackend struct {
+	mu    sync.Mutex
+	calls int
+	release chan struct{}
+}
+
+func (b *halfOpenBackend) ConcurrentSafe() bool { return true }
+
+func (b *halfOpenBackend) Execute(ctx context.Context, _ supergpu.Device, _ string, input []float64) ([]float64, error) {
+	b.mu.Lock()
+	b.calls++
+	call := b.calls
+	b.mu.Unlock()
+	if call <= 2 {
+		return nil, errors.New("synthetic backend failure for circuit test")
+	}
+	select {
+	case <-b.release:
+		return append([]float64(nil), input...), nil
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	}
+}
+
+func TestOctacoreHalfOpenAllowsOnlyOneProbe(t *testing.T) {
+	backend := &halfOpenBackend{release: make(chan struct{})}
+	runtime := supergpu.New(backend)
+	runtime.Discover()
+	peers, err := mesh.NewPeerClient(nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	s := newScheduler(Config{
+		MaxInflight:          2,
+		TokenCapacity:        2,
+		TokenRefillPerSecond: 1000,
+		FailureThreshold:     2,
+		CircuitCooldown:      20 * time.Millisecond,
+	}, runtime, peers, nil)
+
+	makeJob := func(id string) Job {
+		return Job{
+			JobID:         id, CorrelationID: "corr-" + id, Kind: KindDispatch,
+			Source: G7, Target: "G7", BackendPrefs: []Backend{BackendInProcess},
+			Payload: map[string]any{"operation": "identity", "values": []float64{1}},
+			Priority: 50, TTLMS: 1000,
+		}
+	}
+
+	first := s.execute(context.Background(), makeJob("fail-1"))
+	second := s.execute(context.Background(), makeJob("fail-2"))
+	if first.OK || second.OK {
+		t.Fatalf("expected initial failures to open circuit: first=%+v second=%+v", first, second)
+	}
+
+	time.Sleep(30 * time.Millisecond)
+	resultCh := make(chan Result, 1)
+	go func() { resultCh <- s.execute(context.Background(), makeJob("probe")) }()
+	time.Sleep(5 * time.Millisecond)
+	contender := s.execute(context.Background(), makeJob("contender"))
+	if contender.OK || contender.Error == nil || contender.Error.Code != "ADMISSION_THROTTLED" {
+		t.Fatalf("second half-open admission was not rejected: %+v", contender)
+	}
+	close(backend.release)
+	probe := <-resultCh
+	if !probe.OK {
+		t.Fatalf("half-open probe failed: %+v", probe)
+	}
+}
