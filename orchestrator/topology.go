@@ -20,7 +20,7 @@ func SOULTopology() map[string]any {
 		"prefrontal.admission", "prefrontal.plan", "prefrontal.prioritize", "prefrontal.inhibit", "prefrontal.select",
 		"prefrontal.validate", "prefrontal.commit", "prefrontal.recall", "prefrontal.task.switch",
 		"prefrontal.working-memory", "prefrontal.outcome.observe", "prefrontal.monitor",
-		"neural.forward", "neural.learn", "jev.systemone@1.0.0",
+		"neural.forward", "neural.learn", "jev.systemone@1.0.0", "cognitive.goal.run@1.0.0", "cognitive.goal.plan@1.0.0", "cognitive.health@1.0.0", "gemini.delegate.text@1.0.0", "gemini.delegate.multimodal@1.0.0", "gemini.delegate.audio.transcribe@1.0.0", "gemini.delegate.audio.analyze@1.0.0", "gemini.delegate.speech.synthesize@1.0.0",
 	}
 	transports := []string{"IN_PROCESS", "LOOPBACK_HTTP", "HTTP", "REALTIME", "EVENT"}
 	channels := make([]PeerChannel, 0, 12)
