@@ -2,7 +2,8 @@ package neural
 
 import "time"
 
-// Parameters exposes the active neural configuration in the canonical field names
+// Parameters exposes the active neural configuration in the canonical field names.
+// Canonical source is this file; callers must not infer a second implementation.
 // consumed by the N02->N07 bridge. It is descriptive runtime state, not a claim of
 // model quality or external inference capability.
 func (n *Network) Parameters() map[string]any {
