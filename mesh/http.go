@@ -292,6 +292,18 @@ func (g *HTTPGateway) Handler(w http.ResponseWriter, r *http.Request) {
 			if v, ok := payloadMap["cycle_id"].(string); ok {
 				metadata["sara_cycle_id"] = v
 			}
+			if contextPayload, ok := payloadMap["context"].(map[string]any); ok && contextPayload != nil {
+				rawContext, marshalErr := json.Marshal(contextPayload)
+				if marshalErr != nil {
+					g.respond(w, http.StatusBadRequest, envelope, "ERROR", map[string]any{"error": "invalid SARA context"})
+					return
+				}
+				if len(rawContext) > 256*1024 {
+					g.respond(w, http.StatusRequestEntityTooLarge, envelope, "ERROR", map[string]any{"error": "SARA context exceeds 256 KiB"})
+					return
+				}
+				metadata["sara_context_json"] = string(rawContext)
+			}
 		}
 	} else {
 		var err error
