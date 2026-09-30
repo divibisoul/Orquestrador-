@@ -517,7 +517,8 @@ func (e *Engine) registerBuiltins() error {
 		if op == "" {
 			return protocol.Result{}, errors.New("metadata.operation is required")
 		}
-		values, err := e.compute.Execute(ctx, device, op, message.Payload)
+		computeCtx := supergpu.WithCorrelationID(ctx, message.CorrelationID)
+		values, err := e.compute.Execute(computeCtx, device, op, message.Payload)
 		return protocol.Result{TraceID: message.TraceID, CorrelationID: message.CorrelationID, Source: "N07.compute", Target: message.Source, Status: status(err), Payload: values, Error: errorText(err)}, err
 	}); err != nil {
 		return err
