@@ -347,6 +347,10 @@ func (g *HTTPGateway) Handler(w http.ResponseWriter, r *http.Request) {
 				metadata["sara_cycle_id"] = v
 			}
 		}
+	} else if strings.HasPrefix(capability, "prefrontal.") && !hasPayloadValues(envelope.NestedPayload()) {
+		// Executive/prefrontal operations are metadata-driven. They may legitimately
+		// carry no numeric vector while still using the canonical Mesh transport.
+		values = []float64{}
 	} else {
 		var err error
 		values, err = payloadValues(envelope.NestedPayload())
@@ -385,6 +389,14 @@ func meshDeadline(envelope protocol.MeshEnvelope) time.Time {
 	}
 	return time.UnixMilli(envelope.Timestamp + *envelope.TTL)
 }
+func hasPayloadValues(payload map[string]any) bool {
+	if payload == nil {
+		return false
+	}
+	_, ok := payload["values"]
+	return ok
+}
+
 func payloadValues(payload map[string]any) ([]float64, error) {
 	if payload == nil {
 		return nil, errors.New("payload.values is required")
