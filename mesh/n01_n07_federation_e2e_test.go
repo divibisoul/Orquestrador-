@@ -1,226 +1,138 @@
+//go:build integration
+
 package mesh
 
 import (
-	"bytes"
 	"context"
-	"crypto/hmac"
-	"crypto/sha256"
-	"encoding/hex"
-	"encoding/json"
-	"errors"
+	"fmt"
 	"net/http"
-	"net/http/httptest"
+	"os"
 	"strings"
-	"sync"
 	"testing"
 	"time"
-
-	"github.com/divibisoul/Orquestrador-/neural"
-	"github.com/divibisoul/Orquestrador-/orchestrator"
-	"github.com/divibisoul/Orquestrador-/prefrontal"
-	"github.com/divibisoul/Orquestrador-/protocol"
-	"github.com/divibisoul/Orquestrador-/supergpu"
 )
 
-const federationE2ESecret = "n07-e2e-secret-0123456789abcdef"
-
-func verifyCanonicalPeerRequest(w canonicalWireEnvelope, secret string, now time.Time) error {
-	if w.Protocol != "soul-mesh/1" || w.ContractVersion != protocol.SoulMeshContractVersion || w.Kind != "request" {
-		return errors.New("canonical Mesh request identity mismatch")
+func requiredEnv(t *testing.T, key string) string {
+	t.Helper()
+	value := strings.TrimSpace(os.Getenv(key))
+	if value == "" {
+		t.Fatalf("REAL_MESH_E2E_BLOCKED: required environment variable %s is not configured", key)
 	}
-	if w.Source != protocol.N07 || w.Target == "" || w.ID == "" || w.CorrelationID == "" || w.Timestamp <= 0 || w.Nonce == "" || w.HMAC == "" {
-		return errors.New("canonical Mesh request fields missing")
-	}
-	if delta := now.UnixMilli() - w.Timestamp; delta > 30000 || delta < -30000 {
-		return errors.New("canonical Mesh request timestamp outside accepted clock skew")
-	}
-	unsigned, err := canonicalN01Bytes(w, w.Nonce)
-	if err != nil {
-		return err
-	}
-	mac := hmac.New(sha256.New, []byte(secret))
-	_, _ = mac.Write(unsigned)
-	actual, err := hex.DecodeString(w.HMAC)
-	if err != nil || !hmac.Equal(mac.Sum(nil), actual) {
-		return errors.New("invalid canonical Mesh request HMAC")
-	}
-	return nil
+	return value
 }
 
-func verifySignedResponseWithoutReplay(value map[string]any, secret string) error {
-	hmacValue, _ := value["hmac"].(string)
-	nonce, _ := value["nonce"].(string)
-	if hmacValue == "" || nonce == "" {
-		return errors.New("response HMAC credentials are missing")
+func advertisedCapability(description map[string]any, capability string) bool {
+	capability = strings.SplitN(strings.TrimSpace(capability), "@", 2)[0]
+	for _, key := range []string{"executableCapabilities", "declaredCapabilities", "capabilities"} {
+		raw, ok := description[key]
+		if !ok {
+			if nested, ok := description["payload"].(map[string]any); ok {
+				raw = nested[key]
+			}
+		}
+		switch items := raw.(type) {
+		case []any:
+			for _, item := range items {
+				switch value := item.(type) {
+				case string:
+					if strings.SplitN(strings.TrimSpace(value), "@", 2)[0] == capability {
+						return true
+					}
+				case map[string]any:
+					if id, _ := value["id"].(string); strings.TrimSpace(id) == capability {
+						return true
+					}
+				}
+			}
+		case []string:
+			for _, value := range items {
+				if strings.SplitN(strings.TrimSpace(value), "@", 2)[0] == capability {
+					return true
+				}
+			}
+		}
 	}
-	timestamp, ok := value["timestamp"].(float64)
-	if !ok {
-		return errors.New("response timestamp is invalid")
-	}
-	id, _ := value["id"].(string)
-	source, _ := value["source"].(string)
-	target, _ := value["target"].(string)
-	correlation, _ := value["correlationId"].(string)
-	capability, _ := value["capability"].(string)
-	payload, _ := value["payload"].(map[string]any)
-	env := protocol.MeshEnvelope{Version: protocol.SoulMeshVersion, ContractVersion: protocol.SoulMeshContractVersion, MessageID: id, Source: source, Target: target, Timestamp: int64(timestamp), Nonce: nonce, CorrelationID: correlation, Type: "TASK_RESULT", Payload: map[string]any{"capability": capability, "payload": payload}}
-	if err := protocol.SignHMAC(&env, secret); err != nil {
-		return err
-	}
-	if !hmac.Equal([]byte(env.HMAC), []byte(hmacValue)) {
-		return errors.New("response HMAC mismatch after JSON round-trip")
-	}
-	return nil
+	return false
 }
 
-func TestN01ToN07FederatesAcrossN04N05N06(t *testing.T) {
-	for _, key := range []string{"SOUL_MESH_N04_URL", "SOUL_MESH_N05_URL", "SOUL_MESH_N06_URL", "SOUL_MESH_HMAC_SECRET", "N07_MESH_ALLOW_UNAUTH_LOCAL"} {
-		t.Setenv(key, "")
-	}
-	t.Setenv("SOUL_MESH_HMAC_SECRET", federationE2ESecret)
-
-	servers := make(map[string]*httptest.Server, 3)
-	var mu sync.Mutex
+func TestN07FederatesToRealN04N05N06NativeCapabilities(t *testing.T) {
+	requiredEnv(t, "SOUL_MESH_HMAC_SECRET")
 	for _, nucleus := range []string{"N04", "N05", "N06"} {
-		nucleus := nucleus
-		servers[nucleus] = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			var in canonicalWireEnvelope
-			if err := json.NewDecoder(r.Body).Decode(&in); err != nil {
-				http.Error(w, err.Error(), http.StatusBadRequest)
-				return
-			}
-			if err := verifyCanonicalPeerRequest(in, federationE2ESecret, time.Now()); err != nil {
-				http.Error(w, err.Error(), http.StatusUnauthorized)
-				return
-			}
-			mu.Lock()
-			defer mu.Unlock()
-			capability := strings.TrimSpace(in.Capability)
-			payload := map[string]any{}
-			switch capability {
-			case "mesh.discovery", "mesh.describe":
-				payload = map[string]any{"executableCapabilities": []string{"e2e." + strings.ToLower(nucleus)}}
-			case "e2e.n04", "e2e.n05", "e2e.n06":
-				payload = map[string]any{"values": []any{float64(len(nucleus)), float64(len(in.Payload))}, "status": "ok"}
-			default:
-				payload = map[string]any{"error": "unsupported test capability"}
-			}
-			responseID := protocol.NewTraceID()
-			responseNonce := protocol.NewTraceID()
-			responseTimestamp := time.Now().UnixMilli()
-			envType := "TASK_RESULT"
-			if _, ok := payload["error"]; ok {
-				envType = "ERROR"
-			}
-			env := protocol.MeshEnvelope{Version: protocol.SoulMeshVersion, ContractVersion: protocol.SoulMeshContractVersion, MessageID: responseID, Source: nucleus, Target: protocol.N07, Timestamp: responseTimestamp, Nonce: responseNonce, CorrelationID: in.CorrelationID, Type: envType, Payload: map[string]any{"capability": capability, "payload": payload}}
-			if err := protocol.SignHMAC(&env, federationE2ESecret); err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-				return
-			}
-			wirePayload, err := json.Marshal(map[string]any{"protocol": "soul-mesh/1", "contractVersion": protocol.SoulMeshContractVersion, "id": responseID, "correlationId": in.CorrelationID, "source": nucleus, "target": protocol.N07, "kind": "response", "capability": capability, "payload": payload, "timestamp": responseTimestamp, "nonce": responseNonce, "hmac": env.HMAC})
+		requiredEnv(t, "SOUL_MESH_"+nucleus+"_URL")
+	}
+
+	client, err := NewPeerClient(&http.Client{Timeout: 15 * time.Second})
+	if err != nil {
+		t.Fatalf("peer client initialization failed: %v", err)
+	}
+
+	cases := []struct {
+		nucleus    string
+		capability string
+		payload    map[string]any
+		validate   func(t *testing.T, payload map[string]any)
+	}{
+		{
+			nucleus:    "N04",
+			capability: "core.health",
+			payload:    map[string]any{"probe": "phase1", "requestedBy": "N07"},
+		},
+		{
+			nucleus:    "N05",
+			capability: "core.health",
+			payload:    map[string]any{"probe": "phase1", "requestedBy": "N07"},
+		},
+		{
+			nucleus:    "N06",
+			capability: "support.mesh",
+			payload:    map[string]any{"probe": "phase1", "requestedBy": "N07"},
+			validate: func(t *testing.T, payload map[string]any) {
+				t.Helper()
+				accepted, ok := payload["accepted"].(bool)
+				if !ok || !accepted {
+					t.Fatalf("N06 support.mesh did not return native acceptance: %#v", payload)
+				}
+			},
+		},
+	}
+
+	for _, tc := range cases {
+		tc := tc
+		t.Run(fmt.Sprintf("%s_%s", tc.nucleus, strings.ReplaceAll(tc.capability, ".", "_")), func(t *testing.T) {
+			ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+			defer cancel()
+
+			describeCorrelation := fmt.Sprintf("phase1-n07-%s-describe", strings.ToLower(tc.nucleus))
+			description, err := client.CallWithCorrelation(ctx, tc.nucleus, "mesh.describe", map[string]any{"from": "N07"}, describeCorrelation)
 			if err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-				return
+				t.Fatalf("REAL_MESH_DISCOVERY_FAILED nucleus=%s correlation=%s: %v", tc.nucleus, describeCorrelation, err)
 			}
-			var roundTrip map[string]any
-			if err := json.Unmarshal(wirePayload, &roundTrip); err != nil || verifySignedResponseWithoutReplay(roundTrip, federationE2ESecret) != nil {
-				http.Error(w, "internal test response HMAC round-trip failed", http.StatusInternalServerError)
-				return
+			if !advertisedCapability(description, tc.capability) {
+				t.Fatalf("REAL_MESH_CAPABILITY_NOT_ADVERTISED nucleus=%s capability=%s description=%#v", tc.nucleus, tc.capability, description)
 			}
-			w.Header().Set("content-type", "application/json")
-			_ = json.NewEncoder(w).Encode(roundTrip)
-		}))
-	}
-	defer func() {
-		for _, server := range servers {
-			server.Close()
-		}
-	}()
-	t.Setenv("SOUL_MESH_N04_URL", servers["N04"].URL)
-	t.Setenv("SOUL_MESH_N05_URL", servers["N05"].URL)
-	t.Setenv("SOUL_MESH_N06_URL", servers["N06"].URL)
 
-	n, err := neural.New(8, .05)
-	if err != nil {
-		t.Fatal(err)
-	}
-	c, err := prefrontal.New(.10, 32)
-	if err != nil {
-		t.Fatal(err)
-	}
-	g := supergpu.New(nil)
-	g.Discover()
-	e, err := orchestrator.New(n, c, g)
-	if err != nil {
-		t.Fatal(err)
-	}
-	gateway := NewEnhancedFederatedHTTPGateway(e)
-	for _, nucleus := range []string{"N04", "N05", "N06"} {
-		discovery, discoveryErr := gateway.base.peers.Discover(context.Background(), nucleus)
-		if discoveryErr != nil {
-			peers := gateway.base.peers.ConfiguredPeers()
-			t.Fatalf("discovery %s failed: %v; peerState=%#v", nucleus, discoveryErr, peers)
-		}
-		if !supportsExecutableCapability(discovery, "e2e."+strings.ToLower(nucleus)) {
-			t.Fatalf("discovery %s omitted executable capability: %#v", nucleus, discovery)
-		}
-	}
-
-	payload := map[string]any{"tasks": []any{
-		map[string]any{"id": "n04", "capability": "e2e.n04", "payload": map[string]any{"values": []any{4, 4}}, "required": true},
-		map[string]any{"id": "n05", "capability": "e2e.n05", "payload": map[string]any{"values": []any{5, 5}}, "required": true},
-		map[string]any{"id": "n06", "capability": "e2e.n06", "payload": map[string]any{"values": []any{6, 6}}, "required": true},
-	}}
-	correlation := "e2e-n01-to-n07"
-	wire := canonicalRequest("request", "supergpu.parallel", correlation, nil)
-	wire["payload"] = payload
-	raw := wire["payload"].(map[string]any)
-	raw["capability"] = "supergpu.parallel"
-	canonical, err := canonicalN01Bytes(canonicalWireEnvelope{Protocol: "soul-mesh/1", ContractVersion: protocol.SoulMeshContractVersion, ID: wire["id"].(string), CorrelationID: correlation, Source: "N01", Target: "N07", Kind: "request", Capability: "supergpu.parallel", Payload: raw, Timestamp: wire["timestamp"].(int64), Nonce: wire["nonce"].(string)}, wire["nonce"].(string))
-	if err != nil {
-		t.Fatal(err)
-	}
-	mac := hmac.New(sha256.New, []byte(federationE2ESecret))
-	_, _ = mac.Write(canonical)
-	wire["hmac"] = hex.EncodeToString(mac.Sum(nil))
-	body, err := json.Marshal(wire)
-	if err != nil {
-		t.Fatal(err)
-	}
-	req := httptest.NewRequest(http.MethodPost, "/api/soul-mesh", bytes.NewReader(body))
-	req.Header.Set("x-soul-mesh-nonce", wire["nonce"].(string))
-	req.Header.Set("x-soul-mesh-hmac", wire["hmac"].(string))
-	rec := httptest.NewRecorder()
-	gateway.ServeHTTP(rec, req)
-	if rec.Code != http.StatusOK {
-		t.Fatalf("N01->N07 federation failed: code=%d body=%s", rec.Code, rec.Body.String())
-	}
-	var out map[string]any
-	if err := json.NewDecoder(rec.Body).Decode(&out); err != nil {
-		t.Fatal(err)
-	}
-	if out["correlationId"] != correlation || out["kind"] != "response" {
-		t.Fatalf("unexpected final envelope: %#v", out)
-	}
-	result, ok := out["payload"].(map[string]any)
-	if !ok || result["requiredFailure"] != false {
-		t.Fatalf("federation reported required failure: %#v", result)
-	}
-	tasks, ok := result["tasks"].([]any)
-	if !ok || len(tasks) != 3 {
-		t.Fatalf("expected three federated tasks: %#v", result["tasks"])
-	}
-	for _, taskID := range []string{"n04", "n05", "n06"} {
-		found := false
-		for _, item := range tasks {
-			row := item.(map[string]any)
-			if row["id"] == taskID && row["status"] == "ok" {
-				found = true
-				break
+			correlation := fmt.Sprintf("phase1-n07-%s", strings.ToLower(tc.nucleus))
+			result, err := client.CallWithCorrelation(ctx, tc.nucleus, tc.capability, tc.payload, correlation)
+			if err != nil {
+				t.Fatalf("REAL_MESH_EXECUTION_FAILED nucleus=%s capability=%s correlation=%s: %v", tc.nucleus, tc.capability, correlation, err)
 			}
-		}
-		if !found {
-			t.Fatalf("task %s did not complete successfully: %#v", taskID, tasks)
-		}
+			if got, _ := result["correlationId"].(string); got != correlation {
+				t.Fatalf("REAL_MESH_CORRELATION_MISMATCH nucleus=%s expected=%s got=%q", tc.nucleus, correlation, got)
+			}
+			if got, _ := result["source"].(string); got != tc.nucleus {
+				t.Fatalf("REAL_MESH_SOURCE_MISMATCH nucleus=%s got=%q", tc.nucleus, got)
+			}
+			if got, _ := result["target"].(string); got != "N07" {
+				t.Fatalf("REAL_MESH_TARGET_MISMATCH nucleus=%s got=%q", tc.nucleus, got)
+			}
+
+			payload, ok := result["payload"].(map[string]any)
+			if !ok {
+				t.Fatalf("REAL_MESH_PAYLOAD_MISSING nucleus=%s result=%#v", tc.nucleus, result)
+			}
+			if tc.validate != nil {
+				tc.validate(t, payload)
+			}
+		})
 	}
 }

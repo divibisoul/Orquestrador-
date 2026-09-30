@@ -1,43 +1,73 @@
 # N07 system state
 
 ## Current phase
-FINAL RELEASE RECONCILIATION
+PHASE 1 — MESH ONLINE MINIMUM (PARTIAL)
 
 ## Ownership
-N07 owns orchestration, neural federation, routing, capability composition and the SuperGPU control plane. N01-N06 remain independent runtimes and expose adapters into the common Mesh.
+N07 owns orchestration, neural federation, routing, capability composition and the SuperGPU control plane. N01–N06 remain independent runtimes. SARA remains the independent Python regenerative authority.
 
-## Completed structural and integrated areas
-- Canonical Mesh ingress/egress and N01..N07 identity handling.
-- Discovery, executable capability routing, semantic-version routing and TTL cache.
-- Delegation with correlation, HMAC, replay protection, timeout/deadline and circuit handling.
-- Neural Federation N07 -> N01..N06 with bounded parallel admission and canonical Target routing.
-- Capability/tool/agent composition and SuperGPU parallel orchestration.
-- Observability for peers, latency, failures, in-flight work and correlation.
-- Unified authenticated backend with Supabase run/artifact persistence and Web3 Storage upload/status/object access.
-- SuperGPU backend operation registration and production release migration.
-- Backend regression suite previously passed Format, Vet, Test, Race Test and Build on integration head `7441c8b00204133ffcf5c16163d2e349f2714354`.
-- Backend integration PR #19 was merged into `main` as `8124ec399e669347450d710e3d44e586b9df863a`.
-- N07 multi-peer federation E2E coverage is present in `mesh/n01_n07_federation_e2e_test.go` and is executed against N04/N05/N06 federation paths with canonical correlation/HMAC assertions.
-- Android integration contract remains documented for downstream HTTPS/APK integration.
+## Phase 0 — evidence reconciliation
+| Unit | Status | Current evidence |
+|---|---|---|
+| N01 | REAL | Latest main validation/build workflows completed successfully on 2026-09-28 at head `ed3eebdd590155244212dc725bc0f6812754b3d3`. |
+| N02 | REAL | Latest validation/forensics workflows completed successfully on 2026-09-27 at head `7d977635b376cfd72d600d056ee8bb4123cd15cc`. |
+| N03 | INCOMPLETO | Main currently has `package-lock.json`, but the latest dependency-resolution and dependency-review runs failed. GitHub did not expose persisted job-step logs for those failed runs, so no root cause is asserted and no blind dependency rewrite was made. |
+| N04 | REAL | Latest N04 CI and Soul Mesh checks completed successfully on 2026-09-27 at head `8c457291181b3295b50615bf3abe01599fe0226e`. |
+| N05 | REAL | Latest N05 Mesh/bridge checks completed successfully on 2026-09-27 at head `2c934084e96e1831e845848cced498dc69f853d6`. |
+| N06 | REAL | Latest Mesh/authority/validation checks completed successfully on 2026-09-27 at head `1e29f630f47572945c08056c666a1b360d037972`. |
+| N07 | REAL | Go vet/test/race/build and the local runtime checks pass on the current release line; the external peer gate is now self-provisioned in CI but remains unmeasured until a successful real run exists. |
+| SARA | REAL | Latest SARA CI and validation completed successfully on 2026-09-27 at head `4ae3e66e7cf7907cd6008e1f7e34e9919f193f9e`. |
 
-## Current cross-front evidence
-- Current N07 `main` at release-reconciliation commit `00cb3f88da7a2f20a66f6a493b763243c92585d5` immediately before this state commit; the prior auto-format action normalized the new federation E2E test.
-- N02 Mesh endpoint contract uses `soul-mesh/1`, contract `1.1.0`, seven-nucleus identity, correlation validation, HMAC/Bearer authentication, retry and capability discovery.
-- N04 Mesh CI completed successfully with dependency installation, Mesh typecheck and 17/17 contract/runtime tests passing.
-- N06 Channel Contract CI completed successfully on the seven-nucleus canonical manifest.
-- N01 Mesh regression run at `831658443c06c80893220a8ba63ad0c0db61050e` failed without persisted job steps/log blob; a retry reproduced the same failure mode.
-- N02 Mesh CI run at `e0d9fce60daec2cc046e32a15056f144c52f31b6` failed without persisted job steps/log blob; a retry reproduced the same failure mode.
-- N03 Mesh CI is blocked by the current `main` dependency state: the workflow requires `npm ci`, while the current `main` did not contain `package-lock.json`. PR #9 was opened to generate a lockfile from the exact package manifest, but its Actions job also failed before step logs were persisted.
-- N05 Mesh CI is currently failing on the latest main revisions; the latest retry has not produced persisted job-step logs, so no unsupported code-level root cause is asserted.
+## Critical forensic finding
+The previous `mesh/n01_n07_federation_e2e_test.go` used `httptest.NewServer` peers and fabricated `e2e.n04`, `e2e.n05`, and `e2e.n06` capabilities. That was synthetic evidence and could not prove real federation.
 
-## Live E2E closure boundary
-- The repository contains real federation execution and E2E validation code, but no proof is recorded here of a simultaneously reachable, externally deployed N01+N02+N03+N04+N05+N06 runtime set. The live deployment endpoints/secrets are not present in repository configuration and cannot be inferred safely.
-- Structural/integrated E2E is therefore validated; external six-runtime commissioning remains environment-gated and must fail closed rather than be represented as simulated success.
+That test is now integration-only (`//go:build integration`) and no longer starts peer doubles. It requires real N04/N05/N06 URLs plus `SOUL_MESH_HMAC_SECRET`, discovers executable native capabilities, invokes them through the real N07 PeerClient, and verifies correlation/source/target/payload. The default `go test ./...` path therefore remains deterministic while the real gate fails closed when runtime configuration is missing.
 
-## Release decision
-- N07 structural release surfaces are complete and the finite E2E test harness is committed.
-- Overall SOUL v1 is not marked ONLINE while N01/N02/N03/N05 CI and the external six-runtime commissioning gate remain unresolved.
-- No optional feature scope is opened while these finite blockers remain.
+The CI workflow now supplies those real URLs and HMAC at runtime by building the real N04/N05/N06 applications, starting them on the runner, and exposing them through ephemeral HTTPS Quick Tunnels. That changes the deployment mechanism, not the evidence standard: the gate still succeeds only after real HTTP transactions execute against real peer runtimes.
 
-## Rule
-A detected failure is corrected and revalidated when the environment provides the required evidence. Missing external runtime configuration is never replaced by mocks, placeholders or fabricated green status.
+## Phase 1 evidence
+| Gate | Status | Evidence boundary |
+|---|---|---|
+| Canonical protocol | REAL | N07 and peer code use `soul-mesh/1` and contract `1.1.0`. |
+| Correlation/HMAC | REAL | N07 PeerClient signs outbound requests and verifies response contract, correlation and HMAC. |
+| Real health/discovery surfaces | REAL | N01–N06 expose Mesh discovery/health surfaces in source; external reachability remains environment-dependent. |
+| Real N04 native execution | NOT MEASURED | The self-provisioned CI gate targets native `core.health`; a successful workflow run is still required. |
+| Real N05 native execution | NOT MEASURED | The self-provisioned CI gate targets native `core.health`; a successful workflow run is still required. |
+| Real N06 native execution | NOT MEASURED | The self-provisioned CI gate targets native `support.mesh`; a successful workflow run is still required. |
+| Real N07 execution | REAL | N07 CI validates engine/runtime, including vet/test/race/build. |
+| Real N01 native execution through N07 | NOT MEASURED | No N01 live URL is present in N07 environment configuration; no endpoint is inferred. |
+
+## Phase 2
+NOT STARTED. Circuit breaker/retry/timeout code exists and has unit/runtime coverage, but the seven-core real smoke gate is not opened until Phase 1 external execution evidence exists.
+
+## Phase 3
+NOT STARTED. Shared context and N07↔SARA handoff remain bounded by their existing contracts. No claim of cross-runtime operational handoff is made without live evidence.
+
+## Phase 4
+NOT STARTED. No planner/DAG feature is activated before the Phase 1 real Mesh gate closes.
+
+## Phase 5
+NOT STARTED. Failure→Finding→correction→test remains the governing workflow. Historical failures may be converted into permanent tests/capabilities only after their concrete failure evidence is preserved.
+
+## Phase 6
+NOT STARTED. No Super AGI gate is marked operational.
+
+## Release rule
+SOUL is **NOT ONLINE as a fully commissioned external federation** until the real integration gate has executed successfully against real N04/N05/N06 peer runtimes. Missing URLs/secrets are no longer a CI provisioning blocker for the automated path; a failed real transaction remains a real failure.
+
+## Non-destructive guarantees
+- N01–N07 remain independent repositories.
+- SARA remains independent and authoritative for regeneration/governance contracts already present.
+- No native capability is removed, renamed or replaced.
+- New federation execution evidence is opt-in via the `integration` build tag.
+- Existing default `go test ./...` remains the baseline regression gate.
+
+## Internal systems must rise with the Mesh
+
+The Mesh gate measures federation edges. It does not replace or subsume the internal systems of a nucleus.
+
+Every later phase must carry forward the preserved internal substrate of each participating nucleus. In particular, Clareira is an active N01 subsystem and must remain executable, observable and compatible as the federation advances. Its internal processing graph, homeostasis, channels and event path are protected from simplification or replacement.
+
+The system-design inventory also contains 72 nódulos as protected scope. This document does not invent a node-by-node runtime status where source evidence is absent.
+
+See SOUL_EVOLUTION_PRESERVATION.md for the change classification: PRESERVE / ADAPT / EXTEND / RETIRE-WITH-REPLACEMENT.
