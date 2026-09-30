@@ -84,3 +84,73 @@ func criticalityForPhase(phase string) float64 {
 		return 0.4
 	}
 }
+
+type CapabilityExecutionEvent struct {
+	Phase         string
+	Operation     string
+	Provider      string
+	Model         string
+	Source        string
+	Owner         string
+	CorrelationID string
+	InputSize     int
+	OutputSize    int
+	Error         string
+}
+
+func (r *ClareiraReporter) ReportCapability(ctx context.Context, event CapabilityExecutionEvent) error {
+	if ctx == nil {
+		return errors.New("context is nil")
+	}
+	correlationID := strings.TrimSpace(event.CorrelationID)
+	if correlationID == "" {
+		correlationID = protocol.NewTraceID()
+	}
+	raw, err := json.Marshal(map[string]any{
+		"phase":          event.Phase,
+		"operation":      event.Operation,
+		"provider":       event.Provider,
+		"model":          event.Model,
+		"source":         event.Source,
+		"owner":          event.Owner,
+		"input_size":     event.InputSize,
+		"output_size":    event.OutputSize,
+		"correlation_id": correlationID,
+		"error":          event.Error,
+	})
+	if err != nil {
+		return fmt.Errorf("clareira capability event encode: %w", err)
+	}
+	packet := map[string]any{
+		"id":                 protocol.NewTraceID(),
+		"data":               string(raw),
+		"informationalValue": float64(event.OutputSize),
+		"criticality":        criticalityForCapabilityPhase(event.Phase),
+		"packetType":         "StateReport",
+		"sourceId":           "N07.Orchestrator",
+		"timestamp":          time.Now().UnixMilli(),
+		"correlationId":      correlationID,
+		"metadata": map[string]any{
+			"component": "gemini",
+			"operation": event.Operation,
+			"provider":   event.Provider,
+			"model":      event.Model,
+			"owner":      event.Owner,
+			"source":     event.Source,
+			"phase":      event.Phase,
+		},
+	}
+	_, err = r.peers.CallWithCorrelation(ctx, "N01", ClareiraCapability, map[string]any{"packet": packet}, correlationID)
+	return err
+}
+
+func criticalityForCapabilityPhase(phase string) float64 {
+	switch strings.ToLower(strings.TrimSpace(phase)) {
+	case "failed":
+		return 1
+	case "started":
+		return 0.6
+	default:
+		return 0.4
+	}
+}
