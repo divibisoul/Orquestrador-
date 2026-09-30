@@ -151,6 +151,9 @@ func (h *HortaCore) executeAdapter(ctx context.Context, spec ModuleSpec, payload
 
 	correlation := strings.TrimSpace(metadata["correlationId"])
 	if correlation == "" {
+		correlation = strings.TrimSpace(metadata["correlation_id"])
+	}
+	if correlation == "" {
 		correlation = protocol.NewTraceID()
 	}
 	input := strings.TrimSpace(metadata["input"])
