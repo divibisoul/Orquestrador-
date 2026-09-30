@@ -14,11 +14,15 @@ import (
 
 const ClareiraCapability = "clareira.ingest"
 
-type ClareiraReporter struct {
-	peers *PeerClient
+type PeerCaller interface {
+	CallWithCorrelation(context.Context, string, string, map[string]any, string) (map[string]any, error)
 }
 
-func NewClareiraReporter(peers *PeerClient) (*ClareiraReporter, error) {
+type ClareiraReporter struct {
+	peers PeerCaller
+}
+
+func NewClareiraReporter(peers PeerCaller) (*ClareiraReporter, error) {
 	if peers == nil {
 		return nil, errors.New("Clareira reporter requires N07 Mesh peer client")
 	}
