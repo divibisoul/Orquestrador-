@@ -47,6 +47,14 @@ type OutcomeStats struct {
 	Confidence  float64
 	UpdatedAt   time.Time
 }
+type workingMemoryEntry struct {
+	Candidate Candidate
+	UpdatedAt time.Time
+}
+type TaskFrame struct {
+	TaskID      string
+	ActivatedAt time.Time
+}
 type Cortex struct {
 	mu                 sync.RWMutex
 	decisions          []Decision
@@ -55,10 +63,18 @@ type Cortex struct {
 	capacity           int
 	policy             Policy
 	inhibited          uint64
+	inhibitionChecks   uint64
 	evaluated          uint64
 	learningObserved   uint64
+	commits            uint64
 	decisionNanos      uint64
+	decisionCount      uint64
+	evaluationNanos    uint64
+	commitNanos        uint64
 	lastDecision       time.Time
+	workingMemory      map[string]workingMemoryEntry
+	taskFrames         []TaskFrame
+	currentTask        string
 }
 
 func New(threshold float64, capacity int) (*Cortex, error) {
@@ -72,6 +88,7 @@ func New(threshold float64, capacity int) (*Cortex, error) {
 		threshold: threshold,
 		capacity: capacity,
 		outcomes:  make(map[string]OutcomeStats),
+		workingMemory: make(map[string]workingMemoryEntry),
 		policy: Policy{
 			CostWeight:        1,
 			RiskWeight:        1,
@@ -195,8 +212,12 @@ func (c *Cortex) Evaluate(candidates []Candidate) (Candidate, error) {
 			best, bestScore, found = v, s, true
 		}
 	}
+	duration := time.Since(start)
 	c.mu.Lock()
-	c.decisionNanos += uint64(time.Since(start).Nanoseconds())
+	ns := uint64(duration.Nanoseconds())
+	c.decisionNanos += ns
+	c.decisionCount++
+	c.evaluationNanos += ns
 	c.mu.Unlock()
 	if !found {
 		return Candidate{}, errors.New("no valid candidates")
@@ -267,6 +288,7 @@ func (c *Cortex) Prioritize(candidates []Candidate) ([]Candidate, error) {
 func (c *Cortex) Inhibit(candidate Candidate) bool {
 	blocked := valid(candidate) != nil || candidate.Risk > candidate.Utility || candidate.Risk >= 1
 	c.mu.Lock()
+	c.inhibitionChecks++
 	if blocked {
 		c.inhibited++
 	}
@@ -308,6 +330,11 @@ func (c *Cortex) Commit(candidate Candidate, reason string) (Decision, error) {
 	d := Decision{ID: candidate.ID, Score: c.score(candidate), Reason: reason, Justification: "policy=weighted-risk-utility+learned-outcomes;validated=true", Committed: true, At: time.Now().UTC(), Outcome: "pending"}
 	c.mu.Lock()
 	defer c.mu.Unlock()
+	c.commits++
+	ns := uint64(time.Since(start).Nanoseconds())
+	c.decisionNanos += ns
+	c.decisionCount++
+	c.commitNanos += ns
 	c.decisions = append(c.decisions, d)
 	if len(c.decisions) > c.capacity {
 		c.decisions = c.decisions[len(c.decisions)-c.capacity:]
@@ -329,28 +356,41 @@ func (c *Cortex) Recall(limit int) []Decision {
 func (c *Cortex) Health() map[string]any {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
-	avg := 0.0
-	if c.evaluated > 0 {
-		avg = float64(c.decisionNanos) / float64(c.evaluated) / 1e6
+	avgDecision := 0.0
+	if c.decisionCount > 0 {
+		avgDecision = float64(c.decisionNanos) / float64(c.decisionCount) / 1e6
 	}
-	learningObservations := c.learningObserved
+	avgEvaluate := 0.0
+	if c.evaluated > 0 {
+		avgEvaluate = float64(c.evaluationNanos) / float64(c.evaluated) / 1e6
+	}
+	avgCommit := 0.0
+	if c.commits > 0 {
+		avgCommit = float64(c.commitNanos) / float64(c.commits) / 1e6
+	}
+	inhibitionRate := 0.0
+	if c.inhibitionChecks > 0 {
+		inhibitionRate = float64(c.inhibited) / float64(c.inhibitionChecks)
+	}
 	return map[string]any{
 		"status":                 "ready",
 		"threshold":              c.threshold,
 		"capacity":               c.capacity,
 		"decisions":              len(c.decisions),
 		"evaluated":              c.evaluated,
+		"commits":                c.commits,
 		"inhibited":              c.inhibited,
-		"inhibition_rate": func() float64 {
-			if c.evaluated == 0 {
-				return 0
-			}
-			return float64(c.inhibited) / float64(c.evaluated)
-		}(),
-		"learning_observations":  learningObservations,
+		"inhibition_checks":      c.inhibitionChecks,
+		"inhibition_rate":        inhibitionRate,
+		"learning_observations":  c.learningObserved,
 		"learned_capabilities":   len(c.outcomes),
 		"learning_weight":        c.policy.LearningWeight,
-		"avg_decision_ms":        avg,
+		"avg_decision_ms":        avgDecision,
+		"avg_evaluate_ms":        avgEvaluate,
+		"avg_commit_ms":          avgCommit,
+		"working_memory_size":    len(c.workingMemory),
+		"current_task":           c.currentTask,
+		"task_switches":          len(c.taskFrames),
 		"last_decision":          c.lastDecision,
 	}
 }
