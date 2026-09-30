@@ -26,6 +26,17 @@ type Config struct {
 	Heads          int
 	BatchCache     int
 }
+
+type Parameters struct {
+	Size           int     `json:"size"`
+	LearningRate   float64 `json:"learning_rate"`
+	Optimizer      string  `json:"optimizer"`
+	Regularization float64 `json:"regularization"`
+	GradientClip   float64 `json:"gradient_clip"`
+	Heads          int     `json:"heads"`
+	BatchCache     int     `json:"batch_cache"`
+	Layers         []Layer `json:"layers"`
+}
 type NetworkStats struct {
 	LearningSteps uint64
 	LastUpdate    time.Time
@@ -33,6 +44,11 @@ type NetworkStats struct {
 	Activations   uint64
 	CacheHits     uint64
 }
+const (
+	DefaultNetworkSize         = 8
+	DefaultNetworkLearningRate = 0.05
+)
+
 type Network struct {
 	mu           sync.RWMutex
 	size         int
@@ -48,6 +64,10 @@ type Network struct {
 	cache        map[string][]float64
 }
 
+func NewDefault() (*Network, error) {
+	return New(DefaultNetworkSize, DefaultNetworkLearningRate)
+}
+
 func New(size int, learningRate float64) (*Network, error) {
 	if size < 1 {
 		return nil, errors.New("network size must be positive")
@@ -57,6 +77,28 @@ func New(size int, learningRate float64) (*Network, error) {
 	}
 	return &Network{size: size, edges: make(map[int][]Edge), bias: make([]float64, size), learningRate: learningRate, config: Config{Layers: []Layer{{Activation: "tanh"}}, Optimizer: "adam", Regularization: 1e-6, GradientClip: 1.0, Heads: 1, BatchCache: 128}, adamM: make([]float64, size), adamV: make([]float64, size), edgeM: make(map[string]float64), edgeV: make(map[string]float64), cache: make(map[string][]float64)}, nil
 }
+func (n *Network) parametersLocked() Parameters {
+	layers := append([]Layer(nil), n.config.Layers...)
+	return Parameters{
+		Size:            n.size,
+		LearningRate:    n.learningRate,
+		Optimizer:       n.config.Optimizer,
+		Regularization:  n.config.Regularization,
+		GradientClip:    n.config.GradientClip,
+		Heads:           n.config.Heads,
+		BatchCache:      n.config.BatchCache,
+		Layers:          layers,
+	}
+}
+
+// Parameters returns a read-only snapshot of the current neural runtime configuration.
+// The returned slice is copied so callers cannot mutate internal network configuration.
+func (n *Network) Parameters() Parameters {
+	n.mu.RLock()
+	defer n.mu.RUnlock()
+	return n.parametersLocked()
+}
+
 func (n *Network) AddEdge(from, to int, weight float64) error {
 	n.mu.Lock()
 	defer n.mu.Unlock()
@@ -441,5 +483,23 @@ func (n *Network) Health() map[string]any {
 	if n.size > 1 {
 		density = float64(edges) / float64(n.size*(n.size-1))
 	}
-	return map[string]any{"status": "ready", "size": n.size, "edges": edges, "density": density, "learning_steps": n.stats.LearningSteps, "last_update": n.stats.LastUpdate, "last_gradient": n.stats.LastGradient, "activations": n.stats.Activations, "cache_hits": n.stats.CacheHits, "optimizer": n.config.Optimizer, "heads": n.config.Heads}
+	parameters := n.parametersLocked()
+	return map[string]any{
+		"status":          "ready",
+		"size":            parameters.Size,
+		"edges":           edges,
+		"density":         density,
+		"learning_steps":  n.stats.LearningSteps,
+		"last_update":     n.stats.LastUpdate,
+		"last_gradient":   n.stats.LastGradient,
+		"activations":     n.stats.Activations,
+		"cache_hits":      n.stats.CacheHits,
+		"optimizer":       parameters.Optimizer,
+		"heads":            parameters.Heads,
+		"learning_rate":   parameters.LearningRate,
+		"regularization":  parameters.Regularization,
+		"gradient_clip":   parameters.GradientClip,
+		"batch_cache":     parameters.BatchCache,
+		"layers":          parameters.Layers,
+	}
 }
