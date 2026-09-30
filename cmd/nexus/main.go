@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/divibisoul/Orquestrador-/api"
+	"github.com/divibisoul/Orquestrador-/aeternum"
 	"github.com/divibisoul/Orquestrador-/api/health"
 	"github.com/divibisoul/Orquestrador-/backend"
 	"github.com/divibisoul/Orquestrador-/cognitive"
@@ -98,6 +99,14 @@ func main() {
 	e, err := orchestrator.New(n, c, g)
 	if err != nil {
 		log.Fatal(err)
+	}
+	semanticMemoryStore := backend.NewSemanticMemoryStoreFromEnv()
+	if semanticMemoryStore.Configured() {
+		if err := e.SetMemoryStore(semanticMemoryStore); err != nil {
+			log.Fatal(err)
+		}
+	} else {
+		log.Printf("semantic memory store disabled: Supabase credentials are not configured")
 	}
 	if err := orchestrator.RegisterLearningOperations(e, learningMachine, n); err != nil {
 		log.Fatal(err)
