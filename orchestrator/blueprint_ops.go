@@ -8,11 +8,16 @@ import (
 	"strconv"
 
 	"github.com/divibisoul/Orquestrador-/blueprint"
-	"github.com/divibisoul/Orquestrador-/octacore"
 	"github.com/divibisoul/Orquestrador-/protocol"
 )
 
-func RegisterBlueprintOperations(e *Engine, processor *octacore.Processor) error {
+type BlueprintProcessor interface {
+	ResolveBlueprint(string, int) ([]blueprint.Match, error)
+	ResolveExecutableBlueprint(string, int) ([]blueprint.Match, error)
+	ComposeBlueprint(string, int) (blueprint.RoutePlan, error)
+}
+
+func RegisterBlueprintOperations(e *Engine, processor BlueprintProcessor) error {
 	if e == nil {
 		return errors.New("orchestrator engine is required")
 	}
