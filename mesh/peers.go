@@ -10,8 +10,10 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math"
 	"net/http"
 	"os"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -28,6 +30,18 @@ const (
 )
 
 const defaultDiscoveryCacheTTL = 15 * time.Second
+
+// RouteScorer supplies a learned route weight without coupling Mesh to the
+// learning implementation. Unknown routes must return the neutral weight 0.5.
+type RouteScorer interface {
+	Weight(source, target, capability string) float64
+}
+
+// RouteOutcomeObserver receives only real outcomes of attempted executable
+// peer calls. Observation failure never rewrites the already observed network result.
+type RouteOutcomeObserver interface {
+	ObserveRoute(ctx context.Context, source, target, capability, correlation string, success bool) error
+}
 
 type PeerInfo struct {
 	Nucleus    string
@@ -55,6 +69,9 @@ type PeerClient struct {
 	discoveryMu       sync.RWMutex
 	discoveryCache    map[string]discoveryCacheEntry
 	discoveryCacheTTL time.Duration
+	routeMu           sync.RWMutex
+	routeScorer       RouteScorer
+	routeObserver     RouteOutcomeObserver
 }
 
 func NewPeerClient(client *http.Client) (*PeerClient, error) {
@@ -163,11 +180,84 @@ func (p *PeerClient) CallWithCorrelation(ctx context.Context, nucleus, capabilit
 	return p.call(ctx, nucleus, capability, payload, correlation)
 }
 
+func (p *PeerClient) SetRouteScorer(scorer RouteScorer) {
+	p.routeMu.Lock()
+	p.routeScorer = scorer
+	p.routeMu.Unlock()
+}
+
+func (p *PeerClient) SetRouteOutcomeObserver(observer RouteOutcomeObserver) {
+	p.routeMu.Lock()
+	p.routeObserver = observer
+	p.routeMu.Unlock()
+}
+
+type rankedPeer struct {
+	peer   PeerInfo
+	weight float64
+}
+
+func (p *PeerClient) routeHooks() (RouteScorer, RouteOutcomeObserver) {
+	p.routeMu.RLock()
+	defer p.routeMu.RUnlock()
+	return p.routeScorer, p.routeObserver
+}
+
+func learnedRouteWeight(scorer RouteScorer, source, target, capability string) float64 {
+	if scorer == nil {
+		return 0.5
+	}
+	weight := scorer.Weight(source, target, capability)
+	if math.IsNaN(weight) || math.IsInf(weight, 0) || weight < 0 || weight > 1 {
+		return 0.5
+	}
+	return weight
+}
+
+func (p *PeerClient) orderedPeers(capability string) []PeerInfo {
+	peers := p.ConfiguredPeers()
+	scorer, _ := p.routeHooks()
+	ranked := make([]rankedPeer, 0, len(peers))
+	for _, peer := range peers {
+		ranked = append(ranked, rankedPeer{
+			peer:   peer,
+			weight: learnedRouteWeight(scorer, protocol.N07, peer.Nucleus, capability),
+		})
+	}
+	sort.SliceStable(ranked, func(i, j int) bool {
+		if ranked[i].weight != ranked[j].weight {
+			return ranked[i].weight > ranked[j].weight
+		}
+		if ranked[i].peer.Healthy != ranked[j].peer.Healthy {
+			return ranked[i].peer.Healthy
+		}
+		if ranked[i].peer.Latency != ranked[j].peer.Latency {
+			return ranked[i].peer.Latency < ranked[j].peer.Latency
+		}
+		return ranked[i].peer.Nucleus < ranked[j].peer.Nucleus
+	})
+	out := make([]PeerInfo, 0, len(ranked))
+	for _, item := range ranked {
+		out = append(out, item.peer)
+	}
+	return out
+}
+
+func (p *PeerClient) observeRoute(source, target, capability, correlation string, success bool) {
+	_, observer := p.routeHooks()
+	if observer == nil {
+		return
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+	_ = observer.ObserveRoute(ctx, source, target, capability, correlation, success)
+}
+
 func (p *PeerClient) CallBest(ctx context.Context, capability string, payload map[string]any, correlation string) (map[string]any, string, error) {
 	if ctx == nil {
 		return nil, "", errors.New("context is nil")
 	}
-	for _, peer := range p.ConfiguredPeers() {
+	for _, peer := range p.orderedPeers(capability) {
 		if peer.Circuit == CircuitOpen && time.Now().Before(peer.RetryAfter) {
 			continue
 		}
@@ -179,8 +269,10 @@ func (p *PeerClient) CallBest(ctx context.Context, capability string, payload ma
 		}
 		result, err := p.CallWithCorrelation(ctx, peer.Nucleus, capability, payload, correlation)
 		if err == nil {
+			p.observeRoute(protocol.N07, peer.Nucleus, capability, correlation, true)
 			return result, peer.Nucleus, nil
 		}
+		p.observeRoute(protocol.N07, peer.Nucleus, capability, correlation, false)
 	}
 	return nil, "", fmt.Errorf("no healthy peer exposes executable capability: %s", capability)
 }
