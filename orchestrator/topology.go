@@ -20,6 +20,7 @@ func SOULTopology() map[string]any {
 		"prefrontal.admission", "prefrontal.plan", "prefrontal.prioritize", "prefrontal.inhibit", "prefrontal.select",
 		"prefrontal.validate", "prefrontal.commit", "prefrontal.recall", "prefrontal.task.switch",
 		"prefrontal.working-memory", "prefrontal.outcome.observe", "prefrontal.monitor",
+		"mesh.synergy.describe", "mesh.synergy.execute",
 		"neural.forward", "neural.learn", "jev.systemone@1.0.0",
 	}
 	transports := []string{"IN_PROCESS", "LOOPBACK_HTTP", "HTTP", "REALTIME", "EVENT"}
@@ -44,5 +45,11 @@ func SOULTopology() map[string]any {
 		"mesh":           "canonical-soul-mesh",
 		"execution":      "prefrontal-admission→discovery→routing→delegation→decision(Jev)→hardware-lease/fusion→execution→response→correlation",
 		"decision_layer": map[string]any{"provider": "TypeSafe/Jev", "operation": "jev.systemone@1.0.0", "transport": "server-side HTTP", "enabled_when": "JEV_API_KEY configured"},
+		"composition_graph": map[string]any{
+			"rule": "non-adjacent composition uses Mesh routing; SARA remains G0",
+			"favorite_sequence_id": FavoriteSynergySequenceID,
+			"favorite_sequence": FavoriteSynergySequence(),
+			"cooperative_subgraph": []string{"N03→N06", "N06↔N04", "N04→N07"},
+		},
 	}
 }
