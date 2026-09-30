@@ -277,6 +277,12 @@ func (p *PeerClient) CallBest(ctx context.Context, capability string, payload ma
 	return nil, "", fmt.Errorf("no healthy peer exposes executable capability: %s", capability)
 }
 
+// SupportsExecutableCapability exposes the same fail-closed capability check
+// to other N07 composition layers without duplicating transport logic.
+func SupportsExecutableCapability(description map[string]any, capability string) bool {
+	return supportsExecutableCapability(description, capability)
+}
+
 func supportsExecutableCapability(description map[string]any, capability string) bool {
 	capability = strings.TrimSpace(capability)
 	if capability == "" || description == nil {
