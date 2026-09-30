@@ -42,7 +42,7 @@ func TestExecuteSynergyRouteUsesSharedCorrelationAndFinalizesAtN07(t *testing.T)
 		"N06": "mesh.describe",
 		"N04": "mesh.describe",
 	}
-	result, err := ExecuteSynergyRoute(context.Background(), sequence, invoker, "synergy-correlation", capabilities, map[string]any{"input": "probe"})
+	result, err := ExecuteSynergyRoute(context.Background(), sequence, invoker, "synergy-correlation", capabilities, map[string]any{"text": "probe", "prompt": "probe", "input": "probe", "audioBase64": "ZmFrZS1hdWRpbw==", "mimeType": "audio/wav", "tool": "getWeather"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -100,5 +100,23 @@ func TestExecuteFavoriteSynergyRouteCanUseNativeCapabilitySeeds(t *testing.T) {
 	}
 	if result.Status != "ok" || len(invoker.calls) != 7 {
 		t.Fatalf("expected all seven remote seeded stages, result=%+v calls=%d", result, len(invoker.calls))
+	}
+}
+
+
+func TestExecuteSynergyRouteBlocksMissingStagePrerequisite(t *testing.T) {
+	_, err := ExecuteSynergyRoute(
+		context.Background(),
+		FavoriteSynergySequence(),
+		&recordingSynergyInvoker{},
+		"missing-input-correlation",
+		map[string]string{},
+		map[string]any{"text": "probe"},
+	)
+	if err == nil {
+		t.Fatal("expected explicit prerequisite failure")
+	}
+	if !strings.Contains(err.Error(), "required field prompt") {
+		t.Fatalf("unexpected prerequisite error: %v", err)
 	}
 }
