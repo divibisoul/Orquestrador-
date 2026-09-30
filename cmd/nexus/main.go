@@ -21,6 +21,7 @@ import (
 	"github.com/divibisoul/Orquestrador-/mesh"
 	"github.com/divibisoul/Orquestrador-/neural"
 	"github.com/divibisoul/Orquestrador-/octacore"
+	"github.com/divibisoul/Orquestrador-/protocol"
 	"github.com/divibisoul/Orquestrador-/orchestrator"
 	"github.com/divibisoul/Orquestrador-/prefrontal"
 	"github.com/divibisoul/Orquestrador-/supergpu"
@@ -95,10 +96,30 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	clareiraReporter, err := mesh.NewClareiraReporter(peerClient)
+	if err != nil {
+		log.Fatal(err)
+	}
+	if err := orchestrator.RegisterGeminiOperations(e, peerClient, func(ctx context.Context, event orchestrator.GeminiExecutionEvent) error {
+		return clareiraReporter.ReportCapability(ctx, mesh.CapabilityExecutionEvent{
+			Phase: event.Phase, Operation: event.Capability, Provider: event.Provider, Model: event.Model,
+			Source: event.Source, Owner: event.Owner, CorrelationID: event.CorrelationID,
+			InputSize: event.InputSize, OutputSize: event.OutputSize, Error: event.Error,
+		})
+	}); err != nil {
+		log.Fatal(err)
+	}
 	octacoreProcessor, err := octacore.NewProcessor(octacore.DefaultConfig(), g, peerClient, saraProxy)
 	if err != nil {
 		log.Fatal(err)
 	}
+	g.SetExecutionReporter(supergpu.ReporterFunc(func(ctx context.Context, event supergpu.ExecutionEvent) error {
+		correlationID := event.CorrelationID
+		if strings.TrimSpace(correlationID) == "" {
+			correlationID = protocol.NewTraceID()
+		}
+		return clareiraReporter.Report(ctx, supergpu.WithCorrelationID(ctx, correlationID), event)
+	}))
 	octacoreProcessor.SetVagusPublisher(func(ctx context.Context, event octacore.VagusEnvelope) error {
 		if !saraProxy.Configured() {
 			return errors.New("VAGUS_CONTROL_SARA_UNCONFIGURED")
