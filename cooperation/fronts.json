@@ -1,0 +1,16 @@
+{
+  "protocol": "soul-mesh/1",
+  "contract_version": "1.1.0",
+  "principle": "one authority per responsibility; communication through canonical Mesh",
+  "fronts": [
+    {"id":"N01","repository":"divibisoul/aeternum-core-29","authority":"Aeternum/HortaCore vascular layer","communication":"Soul Mesh"},
+    {"id":"N02","repository":"divibisoul/Eternium-","authority":"Gemini/neural native provider capabilities","communication":"Soul Mesh"},
+    {"id":"N03","repository":"divibisoul/nexus-aeternum-fusion","authority":"perception/fusion/audio runtime","communication":"Soul Mesh"},
+    {"id":"N04","repository":"divibisoul/nextjs-ai-chatbots","authority":"application/tools/context runtime","communication":"Soul Mesh"},
+    {"id":"N05","repository":"divibisoul/nextjs-ai-chatbot","authority":"chat/tooling/learning interface","communication":"Soul Mesh"},
+    {"id":"N06","repository":"divibisoul/nextjs-ai-chatbot-2000","authority":"cognitive/session/context runtime","communication":"Soul Mesh"},
+    {"id":"N07","repository":"divibisoul/Orquestrador-","authority":"orchestration/routing/learning coordinator","communication":"Soul Mesh"},
+    {"id":"SARA","repository":"divibisoul/SARA","authority":"governance/regeneration/forensic authority","communication":"Soul Mesh/Vagus"}
+  ],
+  "operations": ["cooperation.handshake@1.0.0","cooperation.exchange@1.0.0","cooperation.health@1.0.0"]
+}
