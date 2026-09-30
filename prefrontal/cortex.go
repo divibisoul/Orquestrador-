@@ -80,8 +80,8 @@ func valid(v Candidate) error {
 			return errors.New("candidate contains non-finite value")
 		}
 	}
-	if v.Cost < 0 || v.Risk < 0 || v.Uncertainty < 0 || v.Urgency < 0 || v.Impact < 0 {
-		return errors.New("cost, risk, uncertainty, urgency and impact cannot be negative")
+	if v.Cost < 0 || v.Risk < 0 || v.Utility < 0 || v.Uncertainty < 0 || v.Urgency < 0 || v.Impact < 0 {
+		return errors.New("cost, risk, utility, uncertainty, urgency and impact cannot be negative")
 	}
 	if v.Risk > 1 || v.Uncertainty > 1 {
 		return errors.New("risk and uncertainty must be <= 1")
