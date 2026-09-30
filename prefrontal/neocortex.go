@@ -3,6 +3,8 @@ package prefrontal
 import (
 	"context"
 	"errors"
+	"math"
+	"time"
 )
 
 // NeuralSignalProvider is the minimal neural-network boundary required by the
@@ -40,17 +42,24 @@ func (n *Neocortex) Evaluate(ctx context.Context, id string, input []float64, ri
 		return Candidate{}, err
 	}
 	utility := 0.0
+	mean := 0.0
 	for _, value := range signal {
-		if value < 0 {
-			utility -= value
-		} else {
-			utility += value
-		}
+		utility += 1 / (1 + math.Exp(-value))
+		mean += value
 	}
+	variance := 0.0
 	if len(signal) > 0 {
+		mean /= float64(len(signal))
 		utility /= float64(len(signal))
+		for _, value := range signal {
+			delta := value - mean
+			variance += delta * delta
+		}
+		variance /= float64(len(signal))
 	}
-	candidate := Candidate{ID: id, Utility: utility, Risk: risk, Cost: cost, Urgency: urgency, Impact: impact, Uncertainty: 0, Context: map[string]any{"neural_dimensions": len(signal)}}
+	stddev := math.Sqrt(math.Max(0, variance))
+	uncertainty := stddev / (1 + stddev)
+	candidate := Candidate{ID: id, Utility: utility, Risk: risk, Cost: cost, Urgency: urgency, Impact: impact, Uncertainty: uncertainty, Context: map[string]any{"neural_dimensions": len(signal), "signal_mean": mean, "signal_stddev": stddev, "uncertainty_semantics": "bounded-dispersion-proxy-not-probability"}}
 	if err := n.cortex.ValidateAction(candidate); err != nil {
 		return Candidate{}, err
 	}
@@ -62,6 +71,27 @@ func (n *Neocortex) Commit(candidate Candidate, reason string) (Decision, error)
 		return Decision{}, errors.New("neocortex unavailable")
 	}
 	return n.cortex.Commit(candidate, reason)
+}
+
+func (n *Neocortex) UpdateWorkingMemory(candidates []Candidate) error {
+	if n == nil || n.cortex == nil {
+		return errors.New("neocortex unavailable")
+	}
+	return n.cortex.UpdateWorkingMemory(candidates)
+}
+
+func (n *Neocortex) SwitchTask(taskID string) error {
+	if n == nil || n.cortex == nil {
+		return errors.New("neocortex unavailable")
+	}
+	return n.cortex.SwitchTask(taskID)
+}
+
+func (n *Neocortex) Monitor(now time.Time) map[string]any {
+	if n == nil || n.cortex == nil {
+		return map[string]any{"status": "degraded", "error": "neocortex unavailable"}
+	}
+	return n.cortex.Monitor(now)
 }
 
 func (n *Neocortex) Health() map[string]any {
