@@ -425,7 +425,8 @@ func (s *Scheduler) acquire(ctx context.Context, slot SlotID) error {
 		probe := false
 		st.mu.Lock()
 		now := time.Now()
-		if st.circuit == "open" {
+		switch st.circuit {
+		case "open":
 			if now.Before(st.retryAfter) {
 				st.mu.Unlock()
 				return errors.New("slot circuit open")
@@ -435,6 +436,13 @@ func (s *Scheduler) acquire(ctx context.Context, slot SlotID) error {
 				return errors.New("slot half-open probe busy")
 			}
 			st.circuit = "half-open"
+			st.halfOpenUse = true
+			probe = true
+		case "half-open":
+			if st.halfOpenUse {
+				st.mu.Unlock()
+				return errors.New("slot half-open probe busy")
+			}
 			st.halfOpenUse = true
 			probe = true
 		}
