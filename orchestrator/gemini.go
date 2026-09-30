@@ -357,7 +357,13 @@ func floatSlice(value any) ([]float64, error) {
 		}
 		return out, nil
 	case []float64:
-		return append([]float64(nil), values...), nil
+		out := append([]float64(nil), values...)
+		for _, number := range out {
+			if math.IsNaN(number) || math.IsInf(number, 0) {
+				return nil, errors.New("vector contains non-finite or non-numeric values")
+			}
+		}
+		return out, nil
 	default:
 		return nil, errors.New("vector is not numeric")
 	}
