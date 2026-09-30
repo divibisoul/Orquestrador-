@@ -118,7 +118,19 @@ func main() {
 		if strings.TrimSpace(correlationID) == "" {
 			correlationID = protocol.NewTraceID()
 		}
-		return clareiraReporter.Report(supergpu.WithCorrelationID(ctx, correlationID), event)
+		reportCtx := supergpu.WithCorrelationID(ctx, correlationID)
+		return clareiraReporter.Report(reportCtx, mesh.ExecutionEvent{
+			Phase: event.Phase,
+			Operation: event.Operation,
+			Provider: event.Backend,
+			Model: event.DeviceID,
+			Source: "N07.supergpu",
+			Owner: "N07",
+			CorrelationID: event.CorrelationID,
+			InputSize: event.InputSize,
+			OutputSize: event.OutputSize,
+			Error: event.Error,
+		})
 	}))
 	octacoreProcessor.SetVagusPublisher(func(ctx context.Context, event octacore.VagusEnvelope) error {
 		if !saraProxy.Configured() {
