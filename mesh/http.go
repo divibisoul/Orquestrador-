@@ -300,6 +300,45 @@ func (g *HTTPGateway) Handler(w http.ResponseWriter, r *http.Request) {
 			g.respond(w, http.StatusBadRequest, envelope, "ERROR", map[string]any{"error": err.Error()})
 			return
 		}
+		if capability == "learning.feedback" {
+			if payload := envelope.NestedPayload(); payload != nil {
+				for key, metadataKey := range map[string]string{
+					"target": "learning_target",
+					"capability": "learning_capability",
+					"outcome": "learning_outcome",
+					"provenance": "learning_provenance",
+				} {
+					if value, ok := payload[key].(string); ok && strings.TrimSpace(value) != "" {
+						metadata[metadataKey] = strings.TrimSpace(value)
+					}
+				}
+			}
+		}
+		if strings.HasPrefix(capability, "memory.") {
+			if payload := envelope.NestedPayload(); payload != nil {
+				for key, metadataKey := range map[string]string{
+					"user_id":        "memory_user_id",
+					"session_id":     "memory_session_id",
+					"summary":        "memory_summary",
+					"resumo":         "memory_summary",
+					"evidence_id":    "memory_evidence_id",
+					"evidence_hash":  "memory_evidence_hash",
+					"model":          "memory_model",
+					"similarity_threshold": "memory_similarity_threshold",
+					"match_count":    "memory_match_count",
+				} {
+					if value, ok := payload[key].(string); ok && strings.TrimSpace(value) != "" {
+						metadata[metadataKey] = strings.TrimSpace(value)
+					}
+				}
+				if rawTags, ok := payload["tags"]; ok {
+					encoded, err := json.Marshal(rawTags)
+					if err == nil {
+						metadata["memory_tags_json"] = string(encoded)
+					}
+				}
+			}
+		}
 	}
 	metadata["mesh_contract_version"] = envelope.ContractVersion
 	metadata["mesh_transport"] = "HTTP"
