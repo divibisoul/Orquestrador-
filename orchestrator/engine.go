@@ -632,7 +632,7 @@ func (e *Engine) registerBuiltins() error {
 		e.setStage(message.TraceID, "compute", device.ID)
 		op := strings.TrimSpace(message.Metadata["operation"])
 		if op == "" {
-			op = "identity"
+			return protocol.Result{}, errors.New("metadata.operation is required")
 		}
 		output, err := e.compute.Execute(ctx, device, op, encoded)
 		return protocol.Result{
