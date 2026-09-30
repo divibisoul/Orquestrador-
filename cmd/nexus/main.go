@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/divibisoul/Orquestrador-/api"
+	"github.com/divibisoul/Orquestrador-/aeternum"
 	"github.com/divibisoul/Orquestrador-/api/health"
 	"github.com/divibisoul/Orquestrador-/backend"
 	"github.com/divibisoul/Orquestrador-/cognitive"
@@ -99,6 +100,14 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	semanticMemoryStore := backend.NewSemanticMemoryStoreFromEnv()
+	if semanticMemoryStore.Configured() {
+		if err := e.SetMemoryStore(semanticMemoryStore); err != nil {
+			log.Fatal(err)
+		}
+	} else {
+		log.Printf("semantic memory store disabled: Supabase credentials are not configured")
+	}
 	if err := orchestrator.RegisterLearningOperations(e, learningMachine, n); err != nil {
 		log.Fatal(err)
 	}
@@ -131,6 +140,11 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	hortaCore, err := aeternum.NewHortaCore(e, saraProxy)
+	if err != nil {
+		log.Fatal(err)
+	}
+	hortaCore.SetPeerClient(peerClient)
 	if err := orchestrator.RegisterCognitiveOperations(e, n07CognitiveMeshAdapter{peers: peerClient}, saraProxy, backend.NewSupabaseStore(cfg)); err != nil {
 		log.Fatal(err)
 	}
@@ -185,6 +199,32 @@ func main() {
 	mux.HandleFunc("/metrics", func(w http.ResponseWriter, r *http.Request) { writeMetrics(w, e.Stats()) })
 	mux.HandleFunc("/identity", func(w http.ResponseWriter, r *http.Request) { writeJSON(w, http.StatusOK, orchestrator.N07Identity()) })
 	mux.HandleFunc("/topology", func(w http.ResponseWriter, r *http.Request) { writeJSON(w, http.StatusOK, orchestrator.SOULTopology()) })
+	mux.HandleFunc("/v1/aeternum/health", func(w http.ResponseWriter, r *http.Request) {
+		if err := requireAppBearer(r); err != nil { writeJSON(w, http.StatusUnauthorized, map[string]string{"error": err.Error()}); return }
+		writeJSON(w, http.StatusOK, hortaCore.Health())
+	})
+	mux.HandleFunc("/v1/aeternum/processors", func(w http.ResponseWriter, r *http.Request) {
+		if err := requireAppBearer(r); err != nil { writeJSON(w, http.StatusUnauthorized, map[string]string{"error": err.Error()}); return }
+		writeJSON(w, http.StatusOK, map[string]any{"count": len(hortaCore.Processors()), "processors": hortaCore.Processors()})
+	})
+	mux.HandleFunc("/v1/aeternum/capabilities", func(w http.ResponseWriter, r *http.Request) {
+		if err := requireAppBearer(r); err != nil { writeJSON(w, http.StatusUnauthorized, map[string]string{"error": err.Error()}); return }
+		writeJSON(w, http.StatusOK, map[string]any{"count": len(hortaCore.Capabilities()), "modules": hortaCore.Capabilities()})
+	})
+	mux.HandleFunc("/v1/aeternum/module", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost { writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "POST required"}); return }
+		if err := requireAppBearer(r); err != nil { writeJSON(w, http.StatusUnauthorized, map[string]string{"error": err.Error()}); return }
+		var req struct { ModuleID string `json:"module_id"`; Payload []float64 `json:"payload"`; Metadata map[string]string `json:"metadata"` }
+		if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 1<<20)).Decode(&req); err != nil { writeJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()}); return }
+		result, err := hortaCore.Execute(r.Context(), req.ModuleID, req.Payload, req.Metadata)
+		if err != nil {
+			if strings.HasPrefix(err.Error(), "AETERNUM_BLOCKED_INFRASTRUCTURE:") || strings.HasPrefix(err.Error(), "AETERNUM_ADAPTER_REQUIRED:") || strings.HasPrefix(err.Error(), "AETERNUM_PEER_REQUIRED:") {
+				writeJSON(w, http.StatusConflict, map[string]any{"status": "BLOCKED", "error": err.Error()}); return
+			}
+			writeJSON(w, http.StatusBadRequest, map[string]any{"status": "ERROR", "error": err.Error()}); return
+		}
+		writeJSON(w, http.StatusOK, result)
+	})
 	mux.Handle("/api/soul-mesh", mesh.NewEnhancedFederatedHTTPGateway(e))
 	mux.HandleFunc("/execute", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {

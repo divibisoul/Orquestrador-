@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"math"
 	"regexp"
 	"sort"
@@ -142,6 +143,81 @@ func New(n *neural.Network, c *prefrontal.Cortex, g *supergpu.Runtime) (*Engine,
 		return nil, err
 	}
 	return e, nil
+}
+
+
+func (e *Engine) SetMemoryStore(store memory.Store) error {
+	if e == nil { return errors.New("orchestrator engine is required") }
+	if store == nil { return errors.New("memory store is required") }
+	e.mu.Lock()
+	if e.memory != nil { e.mu.Unlock(); return errors.New("memory store already attached") }
+	e.memory = store
+	e.mu.Unlock()
+
+	if err := e.Register("memory.record@1.0.0", func(ctx context.Context, message protocol.Message) (protocol.Result, error) {
+		e.setStage(message.TraceID, "memory.record", "")
+		if e.memory == nil { return protocol.Result{}, errors.New("semantic memory store unavailable") }
+		meta := message.Metadata
+		tags := []string{}
+		if raw := strings.TrimSpace(meta["memory_tags_json"]); raw != "" {
+			if err := json.Unmarshal([]byte(raw), &tags); err != nil {
+				return protocol.Result{}, errors.New("memory_tags_json must be a JSON string array")
+			}
+		}
+		item := memory.Record{
+			ID: strings.TrimSpace(meta["memory_id"]),
+			UserID: strings.TrimSpace(meta["memory_user_id"]),
+			SessionID: strings.TrimSpace(meta["memory_session_id"]),
+			Summary: strings.TrimSpace(meta["memory_summary"]),
+			Embedding: append([]float64(nil), message.Payload...),
+			Tags: tags,
+			CreatedAt: time.Now().UTC(),
+		}
+		if err := e.memory.Record(ctx, item); err != nil { return protocol.Result{}, err }
+		return protocol.Result{
+			TraceID: message.TraceID, CorrelationID: message.CorrelationID,
+			Source: "N07.memory", Target: message.Source, Status: "ok",
+			Metadata: map[string]string{
+				"stored": "true",
+				"memory_user_id": item.UserID,
+				"memory_session_id": item.SessionID,
+				"embedding_dimensions": fmt.Sprintf("%d", len(item.Embedding)),
+				"evidence_id": strings.TrimSpace(meta["memory_evidence_id"]),
+				"evidence_hash": strings.TrimSpace(meta["memory_evidence_hash"]),
+			},
+		}, nil
+	}); err != nil { return err }
+
+	return e.Register("memory.search@1.0.0", func(ctx context.Context, message protocol.Message) (protocol.Result, error) {
+		e.setStage(message.TraceID, "memory.search", "")
+		if e.memory == nil { return protocol.Result{}, errors.New("semantic memory store unavailable") }
+		meta := message.Metadata
+		threshold := 0.75
+		if raw := strings.TrimSpace(meta["memory_similarity_threshold"]); raw != "" {
+			if _, err := fmt.Sscanf(raw, "%f", &threshold); err != nil {
+				return protocol.Result{}, errors.New("memory_similarity_threshold must be numeric")
+			}
+		}
+		limit := 5
+		if raw := strings.TrimSpace(meta["memory_match_count"]); raw != "" {
+			if _, err := fmt.Sscanf(raw, "%d", &limit); err != nil {
+				return protocol.Result{}, errors.New("memory_match_count must be integer")
+			}
+		}
+		matches, err := e.memory.Search(ctx, strings.TrimSpace(meta["memory_user_id"]), append([]float64(nil), message.Payload...), threshold, limit)
+		if err != nil { return protocol.Result{}, err }
+		encoded, err := json.Marshal(matches)
+		if err != nil { return protocol.Result{}, err }
+		return protocol.Result{
+			TraceID: message.TraceID, CorrelationID: message.CorrelationID,
+			Source: "N07.memory", Target: message.Source, Status: "ok",
+			Metadata: map[string]string{
+				"match_count": fmt.Sprintf("%d", len(matches)),
+				"memories_json": string(encoded),
+				"memory_similarity_threshold": fmt.Sprintf("%.4f", threshold),
+			},
+		}, nil
+	})
 }
 
 func (e *Engine) Register(operation string, handler Handler) error {
