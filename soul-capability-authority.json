@@ -34,7 +34,12 @@
       "clareira.metrics",
       "octacore.execute",
       "neural_forge",
-      "asc"
+      "asc",
+      "gemini.text.generate",
+      "gemini.multimodal.generate",
+      "gemini.audio.transcribe",
+      "gemini.audio.analyze",
+      "gemini.speech.synthesize"
     ],
     "N03": [
       "audio.transcribe",
@@ -317,6 +322,36 @@
         "id": "resource.dcrs",
         "repository": "divibisoul/Eternium-",
         "path": "src/soul-mesh/SoulMeshCapabilities.ts",
+        "ref": "main"
+      },
+      {
+        "id": "gemini.text.generate",
+        "repository": "divibisoul/Eternium-",
+        "path": "src/soul-mesh/N02AIProviderBridge.ts",
+        "ref": "main"
+      },
+      {
+        "id": "gemini.multimodal.generate",
+        "repository": "divibisoul/Eternium-",
+        "path": "src/soul-mesh/N02AIProviderBridge.ts",
+        "ref": "main"
+      },
+      {
+        "id": "gemini.audio.transcribe",
+        "repository": "divibisoul/Eternium-",
+        "path": "src/soul-mesh/N02AIProviderBridge.ts",
+        "ref": "main"
+      },
+      {
+        "id": "gemini.audio.analyze",
+        "repository": "divibisoul/Eternium-",
+        "path": "src/soul-mesh/N02AIProviderBridge.ts",
+        "ref": "main"
+      },
+      {
+        "id": "gemini.speech.synthesize",
+        "repository": "divibisoul/Eternium-",
+        "path": "src/soul-mesh/N02AIProviderBridge.ts",
         "ref": "main"
       }
     ],
