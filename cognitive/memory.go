@@ -2,6 +2,7 @@ package cognitive
 
 import (
 	"errors"
+	"math"
 	"strings"
 	"sync"
 	"time"
@@ -42,7 +43,7 @@ func (m *WorkingMemory) Put(key string, value map[string]any, relevance float64)
 	if value == nil {
 		return errors.New("working memory value is required")
 	}
-	if relevance < 0 || relevance > 1 {
+	if math.IsNaN(relevance) || math.IsInf(relevance, 0) || relevance < 0 || relevance > 1 {
 		return errors.New("working memory relevance must be between 0 and 1")
 	}
 	now := time.Now().UTC()
@@ -138,7 +139,7 @@ func (s *GoalStore) Put(g Goal) error {
 	for name, value := range map[string]float64{
 		"risk": g.Risk, "cost": g.Cost, "urgency": g.Urgency, "impact": g.Impact,
 	} {
-		if value < 0 || value != value {
+		if math.IsNaN(value) || math.IsInf(value, 0) || value < 0 {
 			return errors.New("goal " + name + " must be finite and non-negative")
 		}
 	}
