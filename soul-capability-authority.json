@@ -12,6 +12,8 @@
   "owners": {
     "N01": [
       "android.device_info",
+      "clareira.ingest",
+      "clareira.metrics",
       "android.battery",
       "android.memory",
       "android.network",
@@ -30,8 +32,6 @@
       "neural.bnc_v2",
       "cognitive.csae",
       "resource.dcrs",
-      "clareira.ingest",
-      "clareira.metrics",
       "octacore.execute",
       "neural_forge",
       "asc"
@@ -261,14 +261,14 @@
       },
       {
         "id": "clareira.ingest",
-        "repository": "divibisoul/Eternium-",
-        "path": "src/soul-mesh/SoulMeshCapabilities.ts",
+        "repository": "divibisoul/aeternum-core-29",
+        "path": "scripts/soul-mesh-server.mjs",
         "ref": "main"
       },
       {
         "id": "clareira.metrics",
-        "repository": "divibisoul/Eternium-",
-        "path": "src/soul-mesh/SoulMeshCapabilities.ts",
+        "repository": "divibisoul/aeternum-core-29",
+        "path": "scripts/soul-mesh-server.mjs",
         "ref": "main"
       },
       {
