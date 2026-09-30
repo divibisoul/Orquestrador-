@@ -173,11 +173,11 @@ jobs:
           SOUL_MESH_HMAC_SECRET: ${{ env.SOUL_MESH_HMAC_SECRET }}
         run: |
           set -euo pipefail
-          nohup pnpm --dir .commissioning/n04 run start -- -p 18084 > "$RUNNER_TEMP/n04.log" 2>&1 &
+          nohup pnpm --dir .commissioning/n04 exec next start -p 18084 > "$RUNNER_TEMP/n04.log" 2>&1 &
           echo $! > "$RUNNER_TEMP/n04.pid"
-          nohup pnpm --dir .commissioning/n05 run start -- -p 18085 > "$RUNNER_TEMP/n05.log" 2>&1 &
+          nohup pnpm --dir .commissioning/n05 exec next start -p 18085 > "$RUNNER_TEMP/n05.log" 2>&1 &
           echo $! > "$RUNNER_TEMP/n05.pid"
-          nohup pnpm --dir .commissioning/n06 run start -- -p 18086 > "$RUNNER_TEMP/n06.log" 2>&1 &
+          nohup pnpm --dir .commissioning/n06 exec next start -p 18086 > "$RUNNER_TEMP/n06.log" 2>&1 &
           echo $! > "$RUNNER_TEMP/n06.pid"
       - name: Wait for local peer runtimes
         run: |
