@@ -8,7 +8,6 @@ import (
   "fmt"
   "io"
   "net/http"
-  "net/url"
   "os"
   "strconv"
   "strings"
@@ -113,4 +112,3 @@ func (s *SupabaseSemanticMemoryStore) Search(ctx context.Context, userID string,
 
 var _ memory.Store = (*SupabaseSemanticMemoryStore)(nil)
 
-var _ = url.PathEscape
