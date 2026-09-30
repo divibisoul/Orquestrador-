@@ -589,9 +589,23 @@ func (n *Network) Backprop(inputs, target []float64) ([]float64, error) {
 	if err := finiteVector(gNext); err != nil {
 		return nil, errors.New("backprop produced non-finite gradient")
 	}
+	n.mu.RLock()
+	clip := n.config.GradientClip
+	n.mu.RUnlock()
+	normSq := 0.0
 	sumAbs := 0.0
 	for _, g := range gNext {
+		normSq += g * g
 		sumAbs += math.Abs(g)
+	}
+	norm := math.Sqrt(normSq)
+	if clip > 0 && norm > clip {
+		scale := clip / norm
+		for i := range gNext {
+			gNext[i] *= scale
+		}
+		sumAbs *= scale
+		norm = clip
 	}
 	n.mu.Lock()
 	n.stats.LastGradient = sumAbs / float64(len(gNext))
