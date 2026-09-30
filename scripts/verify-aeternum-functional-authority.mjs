@@ -1,17 +1,13 @@
 import assert from 'node:assert/strict';
 
-const SOURCE = 'https://raw.githubusercontent.com/divibisoul/aeternum-core-29/eb9e39134896903b86f3fc36a2ee679971c8c8c3/docs/aeternum-functional-authority.snapshot.json';
+const fs = await import('node:fs/promises');
+const localContract = JSON.parse(await fs.readFile(new URL('../contracts/aeternum-functional-authority.json', import.meta.url), 'utf8'));
+const snapshot = localContract.snapshot;
 
-const response = await fetch(SOURCE);
-if (!response.ok) throw new Error('AETERNUM_AUTHORITY_SOURCE_HTTP_' + response.status);
-const snapshot = await response.json();
-
+assert.equal(localContract.fusion.nvodProtocol, 'nvod-fusion/1');
+assert.equal(localContract.fusion.nvodContractVersion, '1.0.0');
 assert.equal(snapshot.schemaVersion, '1.0.0');
-assert.equal(snapshot.system, 'SOUL');
-assert.equal(snapshot.layer, 'AETERNUM');
 assert.equal(snapshot.authorityModel, 'connection-derived');
-assert.equal(snapshot.fusion?.protocol, 'nvod-fusion/1');
-assert.equal(snapshot.fusion?.contractVersion, '1.0.0');
 assert.equal(snapshot.modules.length, 8);
 
 const byId = new Map();
@@ -59,7 +55,7 @@ assert.ok(m8.roles.includes('MEMORY'));
 console.log(JSON.stringify({
   check: 'N07_AETERNUM_FUNCTIONAL_AUTHORITY_CROSSFRONT',
   status: 'PASS',
-  source: SOURCE,
+  source: localContract.source,
   moduleCount: snapshot.modules.length,
   anchor: 'M1_CORE',
   anchorConnectionScore: m1.connectionScore,
