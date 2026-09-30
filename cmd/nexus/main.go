@@ -78,6 +78,7 @@ func main() {
 		target = strings.TrimSpace(strings.ToUpper(target))
 		capability = strings.TrimSpace(capability)
 		if target == "SARA" {
+			capability = strings.TrimSuffix(capability, "@1.0.0")
 			switch capability {
 			case "sara.cycle":
 				input, _ := payload["input"].(string)
