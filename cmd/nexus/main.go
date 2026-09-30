@@ -22,6 +22,7 @@ import (
 	"github.com/divibisoul/Orquestrador-/octacore"
 	"github.com/divibisoul/Orquestrador-/orchestrator"
 	"github.com/divibisoul/Orquestrador-/prefrontal"
+	"github.com/divibisoul/Orquestrador-/rgo"
 	"github.com/divibisoul/Orquestrador-/supergpu"
 )
 
@@ -68,9 +69,15 @@ func main() {
 			log.Fatal(err)
 		}
 	}
+	if err := rgo.RegisterOperation(e, saraProxy); err != nil {
+		log.Fatal(err)
+	}
 
 	peerClient, err := mesh.NewPeerClient(nil)
 	if err != nil {
+		log.Fatal(err)
+	}
+	if err := rgo.RegisterTrinityOperation(e, saraProxy, peerClient); err != nil {
 		log.Fatal(err)
 	}
 	octacoreProcessor, err := octacore.NewProcessor(octacore.DefaultConfig(), g, peerClient, saraProxy)
