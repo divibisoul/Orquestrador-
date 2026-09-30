@@ -44,6 +44,7 @@ type Policy struct {
 type Cortex struct {
 	mu               sync.RWMutex
 	decisions        []Decision
+	decisionHistory  []Decision
 	threshold        float64
 	capacity         int
 	policy           Policy
@@ -57,6 +58,7 @@ type Cortex struct {
 	commitNanos      uint64
 	lastDecision     time.Time
 	workingMemory    map[string]workingMemoryEntry
+	workingMemoryArchive []workingMemoryEntry
 	taskFrames       []TaskFrame
 	currentTask      string
 }
@@ -253,9 +255,7 @@ func (c *Cortex) Commit(candidate Candidate, reason string) (Decision, error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	c.decisions = append(c.decisions, d)
-	if len(c.decisions) > c.capacity {
-		c.decisions = c.decisions[len(c.decisions)-c.capacity:]
-	}
+	c.decisionHistory = append(c.decisionHistory, d)
 	c.lastDecision = time.Now().UTC()
 	c.commits++
 	ns := uint64(time.Since(start).Nanoseconds())
@@ -267,12 +267,18 @@ func (c *Cortex) Commit(candidate Candidate, reason string) (Decision, error) {
 func (c *Cortex) Recall(limit int) []Decision {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
-	if limit <= 0 || limit > len(c.decisions) {
-		limit = len(c.decisions)
+	if limit <= 0 || limit > len(c.decisionHistory) {
+		limit = len(c.decisionHistory)
 	}
 	out := make([]Decision, limit)
-	copy(out, c.decisions[len(c.decisions)-limit:])
+	copy(out, c.decisionHistory[len(c.decisionHistory)-limit:])
 	return out
+}
+
+func (c *Cortex) HistorySize() int {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	return len(c.decisionHistory)
 }
 func (c *Cortex) Health() map[string]any {
 	c.mu.RLock()
@@ -298,6 +304,7 @@ func (c *Cortex) Health() map[string]any {
 		"threshold": c.threshold,
 		"capacity": c.capacity,
 		"decisions": len(c.decisions),
+		"decision_history_size": len(c.decisionHistory),
 		"evaluated": c.evaluated,
 		"commits": c.commits,
 		"inhibited": c.inhibited,
@@ -307,6 +314,7 @@ func (c *Cortex) Health() map[string]any {
 		"avg_evaluate_ms": avgEvaluate,
 		"avg_commit_ms": avgCommit,
 		"working_memory_size": len(c.workingMemory),
+		"working_memory_archive_size": len(c.workingMemoryArchive),
 		"current_task": c.currentTask,
 		"task_switches": len(c.taskFrames),
 		"last_decision": c.lastDecision,
