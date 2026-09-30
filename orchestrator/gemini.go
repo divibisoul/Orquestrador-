@@ -267,6 +267,7 @@ func geminiPayload(message protocol.Message, semanticText string) map[string]any
 	}
 	for _, item := range [][2]string{
 		{"system_instruction", "systemInstruction"},
+		{"url", "url"},
 		{"audio_base64", "audioBase64"},
 		{"mime_type", "mimeType"},
 		{"image_base64", "imageBase64"},
@@ -291,6 +292,32 @@ func geminiPayload(message protocol.Message, semanticText string) map[string]any
 	if value := strings.TrimSpace(message.Metadata["max_output_tokens"]); value != "" {
 		if number, err := strconv.Atoi(value); err == nil {
 			payload["maxOutputTokens"] = number
+		}
+	}
+	if value := strings.TrimSpace(message.Metadata["file_search_store_names_json"]); value != "" {
+		var stores []string
+		if err := json.Unmarshal([]byte(value), &stores); err != nil || len(stores) == 0 {
+			payload["fileSearchStoreNames_json_invalid"] = true
+		} else {
+			payload["fileSearchStoreNames"] = stores
+		}
+	}
+	if value := strings.TrimSpace(message.Metadata["file_search_top_k"]); value != "" {
+		if number, err := strconv.Atoi(value); err == nil {
+			payload["fileSearchTopK"] = number
+		}
+	}
+	if value := strings.TrimSpace(message.Metadata["file_search_metadata_filter"]); value != "" {
+		payload["fileSearchMetadataFilter"] = value
+	}
+	if value := strings.TrimSpace(message.Metadata["google_maps_latitude"]); value != "" {
+		if number, err := strconv.ParseFloat(value, 64); err == nil {
+			payload["latitude"] = number
+		}
+	}
+	if value := strings.TrimSpace(message.Metadata["google_maps_longitude"]); value != "" {
+		if number, err := strconv.ParseFloat(value, 64); err == nil {
+			payload["longitude"] = number
 		}
 	}
 	if value := strings.TrimSpace(message.Metadata["contents_json"]); value != "" {
