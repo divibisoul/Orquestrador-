@@ -56,7 +56,7 @@
         "N02"
       ],
       "manifestAuthority": "SOUL-FUSION-MANIFEST.json",
-      "sourceRef": "99fb9d22ddea3439c8b5be396ccae9e11ae3f66e",
+      "sourceRef": "891a705913da1cc95863d3d971153cd495697ef0",
       "status": "main-live-recovery-and-hortacore-bridge-merged"
     },
     "N02": {
@@ -103,7 +103,7 @@
         "N04"
       ],
       "manifestAuthority": "SOUL-FUSION-MANIFEST.json",
-      "sourceRef": "9951485529c8480ff3bf4d7305538d152b6acdfe",
+      "sourceRef": "d0daf11a7f090ba7708c387eb0c697a1260cf1ee",
       "status": "main-live-composition-contract-reconciled"
     },
     "N04": {
@@ -126,7 +126,7 @@
         "N05"
       ],
       "manifestAuthority": "SOUL-FUSION-MANIFEST.json",
-      "sourceRef": "ed4e2a75b772d1efaed2457c392f52bddaffbfa8",
+      "sourceRef": "958893952f07dad42ac574e95125028a9a7269be",
       "status": "main-live-tool-capability-alias-reconciled"
     },
     "N05": {
@@ -150,7 +150,7 @@
         "N06"
       ],
       "manifestAuthority": "SOUL-FUSION-MANIFEST.json",
-      "sourceRef": "e0c8778bebaba4a4b821bc6923c2a51dcfc431ca",
+      "sourceRef": "9ef39dbb7f37014c941f8300983a24d79c18397f",
       "status": "main-live-inference-capability-catalog-reconciled"
     },
     "N06": {
@@ -174,7 +174,7 @@
         "N07"
       ],
       "manifestAuthority": "SOUL-FUSION-MANIFEST.json",
-      "sourceRef": "bdcb099166701453b6cb62672fa6a642addbd9b0",
+      "sourceRef": "ee9127751cdcc775f5b64d751c581cd676ecc4e8",
       "status": "main-live-composition-targets-reconciled"
     },
     "N07": {
@@ -211,7 +211,7 @@
         "src/sara/__init__.py"
       ],
       "authority": "sara.meta / sara.core / sara.governance",
-      "sourceRef": "20d550029c5320bf559fe356af02ed7aa49cb4ad",
+      "sourceRef": "84df7b72d76434f0cd0eb5fd72287a80c565a3a2",
       "status": "main-live-chimera-and-bayesian-runtime-merged"
     }
   },
