@@ -2,6 +2,8 @@ package octacore
 
 import (
 	"context"
+	"errors"
+	"sync"
 	"testing"
 	"time"
 
