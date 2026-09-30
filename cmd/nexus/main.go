@@ -71,6 +71,11 @@ func main() {
 	if err := e.SetLearningMachine(learningMachine); err != nil {
 		log.Fatal(err)
 	}
+	if learningSink != nil {
+		if err := e.SetMemoryStore(learningStore); err != nil {
+			log.Fatal(err)
+		}
+	}
 	if err := orchestrator.RegisterSuperGPUOperations(e); err != nil {
 		log.Fatal(err)
 	}
