@@ -9,6 +9,27 @@ import (
 	"github.com/divibisoul/Orquestrador-/prefrontal"
 )
 
+type runtimePeerAdapter struct {
+	peers *mesh.PeerClient
+}
+
+func (a runtimePeerAdapter) ConfiguredPeers() []PeerDescriptor {
+	raw := a.peers.ConfiguredPeers()
+	out := make([]PeerDescriptor, 0, len(raw))
+	for _, peer := range raw {
+		out = append(out, PeerDescriptor{Nucleus: peer.Nucleus})
+	}
+	return out
+}
+
+func (a runtimePeerAdapter) Discover(ctx context.Context, nucleus string) (map[string]any, error) {
+	return a.peers.Discover(ctx, nucleus)
+}
+
+func (a runtimePeerAdapter) CallBestDynamic(ctx context.Context, capability string, payload map[string]any, correlation string) (map[string]any, string, error) {
+	return a.peers.CallBestDynamic(ctx, capability, payload, correlation)
+}
+
 func TestWorkingMemoryRetainsEvidenceAndEvictsLowRelevance(t *testing.T) {
 	cfg := DefaultConfig()
 	cfg.WorkingMemoryItems = 2
@@ -89,7 +110,7 @@ func TestMeshExecutorRejectsMissingCorrelationWithoutNetworkCall(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	executor, err := NewMeshExecutor(peers)
+	executor, err := NewMeshExecutor(runtimePeerAdapter{peers: peers})
 	if err != nil {
 		t.Fatal(err)
 	}
