@@ -82,7 +82,10 @@
     "N07": [
       "orchestration",
       "federation",
-      "supergpu"
+      "supergpu",
+      "cognitive.goal.run",
+      "cognitive.goal.plan",
+      "cognitive.health"
     ],
     "SARA": [
       "sara.health",
@@ -570,6 +573,26 @@
         "repository": "divibisoul/SARA",
         "path": "src/sara/meta/soul_federation.py",
         "ref": "main"
+      }
+    ],
+    "N07": [
+      {
+        "id": "cognitive.goal.run",
+        "repository": "divibisoul/Orquestrador-",
+        "path": "orchestrator/cognitive_ops.go",
+        "ref": "feat/recover-cognitive-loop-goals-planner-2026-09-30"
+      },
+      {
+        "id": "cognitive.goal.plan",
+        "repository": "divibisoul/Orquestrador-",
+        "path": "orchestrator/cognitive_ops.go",
+        "ref": "feat/recover-cognitive-loop-goals-planner-2026-09-30"
+      },
+      {
+        "id": "cognitive.health",
+        "repository": "divibisoul/Orquestrador-",
+        "path": "orchestrator/cognitive_ops.go",
+        "ref": "feat/recover-cognitive-loop-goals-planner-2026-09-30"
       }
     ]
   },
