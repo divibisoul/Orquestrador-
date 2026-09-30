@@ -12,6 +12,8 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/divibisoul/Orquestrador-/learning"
+	"github.com/divibisoul/Orquestrador-/memory"
 	"github.com/divibisoul/Orquestrador-/neural"
 	"github.com/divibisoul/Orquestrador-/observability"
 	"github.com/divibisoul/Orquestrador-/prefrontal"
@@ -58,6 +60,9 @@ type Engine struct {
 	rates            map[string]rateState
 	neural           *neural.Network
 	cortex           *prefrontal.Cortex
+	neocortex        *prefrontal.Neocortex
+	learning         *learning.Machine
+	memory           memory.Store
 	compute          *supergpu.Runtime
 	running          atomic.Bool
 	sequence         atomic.Uint64
@@ -123,6 +128,8 @@ func New(n *neural.Network, c *prefrontal.Cortex, g *supergpu.Runtime) (*Engine,
 	if n == nil || c == nil || g == nil {
 		return nil, errors.New("all nucleus services are required")
 	}
+	neocortex, err := prefrontal.NewNeocortex(c, n)
+	if err != nil { return nil, err }
 	e := &Engine{
 		handlers:         make(map[string]OperationRegistration),
 		active:           make(map[string]traceState),
@@ -130,6 +137,7 @@ func New(n *neural.Network, c *prefrontal.Cortex, g *supergpu.Runtime) (*Engine,
 		rates:            make(map[string]rateState),
 		neural:           n,
 		cortex:           c,
+		neocortex:        neocortex,
 		compute:          g,
 		metrics:          &observability.Metrics{},
 		logger:           observability.NewLogger("N07.orchestrator"),
@@ -142,6 +150,90 @@ func New(n *neural.Network, c *prefrontal.Cortex, g *supergpu.Runtime) (*Engine,
 		return nil, err
 	}
 	return e, nil
+}
+
+
+func (e *Engine) SetLearningMachine(machine *learning.Machine) error {
+	if e == nil { return errors.New("orchestrator engine is required") }
+	if machine == nil { return errors.New("learning machine is required") }
+	e.mu.Lock()
+	if e.learning != nil { e.mu.Unlock(); return errors.New("learning machine already attached") }
+	e.learning = machine
+	e.mu.Unlock()
+	if err := e.Register("learning.feedback@1.0.0", func(ctx context.Context, message protocol.Message) (protocol.Result, error) {
+		e.setStage(message.TraceID, "learning.feedback", "")
+		if len(message.Payload) != 2 { return protocol.Result{}, errors.New("learning feedback payload must be [reward, confidence]") }
+		exp := learning.Experience{
+			ID: message.TraceID, TraceID: message.TraceID, CorrelationID: message.CorrelationID,
+			Source: message.Source, Target: message.Metadata["learning_target"], Capability: message.Metadata["learning_capability"],
+			EventType: learning.EventFeedback, Outcome: message.Metadata["learning_outcome"],
+			Reward: message.Payload[0], Confidence: message.Payload[1], Provenance: message.Metadata["learning_provenance"],
+			Metadata: message.Metadata,
+		}
+		if exp.Target == "" { exp.Target = "N07" }
+		if exp.Capability == "" { return protocol.Result{}, errors.New("learning_capability is required") }
+		if exp.Outcome == "" { exp.Outcome = "observed" }
+		if exp.Provenance == "" { exp.Provenance = "mesh-observed" }
+		if err := machine.Feedback(ctx, exp); err != nil { return protocol.Result{TraceID:message.TraceID,CorrelationID:message.CorrelationID,Source:"N07.learning",Target:message.Source,Status:status(err),Error:errorText(err)}, err }
+		return protocol.Result{TraceID:message.TraceID,CorrelationID:message.CorrelationID,Source:"N07.learning",Target:message.Source,Status:"ok",Metadata:map[string]string{"learned":"ok","capability":exp.Capability}}, nil
+	}); err != nil { return err }
+	return nil
+}
+
+func (e *Engine) SetMemoryStore(store memory.Store) error {
+	if e == nil { return errors.New("orchestrator engine is required") }
+	if store == nil { return errors.New("memory store is required") }
+	e.mu.Lock()
+	if e.memory != nil { e.mu.Unlock(); return errors.New("memory store already attached") }
+	e.memory = store
+	e.mu.Unlock()
+	if err := e.Register("memory.record@1.0.0", func(ctx context.Context, message protocol.Message) (protocol.Result, error) {
+		e.setStage(message.TraceID, "memory.record", "")
+		meta := message.Metadata
+		tags := []string{}
+		if raw := strings.TrimSpace(meta["memory_tags_json"]); raw != "" {
+			if err := json.Unmarshal([]byte(raw), &tags); err != nil { return protocol.Result{}, errors.New("memory_tags_json must be a JSON string array") }
+		}
+		id := strings.TrimSpace(meta["memory_id"])
+		userID := strings.TrimSpace(meta["memory_user_id"])
+		sessionID := strings.TrimSpace(meta["memory_session_id"])
+		summary := strings.TrimSpace(meta["memory_summary"])
+		item := memory.Record{ID:id, UserID:userID, SessionID:sessionID, Summary:summary, Embedding:append([]float64(nil), message.Payload...), Tags:tags, CreatedAt:time.Now().UTC()}
+		if err := store.Record(ctx, item); err != nil { return protocol.Result{}, err }
+		return protocol.Result{TraceID:message.TraceID,CorrelationID:message.CorrelationID,Source:"N07.memory",Target:message.Source,Status:"ok",Metadata:map[string]string{"stored":"true","embedding_dimensions":fmt.Sprintf("%d",len(item.Embedding))}}, nil
+	}); err != nil { return err }
+	if err := e.Register("memory.search@1.0.0", func(ctx context.Context, message protocol.Message) (protocol.Result, error) {
+		e.setStage(message.TraceID, "memory.search", "")
+		meta := message.Metadata
+		threshold := 0.75
+		limit := 5
+		if raw := strings.TrimSpace(meta["memory_similarity_threshold"]); raw != "" {
+			if _, err := fmt.Sscanf(raw, "%f", &threshold); err != nil { return protocol.Result{}, errors.New("memory_similarity_threshold must be numeric") }
+		}
+		if raw := strings.TrimSpace(meta["memory_match_count"]); raw != "" {
+			if _, err := fmt.Sscanf(raw, "%d", &limit); err != nil { return protocol.Result{}, errors.New("memory_match_count must be integer") }
+		}
+		matches, err := store.Search(ctx, strings.TrimSpace(meta["memory_user_id"]), append([]float64(nil), message.Payload...), threshold, limit)
+		if err != nil { return protocol.Result{}, err }
+		encoded, err := json.Marshal(matches)
+		if err != nil { return protocol.Result{}, err }
+		return protocol.Result{TraceID:message.TraceID,CorrelationID:message.CorrelationID,Source:"N07.memory",Target:message.Source,Status:"ok",Metadata:map[string]string{"match_count":fmt.Sprintf("%d",len(matches)),"memories_json":string(encoded)}}, nil
+	}); err != nil { return err }
+	return nil
+}
+
+func (e *Engine) SetNeuralParametersOperation() error {
+	if e == nil { return errors.New("orchestrator engine is required") }
+	return e.Register("neural.parameters@1.0.0", func(ctx context.Context, message protocol.Message) (protocol.Result, error) {
+		if ctx == nil { return protocol.Result{}, errors.New("context is nil") }
+		p := e.neural.Parameters()
+		encoded, err := json.Marshal(p)
+		if err != nil { return protocol.Result{}, err }
+		return protocol.Result{
+			TraceID:message.TraceID, CorrelationID:message.CorrelationID, Source:"N07.neural", Target:message.Source, Status:"ok",
+			Metadata:map[string]string{"parameters":string(encoded)},
+		}, nil
+	})
 }
 
 func (e *Engine) Register(operation string, handler Handler) error {
@@ -497,7 +589,21 @@ func (e *Engine) registerBuiltins() error {
 		if half == 0 || half*2 != len(message.Payload) {
 			return protocol.Result{}, errors.New("learn payload must contain input and target halves")
 		}
-		err := e.neural.Learn(message.Payload[:half], message.Payload[half:])
+		var err error
+		if e.learning != nil {
+			exp := learning.Experience{
+				ID: message.TraceID, TraceID: message.TraceID, CorrelationID: message.CorrelationID,
+				Source: message.Source, Target: strings.TrimSpace(message.Metadata["learning_target"]),
+				Capability: strings.TrimSpace(message.Metadata["learning_capability"]), EventType: learning.EventSupervised,
+				Outcome: "supervised", Reward: 0, Confidence: 1, Input: append([]float64(nil), message.Payload[:half]...),
+				TargetVector: append([]float64(nil), message.Payload[half:]...), Provenance: "neural.learn", Metadata: message.Metadata,
+			}
+			if exp.Target == "" { exp.Target = "N07" }
+			if exp.Capability == "" { exp.Capability = "neural.learn" }
+			err = e.learning.Learn(ctx, exp)
+		} else {
+			err = e.neural.Learn(message.Payload[:half], message.Payload[half:])
+		}
 		return protocol.Result{TraceID: message.TraceID, CorrelationID: message.CorrelationID, Source: "N07.neural", Target: message.Source, Status: status(err), Error: errorText(err)}, err
 	}); err != nil {
 		return err
@@ -537,7 +643,7 @@ func (e *Engine) registerBuiltins() error {
 		if len(encoded) > 0 {
 			utility = energy / float64(len(encoded))
 		}
-		candidate := prefrontal.Candidate{ID: message.TraceID, Utility: utility, Cost: 0.05, Risk: 0.02}
+		candidate, err := e.neocortex.EvaluateSignal(message.TraceID, encoded, 0.02, 0.05, 0, utility, "cognitive.execute")
 		selected, err := e.cortex.Select([]prefrontal.Candidate{candidate})
 		if err != nil {
 			return protocol.Result{}, err
