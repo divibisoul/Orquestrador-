@@ -21,6 +21,8 @@ func N07Agents() []AgentDescriptor {
 		{ID: "n07.validator", Role: "validator", Capabilities: []string{"result-validation", "contract-validation"}, Inputs: []string{"result", "correlationId", "contractVersion"}, Outputs: []string{"validated-result", "validation-error"}},
 		{ID: "n07.observer", Role: "observer", Capabilities: []string{"mesh.health", "metrics", "tracing"}, Inputs: []string{"events", "latency", "errors"}, Outputs: []string{"health", "metrics", "trace"}},
 		{ID: "n07.jev", Role: "decision-specialist", Capabilities: []string{"jev.systemone@1.0.0"}, Tools: []string{"Jev/System One"}, Inputs: []string{"state", "questions"}, Outputs: []string{"typed-decisions", "probabilities", "confidence"}},
+		{ID: "n07.cognitive", Role: "cognitive-loop", Capabilities: []string{"cognitive.goal.run@1.0.0", "cognitive.goal.plan@1.0.0", "cognitive.health@1.0.0"}, Tools: []string{"GoalStore", "WorkingMemory", "Planner", "Critic", "MeshExecutor"}, Inputs: []string{"goal", "objective", "capabilities", "success_criteria", "correlation_id"}, Outputs: []string{"plan", "observations", "working-memory", "execution-evidence"}},
+		{ID: "n07.gemini-gateway", Role: "provider-gateway", Capabilities: []string{"gemini.delegate.text@1.0.0", "gemini.delegate.multimodal@1.0.0", "gemini.delegate.audio.transcribe@1.0.0", "gemini.delegate.audio.analyze@1.0.0", "gemini.delegate.speech.synthesize@1.0.0"}, Tools: []string{"Google Gemini via N02"}, Inputs: []string{"semantic-input", "neural-signal", "candidate_json"}, Outputs: []string{"provider-result", "prefrontal-decision", "clareira-event"}},
 	}
 }
 
