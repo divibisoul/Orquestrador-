@@ -82,7 +82,6 @@ func (s *SupabaseStore) RecordArtifact(ctx context.Context, row map[string]any) 
 
 func (s *SupabaseStore) RecordLearning(ctx context.Context, exp learning.PersistedExperience) error {
 	row := map[string]any{
-		"id": exp.ID,
 		"trace_id": exp.TraceID,
 		"correlation_id": exp.CorrelationID,
 		"source": exp.Source,
