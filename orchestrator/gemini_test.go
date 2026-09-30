@@ -93,3 +93,31 @@ func TestGeminiTargetsRecoveredServerSideToolsAtN02(t *testing.T) {
 		}
 	}
 }
+
+
+func TestGeminiPayloadForwardsRecoveredToolFields(t *testing.T) {
+	message := protocol.Message{
+		Metadata: map[string]string{
+			"url": "https://example.com/doc",
+			"file_search_store_names_json": "[\"fileSearchStores/test\"]",
+			"file_search_top_k": "7",
+			"file_search_metadata_filter": "author=\"test\"",
+			"google_maps_latitude": "1.25",
+			"google_maps_longitude": "2.5",
+		},
+	}
+	payload := geminiPayload(message, "inspect")
+	if payload["url"] != "https://example.com/doc" {
+		t.Fatalf("url was not forwarded: %#v", payload["url"])
+	}
+	stores, ok := payload["fileSearchStoreNames"].([]string)
+	if !ok || len(stores) != 1 || stores[0] != "fileSearchStores/test" {
+		t.Fatalf("file search stores were not forwarded: %#v", payload["fileSearchStoreNames"])
+	}
+	if payload["fileSearchTopK"] != 7 || payload["fileSearchMetadataFilter"] != "author=\"test\"" {
+		t.Fatalf("file search options were not forwarded: %#v", payload)
+	}
+	if payload["latitude"] != 1.25 || payload["longitude"] != 2.5 {
+		t.Fatalf("google maps coordinates were not forwarded: %#v", payload)
+	}
+}
