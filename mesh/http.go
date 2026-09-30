@@ -293,6 +293,12 @@ func (g *HTTPGateway) Handler(w http.ResponseWriter, r *http.Request) {
 				metadata["sara_cycle_id"] = v
 			}
 		}
+	} else if structuredMeshCapability(capability) {
+		if err := copyStructuredCapabilityMetadata(metadata, capability, envelope.NestedPayload()); err != nil {
+			g.respond(w, http.StatusBadRequest, envelope, "ERROR", map[string]any{"error": err.Error()})
+			return
+		}
+		values = []float64{}
 	} else {
 		var err error
 		values, err = payloadValues(envelope.NestedPayload())
@@ -370,6 +376,71 @@ func meshDeadline(envelope protocol.MeshEnvelope) time.Time {
 	}
 	return time.UnixMilli(envelope.Timestamp + *envelope.TTL)
 }
+func structuredMeshCapability(capability string) bool {
+	capability = strings.TrimSpace(capability)
+	return strings.HasPrefix(capability, "cooperation.") ||
+		strings.HasPrefix(capability, "blueprint.") ||
+		strings.HasPrefix(capability, "mesh.synergy.")
+}
+
+func copyStructuredCapabilityMetadata(metadata map[string]string, capability string, payload map[string]any) error {
+	if metadata == nil {
+		return errors.New("metadata is required")
+	}
+	if payload == nil {
+		return errors.New("structured capability payload is required")
+	}
+	raw, err := json.Marshal(payload)
+	if err != nil {
+		return fmt.Errorf("structured capability payload encode: %w", err)
+	}
+	switch {
+	case strings.HasPrefix(capability, "cooperation."):
+		if target, ok := payload["target"].(string); ok && strings.TrimSpace(target) != "" {
+			metadata["target"] = strings.TrimSpace(target)
+		}
+		if required, ok := payload["required_capability"].(string); ok && strings.TrimSpace(required) != "" {
+			metadata["capability"] = strings.TrimSpace(required)
+		}
+		if capability == "cooperation.exchange" {
+			if required, ok := payload["capability"].(string); ok && strings.TrimSpace(required) != "" {
+				metadata["capability"] = strings.TrimSpace(required)
+			}
+			if nested, ok := payload["payload"]; ok {
+				encoded, err := json.Marshal(nested)
+				if err != nil {
+					return fmt.Errorf("cooperation payload encode: %w", err)
+				}
+				metadata["payload"] = string(encoded)
+			}
+		}
+	case strings.HasPrefix(capability, "blueprint."):
+		if query, ok := payload["query"].(string); ok {
+			metadata["query"] = strings.TrimSpace(query)
+		}
+		if limit, ok := payload["limit"]; ok {
+			metadata["limit"] = fmt.Sprintf("%v", limit)
+		}
+	case strings.HasPrefix(capability, "mesh.synergy."):
+		if sequence, ok := payload["synergy_sequence"]; ok {
+			encoded, err := json.Marshal(sequence)
+			if err != nil {
+				return fmt.Errorf("synergy sequence encode: %w", err)
+			}
+			metadata["synergy_sequence_json"] = string(encoded)
+		}
+		if capabilities, ok := payload["capabilities"]; ok {
+			encoded, err := json.Marshal(capabilities)
+			if err != nil {
+				return fmt.Errorf("synergy capabilities encode: %w", err)
+			}
+			metadata["synergy_capabilities_json"] = string(encoded)
+		}
+		metadata["synergy_payload_json"] = string(raw)
+	}
+	return nil
+}
+
 func payloadValues(payload map[string]any) ([]float64, error) {
 	if payload == nil {
 		return nil, errors.New("payload.values is required")
