@@ -226,6 +226,18 @@
         "repository": "divibisoul/aeternum-core-29",
         "path": "docs/SOUL-CAPABILITY-MASTER-MAP.md",
         "ref": "main"
+      },
+      {
+        "id": "clareira.ingest",
+        "repository": "divibisoul/aeternum-core-29",
+        "path": "scripts/soul-mesh-server.mjs",
+        "ref": "main"
+      },
+      {
+        "id": "clareira.metrics",
+        "repository": "divibisoul/aeternum-core-29",
+        "path": "scripts/soul-mesh-server.mjs",
+        "ref": "main"
       }
     ],
     "N02": [
@@ -257,18 +269,6 @@
         "id": "asc",
         "repository": "divibisoul/Eternium-",
         "path": "src/soul-mesh/SoulMeshCapabilities.ts",
-        "ref": "main"
-      },
-      {
-        "id": "clareira.ingest",
-        "repository": "divibisoul/aeternum-core-29",
-        "path": "scripts/soul-mesh-server.mjs",
-        "ref": "main"
-      },
-      {
-        "id": "clareira.metrics",
-        "repository": "divibisoul/aeternum-core-29",
-        "path": "scripts/soul-mesh-server.mjs",
         "ref": "main"
       },
       {
