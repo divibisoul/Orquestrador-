@@ -87,3 +87,32 @@ func TestMachineSupervisedLearningChangesNetwork(t *testing.T) {
 		t.Fatalf("expected neural learning step to advance")
 	}
 }
+
+func TestMachineObservesRealMeshRouteOutcome(t *testing.T) {
+	n, err := neural.New(2, .05)
+	if err != nil {
+		t.Fatal(err)
+	}
+	c, err := prefrontal.New(.10, 32)
+	if err != nil {
+		t.Fatal(err)
+	}
+	m, err := New(n, c, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if err := m.ObserveRoute(context.Background(), "N07", "N02", "ai.generate", "corr-route", true); err != nil {
+		t.Fatal(err)
+	}
+	if got := m.Weight("N07", "N02", "ai.generate"); got <= .5 {
+		t.Fatalf("successful route was not learned: %v", got)
+	}
+
+	if err := m.ObserveRoute(context.Background(), "N07", "N02", "ai.generate", "corr-route-2", false); err != nil {
+		t.Fatal(err)
+	}
+	if got := m.Weight("N07", "N02", "ai.generate"); got >= .65 {
+		t.Fatalf("failed route did not reduce learned weight: %v", got)
+	}
+}
