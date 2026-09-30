@@ -52,6 +52,9 @@ const (
 	geminiMultimodal        = "ai.multimodal"
 	geminiGoogleSearch      = "gemini.google_search"
 	geminiCodeExecution     = "gemini.code_execution"
+	geminiURLContext        = "gemini.url_context"
+	geminiFileSearch        = "gemini.file_search"
+	geminiGoogleMaps        = "gemini.google_maps"
 	geminiAudioTranscribe   = "audio.transcribe"
 	geminiAudioAnalyze      = "audio.analyze.emotion"
 	geminiSpeechSynthesize  = "speech.synthesize"
@@ -73,6 +76,9 @@ func RegisterGeminiOperations(e *Engine, peer GeminiPeerCaller, reporter GeminiE
 		{"gemini.delegate.multimodal@1.0.0", geminiMultimodal},
 		{"gemini.delegate.google-search@1.0.0", geminiGoogleSearch},
 		{"gemini.delegate.code-execution@1.0.0", geminiCodeExecution},
+		{"gemini.delegate.url-context@1.0.0", geminiURLContext},
+		{"gemini.delegate.file-search@1.0.0", geminiFileSearch},
+		{"gemini.delegate.google-maps@1.0.0", geminiGoogleMaps},
 		{"gemini.delegate.audio.transcribe@1.0.0", geminiAudioTranscribe},
 		{"gemini.delegate.audio.analyze@1.0.0", geminiAudioAnalyze},
 		{"gemini.delegate.speech.synthesize@1.0.0", geminiSpeechSynthesize},
@@ -305,7 +311,7 @@ func normalizeGeminiResponse(capability string, upstream map[string]any) (map[st
 	payload := responsePayload(upstream)
 	metadata := map[string]string{}
 	switch capability {
-	case geminiText, geminiMultimodal, geminiGoogleSearch, geminiCodeExecution:
+	case geminiText, geminiMultimodal, geminiGoogleSearch, geminiCodeExecution, geminiURLContext, geminiFileSearch, geminiGoogleMaps:
 		textValue, ok := payload["text"].(string)
 		if !ok || strings.TrimSpace(textValue) == "" {
 			return nil, 0, errors.New("Gemini response did not expose text")
