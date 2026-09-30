@@ -275,9 +275,12 @@ func TestHTTPGatewayExposesFullPrefrontalExecutiveSurface(t *testing.T) {
 }
 
 func TestHTTPGatewayHMACV2BindsOperationalFields(t *testing.T) {
+	h := newTestGateway(t)
+	if err := orchestrator.RegisterAdvancedOperations(h.Engine); err != nil {
+		t.Fatal(err)
+	}
 	t.Setenv("N07_MESH_HMAC_SECRET", testSecret)
 	t.Setenv("N07_MESH_ALLOW_UNAUTH_LOCAL", "false")
-	h := newTestGateway(t)
 	h.Secret = testSecret
 
 	wire := canonicalRequest("request", "prefrontal.monitor", "trace-hmac-v2", nil)
