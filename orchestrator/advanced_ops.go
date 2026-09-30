@@ -39,9 +39,17 @@ func RegisterAdvancedOperations(e *Engine) error {
 			if err != nil {
 				return protocol.Result{}, err
 			}
+			if taskID := strings.TrimSpace(m.Metadata["task_id"]); taskID != "" {
+				if err := neocortex.SwitchTask(taskID); err != nil {
+					return protocol.Result{}, err
+				}
+			}
 			candidate, err := neocortex.Evaluate(ctx, c.ID, m.Payload, c.Risk, c.Cost, c.Urgency, c.Impact)
 			if err != nil {
 				return protocol.Result{TraceID: m.TraceID, CorrelationID: m.CorrelationID, Source: "N07.prefrontal", Target: m.Source, Status: "rejected", Error: err.Error()}, err
+			}
+			if err := neocortex.UpdateWorkingMemory([]prefrontal.Candidate{candidate}); err != nil {
+				return protocol.Result{}, err
 			}
 			decision, err := neocortex.Commit(candidate, "prefrontal-admission-approved")
 			if err != nil {
