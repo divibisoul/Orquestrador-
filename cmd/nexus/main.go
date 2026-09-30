@@ -44,8 +44,30 @@ func main() {
 	}
 	g := supergpu.New(nil)
 	g.Discover()
+
+	learningStore := backend.NewLearningStoreFromEnv()
+	var learningSink learning.Store
+	if learningStore.Configured() {
+		learningSink = learningStore
+	}
+	learningMachine, err := learning.New(n, c, learningSink)
+	if err != nil {
+		log.Fatal(err)
+	}
+	if learningSink != nil {
+		restoreCtx, restoreCancel := context.WithTimeout(context.Background(), 15*time.Second)
+		if err := learningMachine.Restore(restoreCtx, 5000); err != nil {
+			log.Printf("learning restore blocked: %v", err)
+		} else {
+			log.Printf("learning experiences restored: %v", learningMachine.Snapshot().Restored)
+		}
+		restoreCancel()
+	}
 	e, err := orchestrator.New(n, c, g)
 	if err != nil {
+		log.Fatal(err)
+	}
+	if err := orchestrator.RegisterLearningOperations(e, learningMachine, n); err != nil {
 		log.Fatal(err)
 	}
 	if err := orchestrator.RegisterSuperGPUOperations(e); err != nil {
