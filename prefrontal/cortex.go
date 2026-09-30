@@ -106,7 +106,7 @@ func candidateCapability(v Candidate) string {
 	if v.Context == nil {
 		return ""
 	}
-	value, ok := v.Context["capability"].(string)
+	value, _ := v.Context["capability"].(string)
 	return strings.TrimSpace(value)
 }
 func (c *Cortex) learnedCapabilityRewardLocked(capability string) float64 {
