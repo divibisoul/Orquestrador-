@@ -211,6 +211,20 @@ func main() {
 		if err := requireAppBearer(r); err != nil { writeJSON(w, http.StatusUnauthorized, map[string]string{"error": err.Error()}); return }
 		writeJSON(w, http.StatusOK, map[string]any{"count": len(hortaCore.Capabilities()), "modules": hortaCore.Capabilities()})
 	})
+	mux.HandleFunc("/v1/aeternum/module", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost { writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "POST required"}); return }
+		if err := requireAppBearer(r); err != nil { writeJSON(w, http.StatusUnauthorized, map[string]string{"error": err.Error()}); return }
+		var req struct { ModuleID string `json:"module_id"`; Payload []float64 `json:"payload"`; Metadata map[string]string `json:"metadata"` }
+		if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 1<<20)).Decode(&req); err != nil { writeJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()}); return }
+		result, err := hortaCore.Execute(r.Context(), req.ModuleID, req.Payload, req.Metadata)
+		if err != nil {
+			if strings.HasPrefix(err.Error(), "AETERNUM_BLOCKED_INFRASTRUCTURE:") || strings.HasPrefix(err.Error(), "AETERNUM_ADAPTER_REQUIRED:") || strings.HasPrefix(err.Error(), "AETERNUM_PEER_REQUIRED:") {
+				writeJSON(w, http.StatusConflict, map[string]any{"status": "BLOCKED", "error": err.Error()}); return
+			}
+			writeJSON(w, http.StatusBadRequest, map[string]any{"status": "ERROR", "error": err.Error()}); return
+		}
+		writeJSON(w, http.StatusOK, result)
+	})
 	mux.Handle("/api/soul-mesh", mesh.NewEnhancedFederatedHTTPGateway(e))
 	mux.HandleFunc("/execute", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
