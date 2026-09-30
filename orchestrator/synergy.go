@@ -14,7 +14,8 @@ type SynergyNode struct {
 	Target       string   `json:"target"`
 	Plane        string   `json:"plane"`
 	Role         string   `json:"role"`
-	Capabilities []string `json:"capabilities,omitempty"`
+	Capabilities          []string `json:"capabilities,omitempty"`
+	RequiredPayloadFields []string `json:"required_payload_fields,omitempty"`
 }
 
 type SynergyEdge struct {
@@ -39,13 +40,13 @@ type SynergySequence struct {
 // SARA is G0/system control and is therefore represented as a cross-plane node.
 func FavoriteSynergySequence() SynergySequence {
 	nodes := []SynergyNode{
-		{Target: "N01", Plane: "soul-mesh", Role: "reference-gateway-and-context", Capabilities: []string{"memory.semantic.vector.recall"}},
-		{Target: "N05", Plane: "soul-mesh", Role: "dispatch-inference-execution", Capabilities: []string{"inference.analyze"}},
-		{Target: "SARA", Plane: "g0-regenerative", Role: "audit-regeneration-governance", Capabilities: []string{"sara.cycle@1.0.0"}},
-		{Target: "N02", Plane: "soul-mesh", Role: "conversation-generation-cognition", Capabilities: []string{"ai.generate"}},
-		{Target: "N03", Plane: "soul-mesh", Role: "audio-speech-multimodal-perception", Capabilities: []string{"audio.summarize"}},
+		{Target: "N01", Plane: "soul-mesh", Role: "reference-gateway-and-context", Capabilities: []string{"memory.semantic.vector.recall"}, RequiredPayloadFields: []string{"text"}},
+		{Target: "N05", Plane: "soul-mesh", Role: "dispatch-inference-execution", Capabilities: []string{"inference.analyze"}, RequiredPayloadFields: []string{"prompt"}},
+		{Target: "SARA", Plane: "g0-regenerative", Role: "audit-regeneration-governance", Capabilities: []string{"sara.cycle@1.0.0"}, RequiredPayloadFields: []string{"input"}},
+		{Target: "N02", Plane: "soul-mesh", Role: "conversation-generation-cognition", Capabilities: []string{"ai.generate"}, RequiredPayloadFields: []string{"text"}},
+		{Target: "N03", Plane: "soul-mesh", Role: "audio-speech-multimodal-perception", Capabilities: []string{"audio.summarize"}, RequiredPayloadFields: []string{"audioBase64", "mimeType"}},
 		{Target: "N06", Plane: "soul-mesh", Role: "cognition-synthesis-audit", Capabilities: []string{"support.context"}},
-		{Target: "N04", Plane: "soul-mesh", Role: "tools-documents-artifacts", Capabilities: []string{"tool.run"}},
+		{Target: "N04", Plane: "soul-mesh", Role: "tools-documents-artifacts", Capabilities: []string{"tool.run"}, RequiredPayloadFields: []string{"tool"}},
 		{Target: "N07", Plane: "soul-mesh", Role: "orchestration-neural-compute"},
 	}
 	edges := make([]SynergyEdge, 0, len(nodes)-1)
@@ -80,6 +81,23 @@ func FavoriteSynergySequence() SynergySequence {
 		},
 		Status: "STRUCTURALLY_DEFINED",
 	}
+}
+
+func validateSynergyPayload(node SynergyNode, payload map[string]any) error {
+	for _, field := range node.RequiredPayloadFields {
+		name := strings.TrimSpace(field)
+		if name == "" {
+			continue
+		}
+		value, ok := payload[name]
+		if !ok || value == nil {
+			return fmt.Errorf("synergy payload missing required field %s for %s", name, node.Target)
+		}
+		if textValue, ok := value.(string); ok && strings.TrimSpace(textValue) == "" {
+			return fmt.Errorf("synergy payload field %s is empty for %s", name, node.Target)
+		}
+	}
+	return nil
 }
 
 func ValidateSynergySequence(sequence SynergySequence) error {
@@ -186,6 +204,10 @@ func ExecuteSynergyRoute(ctx context.Context, sequence SynergySequence, invoker 
 		current["synergy_stage"] = index
 		current["synergy_target"] = target
 		current["previous_output"] = current["last_output"]
+		if err := validateSynergyPayload(node, current); err != nil {
+			trace = append(trace, SynergyTraceStep{Target: target, Capability: capability, CorrelationID: correlation, Status: "blocked", StartedAt: start, DurationMs: time.Since(start).Milliseconds(), Error: err.Error()})
+			return SynergyExecution{Sequence: sequence, CorrelationID: correlation, Trace: trace, FinalTarget: target, Status: "blocked"}, err
+		}
 
 		output, err := invoker.Invoke(ctx, target, capability, current, correlation)
 		step := SynergyTraceStep{
