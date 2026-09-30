@@ -129,6 +129,12 @@ func (n *Network) Configure(config Config) error {
 	}
 	n.mu.Lock()
 	defer n.mu.Unlock()
+	if n.config.Optimizer != "" && n.config.Optimizer != config.Optimizer {
+		n.adamM = make([]float64, n.size)
+		n.adamV = make([]float64, n.size)
+		n.edgeM = make(map[string]float64)
+		n.edgeV = make(map[string]float64)
+	}
 	config.Layers = append([]Layer(nil), config.Layers...)
 	n.config = config
 	n.cache = make(map[string][]float64)
@@ -629,17 +635,42 @@ func (n *Network) Attention(query, keys, values []float64) ([]float64, error) {
 	n.mu.RLock()
 	heads := n.config.Heads
 	n.mu.RUnlock()
+	if heads > len(query) {
+		heads = len(query)
+	}
+	headWidth := (len(query) + heads - 1) / heads
 	scores := make([]float64, len(keys))
 	maxScore := -math.MaxFloat64
-	scale := math.Sqrt(float64(len(query)))
-	for i, k := range keys {
-		q := query[i%len(query)]
-		if heads > 1 {
-			q *= 1 + float64(i%heads)/float64(heads)
+
+	// The API exposes scalar keys/values, so this is a multi-head scalar-key
+	// attention/reweighting operation rather than Transformer sequence attention.
+	for i, key := range keys {
+		score := 0.0
+		usedHeads := 0
+		for head := 0; head < heads; head++ {
+			start := head * headWidth
+			if start >= len(query) {
+				break
+			}
+			end := start + headWidth
+			if end > len(query) {
+				end = len(query)
+			}
+			meanQ := 0.0
+			for _, q := range query[start:end] {
+				meanQ += q
+			}
+			meanQ /= float64(end - start)
+			d := math.Sqrt(float64(end - start))
+			score += (meanQ * key) / d
+			usedHeads++
 		}
-		scores[i] = q * k / scale
-		if scores[i] > maxScore {
-			maxScore = scores[i]
+		if usedHeads > 0 {
+			score /= float64(usedHeads)
+		}
+		scores[i] = score
+		if score > maxScore {
+			maxScore = score
 		}
 	}
 	sum := 0.0
@@ -651,8 +682,8 @@ func (n *Network) Attention(query, keys, values []float64) ([]float64, error) {
 		return nil, errors.New("attention normalization failed")
 	}
 	out := make([]float64, len(values))
-	for i, v := range values {
-		out[i] = v * scores[i] / sum
+	for i, value := range values {
+		out[i] = value * (scores[i] / sum)
 	}
 	return out, nil
 }
