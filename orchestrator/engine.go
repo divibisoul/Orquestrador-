@@ -150,6 +150,9 @@ func New(n *neural.Network, c *prefrontal.Cortex, g *supergpu.Runtime) (*Engine,
 	if err := e.registerBuiltins(); err != nil {
 		return nil, err
 	}
+	if err := e.SetNeuralParametersOperation(); err != nil {
+		return nil, err
+	}
 	return e, nil
 }
 
