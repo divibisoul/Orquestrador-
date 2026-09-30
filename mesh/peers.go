@@ -186,6 +186,13 @@ func (p *PeerClient) CallBest(ctx context.Context, capability string, payload ma
 	return nil, "", fmt.Errorf("no healthy peer exposes executable capability: %s", capability)
 }
 
+// SupportsExecutableCapability verifies that a discovery response explicitly
+// exposes the requested capability as executable. It is exported so composition
+// layers can fail closed without duplicating discovery semantics.
+func SupportsExecutableCapability(description map[string]any, capability string) bool {
+	return supportsExecutableCapability(description, capability)
+}
+
 func supportsExecutableCapability(description map[string]any, capability string) bool {
 	capability = strings.TrimSpace(capability)
 	if capability == "" || description == nil {
