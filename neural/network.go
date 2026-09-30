@@ -456,7 +456,7 @@ func (n *Network) Parameters() map[string]any {
 		}
 	}
 	edges := make([]map[string]any, 0)
-	for from, list := range n.edges {
+	for _, list := range n.edges {
 		for _, edge := range list {
 			edges = append(edges, map[string]any{
 				"from":   edge.From,
