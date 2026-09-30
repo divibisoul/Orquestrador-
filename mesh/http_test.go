@@ -7,6 +7,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"github.com/divibisoul/Orquestrador-/learning"
 	"github.com/divibisoul/Orquestrador-/neural"
 	"github.com/divibisoul/Orquestrador-/orchestrator"
 	"github.com/divibisoul/Orquestrador-/prefrontal"
@@ -50,6 +51,13 @@ func newTestGateway(t *testing.T) *HTTPGateway {
 	g.Discover()
 	e, err := orchestrator.New(n, c, g)
 	if err != nil {
+		t.Fatal(err)
+	}
+	machine, err := learning.New(n, c, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := e.SetLearningMachine(machine); err != nil {
 		t.Fatal(err)
 	}
 	return NewHTTPGateway(e)
@@ -202,5 +210,25 @@ func TestHTTPGatewayHonorsContextCancellation(t *testing.T) {
 	h.ServeHTTP(rec, req)
 	if rec.Code == http.StatusOK {
 		t.Fatal("cancelled request must not be reported as a successful request")
+	}
+}
+
+
+func TestHTTPGatewayFeedsLearningMachine(t *testing.T) {
+	h := newTestGateway(t)
+	wire := canonicalRequest("request", "learning.feedback", "trace-learning-feedback", []float64{0.8, 0.9})
+	wire["payload"] = map[string]any{
+		"values":     []float64{0.8, 0.9},
+		"target":     "N07",
+		"capability": "neural.forward",
+		"outcome":    "success",
+		"provenance": "mesh-observed",
+	}
+	got, code := postWire(t, h, wire)
+	if code != http.StatusOK || got.CorrelationID != "trace-learning-feedback" {
+		t.Fatalf("unexpected learning feedback response: code=%d envelope=%+v", code, got)
+	}
+	if got.Payload["status"] != "ok" || got.Payload["error"] != nil {
+		t.Fatalf("learning feedback failed: %#v", got.Payload)
 	}
 }
