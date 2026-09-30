@@ -8,15 +8,8 @@ import (
 	"time"
 )
 
-type workingMemoryEntry struct {
-	Candidate Candidate
-	UpdatedAt time.Time
-}
-
-type TaskFrame struct {
-	TaskID      string
-	ActivatedAt time.Time
-}
+// workingMemoryEntry and TaskFrame are defined in cortex.go as the canonical
+// shared runtime types. This file preserves the behavior built on them.
 
 type OutcomeObservation struct {
 	DecisionID string
