@@ -28,8 +28,14 @@ func TestMatrixPreservesAllEightFunctionalMembersAndUnseededPairs(t *testing.T) 
             t.Fatalf("unexpected status %q", pair.Status)
         }
     }
-    if seeded != len(ledger.PrimordialEssence.CompositionSeeds) {
-        t.Fatalf("expected one matrix entry for each binary seed: seeds=%d matrix-seeded=%d", len(ledger.PrimordialEssence.CompositionSeeds), seeded)
+    binarySeeds := 0
+    for _, seed := range ledger.PrimordialEssence.CompositionSeeds {
+        if len(seed.Participants) == 2 {
+            binarySeeds++
+        }
+    }
+    if seeded != binarySeeds {
+        t.Fatalf("expected one matrix entry for each binary seed: binary-seeds=%d matrix-seeded=%d", binarySeeds, seeded)
     }
     if unseeded == 0 { t.Fatal("expected explicit unseeded pairs to remain visible") }
 }
