@@ -252,6 +252,9 @@ func (m *Machine) Learn(ctx context.Context, exp Experience) error {
 		return err
 	}
 	m.updateRoute(exp)
+	if _, err := m.cortex.ObserveLearningOutcome(exp.ID, exp.Capability, exp.Outcome, exp.Reward, exp.Confidence); err != nil {
+		return err
+	}
 	m.experiences.Add(1)
 	m.supervised.Add(1)
 	return m.persist(ctx, exp)
@@ -275,6 +278,9 @@ func (m *Machine) Feedback(ctx context.Context, exp Experience) error {
 	default:
 	}
 	m.updateRoute(exp)
+	if _, err := m.cortex.ObserveLearningOutcome(exp.ID, exp.Capability, exp.Outcome, exp.Reward, exp.Confidence); err != nil {
+		return err
+	}
 	m.experiences.Add(1)
 	m.feedback.Add(1)
 	return m.persist(ctx, exp)
