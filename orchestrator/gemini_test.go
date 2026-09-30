@@ -66,3 +66,21 @@ func TestGeminiFloatSliceRejectsNonFiniteValues(t *testing.T) {
 		t.Fatalf("expected valid numeric vector, values=%v err=%v", values, err)
 	}
 }
+
+
+func TestGeminiTargetsCanonicalProviderOwners(t *testing.T) {
+	cases := map[string]string{
+		geminiText:             "N02",
+		geminiMultimodal:       "N02",
+		geminiGoogleSearch:     "N02",
+		geminiCodeExecution:    "N02",
+		geminiAudioTranscribe:  "N03",
+		geminiAudioAnalyze:     "N03",
+		geminiSpeechSynthesize: "N03",
+	}
+	for capability, want := range cases {
+		if got := geminiTarget(capability); got != want {
+			t.Fatalf("capability %q target=%q want=%q", capability, got, want)
+		}
+	}
+}
