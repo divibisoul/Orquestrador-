@@ -147,6 +147,50 @@ func canonicalN01Bytes(w canonicalWireEnvelope, nonce string) ([]byte, error) {
 	}{Protocol: w.Protocol, ContractVersion: w.ContractVersion, ID: canonicalID(w), CorrelationID: w.CorrelationID, Source: w.Source, Target: w.Target, Kind: canonicalKind(w), Capability: canonicalCapability(w), Payload: w.Payload, Timestamp: w.Timestamp, Transport: transport, Meta: w.Meta, Nonce: nonce}
 	return json.Marshal(canonical)
 }
+
+func canonicalN01BytesV2(w canonicalWireEnvelope, nonce string) ([]byte, error) {
+	var transport any
+	if w.Meta != nil {
+		transport = w.Meta["transport"]
+	}
+	var typ any
+	if strings.TrimSpace(w.Type) != "" {
+		typ = w.Type
+	}
+	var operation any
+	if strings.TrimSpace(w.Operation) != "" {
+		operation = w.Operation
+	}
+	var metadata any
+	if len(w.Metadata) > 0 {
+		metadata = w.Metadata
+	}
+	canonical := struct {
+		Protocol        string         `json:"protocol"`
+		ContractVersion string         `json:"contractVersion"`
+		ID              string         `json:"id"`
+		MessageID       string         `json:"messageId"`
+		CorrelationID   string         `json:"correlationId"`
+		Source          string         `json:"source"`
+		Target          string         `json:"target"`
+		Kind            string         `json:"kind"`
+		Type            any            `json:"type"`
+		Capability      string         `json:"capability"`
+		Operation       any            `json:"operation"`
+		Payload         map[string]any `json:"payload"`
+		Metadata        any            `json:"metadata"`
+		Timestamp       int64          `json:"timestamp"`
+		Transport       any            `json:"transport"`
+		Meta            map[string]any `json:"meta"`
+		Nonce           string         `json:"nonce"`
+	}{
+		Protocol: w.Protocol, ContractVersion: w.ContractVersion, ID: canonicalID(w), MessageID: canonicalID(w),
+		CorrelationID: w.CorrelationID, Source: w.Source, Target: w.Target, Kind: canonicalKind(w),
+		Type: typ, Capability: canonicalCapability(w), Operation: operation, Payload: w.Payload,
+		Metadata: metadata, Timestamp: w.Timestamp, Transport: transport, Meta: w.Meta, Nonce: nonce,
+	}
+	return json.Marshal(canonical)
+}
 func acceptHeaderNonce(source, nonce string, now time.Time) bool {
 	key := strings.TrimSpace(source) + "\x00" + strings.TrimSpace(nonce)
 	if strings.TrimSpace(nonce) == "" || strings.TrimSpace(source) == "" {
@@ -175,7 +219,17 @@ func verifyN01HeaderHMAC(w canonicalWireEnvelope, r *http.Request, secret string
 	if w.Nonce != "" && w.Nonce != nonce {
 		return errors.New("Mesh nonce mismatch")
 	}
-	unsigned, err := canonicalN01Bytes(w, nonce)
+	version := strings.TrimSpace(r.Header.Get("x-soul-mesh-signature-version"))
+	var unsigned []byte
+	var err error
+	switch version {
+	case "", "1":
+		unsigned, err = canonicalN01Bytes(w, nonce)
+	case "2":
+		unsigned, err = canonicalN01BytesV2(w, nonce)
+	default:
+		return errors.New("unsupported Mesh signature version")
+	}
 	if err != nil {
 		return err
 	}
