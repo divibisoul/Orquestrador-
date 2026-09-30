@@ -109,11 +109,11 @@ func executeGemini(
 		message.Metadata["transcript"],
 	)
 
-	ctx := context.Background()
-	if !message.Deadline.IsZero() {
-		var cancel context.CancelFunc
-		ctx, cancel = context.WithDeadline(ctx, message.Deadline)
-		defer cancel()
+	if ctx == nil {
+		return protocol.Result{TraceID: message.TraceID, CorrelationID: message.CorrelationID, Source: "N07.gemini", Target: message.Source, Status: "rejected", Error: "context is nil"}, errors.New("context is nil")
+	}
+	if strings.TrimSpace(message.CorrelationID) == "" {
+		return protocol.Result{TraceID: message.TraceID, CorrelationID: message.CorrelationID, Source: "N07.gemini", Target: message.Source, Status: "rejected", Error: "correlation id is required"}, errors.New("correlation id is required")
 	}
 
 	neuralInput, err := resolveGeminiNeuralInput(ctx, peer, message, semanticText)
