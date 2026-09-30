@@ -25,6 +25,15 @@ type OutcomeObservation struct {
 	At         time.Time
 }
 
+type LearningObservation struct {
+	ExperienceID string
+	Capability   string
+	Outcome      string
+	Reward       float64
+	Confidence   float64
+	At           time.Time
+}
+
 func cloneCandidate(candidate Candidate) Candidate {
 	copyCandidate := candidate
 	if candidate.Context != nil {
@@ -113,6 +122,46 @@ func (c *Cortex) CurrentTask() string {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 	return c.currentTask
+}
+
+func (c *Cortex) ObserveLearningOutcome(experienceID, capability, outcome string, reward, confidence float64) (LearningObservation, error) {
+	if c == nil {
+		return LearningObservation{}, errors.New("cortex unavailable")
+	}
+	experienceID = strings.TrimSpace(experienceID)
+	capability = strings.TrimSpace(capability)
+	outcome = strings.TrimSpace(outcome)
+	if experienceID == "" || capability == "" || outcome == "" {
+		return LearningObservation{}, errors.New("experience id, capability and outcome are required")
+	}
+	if math.IsNaN(reward) || math.IsInf(reward, 0) || reward < -1 || reward > 1 {
+		return LearningObservation{}, errors.New("learning reward must be finite and within [-1,1]")
+	}
+	if math.IsNaN(confidence) || math.IsInf(confidence, 0) || confidence < 0 || confidence > 1 {
+		return LearningObservation{}, errors.New("learning confidence must be finite and within [0,1]")
+	}
+	observation := LearningObservation{ExperienceID: experienceID, Capability: capability, Outcome: outcome, Reward: reward, Confidence: confidence, At: time.Now().UTC()}
+	c.mu.Lock()
+	c.learningObservations = append(c.learningObservations, observation)
+	if len(c.learningObservations) > c.capacity {
+		c.learningObservations = c.learningObservations[len(c.learningObservations)-c.capacity:]
+	}
+	c.mu.Unlock()
+	return observation, nil
+}
+
+func (c *Cortex) LearningObservations(limit int) []LearningObservation {
+	if c == nil {
+		return nil
+	}
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	if limit <= 0 || limit > len(c.learningObservations) {
+		limit = len(c.learningObservations)
+	}
+	out := make([]LearningObservation, limit)
+	copy(out, c.learningObservations[len(c.learningObservations)-limit:])
+	return out
 }
 
 func (c *Cortex) ObserveOutcome(decisionID, outcome string, value float64) (OutcomeObservation, error) {
