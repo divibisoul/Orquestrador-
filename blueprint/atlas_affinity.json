@@ -1,0 +1,427 @@
+{
+  "system": "SOUL",
+  "blueprint": "ATLAS_OMEGA_FLUX_8X",
+  "blueprint_version": "1.0",
+  "mapping_policy": "functional-affinity",
+  "non_destructive": true,
+  "evidence_rule": "source-code presence never implies runtime verification",
+  "entries": [
+    {
+      "id": "perception.multimodal",
+      "family": "N1_PERCEPTION",
+      "description": "Multimodal ingestion, voice, audio analysis, input intent and context normalization.",
+      "affinities": [
+        {
+          "owner": "N03",
+          "capability": "audio.transcribe",
+          "path": "src/mesh/N03AudioCapabilityRegistry.ts",
+          "status": "IMPLEMENTED"
+        },
+        {
+          "owner": "N03",
+          "capability": "speech.synthesize",
+          "path": "src/mesh/N03AudioCapabilityRegistry.ts",
+          "status": "IMPLEMENTED"
+        },
+        {
+          "owner": "N03",
+          "capability": "audio.analyze.emotion",
+          "path": "src/mesh/N03AudioCapabilityRegistry.ts",
+          "status": "IMPLEMENTED"
+        },
+        {
+          "owner": "N02",
+          "capability": "ai.multimodal",
+          "path": "src/soul-mesh/SoulMeshCapabilities.ts",
+          "status": "REGISTERED"
+        },
+        {
+          "owner": "N01",
+          "capability": "intent.analysis",
+          "path": "src/core/cognitive/IntentAnalyzer.ts",
+          "status": "LOCAL_EXECUTABLE"
+        },
+        {
+          "owner": "N02",
+          "capability": "gemini.multimodal.generate",
+          "path": "src/soul-mesh/N02AIProviderBridge.ts",
+          "status": "IMPLEMENTED"
+        }
+      ]
+    },
+    {
+      "id": "analysis.reasoning",
+      "family": "N2_ANALYSIS",
+      "description": "Logical analysis, inference, classification, neural processing and decision preparation.",
+      "affinities": [
+        {
+          "owner": "N05",
+          "capability": "inference.reason",
+          "path": "src/mesh/N05Capabilities.ts",
+          "status": "EXECUTABLE"
+        },
+        {
+          "owner": "N05",
+          "capability": "inference.analyze",
+          "path": "src/mesh/N05Capabilities.ts",
+          "status": "EXECUTABLE"
+        },
+        {
+          "owner": "N05",
+          "capability": "inference.classify",
+          "path": "src/mesh/N05Capabilities.ts",
+          "status": "EXECUTABLE"
+        },
+        {
+          "owner": "N02",
+          "capability": "cognitive-processing",
+          "path": "src/soul-mesh/SoulMeshCapabilities.ts",
+          "status": "REGISTERED"
+        },
+        {
+          "owner": "N02",
+          "capability": "neural.bnc_v2",
+          "path": "src/soul-mesh/SoulMeshCapabilities.ts",
+          "status": "REGISTERED"
+        },
+        {
+          "owner": "N07",
+          "capability": "neural.forward",
+          "path": "orchestrator/engine.go",
+          "status": "BUILTIN_RUNTIME"
+        },
+        {
+          "owner": "N07",
+          "capability": "cognitive.execute",
+          "path": "orchestrator/engine.go",
+          "status": "BUILTIN_RUNTIME"
+        },
+        {
+          "owner": "N01",
+          "capability": "alpha.hemisphere",
+          "path": "src/core/cognitive/AlphaHemisphere.ts",
+          "status": "LOCAL_EXECUTABLE"
+        },
+        {
+          "owner": "N02",
+          "capability": "gemini.text.generate",
+          "path": "src/soul-mesh/N02AIProviderBridge.ts",
+          "status": "IMPLEMENTED"
+        },
+        {
+          "owner": "N02",
+          "capability": "gemini.multimodal.generate",
+          "path": "src/soul-mesh/N02AIProviderBridge.ts",
+          "status": "IMPLEMENTED"
+        },
+        {
+          "owner": "N02",
+          "capability": "gemini.audio.transcribe",
+          "path": "src/soul-mesh/N02AIProviderBridge.ts",
+          "status": "IMPLEMENTED"
+        },
+        {
+          "owner": "N02",
+          "capability": "gemini.audio.analyze",
+          "path": "src/soul-mesh/N02AIProviderBridge.ts",
+          "status": "IMPLEMENTED"
+        },
+        {
+          "owner": "N02",
+          "capability": "gemini.speech.synthesize",
+          "path": "src/soul-mesh/N02AIProviderBridge.ts",
+          "status": "IMPLEMENTED"
+        }
+      ]
+    },
+    {
+      "id": "creativity.generative",
+      "family": "N3_CREATIVITY",
+      "description": "Divergent generation, metaphor, analogy, future scenarios and creative transfer.",
+      "affinities": [
+        {
+          "owner": "N01",
+          "capability": "beta.hemisphere",
+          "path": "src/core/cognitive/BetaHemisphere.ts",
+          "status": "LOCAL_EXECUTABLE"
+        },
+        {
+          "owner": "N01",
+          "capability": "prompt.crafting",
+          "path": "src/core/PromptCrafter.ts",
+          "status": "LOCAL_EXECUTABLE"
+        },
+        {
+          "owner": "N04",
+          "capability": "artifact-processing",
+          "path": "lib/soul-core/Nucleus04Capabilities.ts",
+          "status": "DECLARED_EXECUTABLE_BOUNDARY"
+        },
+        {
+          "owner": "N04",
+          "capability": "ai-pilot",
+          "path": "lib/soul-core/Nucleus04Capabilities.ts",
+          "status": "CONNECTED"
+        },
+        {
+          "owner": "N02",
+          "capability": "gemini.multimodal.generate",
+          "path": "src/soul-mesh/N02AIProviderBridge.ts",
+          "status": "IMPLEMENTED"
+        },
+        {
+          "owner": "N02",
+          "capability": "gemini.text.generate",
+          "path": "src/soul-mesh/N02AIProviderBridge.ts",
+          "status": "IMPLEMENTED"
+        }
+      ]
+    },
+    {
+      "id": "ethics.contextual",
+      "family": "N4_ETHICS",
+      "description": "Ethical filtering, contextual validation, governance, provenance and mitigation.",
+      "affinities": [
+        {
+          "owner": "SARA",
+          "capability": "sara.audit",
+          "path": "src/sara/core/etr.py",
+          "status": "REAL"
+        },
+        {
+          "owner": "SARA",
+          "capability": "sara.cycle",
+          "path": "src/sara/regeneration/regenerative_loop.py",
+          "status": "REAL"
+        },
+        {
+          "owner": "SARA",
+          "capability": "etr.multi_framework",
+          "path": "src/sara/core/etr_extended.py",
+          "status": "REAL"
+        },
+        {
+          "owner": "SARA",
+          "capability": "ethical_filter_chain",
+          "path": "src/sara/security/ethical_filter_chain.py",
+          "status": "REAL"
+        },
+        {
+          "owner": "N01",
+          "capability": "gamma.contextualization",
+          "path": "src/core/cognitive/GammaModule.ts",
+          "status": "LOCAL_EXECUTABLE"
+        },
+        {
+          "owner": "N01",
+          "capability": "immutable.ethical.core",
+          "path": "src/core/agi/ImmutableEthicalCore.ts",
+          "status": "LOCAL_EXECUTABLE"
+        }
+      ]
+    },
+    {
+      "id": "orchestration.routing",
+      "family": "N5_ORCHESTRATION",
+      "description": "Dynamic routing, scheduling, resilience, execution, batching and resource selection.",
+      "affinities": [
+        {
+          "owner": "N07",
+          "capability": "orchestration",
+          "path": "soul-capability-authority.json",
+          "status": "CANONICAL_OWNER"
+        },
+        {
+          "owner": "N07",
+          "capability": "octacore.submit",
+          "path": "octacore/processor.go",
+          "status": "BUILTIN_RUNTIME"
+        },
+        {
+          "owner": "N07",
+          "capability": "octacore.batch",
+          "path": "octacore/processor.go",
+          "status": "BUILTIN_RUNTIME"
+        },
+        {
+          "owner": "N07",
+          "capability": "supergpu",
+          "path": "soul-capability-authority.json",
+          "status": "CANONICAL_OWNER"
+        },
+        {
+          "owner": "N05",
+          "capability": "adaptive.transport.routing",
+          "path": "src/mesh/N05AdaptiveTransportRouter.ts",
+          "status": "LOCAL_EXECUTABLE"
+        },
+        {
+          "owner": "N05",
+          "capability": "inference.cache",
+          "path": "src/mesh/N05InferenceCache.ts",
+          "status": "LOCAL_EXECUTABLE"
+        },
+        {
+          "owner": "N05",
+          "capability": "inference.pool",
+          "path": "src/mesh/N05InferencePool.ts",
+          "status": "LOCAL_EXECUTABLE"
+        },
+        {
+          "owner": "N06",
+          "capability": "cross.nucleus.synergy",
+          "path": "lib/soul-core/N06SynergyOrchestrator.ts",
+          "status": "LOCAL_EXECUTABLE"
+        }
+      ]
+    },
+    {
+      "id": "learning.meta",
+      "family": "N6_LEARNING",
+      "description": "Learning primitives, Bayesian uncertainty and cross-paradigm composition.",
+      "affinities": [
+        {
+          "owner": "N07",
+          "capability": "neural.learn",
+          "path": "orchestrator/engine.go",
+          "status": "BUILTIN_RUNTIME"
+        },
+        {
+          "owner": "N07",
+          "capability": "neural.attention",
+          "path": "neural/network.go",
+          "status": "LOCAL_EXECUTABLE"
+        },
+        {
+          "owner": "N07",
+          "capability": "neural.backprop",
+          "path": "neural/network.go",
+          "status": "LOCAL_EXECUTABLE"
+        },
+        {
+          "owner": "SARA",
+          "capability": "bayesian.meta",
+          "path": "src/sara/meta/bayesian_uncertainty.py",
+          "status": "REAL"
+        },
+        {
+          "owner": "N06",
+          "capability": "capability.composition",
+          "path": "lib/soul-mesh/N06CapabilityCombos.ts",
+          "status": "LOCAL_EXECUTABLE"
+        }
+      ],
+      "coverage_note": "The inspected repository evidence does not prove all 20 blueprint paradigms as independently implemented production runtimes. Missing paradigms remain explicit instead of being represented by registry-only placeholders."
+    },
+    {
+      "id": "evolution.self_improvement",
+      "family": "N7_EVOLUTION",
+      "description": "Regeneration, rollback, sandboxed evolution, self-model and architectural adaptation.",
+      "affinities": [
+        {
+          "owner": "SARA",
+          "capability": "sara.regenerate",
+          "path": "src/sara/regeneration/regenerative_loop.py",
+          "status": "REAL"
+        },
+        {
+          "owner": "SARA",
+          "capability": "eru.recovery",
+          "path": "src/sara/meta/eru_engine.py",
+          "status": "REAL"
+        },
+        {
+          "owner": "SARA",
+          "capability": "safe.sandbox",
+          "path": "src/sara/security/safe_sandbox.py",
+          "status": "PARTIAL_EXTERNAL_CONDITIONAL"
+        },
+        {
+          "owner": "SARA",
+          "capability": "emergency.rollback",
+          "path": "src/sara/security/emergency_rollback.py",
+          "status": "REAL"
+        },
+        {
+          "owner": "N01",
+          "capability": "safe.self.improvement",
+          "path": "src/core/agi/SafeSelfImprovementCore.ts",
+          "status": "LOCAL_EXECUTABLE"
+        },
+        {
+          "owner": "N01",
+          "capability": "darwin.machine",
+          "path": "src/core/agi/DarwinMachine.ts",
+          "status": "LOCAL_EXECUTABLE"
+        },
+        {
+          "owner": "N01",
+          "capability": "self.healing",
+          "path": "src/core/agi/SelfHealingArchitecture.ts",
+          "status": "LOCAL_EXECUTABLE"
+        }
+      ]
+    },
+    {
+      "id": "memory.unified",
+      "family": "N8_MEMORY_OBSERVABILITY",
+      "description": "Working, temporal, vector, provenance, cache and decision-trace memory plus observability.",
+      "affinities": [
+        {
+          "owner": "SARA",
+          "capability": "temporal.vector.db",
+          "path": "src/sara/memory/temporal_vector_db.py",
+          "status": "REAL"
+        },
+        {
+          "owner": "SARA",
+          "capability": "regenerative.memory",
+          "path": "src/sara/memory/regenerative_memory.py",
+          "status": "REAL"
+        },
+        {
+          "owner": "SARA",
+          "capability": "decision.trace",
+          "path": "src/sara/monitoring/decision_trace.py",
+          "status": "REAL_LOCAL_IPFS_CONDITIONAL"
+        },
+        {
+          "owner": "N01",
+          "capability": "supabase.vector.memory",
+          "path": "src/soul-fusion/SupabaseVectorMemory.ts",
+          "status": "LOCAL_EXECUTABLE"
+        },
+        {
+          "owner": "N05",
+          "capability": "inference.cache",
+          "path": "src/mesh/N05InferenceCache.ts",
+          "status": "LOCAL_EXECUTABLE"
+        },
+        {
+          "owner": "N07",
+          "capability": "observability",
+          "path": "observability/telemetry.go",
+          "status": "LOCAL_EXECUTABLE"
+        },
+        {
+          "owner": "N01",
+          "capability": "memory.gemini.embedding",
+          "path": "scripts/SupabaseVectorMemory.ts",
+          "status": "BRANCH_IMPLEMENTED"
+        },
+        {
+          "owner": "N01",
+          "capability": "memory.semantic.vector.recall",
+          "path": "scripts/SupabaseVectorMemory.ts",
+          "status": "BRANCH_IMPLEMENTED"
+        },
+        {
+          "owner": "N01",
+          "capability": "memory.semantic.vector.remember",
+          "path": "scripts/SupabaseVectorMemory.ts",
+          "status": "BRANCH_IMPLEMENTED"
+        }
+      ]
+    }
+  ]
+}
