@@ -199,6 +199,18 @@ func main() {
 	mux.HandleFunc("/metrics", func(w http.ResponseWriter, r *http.Request) { writeMetrics(w, e.Stats()) })
 	mux.HandleFunc("/identity", func(w http.ResponseWriter, r *http.Request) { writeJSON(w, http.StatusOK, orchestrator.N07Identity()) })
 	mux.HandleFunc("/topology", func(w http.ResponseWriter, r *http.Request) { writeJSON(w, http.StatusOK, orchestrator.SOULTopology()) })
+	mux.HandleFunc("/v1/aeternum/health", func(w http.ResponseWriter, r *http.Request) {
+		if err := requireAppBearer(r); err != nil { writeJSON(w, http.StatusUnauthorized, map[string]string{"error": err.Error()}); return }
+		writeJSON(w, http.StatusOK, hortaCore.Health())
+	})
+	mux.HandleFunc("/v1/aeternum/processors", func(w http.ResponseWriter, r *http.Request) {
+		if err := requireAppBearer(r); err != nil { writeJSON(w, http.StatusUnauthorized, map[string]string{"error": err.Error()}); return }
+		writeJSON(w, http.StatusOK, map[string]any{"count": len(hortaCore.Processors()), "processors": hortaCore.Processors()})
+	})
+	mux.HandleFunc("/v1/aeternum/capabilities", func(w http.ResponseWriter, r *http.Request) {
+		if err := requireAppBearer(r); err != nil { writeJSON(w, http.StatusUnauthorized, map[string]string{"error": err.Error()}); return }
+		writeJSON(w, http.StatusOK, map[string]any{"count": len(hortaCore.Capabilities()), "modules": hortaCore.Capabilities()})
+	})
 	mux.Handle("/api/soul-mesh", mesh.NewEnhancedFederatedHTTPGateway(e))
 	mux.HandleFunc("/execute", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
