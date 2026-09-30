@@ -15,7 +15,7 @@ func TestMeshRoutesIntoPrefrontalExecutiveAdmission(t *testing.T) {
 	wire := canonicalRequest("request", "prefrontal.admission", "mesh-pfc-correlation", []float64{1, 2, 3, 4, 5, 6, 7, 8})
 	wire["metadata"] = map[string]string{
 		"candidate_json": `{"ID":"mesh-pfc-task","Cost":0.01,"Risk":0.01,"Urgency":0.5,"Impact":0.8}`,
-		"task_id":        "mesh-pfc-task",
+		"task_id":       "mesh-pfc-task",
 	}
 
 	// Force the test gateway into explicit local-auth bypass; runtime authentication remains fail-closed.
