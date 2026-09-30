@@ -8,8 +8,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/divibisoul/Orquestrador-/backend"
-	"github.com/divibisoul/Orquestrador-/mesh"
 	"github.com/divibisoul/Orquestrador-/prefrontal"
 )
 
@@ -20,11 +18,11 @@ type Executor interface {
 type LocalExecutor func(context.Context, string, map[string]any, string) (map[string]any, string, error)
 
 type MeshExecutor struct {
-	peers *mesh.PeerClient
+	peers MeshPeer
 	local LocalExecutor
 }
 
-func NewMeshExecutor(peers *mesh.PeerClient, local ...LocalExecutor) (*MeshExecutor, error) {
+func NewMeshExecutor(peers MeshPeer, local ...LocalExecutor) (*MeshExecutor, error) {
 	if peers == nil {
 		return nil, errors.New("mesh peer client is required")
 	}
@@ -64,11 +62,11 @@ func isGeminiCapability(capability string) bool {
 
 type Critic struct {
 	cortex *prefrontal.Cortex
-	sara   *backend.SARAProxy
+	sara   PolicyAuditor
 	cfg    Config
 }
 
-func NewCritic(c *prefrontal.Cortex, s *backend.SARAProxy, cfg Config) (*Critic, error) {
+func NewCritic(c *prefrontal.Cortex, s PolicyAuditor, cfg Config) (*Critic, error) {
 	if c == nil {
 		return nil, errors.New("prefrontal cortex is required")
 	}
@@ -108,10 +106,10 @@ type Loop struct {
 	executor Executor
 	critic   *Critic
 	observer func(Observation)
-	store    *backend.SupabaseStore
+	store    RunStore
 }
 
-func New(cfg Config, goals *GoalStore, memory *WorkingMemory, executor Executor, critic *Critic, store *backend.SupabaseStore) (*Loop, error) {
+func New(cfg Config, goals *GoalStore, memory *WorkingMemory, executor Executor, critic *Critic, store RunStore) (*Loop, error) {
 	if !cfg.Enabled {
 		return nil, errors.New("COGNITIVE_LOOP_DISABLED")
 	}
