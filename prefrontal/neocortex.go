@@ -57,6 +57,26 @@ func (n *Neocortex) Evaluate(ctx context.Context, id string, input []float64, ri
 	return candidate, nil
 }
 
+
+func (n *Neocortex) EvaluateSignal(id string, signal []float64, risk, cost, urgency, impact float64, source string) (Candidate, error) {
+	if n == nil || n.cortex == nil {
+		return Candidate{}, errors.New("neocortex unavailable")
+	}
+	if id == "" { return Candidate{}, errors.New("candidate id is required") }
+	if len(signal) == 0 { return Candidate{}, errors.New("neural signal is empty") }
+	utility := 0.0
+	for _, value := range signal {
+		if value < 0 { utility -= value } else { utility += value }
+	}
+	utility /= float64(len(signal))
+	candidate := Candidate{
+		ID:id, Utility:utility, Risk:risk, Cost:cost, Urgency:urgency, Impact:impact, Uncertainty:0,
+		Context:map[string]any{"neural_dimensions":len(signal),"source":source},
+	}
+	if err := n.cortex.ValidateAction(candidate); err != nil { return Candidate{}, err }
+	return candidate,nil
+}
+
 func (n *Neocortex) Commit(candidate Candidate, reason string) (Decision, error) {
 	if n == nil || n.cortex == nil {
 		return Decision{}, errors.New("neocortex unavailable")
