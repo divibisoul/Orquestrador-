@@ -168,7 +168,7 @@ func executeGemini(
 	}
 
 	metadata["provider"] = geminiProvider
-metadata["owner"] = target
+	metadata["owner"] = target
 	metadata["route"] = "N07.prefrontal>" + target
 	metadata["correlation_id"] = message.CorrelationID
 	metadata["prefrontal_decision_id"] = decision.ID
@@ -181,7 +181,7 @@ metadata["owner"] = target
 
 	reportErr := reportGemini(ctx, reporter, GeminiExecutionEvent{
 		Phase: "completed", Capability: capability, Provider: geminiProvider, Model: geminiModelFor(capability),
-		Source: "N07.Orchestrator", Owner: geminiOwner, CorrelationID: message.CorrelationID,
+		Source: "N07.Orchestrator", Owner: target, CorrelationID: message.CorrelationID,
 		InputSize: len(neuralInput), OutputSize: outputSize, At: time.Now().UTC(),
 	})
 	if reportErr != nil {
