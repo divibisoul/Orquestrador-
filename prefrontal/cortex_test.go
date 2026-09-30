@@ -1,6 +1,9 @@
 package prefrontal
 
-import "testing"
+import (
+	"math"
+	"testing"
+)
 
 func TestCortexRuntime(t *testing.T) {
 	c, err := New(0.1, 4)
