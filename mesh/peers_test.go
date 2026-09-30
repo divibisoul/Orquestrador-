@@ -3,6 +3,7 @@ package mesh
 import (
 	"context"
 	"net/http"
+	"net/http/httptest"
 	"os"
 	"testing"
 	"time"
