@@ -2,6 +2,7 @@ package supergpu
 
 import (
 	"context"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
