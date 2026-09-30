@@ -443,3 +443,39 @@ func (n *Network) Health() map[string]any {
 	}
 	return map[string]any{"status": "ready", "size": n.size, "edges": edges, "density": density, "learning_steps": n.stats.LearningSteps, "last_update": n.stats.LastUpdate, "last_gradient": n.stats.LastGradient, "activations": n.stats.Activations, "cache_hits": n.stats.CacheHits, "optimizer": n.config.Optimizer, "heads": n.config.Heads}
 }
+
+
+func (n *Network) Parameters() map[string]any {
+	n.mu.RLock()
+	defer n.mu.RUnlock()
+	layers := make([]map[string]any, len(n.config.Layers))
+	for i, layer := range n.config.Layers {
+		layers[i] = map[string]any{
+			"activation":   layer.Activation,
+			"dropoutRate":  layer.DropoutRate,
+		}
+	}
+	edges := make([]map[string]any, 0)
+	for from, list := range n.edges {
+		for _, edge := range list {
+			edges = append(edges, map[string]any{
+				"from":   edge.From,
+				"to":     edge.To,
+				"weight": edge.Weight,
+				"name":   edge.Name,
+			})
+		}
+	}
+	return map[string]any{
+		"size":         n.size,
+		"learningRate": n.learningRate,
+		"optimizer":    n.config.Optimizer,
+		"regularization": n.config.Regularization,
+		"gradientClip": n.config.GradientClip,
+		"heads":        n.config.Heads,
+		"batchCache":   n.config.BatchCache,
+		"layers":       layers,
+		"edges":        edges,
+		"stats":        n.stats,
+	}
+}
