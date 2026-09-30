@@ -24,9 +24,9 @@ type Match struct {
 	ID         string `json:"id"`
 	UserID     string `json:"user_id"`
 	SessionID  string `json:"session_id"`
-	Summary    string `json:"summary"`
+	Summary    string `json:"resumo"`
 	Tags       []string `json:"tags"`
-	CreatedAt  time.Time `json:"created_at"`
+	CreatedAt  time.Time `json:"criado_em"`
 	Similarity float64 `json:"similarity"`
 }
 
