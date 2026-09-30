@@ -200,7 +200,10 @@ func RegisterAdvancedOperations(e *Engine) error {
 			}
 			valueText := strings.TrimSpace(m.Metadata["value"])
 			var value float64
-			if valueText == "" || fmt.Sscanf(valueText, "%f", &value) != 1 || math.IsNaN(value) || math.IsInf(value, 0) {
+			if valueText == "" {
+				return protocol.Result{}, errors.New("metadata.value must be a finite number")
+			}
+			if parsed, err := fmt.Sscanf(valueText, "%f", &value); err != nil || parsed != 1 || math.IsNaN(value) || math.IsInf(value, 0) {
 				return protocol.Result{}, errors.New("metadata.value must be a finite number")
 			}
 			observation, err := e.cortex.ObserveOutcome(m.Metadata["decision_id"], m.Metadata["outcome"], value)
