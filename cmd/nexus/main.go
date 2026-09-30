@@ -140,6 +140,8 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	peerClient.SetRouteScorer(learningMachine)
+	peerClient.SetRouteOutcomeObserver(learningMachine)
 	hortaCore, err := aeternum.NewHortaCore(e, saraProxy)
 	if err != nil {
 		log.Fatal(err)

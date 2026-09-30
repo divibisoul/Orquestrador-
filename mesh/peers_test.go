@@ -3,6 +3,7 @@ package mesh
 import (
 	"context"
 	"net/http"
+	"fmt"
 	"os"
 	"testing"
 	"time"
@@ -102,5 +103,54 @@ func TestDiscoveryCacheExpires(t *testing.T) {
 	time.Sleep(2 * time.Millisecond)
 	if _, ok := p.discoveryFromCache(protocol.N01); ok {
 		t.Fatal("expected expired discovery cache entry")
+	}
+}
+
+
+type fixedRouteScorer map[string]float64
+
+func (s fixedRouteScorer) Weight(_, target, _ string) float64 { return s[target] }
+
+type recordingRouteObserver struct {
+	outcomes []string
+}
+
+func (o *recordingRouteObserver) ObserveRoute(_ context.Context, _, target, capability, correlation string, success bool) error {
+	o.outcomes = append(o.outcomes, target+":"+capability+":"+correlation+":"+fmt.Sprint(success))
+	return nil
+}
+
+func TestPeerClientOrdersPeersByLearnedRouteWeight(t *testing.T) {
+	p := &PeerClient{
+		peers: map[string]PeerInfo{
+			protocol.N01: {Nucleus: protocol.N01, URL: "http://n01", Healthy: true, Latency: 50 * time.Millisecond},
+			protocol.N02: {Nucleus: protocol.N02, URL: "http://n02", Healthy: false, Latency: 5 * time.Millisecond},
+			protocol.N03: {Nucleus: protocol.N03, URL: "http://n03", Healthy: true, Latency: 10 * time.Millisecond},
+		},
+	}
+	p.SetRouteScorer(fixedRouteScorer{protocol.N01:0.2,protocol.N02:0.9,protocol.N03:0.9})
+	ordered := p.orderedPeers("ai.generate")
+	if ordered[0].Nucleus != protocol.N03 || ordered[1].Nucleus != protocol.N02 || ordered[2].Nucleus != protocol.N01 {
+		t.Fatalf("unexpected learned route order: %+v", ordered)
+	}
+}
+
+func TestPeerClientNeutralizesInvalidLearnedWeight(t *testing.T) {
+	p := &PeerClient{peers: map[string]PeerInfo{
+		protocol.N01:{Nucleus:protocol.N01,URL:"http://n01"},
+		protocol.N02:{Nucleus:protocol.N02,URL:"http://n02"},
+	}}
+	p.SetRouteScorer(fixedRouteScorer{protocol.N01:2,protocol.N02:0.9})
+	ordered := p.orderedPeers("neural.forward")
+	if ordered[0].Nucleus != protocol.N02 { t.Fatalf("invalid learned weight not neutralized: %+v", ordered) }
+}
+
+func TestPeerClientObserveRouteDoesNotRewriteOutcome(t *testing.T) {
+	p := &PeerClient{peers: map[string]PeerInfo{protocol.N01:{Nucleus:protocol.N01,URL:"http://n01"}}}
+	o := &recordingRouteObserver{}
+	p.SetRouteOutcomeObserver(o)
+	p.observeRoute(protocol.N01,"core.health","corr-test",true)
+	if len(o.outcomes) != 1 || o.outcomes[0] != "N01:core.health:corr-test:true" {
+		t.Fatalf("unexpected observed outcome: %#v", o.outcomes)
 	}
 }
