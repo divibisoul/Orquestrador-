@@ -105,7 +105,7 @@ func (c *Cortex) CurrentTask() string {
 	return c.currentTask
 }
 
-func (c *Cortex) ObserveOutcome(decisionID, outcome string, value float64) (OutcomeObservation, error) {
+func (c *Cortex) RecordDecisionOutcome(decisionID, outcome string, value float64) (OutcomeObservation, error) {
 	if c == nil {
 		return OutcomeObservation{}, errors.New("cortex unavailable")
 	}
