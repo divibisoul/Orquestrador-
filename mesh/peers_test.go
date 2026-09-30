@@ -1,9 +1,3 @@
-type fixedRouteScorer map[string]float64
-
-func (s fixedRouteScorer) Weight(_, target, _ string) float64 {
-	return s[target]
-}
-
 package mesh
 
 import (
@@ -15,6 +9,12 @@ import (
 
 	"github.com/divibisoul/Orquestrador-/protocol"
 )
+
+type fixedRouteScorer map[string]float64
+
+func (s fixedRouteScorer) Weight(_, target, _ string) float64 {
+	return s[target]
+}
 
 func TestPeerClientOrdersPeersByLearnedRouteWeight(t *testing.T) {
 	p := &PeerClient{
