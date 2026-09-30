@@ -46,8 +46,7 @@ func TestBlueprintOperationMissingQueryFailsClosed(t *testing.T) {
 	c, _ := prefrontal.New(.1, 4)
 	g := supergpu.New(nil)
 	e, _ := New(n, c, g)
-	processor, err := octacore.NewProcessor(octacore.DefaultConfig(), g, nil, nil)
-	if err != nil { t.Fatal(err) }
+	processor := TestBlueprintProcessor{}
 	if err := RegisterBlueprintOperations(e, processor); err != nil { t.Fatal(err) }
 	msg := protocol.NewMessage("N01", "N07", "command", "blueprint.resolve@1.0.0", nil)
 	if _, err := e.Submit(context.Background(), msg); err == nil {
