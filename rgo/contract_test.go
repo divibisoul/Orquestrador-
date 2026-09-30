@@ -33,16 +33,26 @@ func validEnvelope() Envelope {
 
 func TestEnvelopeValidationAndDual(t *testing.T) {
 	e := validEnvelope()
-	if err := e.Validate(); err != nil { t.Fatal(err) }
-	if e.Dual.Status != DualDerived || e.Dual.Property == "" { t.Fatalf("dual not derived: %#v", e.Dual) }
-	if len(e.Dual.EvidenceRefs) != 1 || e.Dual.EvidenceRefs[0] != "ev-1" { t.Fatalf("dual evidence not bound: %#v", e.Dual.EvidenceRefs) }
+	if err := e.Validate(); err != nil {
+		t.Fatal(err)
+	}
+	if e.Dual.Status != DualDerived || e.Dual.Property == "" {
+		t.Fatalf("dual not derived: %#v", e.Dual)
+	}
+	if len(e.Dual.EvidenceRefs) != 1 || e.Dual.EvidenceRefs[0] != "ev-1" {
+		t.Fatalf("dual evidence not bound: %#v", e.Dual.EvidenceRefs)
+	}
 	h, err := CanonicalHash(e)
-	if err != nil || !strings.HasPrefix(h, "sha256:") { t.Fatalf("hash failure: %v %q", err, h) }
+	if err != nil || !strings.HasPrefix(h, "sha256:") {
+		t.Fatalf("hash failure: %v %q", err, h)
+	}
 }
 
 func TestMissingRequiredPropertyDoesNotInventDual(t *testing.T) {
 	e := validEnvelope()
 	e.CorrectionBoundary.RequiredProperty = ""
 	e = DeriveDual(e)
-	if e.Dual.Status != DualUnresolved { t.Fatalf("expected unresolved dual, got %s", e.Dual.Status) }
+	if e.Dual.Status != DualUnresolved {
+		t.Fatalf("expected unresolved dual, got %s", e.Dual.Status)
+	}
 }

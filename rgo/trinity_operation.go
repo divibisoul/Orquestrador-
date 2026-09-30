@@ -89,18 +89,18 @@ func RegisterTrinityOperation(e *orchestrator.Engine, source TrinitySource, hort
 			status = "blocked"
 		}
 		return protocol.Result{
-			TraceID: message.TraceID, CorrelationID: message.CorrelationID,
-			Source: "N07.rgo.trinity", Target: message.Source,
-			Status: status,
-			Metadata: map[string]string{"rgo_trinity_result_json": string(rawOut)},
-		}, func() error {
-			if !trinityValidated {
-				return errors.New("RGO_TRINITY_NOT_VALIDATED")
-			}
-			if !hortaOK {
-				return errors.New("RGO_TRINITY_HORTACORE_BLOCKED")
-			}
-			return nil
-		}()
+				TraceID: message.TraceID, CorrelationID: message.CorrelationID,
+				Source: "N07.rgo.trinity", Target: message.Source,
+				Status:   status,
+				Metadata: map[string]string{"rgo_trinity_result_json": string(rawOut)},
+			}, func() error {
+				if !trinityValidated {
+					return errors.New("RGO_TRINITY_NOT_VALIDATED")
+				}
+				if !hortaOK {
+					return errors.New("RGO_TRINITY_HORTACORE_BLOCKED")
+				}
+				return nil
+			}()
 	})
 }

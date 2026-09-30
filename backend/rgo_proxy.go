@@ -16,7 +16,6 @@ func (p *SARAProxy) RGOIngest(ctx context.Context, env rgo.Envelope) (map[string
 	return out, nil
 }
 
-
 func (p *SARAProxy) RGOTrinity(ctx context.Context, envelope map[string]any, correlationID string) (map[string]any, error) {
 	var out map[string]any
 	if envelope == nil {

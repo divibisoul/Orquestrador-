@@ -15,13 +15,21 @@ type SaraSink interface {
 }
 
 func RegisterOperation(e *orchestrator.Engine, sink SaraSink) error {
-	if e == nil { return errors.New("orchestrator engine is required") }
+	if e == nil {
+		return errors.New("orchestrator engine is required")
+	}
 	return e.Register("rgo.ingest@1.0.0", func(ctx context.Context, message protocol.Message) (protocol.Result, error) {
 		raw := strings.TrimSpace(message.Metadata["rgo_envelope_json"])
-		if raw == "" { return protocol.Result{}, errors.New("metadata.rgo_envelope_json is required") }
+		if raw == "" {
+			return protocol.Result{}, errors.New("metadata.rgo_envelope_json is required")
+		}
 		var env Envelope
-		if err := json.Unmarshal([]byte(raw), &env); err != nil { return protocol.Result{}, errors.New("invalid RGO envelope JSON") }
-		if err := env.Validate(); err != nil { return protocol.Result{}, err }
+		if err := json.Unmarshal([]byte(raw), &env); err != nil {
+			return protocol.Result{}, errors.New("invalid RGO envelope JSON")
+		}
+		if err := env.Validate(); err != nil {
+			return protocol.Result{}, err
+		}
 		env = DeriveDual(env)
 		if sink == nil {
 			return protocol.Result{TraceID: message.TraceID, CorrelationID: message.CorrelationID, Source: "N07.rgo", Target: message.Source, Status: "blocked", Error: "RGO_SARA_SINK_UNAVAILABLE"}, errors.New("RGO_SARA_SINK_UNAVAILABLE")

@@ -35,9 +35,16 @@ func FromBugShield(payload map[string]any) (Envelope, error) {
 	evidenceRaw, _ := finding["evidence"].([]any)
 	evidence := make([]EvidenceRef, 0, len(evidenceRaw))
 	for _, item := range evidenceRaw {
-		row, ok := item.(map[string]any); if !ok { continue }
-		id, _ := row["id"].(string); kind, _ := row["kind"].(string); ref, _ := row["ref"].(string)
-		if id != "" && kind != "" && ref != "" { evidence = append(evidence, EvidenceRef{ID:id,Kind:kind,Ref:ref}) }
+		row, ok := item.(map[string]any)
+		if !ok {
+			continue
+		}
+		id, _ := row["id"].(string)
+		kind, _ := row["kind"].(string)
+		ref, _ := row["ref"].(string)
+		if id != "" && kind != "" && ref != "" {
+			evidence = append(evidence, EvidenceRef{ID: id, Kind: kind, Ref: ref})
+		}
 	}
 	if len(evidence) == 0 {
 		return Envelope{}, fmt.Errorf("BUGSHIELD_EVIDENCE_REQUIRED")
@@ -47,7 +54,9 @@ func FromBugShield(payload map[string]any) (Envelope, error) {
 	env.FindingID = findingID
 	env.ObjectID = inputHash
 	env.Timestamp = timestamp
-	if _, err := time.Parse(time.RFC3339Nano, timestamp); err != nil { return Envelope{}, err }
+	if _, err := time.Parse(time.RFC3339Nano, timestamp); err != nil {
+		return Envelope{}, err
+	}
 	env.CorrelationID = scanID
 	env.TraceID = scanID + ":" + findingID
 	env.Source.System, _ = scanner["name"].(string)
