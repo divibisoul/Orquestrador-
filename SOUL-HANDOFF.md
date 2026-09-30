@@ -1,9 +1,9 @@
 # SOUL Handoff — N07
 **Date:** 2026-09-30
-**Main state:** current rescue line is merged through **PR #84 → f38f1fef3fe7800f6e9f696cece17a589faac64f**.
+**Main state:** latest rescue is **PR #85 → 92a2e0c8624b957de16503cb165aff0e122e1c92**; earlier #84 → f38f1fef3fe7800f6e9f696cece17a589faac64f remains included.
 **Role:** canonical orchestration/federated-compute control plane, central Mesh ingress, SuperGPU, prefrontal and SARA boundary.
-**Activated:** canonical learning receiver (#75), cognitive loop/planner (#77), primordial composition (#78), prefrontal executive controls (#80), learning→prefrontal observation coupling (#82), buried prefrontal task/uncertainty semantics (#83), Aeternum HortaCore + 29-module catalog + semantic-memory contract/pgvector boundary (#84).
-**Current executable boundaries:** neural.forward, neural.learn, neural.parameters, learning.feedback, memory.record, memory.search, primordial composition, cognitive operations, prefrontal admission and SuperGPU operations remain owned by the current N07 code paths.
-**Historical branches:** #68/#67/#64/#81 are rescue archaeology and must not be blindly merged. #69 has been partially absorbed; only genuinely unique residuals may be extracted after file-level comparison.
-**Evidence state:** source-level implementation is verified from current MAIN; commit-scoped CI returned no workflow runs for #84, so CI_VALIDATED/ONLINE_VERIFIED are not claimed.
-**Next bounded cycle:** inspect only the next highest-impact unique residue from historical N07 fronts; finish it as RESCUED, ABSORBED, BLOCKED_ENV or UNMEASURABLE and hand off the result. Do not reopen already absorbed branches.
+**Activated:** canonical learning receiver (#75), cognitive loop/planner (#77), primordial composition (#78), prefrontal executive controls (#80), learning→prefrontal coupling (#82), buried prefrontal task/uncertainty semantics (#83), Aeternum HortaCore + 29-module catalog + semantic-memory boundary (#84), and real-only federation E2E gate (#85).
+**Proof gate:** synthetic N01→N07→N04/N05/N06 peer doubles were removed from the federation test. The integration test is credential-gated; without real endpoint/HMAC secrets it records BLOCKED_ENV and does not claim online proof.
+**Historical branches:** #61/#64/#67/#68/#81 were closed after selective rescue; #69 remains archaeology because only unique residuals should be extracted.
+**Evidence state:** source-level implementation is verified. No CI_VALIDATED/ONLINE_VERIFIED claim is made for the latest rescue because commit-scoped workflow evidence was not returned by the connector.
+**Anti-loop termination rule:** each historical front must end in exactly one terminal state—RESCUED, ABSORBED, BLOCKED_ENV, or UNMEASURABLE—before the next front is opened.
