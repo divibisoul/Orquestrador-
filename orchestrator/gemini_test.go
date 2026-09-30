@@ -84,3 +84,12 @@ func TestGeminiTargetsCanonicalProviderOwners(t *testing.T) {
 		}
 	}
 }
+
+
+func TestGeminiTargetsRecoveredServerSideToolsAtN02(t *testing.T) {
+	for _, capability := range []string{geminiGoogleSearch, geminiCodeExecution, geminiURLContext, geminiFileSearch, geminiGoogleMaps} {
+		if got := geminiTarget(capability); got != "N02" {
+			t.Fatalf("capability %q target=%q want N02", capability, got)
+		}
+	}
+}
