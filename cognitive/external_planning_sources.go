@@ -67,7 +67,7 @@ var ExternalPlanningSources = []ExternalPlanningSource{
 		Strategy:       "ADAPTER",
 		LicenseScope:   "MIT",
 	},
-]
+}
 
 // ExternalPlanningSourceIDs returns a stable copy suitable for diagnostics.
 func ExternalPlanningSourceIDs() []string {
