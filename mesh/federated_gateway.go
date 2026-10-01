@@ -10,16 +10,15 @@ import (
 	"strings"
 	"time"
 
-	"github.com/divibisoul/Orquestrador-/orchestrator"
 )
 
 type FederatedGateway struct {
 	base   *HTTPGateway
 	peers  *PeerClient
-	engine *orchestrator.Engine
+	engine OperationEngine
 }
 
-func NewFederatedHTTPGateway(engine *orchestrator.Engine) *FederatedGateway {
+func NewFederatedHTTPGateway(engine OperationEngine) *FederatedGateway {
 	return &FederatedGateway{base: NewHTTPGateway(engine), peers: mustPeerClient(), engine: engine}
 }
 
@@ -107,7 +106,7 @@ func (g *FederatedGateway) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func isLocalOperation(engine *orchestrator.Engine, capability string) bool {
+func isLocalOperation(engine OperationEngine, capability string) bool {
 	for _, operation := range engine.Operations() {
 		name := operation
 		if i := strings.LastIndex(operation, "@"); i > 0 {

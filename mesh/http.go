@@ -1,13 +1,13 @@
 package mesh
 
 import (
+	"context"
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/divibisoul/Orquestrador-/orchestrator"
 	"github.com/divibisoul/Orquestrador-/protocol"
 	"net/http"
 	"os"
@@ -16,8 +16,13 @@ import (
 	"time"
 )
 
+type OperationEngine interface {
+	Operations() []string
+	Submit(context.Context, protocol.Message) (protocol.Result, error)
+}
+
 type HTTPGateway struct {
-	Engine                    *orchestrator.Engine
+	Engine                    OperationEngine
 	Secret                    string
 	AllowUnauthenticatedLocal bool
 }
@@ -46,7 +51,7 @@ var seenHeaderNonces = map[string]int64{}
 
 const headerNonceReplayWindowMs = int64(120000)
 
-func NewHTTPGateway(engine *orchestrator.Engine) *HTTPGateway {
+func NewHTTPGateway(engine OperationEngine) *HTTPGateway {
 	return &HTTPGateway{Engine: engine, Secret: strings.TrimSpace(os.Getenv("SOUL_MESH_HMAC_SECRET")), AllowUnauthenticatedLocal: strings.EqualFold(strings.TrimSpace(os.Getenv("N07_MESH_ALLOW_UNAUTH_LOCAL")), "true")}
 }
 func (g *HTTPGateway) ServeHTTP(w http.ResponseWriter, r *http.Request) { g.Handler(w, r) }

@@ -56,6 +56,21 @@ for (const item of manifest.declaredNotExecutable ?? []) {
   }
 }
 
+const affinity = manifest.ossAffinityRouting?.capabilities ?? {};
+for (const [id, targets] of Object.entries(affinity)) {
+  if (!ownerByCapability.has(id)) {
+    // OSS-derived capabilities may be N02-owned and still need a canonical owner entry.
+    if (!['multimodal_cortex','autonomous_embodiment','biomolecular_designer','reality_synthesis','strategic_planning','adaptation_module','scre','ecas','eus','mlfg','emergent_cognition','skill_acquisition','uci','ethical_governance','strategic_defense','existential_safety','einstein_reasoning','einstein_quantum','cot_arhd','cot_drc','cot_area'].includes(id)) {
+      failures.push({ id, reason: 'AFFINITY_WITHOUT_KNOWN_OSS_CAPABILITY' });
+    }
+  }
+  if (!Array.isArray(targets) || targets.length === 0) {
+    failures.push({ id, reason: 'AFFINITY_TARGETS_EMPTY' });
+  } else if (targets.some(target => !['N01','N02','N03','N04','N05','N06','N07','SARA'].includes(target))) {
+    failures.push({ id, reason: 'AFFINITY_TARGET_INVALID', targets });
+  }
+}
+
 const report = {
   status: failures.length === 0 ? 'PASS' : 'FAIL',
   canonicalCapabilities: ownerByCapability.size,
