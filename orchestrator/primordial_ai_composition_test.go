@@ -80,13 +80,11 @@ func stringReplace(value, old, replacement string) string {
 	if old == replacement {
 		return value
 	}
-	for {
-		idx := indexOf(value, old)
-		if idx < 0 {
-			return value
-		}
-		value = value[:idx] + replacement + value[idx+len(old):]
+	idx := indexOf(value, old)
+	if idx < 0 {
+		return value
 	}
+	return value[:idx] + replacement + value[idx+len(old):]
 }
 
 func indexOf(value, needle string) int {
