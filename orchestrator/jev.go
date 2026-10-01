@@ -49,13 +49,16 @@ func RegisterJevOperations(e *Engine, client *jev.Client) error {
 			return protocol.Result{}, err
 		}
 		return protocol.Result{
-			Source: "N07.jev",
-			Target: message.Source,
-			Status: "ok",
+			TraceID:       message.TraceID,
+			CorrelationID: message.CorrelationID,
+			Source:        "N07.jev",
+			Target:        message.Source,
+			Status:        "ok",
 			Metadata: map[string]string{
 				"decision_json": string(raw),
 				"answers_json":  mustJSON(response.Answers),
 				"model":         response.Model,
+				"usage_json":   mustJSON(response.Usage),
 			},
 		}, nil
 	})
