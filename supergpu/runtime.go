@@ -40,6 +40,7 @@ type Runtime struct {
 	devices      []Device
 	backend      Backend
 	reserved     map[string]Reservation
+	reporter     ExecutionReporter
 	closed       bool
 	discoverAt   time.Time
 	discoveryTTL time.Duration
@@ -107,6 +108,20 @@ func New(backend Backend) *Runtime {
 	}
 	return &Runtime{backend: backend, reserved: map[string]Reservation{}, discoveryTTL: 10 * time.Second}
 }
+func (r *Runtime) SetExecutionReporter(reporter ExecutionReporter) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.reporter = reporter
+}
+
+func (r *Runtime) reportExecution(ctx context.Context, event ExecutionEvent) {
+	r.mu.RLock()
+	reporter := r.reporter
+	r.mu.RUnlock()
+	if reporter == nil { return }
+	_ = reporter.Report(ctx, event)
+}
+
 func (r *Runtime) Discover() []Device {
 	r.mu.Lock()
 	defer r.mu.Unlock()
@@ -253,7 +268,22 @@ func (r *Runtime) Execute(ctx context.Context, device Device, operation string, 
 	}
 	r.running.Add(1)
 	defer r.running.Done()
-	return backend.Execute(ctx, device, operation, input)
+
+	correlationID := CorrelationIDFromContext(ctx)
+	r.reportExecution(ctx, ExecutionEvent{
+		Phase: "started", Operation: operation, DeviceID: device.ID, Backend: device.Backend,
+		InputSize: len(input), CorrelationID: correlationID,
+	})
+	out, err := backend.Execute(ctx, device, operation, input)
+	phase, message := "completed", ""
+	if err != nil {
+		phase, message = "failed", err.Error()
+	}
+	r.reportExecution(ctx, ExecutionEvent{
+		Phase: phase, Operation: operation, DeviceID: device.ID, Backend: device.Backend,
+		InputSize: len(input), OutputSize: len(out), CorrelationID: correlationID, Error: message,
+	})
+	return out, err
 }
 func (r *Runtime) Batch(ctx context.Context, device Device, operation string, inputs [][]float64) ([][]float64, error) {
 	if ctx == nil {
