@@ -589,5 +589,123 @@
         "ref": "main"
       }
     }
-  ]
+  ],
+  "ossAffinityRouting": {
+    "schemaVersion": "1.0.0",
+    "rule": "routing affinity does not transfer canonical ownership",
+    "capabilities": {
+      "multimodal_cortex": [
+        "N03",
+        "N02",
+        "N06"
+      ],
+      "autonomous_embodiment": [
+        "N07",
+        "N01",
+        "SARA"
+      ],
+      "biomolecular_designer": [
+        "N06",
+        "N04",
+        "SARA"
+      ],
+      "reality_synthesis": [
+        "N07",
+        "N06",
+        "N04"
+      ],
+      "strategic_planning": [
+        "N07",
+        "N05",
+        "N06"
+      ],
+      "adaptation_module": [
+        "SARA",
+        "N06",
+        "N01"
+      ],
+      "scre": [
+        "N04",
+        "N06",
+        "N07"
+      ],
+      "ecas": [
+        "N06",
+        "N07",
+        "N02"
+      ],
+      "eus": [
+        "N06",
+        "SARA",
+        "N04"
+      ],
+      "mlfg": [
+        "N06",
+        "N07",
+        "SARA"
+      ],
+      "emergent_cognition": [
+        "N07",
+        "N06",
+        "N05"
+      ],
+      "skill_acquisition": [
+        "N04",
+        "N06",
+        "N07"
+      ],
+      "uci": [
+        "N04",
+        "N07",
+        "N02"
+      ],
+      "ethical_governance": [
+        "SARA",
+        "N01",
+        "N07"
+      ],
+      "strategic_defense": [
+        "N07",
+        "N01",
+        "SARA"
+      ],
+      "existential_safety": [
+        "SARA",
+        "N01",
+        "N07"
+      ],
+      "einstein_reasoning": [
+        "N06",
+        "N02",
+        "SARA"
+      ],
+      "einstein_quantum": [
+        "N06",
+        "SARA",
+        "N02"
+      ],
+      "cot_arhd": [
+        "N07",
+        "N05",
+        "N02"
+      ],
+      "cot_drc": [
+        "N07",
+        "N06",
+        "N05"
+      ],
+      "cot_area": [
+        "SARA",
+        "N01",
+        "N07"
+      ]
+    },
+    "unresolved": [
+      {
+        "capability": "xun-agent-derived primitives",
+        "state": "BLOCKED",
+        "reason": "exact public upstream unresolved; no routing target inferred"
+      }
+    ]
+  }
 }
