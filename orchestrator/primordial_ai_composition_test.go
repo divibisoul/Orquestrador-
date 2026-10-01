@@ -43,7 +43,7 @@ func TestPrimordialCompositionOperationExposesAIProfilesAndHigherOrderCompositio
 			{"participants":["N01","N05"],"mode":"orchestrated","derivedFunction":"context -> inference","existingEvidence":["pair"],"status":"STRUCTURAL"},
 			{"participants":["N04","SARA"],"mode":"transversal","derivedFunction":"tool execution under governance","existingEvidence":["transversal"],"status":"STRUCTURAL"}
 		]
-	}}}`
+	}}`
 	// Add N05 to the fixture without changing the runtime code under test.
 	contents = stringReplace(contents, `"N04":{"repository":"N04","role":"tools","entrypoints":["n04"],"capabilityOwnership":"native"}`, `"N04":{"repository":"N04","role":"tools","entrypoints":["n04"],"capabilityOwnership":"native"},"N05":{"repository":"N05","role":"inference","entrypoints":["n05"],"capabilityOwnership":"native"}`)
 	contents = stringReplace(contents, `"N04":{"nativeRole":"tools","essence":"tools","evidence":["n04"]}`, `"N04":{"nativeRole":"tools","essence":"tools","evidence":["n04"]},"N05":{"nativeRole":"inference","essence":"inference","evidence":["n05"]}`)
