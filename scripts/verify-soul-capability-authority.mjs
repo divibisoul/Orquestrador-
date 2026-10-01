@@ -56,6 +56,15 @@ for (const item of manifest.declaredNotExecutable ?? []) {
   }
 }
 
+const affinity = manifest.ossAffinityRouting?.capabilities ?? {};
+for (const [id, targets] of Object.entries(affinity)) {
+  if (!Array.isArray(targets) || targets.length === 0) {
+    failures.push({ id, reason: "AFFINITY_TARGETS_EMPTY" });
+  } else if (targets.some(target => !["N01","N02","N03","N04","N05","N06","N07","SARA"].includes(target))) {
+    failures.push({ id, reason: "AFFINITY_TARGET_INVALID", targets });
+  }
+}
+
 const report = {
   status: failures.length === 0 ? 'PASS' : 'FAIL',
   canonicalCapabilities: ownerByCapability.size,
