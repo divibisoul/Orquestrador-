@@ -119,7 +119,11 @@ func main() {
 	if err := orchestrator.RegisterAdvancedOperations(e); err != nil {
 		log.Fatal(err)
 	}
-	if err := orchestrator.RegisterOrbitalReasoningOperations(e); err != nil {
+	tceSimulator, err := orchestrator.NewTranscendentalSimulatorFromEnv()
+	if err != nil {
+		log.Fatal(err)
+	}
+	if err := orchestrator.RegisterOrbitalReasoningOperationsWithSimulator(e, tceSimulator); err != nil {
 		log.Fatal(err)
 	}
 	if client, err := jev.NewFromEnv(); err == nil {
@@ -220,10 +224,6 @@ func main() {
 		log.Fatal(err)
 	}
 	if err := rgo.RegisterTrinityOperation(e, saraProxy, peerClient); err != nil {
-		log.Fatal(err)
-	}
-	tceSimulator, err := orchestrator.NewTranscendentalSimulatorFromEnv()
-	if err != nil {
 		log.Fatal(err)
 	}
 	prefrontalNeocortex, err := prefrontal.NewNeocortex(c, n)
