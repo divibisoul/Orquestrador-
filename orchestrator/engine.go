@@ -13,6 +13,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/divibisoul/Orquestrador-/memory"
 	"github.com/divibisoul/Orquestrador-/neural"
 	"github.com/divibisoul/Orquestrador-/observability"
 	"github.com/divibisoul/Orquestrador-/prefrontal"
@@ -60,6 +61,7 @@ type Engine struct {
 	neural           *neural.Network
 	cortex           *prefrontal.Cortex
 	compute          *supergpu.Runtime
+	memory           memory.Store
 	running          atomic.Bool
 	sequence         atomic.Uint64
 	failures         atomic.Uint64
