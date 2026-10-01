@@ -65,10 +65,10 @@ func RegisterAdvancedOperations(e *Engine) error {
 				}
 				metadata := map[string]string{
 					"correlation_id": m.CorrelationID,
-					"trace_id": m.TraceID,
+					"trace_id":       m.TraceID,
 					"questions_json": questionsJSON,
-					"state":         jevState,
-					"state_json":    jevStateJSON,
+					"state":          jevState,
+					"state_json":     jevStateJSON,
 				}
 				if model := strings.TrimSpace(m.Metadata["jev_model"]); model != "" {
 					metadata["model"] = model
