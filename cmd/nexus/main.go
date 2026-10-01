@@ -119,6 +119,9 @@ func main() {
 	if err := orchestrator.RegisterAdvancedOperations(e); err != nil {
 		log.Fatal(err)
 	}
+	if err := orchestrator.RegisterOrbitalReasoningOperations(e); err != nil {
+		log.Fatal(err)
+	}
 	if client, err := jev.NewFromEnv(); err == nil {
 		if err := orchestrator.RegisterJevOperations(e, client); err != nil {
 			log.Fatal(err)
