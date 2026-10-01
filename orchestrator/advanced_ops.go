@@ -65,7 +65,8 @@ func RegisterAdvancedOperations(e *Engine) error {
 				}
 				metadata := map[string]string{
 					"correlation_id": m.CorrelationID,
-					"trace_id":       m.TraceID,
+					"trace_id":       protocol.NewTraceID(),
+					"parent_trace_id": m.TraceID,
 					"questions_json": questionsJSON,
 					"state":          jevState,
 					"state_json":     jevStateJSON,
