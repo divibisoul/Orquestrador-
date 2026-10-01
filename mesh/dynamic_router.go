@@ -50,9 +50,9 @@ func (p *PeerClient) CallBestDynamic(ctx context.Context, capability string, pay
 		go func(index int, candidatePeer PeerInfo) {
 			defer wg.Done()
 			candidate := DynamicRouteCandidate{
-				Nucleus:  candidatePeer.Nucleus,
-				Latency:  candidatePeer.Latency,
-				Healthy:  candidatePeer.Healthy,
+				Nucleus:      candidatePeer.Nucleus,
+				Latency:      candidatePeer.Latency,
+				Healthy:      candidatePeer.Healthy,
 				Failures:     candidatePeer.Failures,
 				AffinityRank: ossAffinityRank(capability, candidatePeer.Nucleus),
 			}
