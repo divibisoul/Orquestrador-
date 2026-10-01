@@ -142,6 +142,28 @@ func main() {
 	}
 	peerClient.SetRouteScorer(learningMachine)
 	peerClient.SetRouteOutcomeObserver(learningMachine)
+
+	clareiraReporter, err := mesh.NewClareiraReporter(peerClient)
+	if err != nil {
+		log.Fatal(err)
+	}
+	g.SetExecutionReporter(clareiraReporter)
+	if err := orchestrator.RegisterGeminiOperations(e, peerClient, func(ctx context.Context, event orchestrator.GeminiExecutionEvent) error {
+		return clareiraReporter.ReportCapability(ctx, mesh.CapabilityExecutionEvent{
+			Phase: event.Phase,
+			Operation: event.Capability,
+			Provider: event.Provider,
+			Model: event.Model,
+			Source: event.Source,
+			Owner: event.Owner,
+			CorrelationID: event.CorrelationID,
+			InputSize: event.InputSize,
+			OutputSize: event.OutputSize,
+			Error: event.Error,
+		})
+	}); err != nil {
+		log.Fatal(err)
+	}
 	hortaCore, err := aeternum.NewHortaCore(e, saraProxy)
 	if err != nil {
 		log.Fatal(err)
