@@ -555,31 +555,31 @@
         "id": "prefrontal.orbital.evaluate@1.0.0",
         "repository": "divibisoul/Orquestrador-",
         "path": "orchestrator/orbital_ops.go",
-        "ref": "47c9bf19053abb6630bd4b200efb2cec8d7e2022"
+        "ref": "9bd614adf64780d0f765677e45799c6308fbbdc2"
       },
       {
         "id": "transcendental.estimate@1.0.0",
         "repository": "divibisoul/Orquestrador-",
         "path": "orchestrator/orbital_ops.go",
-        "ref": "47c9bf19053abb6630bd4b200efb2cec8d7e2022"
+        "ref": "9bd614adf64780d0f765677e45799c6308fbbdc2"
       },
       {
         "id": "octacore.core.describe@1.0.0",
         "repository": "divibisoul/Orquestrador-",
         "path": "octacore/operations.go",
-        "ref": "feat/oss-similarity-routing-2026-10-01"
+        "ref": "cc2f9597c9db6133117689702a12b77ae1bbd32b"
       },
       {
         "id": "octacore.core.health@1.0.0",
         "repository": "divibisoul/Orquestrador-",
         "path": "octacore/operations.go",
-        "ref": "feat/oss-similarity-routing-2026-10-01"
+        "ref": "cc2f9597c9db6133117689702a12b77ae1bbd32b"
       },
       {
         "id": "octacore.core.execute@1.0.0",
         "repository": "divibisoul/Orquestrador-",
         "path": "octacore/operations.go",
-        "ref": "feat/oss-similarity-routing-2026-10-01"
+        "ref": "cc2f9597c9db6133117689702a12b77ae1bbd32b"
       }
     ]
   },
