@@ -603,5 +603,43 @@
         "ref": "main"
       }
     }
-  ]
+  ],
+  "ossAffinityRouting": {
+    "capabilities": {
+      "octacore.fusion.execute@1.0.0": {
+        "primary": "N07",
+        "coNuclei": [],
+        "reason": "four-stage Octacore fusion / SuperAGI similarity affinity"
+      },
+      "octacore.fusion.describe@1.0.0": {
+        "primary": "N07",
+        "coNuclei": [],
+        "reason": "four-stage Octacore fusion / SuperAGI similarity affinity"
+      },
+      "superagi.mlfg": {
+        "primary": "N07",
+        "coNuclei": [],
+        "reason": "four-stage Octacore fusion / SuperAGI similarity affinity"
+      },
+      "superagi.skill_acquisition": {
+        "primary": "N07",
+        "coNuclei": [
+          "N04",
+          "N06"
+        ],
+        "reason": "four-stage Octacore fusion / SuperAGI similarity affinity"
+      }
+    },
+    "superagiFusion": {
+      "repository": "TransformerOptimus/SuperAGI",
+      "pinnedCommit": "c3c1982e7bd6a11cfed53c5a193ea502f924b1b6",
+      "components": [
+        "mlfg",
+        "skill_acquisition",
+        "agent_workflow",
+        "tool_manager"
+      ],
+      "state": "PROJECTED"
+    }
+  }
 }
