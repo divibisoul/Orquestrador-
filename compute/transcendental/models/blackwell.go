@@ -54,7 +54,11 @@ func estimateRoofline(wl core.Workload, m PerformanceModel, efficiency float64) 
 	compute := flops / (pflops * 1e15)
 	memory := float64(max64(wl.DataBytes, 0)) / (m.GetBandwidthGBs() * 1e9)
 	seconds := math.Max(compute, memory) / efficiency
-	return time.Duration(seconds * float64(time.Second))
+	duration := time.Duration(math.Ceil(seconds * float64(time.Second)))
+	if duration <= 0 && seconds > 0 {
+		duration = time.Nanosecond
+	}
+	return duration
 }
 func eff(v float64) float64 {
 	if v == 0 {
