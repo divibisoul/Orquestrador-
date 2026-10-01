@@ -166,6 +166,9 @@ func (c *ExecutiveCore) Execute(ctx context.Context, req ExecutiveCoreRequest) (
 	if ctx == nil {
 		return ExecutiveCoreResult{}, errors.New("context is nil")
 	}
+	if strings.TrimSpace(req.TaskID) == "" {
+		req.TaskID = req.JobID
+	}
 	if err := validateCoreRequest(req); err != nil {
 		return ExecutiveCoreResult{Processor: "Octacore", CoreName: c.Name(), JobID: req.JobID, CorrelationID: req.CorrelationID, State: "REJECTED"}, err
 	}
@@ -361,7 +364,7 @@ func validateCoreRequest(req ExecutiveCoreRequest) error {
 		return errors.New("correlation_id is required")
 	}
 	if strings.TrimSpace(req.TaskID) == "" {
-		req.TaskID = req.JobID
+		return errors.New("task_id is required")
 	}
 	if strings.TrimSpace(req.Operation) == "" {
 		return errors.New("operation is required")
