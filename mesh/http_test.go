@@ -7,9 +7,6 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
-	"github.com/divibisoul/Orquestrador-/neural"
-	"github.com/divibisoul/Orquestrador-/orchestrator"
-	"github.com/divibisoul/Orquestrador-/prefrontal"
 	"github.com/divibisoul/Orquestrador-/protocol"
 	"net/http"
 	"net/http/httptest"
@@ -38,21 +35,11 @@ func newTestGateway(t *testing.T) *HTTPGateway {
 	t.Helper()
 	t.Setenv("N07_MESH_HMAC_SECRET", "")
 	t.Setenv("N07_MESH_ALLOW_UNAUTH_LOCAL", "true")
-	n, err := neural.New(8, .05)
+	engine, err := newMeshHTTPTestEngine()
 	if err != nil {
 		t.Fatal(err)
 	}
-	c, err := prefrontal.New(.10, 32)
-	if err != nil {
-		t.Fatal(err)
-	}
-	g := supergpuCompat.New(nil)
-	g.Discover()
-	e, err := orchestrator.New(n, c, g)
-	if err != nil {
-		t.Fatal(err)
-	}
-	return NewHTTPGateway(e)
+	return NewHTTPGateway(engine)
 }
 func canonicalRequest(kind, capability, correlation string, values []float64) map[string]any {
 	payload := map[string]any{}
