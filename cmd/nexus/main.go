@@ -24,6 +24,7 @@ import (
 	"github.com/divibisoul/Orquestrador-/neural"
 	"github.com/divibisoul/Orquestrador-/octacore"
 	"github.com/divibisoul/Orquestrador-/orchestrator"
+	"github.com/divibisoul/Orquestrador-/protocol"
 	"github.com/divibisoul/Orquestrador-/prefrontal"
 	"github.com/divibisoul/Orquestrador-/rgo"
 	"github.com/divibisoul/Orquestrador-/supergpu"
@@ -142,6 +143,48 @@ func main() {
 	}
 	peerClient.SetRouteScorer(learningMachine)
 	peerClient.SetRouteOutcomeObserver(learningMachine)
+
+	clareiraReporter, err := mesh.NewClareiraReporter(peerClient)
+	if err != nil {
+		log.Fatal(err)
+	}
+	g.SetExecutionReporter(supergpu.ReporterFunc(func(ctx context.Context, event supergpu.ExecutionEvent) error {
+		correlationID := event.CorrelationID
+		if strings.TrimSpace(correlationID) == "" {
+			correlationID = protocol.NewTraceID()
+		}
+		reportCtx := supergpu.WithCorrelationID(ctx, correlationID)
+		clareiraErr := clareiraReporter.Report(reportCtx, event)
+		if !saraProxy.Configured() {
+			return clareiraErr
+		}
+		_, vagusErr := saraProxy.PublishVagus(ctx, map[string]any{
+			"vagus_version": "1.0",
+			"message_id": protocol.NewTraceID(),
+			"correlation_id": correlationID,
+			"source": "N07.SuperGPU",
+			"target": "VagusNerveBus",
+			"priority": 100,
+			"ttl": 5000,
+			"type": "supergpu." + event.Phase,
+			"payload": map[string]any{
+				"operation": event.Operation,
+				"device_id": event.DeviceID,
+				"backend": event.Backend,
+				"input_size": event.InputSize,
+				"output_size": event.OutputSize,
+				"error": event.Error,
+			},
+		}, correlationID)
+		if clareiraErr != nil && vagusErr != nil {
+			return fmt.Errorf("clareira=%v; vagus=%v", clareiraErr, vagusErr)
+		}
+		if clareiraErr != nil {
+			return clareiraErr
+		}
+		return vagusErr
+	}))
+
 	hortaCore, err := aeternum.NewHortaCore(e, saraProxy)
 	if err != nil {
 		log.Fatal(err)
