@@ -35,6 +35,18 @@ func RegisterPrimordialCompositionOperation(e *Engine) error {
 			value, err = composition.ResolvePair(ledger, a, b)
 		case "matrix":
 			value, err = composition.Matrix(ledger)
+		case "profile":
+			id := strings.TrimSpace(message.Metadata["participant"])
+			value, err = composition.ResolveAIProfile(ledger, id)
+		case "profiles":
+			value, err = composition.AIProfiles(ledger)
+		case "composition":
+			rawParticipants := strings.TrimSpace(message.Metadata["participants"])
+			if rawParticipants == "" {
+				return protocol.Result{}, errors.New("participants are required")
+			}
+			parts := strings.Split(rawParticipants, ",")
+			value, err = composition.ResolveComposition(ledger, parts...)
 		default:
 			return protocol.Result{}, errors.New("unsupported primordial composition mode")
 		}
