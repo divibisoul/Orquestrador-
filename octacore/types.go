@@ -29,6 +29,27 @@ const (
 	KindCustom      JobKind = "custom"
 )
 
+type LaneID string
+
+const (
+	LaneOrchestration LaneID = "L0"
+	LaneRouting       LaneID = "L1"
+	LaneNeuralSignal  LaneID = "L2"
+	LaneDecision      LaneID = "L3"
+	LaneOrbital       LaneID = "L4"
+	LaneSimulation    LaneID = "L5"
+	LaneResourceLease LaneID = "L6"
+	LaneExecution     LaneID = "L7"
+)
+
+type ExecutiveLane struct {
+	ID          LaneID `json:"id"`
+	Component   string `json:"component"`
+	Role        string `json:"role"`
+	Transport   string `json:"transport"`
+	Required    bool   `json:"required"`
+}
+
 type SlotID string
 
 const (
