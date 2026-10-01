@@ -14,7 +14,6 @@ import json
 import os
 import urllib.error
 import urllib.request
-import uuid
 from typing import Any, TypedDict
 
 from langgraph.graph import END, START, StateGraph
@@ -102,7 +101,7 @@ def _call_n07(task: dict[str, Any]) -> dict[str, Any]:
         headers={
             "Authorization": f"Bearer {_n07_token()}",
             "Content-Type": "application/json",
-            "X-Request-ID": str(uuid.uuid4()),
+            "X-Request-ID": f"langgraph-{task['id']}",
         },
     )
     try:
