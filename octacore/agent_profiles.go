@@ -62,6 +62,7 @@ var agentProfiles = []AgentProfile{
 		Capability:    "scre",
 		Role:          "code/task review proposal and verification planning",
 		TargetNucleus: "N04",
+		AdapterOwner:  "N02",
 		UseInCore:     "optional verification advisory stage before dispatch",
 	},
 }
