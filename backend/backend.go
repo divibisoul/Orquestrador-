@@ -139,7 +139,7 @@ func (s *Server) execute(w http.ResponseWriter, r *http.Request) {
 	if correlationID := strings.TrimSpace(req.CorrelationID); correlationID != "" {
 		metadata["correlation_id"] = correlationID
 	}
-	result, err := s.Engine.Execute(ctx, req.Operation, req.Payload, metadata)
+	result, err := s.Engine.ExecuteWithCorrelation(ctx, req.CorrelationID, "N07", req.Operation, req.Payload, metadata)
 	if err != nil {
 		writeJSON(w, http.StatusBadRequest, result)
 		return
