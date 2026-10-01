@@ -15,7 +15,7 @@ import (
 )
 
 const (
-	DefaultBaseURL = "https://api.typesafe.ai"
+	DefaultBaseURL = "https://thejevai.com"
 	DefaultModel   = "jev-latest"
 	SystemOnePath  = "/v1/systemone"
 )
