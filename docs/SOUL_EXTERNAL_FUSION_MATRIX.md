@@ -181,3 +181,20 @@ Jev decides; N07 orchestrates; LangGraph plans; NeMo evaluates; N04 executes Gem
 ### Current remediation vector
 
 Use the remaining CI evidence to close the JEV admission integration first. Then re-audit any capability that reports `declared` without a corresponding executable agent/runtime path. Do not promote a capability solely because it exists in a catalog.
+
+
+## Orbital ↔ Prefrontal extension across all consumers — 2026-10-01
+
+The canonical implementation remains N07. Consumers are deliberately separated by native responsibility:
+
+| Consumer | Native agents/tools | How orbital evidence is used | What remains local |
+|---|---|---|---|
+| N01 | cognitive-fabric, neocortex-prefrontal, gateway-mesh | host/runtime context can request TCE estimate before risk-bearing dispatch | Android/host/runtime authority |
+| N02 | perception, cognition, code-audit, neural-modeling, scientific-discovery, inference | multimodal/cognitive agents can request orbital resource evidence before model/tool selection | perception, providers and cognition |
+| N03 | audio/speech agents | audio workloads can request deterministic resource estimate before execution | audio/voice perception authority |
+| N04 | pilot, tool, orchestration, mesh agents | document/tool workloads can be admitted with orbital resource evidence | tools/documents/artifacts |
+| N05 | inference, Gemini-tool, N05↔N06 collaboration | inference dispatch can consume orbital evidence before execution | N05 inference/dispatch |
+| N06 | cognitive, tool, mesh, planner, validator agents | planning/validation can consume orbital evidence and then use Prefrontal admission | N06 cognitive/planning authority |
+| SARA (G0) | ARA, ETR, ITR, ERU, governance/memory | SARA can consume N07 orbital/Prefrontal evidence through its explicit adapter | SARA governance/regeneration authority |
+
+No consumer copies TCE, Prefrontal, or another nucleus' agent. Invocation uses the existing Soul Mesh/N07 service boundary and preserves correlation/provenance.
