@@ -61,7 +61,7 @@ func (f *Fusion) describe(ctx context.Context, m protocol.Message) (protocol.Res
 		},
 		"stages": []string{
 			"transcendental.estimate@1.0.0",
-			"prefrontal.orbital.evaluate@1.0.0",
+			"prefrontal.admission@1.0.0",
 			"supergpu.execute@1.0.0",
 		},
 		"fail_closed":    true,
@@ -104,7 +104,7 @@ func (f *Fusion) execute(ctx context.Context, m protocol.Message) (protocol.Resu
 		return f.fail(m, "ORBITAL_STAGE_FAILED", err)
 	}
 
-	admission, err := f.engine.Execute(ctx, "prefrontal.orbital.evaluate@1.0.0", m.Payload, map[string]string{
+	admission, err := f.engine.Execute(ctx, "prefrontal.admission@1.0.0", m.Payload, map[string]string{
 		"workloads_json": workloads,
 		"candidate_json": candidate,
 		"strategy":       strings.TrimSpace(m.Metadata["strategy"]),
