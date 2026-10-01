@@ -1,6 +1,7 @@
 package mesh
 
 import (
+	"fmt"
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/hex"
@@ -293,6 +294,12 @@ func (g *HTTPGateway) Handler(w http.ResponseWriter, r *http.Request) {
 				metadata["sara_cycle_id"] = v
 			}
 		}
+	} else if structuredMeshCapability(capability) {
+		if err := copyStructuredCapabilityMetadata(metadata, capability, envelope.NestedPayload()); err != nil {
+			g.respond(w, http.StatusBadRequest, envelope, "ERROR", map[string]any{"error": err.Error()})
+			return
+		}
+		values = []float64{}
 	} else {
 		var err error
 		values, err = payloadValues(envelope.NestedPayload())
@@ -325,6 +332,62 @@ func (g *HTTPGateway) Handler(w http.ResponseWriter, r *http.Request) {
 	}
 	g.respond(w, status, envelope, "TASK_RESULT", payload)
 }
+func structuredMeshCapability(capability string) bool {
+	return strings.HasPrefix(strings.TrimSpace(capability), "cooperation.")
+}
+
+func copyStructuredCapabilityMetadata(metadata map[string]string, capability string, payload map[string]any) error {
+	if metadata == nil {
+		return errors.New("metadata is required")
+	}
+	capability = strings.TrimSpace(capability)
+	if capability == "" {
+		return errors.New("capability is required")
+	}
+	if capability != "cooperation.health@1.0.0" && payload == nil {
+		return errors.New("structured cooperative payload is required")
+	}
+	if payload == nil {
+		payload = map[string]any{}
+	}
+	switch capability {
+	case "cooperation.handshake", "cooperation.handshake@1.0.0":
+		target, ok := payload["target"].(string)
+		if !ok || strings.TrimSpace(target) == "" {
+			return errors.New("cooperation handshake target is required")
+		}
+		metadata["target"] = strings.TrimSpace(target)
+		if required, ok := payload["required_capability"].(string); ok {
+			metadata["capability"] = strings.TrimSpace(required)
+		}
+	case "cooperation.exchange", "cooperation.exchange@1.0.0":
+		target, ok := payload["target"].(string)
+		if !ok || strings.TrimSpace(target) == "" {
+			return errors.New("cooperation exchange target is required")
+		}
+		targetCapability, ok := payload["capability"].(string)
+		if !ok || strings.TrimSpace(targetCapability) == "" {
+			return errors.New("cooperation exchange capability is required")
+		}
+		nested, ok := payload["payload"]
+		if !ok {
+			return errors.New("cooperation exchange payload is required")
+		}
+		encoded, err := json.Marshal(nested)
+		if err != nil {
+			return fmt.Errorf("cooperation exchange payload encode: %w", err)
+		}
+		metadata["target"] = strings.TrimSpace(target)
+		metadata["capability"] = strings.TrimSpace(targetCapability)
+		metadata["payload"] = string(encoded)
+	case "cooperation.health", "cooperation.health@1.0.0":
+		metadata["cooperation_mode"] = "canonical-mesh"
+	default:
+		return errors.New("unsupported structured cooperation capability: " + capability)
+	}
+	return nil
+}
+
 func meshDeadline(envelope protocol.MeshEnvelope) time.Time {
 	if envelope.TTL == nil || *envelope.TTL <= 0 {
 		return time.Time{}
