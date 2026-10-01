@@ -58,7 +58,7 @@ func RegisterJevOperations(e *Engine, client *jev.Client) error {
 				"decision_json": string(raw),
 				"answers_json":  mustJSON(response.Answers),
 				"model":         response.Model,
-				"usage_json":   mustJSON(response.Usage),
+				"usage_json":    mustJSON(response.Usage),
 			},
 		}, nil
 	})
