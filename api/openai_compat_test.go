@@ -1,6 +1,7 @@
 package api
 
 import (
+	"net/http/httptest"
 	"testing"
 )
 
@@ -40,5 +41,21 @@ func TestMeshExecutableRecognizesVersionedCapability(t *testing.T) {
 	}
 	if meshExecutable(description, "ai.generate.ollama") {
 		t.Fatal("unexpected Ollama capability")
+	}
+}
+
+func TestRequestCorrelationIDUsesExternalRequestIDWhenValid(t *testing.T) {
+	req := httptest.NewRequest("POST", "/v1/chat/completions", nil)
+	req.Header.Set("X-Request-ID", "langgraph-task-7")
+	if got := requestCorrelationID(req); got != "langgraph-task-7" {
+		t.Fatalf("requestCorrelationID = %q", got)
+	}
+}
+
+func TestRequestCorrelationIDRejectsOversizedExternalRequestID(t *testing.T) {
+	req := httptest.NewRequest("POST", "/v1/chat/completions", nil)
+	req.Header.Set("X-Request-ID", "0123456789"+string(make([]byte, 201)))
+	if got := requestCorrelationID(req); got == req.Header.Get("X-Request-ID") {
+		t.Fatal("oversized request id must not become correlation id")
 	}
 }
