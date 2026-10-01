@@ -155,7 +155,7 @@ func geminiDelegateFor(capability string) (string, bool) {
 		return "gemini.delegate.multimodal@1.0.0", true
 	case geminiAudioTranscribe:
 		return "gemini.delegate.audio.transcribe@1.0.0", true
-	case geminiAudioAnalyze:
+	case geminiAudioAnalyze, "gemini.audio.analyze":
 		return "gemini.delegate.audio.analyze@1.0.0", true
 	case geminiSpeechSynthesize:
 		return "gemini.delegate.speech.synthesize@1.0.0", true
