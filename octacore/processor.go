@@ -3,6 +3,7 @@ package octacore
 import (
 	"context"
 	"errors"
+	"sync"
 	"time"
 
 	"github.com/divibisoul/Orquestrador-/backend"
