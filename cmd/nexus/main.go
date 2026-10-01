@@ -17,6 +17,7 @@ import (
 	"github.com/divibisoul/Orquestrador-/aeternum"
 	"github.com/divibisoul/Orquestrador-/api/health"
 	"github.com/divibisoul/Orquestrador-/backend"
+	"github.com/divibisoul/Orquestrador-/cooperation"
 	"github.com/divibisoul/Orquestrador-/cognitive"
 	"github.com/divibisoul/Orquestrador-/jev"
 	"github.com/divibisoul/Orquestrador-/learning"
@@ -143,6 +144,14 @@ func main() {
 	}
 	peerClient.SetRouteScorer(learningMachine)
 	peerClient.SetRouteOutcomeObserver(learningMachine)
+
+	coordinator, err := cooperation.New(peerClient, learningMachine)
+	if err != nil {
+		log.Fatal(err)
+	}
+	if err := orchestrator.RegisterCooperationOperations(e, coordinator); err != nil {
+		log.Fatal(err)
+	}
 
 	clareiraReporter, err := mesh.NewClareiraReporter(peerClient)
 	if err != nil {
