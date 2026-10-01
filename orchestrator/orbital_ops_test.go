@@ -16,12 +16,20 @@ import (
 func TestOrbitalReasoningConnectsTCEToPrefrontal(t *testing.T) {
 	t.Setenv("N07_TCE_ENABLED", "true")
 	n, err := neural.New(4, .05)
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	c, err := prefrontal.New(0, 8)
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	e, err := New(n, c, supergpu.New(nil))
-	if err != nil { t.Fatal(err) }
-	if err := RegisterOrbitalReasoningOperations(e); err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := RegisterOrbitalReasoningOperations(e); err != nil {
+		t.Fatal(err)
+	}
 
 	workloads, _ := json.Marshal([]core.Workload{{
 		ID: "orbit-task-1", Operation: "reasoning-simulation", Precision: core.FP16,
@@ -35,10 +43,18 @@ func TestOrbitalReasoningConnectsTCEToPrefrontal(t *testing.T) {
 	m.Metadata["workloads_json"] = string(workloads)
 	m.Metadata["candidate_json"] = string(candidate)
 	result, err := e.Submit(context.Background(), m)
-	if err != nil { t.Fatal(err) }
-	if result.Status != "ok" { t.Fatalf("status=%q error=%q", result.Status, result.Error) }
-	if result.Metadata["simulation_is_not_hardware"] != "true" { t.Fatalf("missing simulation boundary: %#v", result.Metadata) }
-	if result.Metadata["decision_id"] != "orbit-candidate-1" { t.Fatalf("missing PFC decision: %#v", result.Metadata) }
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Status != "ok" {
+		t.Fatalf("status=%q error=%q", result.Status, result.Error)
+	}
+	if result.Metadata["simulation_is_not_hardware"] != "true" {
+		t.Fatalf("missing simulation boundary: %#v", result.Metadata)
+	}
+	if result.Metadata["decision_id"] != "orbit-candidate-1" {
+		t.Fatalf("missing PFC decision: %#v", result.Metadata)
+	}
 }
 
 func TestOrbitalReasoningFailsClosedWhenTCEDisabled(t *testing.T) {
@@ -46,9 +62,15 @@ func TestOrbitalReasoningFailsClosedWhenTCEDisabled(t *testing.T) {
 	n, _ := neural.New(4, .05)
 	c, _ := prefrontal.New(0, 8)
 	e, err := New(n, c, supergpu.New(nil))
-	if err != nil { t.Fatal(err) }
-	if err := RegisterOrbitalReasoningOperations(e); err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := RegisterOrbitalReasoningOperations(e); err != nil {
+		t.Fatal(err)
+	}
 	m := protocol.NewMessage("N01", "N07", "command", "transcendental.estimate@1.0.0", nil)
 	result, err := e.Submit(context.Background(), m)
-	if err == nil || result.Error != "TCE_DISABLED" { t.Fatalf("expected fail-closed TCE_DISABLED, result=%#v err=%v", result, err) }
+	if err == nil || result.Error != "TCE_DISABLED" {
+		t.Fatalf("expected fail-closed TCE_DISABLED, result=%#v err=%v", result, err)
+	}
 }

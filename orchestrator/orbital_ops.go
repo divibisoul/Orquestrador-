@@ -69,7 +69,7 @@ func orbitalEvaluationHandler(e *Engine, sim *executor.SimulatedExecutor) Handle
 			return errorOrbitalResult(m, err), err
 		}
 		var candidate struct {
-			ID string
+			ID                                                string
 			Cost, Risk, Utility, Uncertainty, Urgency, Impact float64
 		}
 		if err := json.Unmarshal([]byte(strings.TrimSpace(m.Metadata["candidate_json"])), &candidate); err != nil {
@@ -92,13 +92,13 @@ func orbitalEvaluationHandler(e *Engine, sim *executor.SimulatedExecutor) Handle
 			TraceID: m.TraceID, CorrelationID: m.CorrelationID,
 			Source: "N07.prefrontal.orbital", Target: m.Source, Status: "ok",
 			Metadata: map[string]string{
-				"decision_id":                 decision.ID,
-				"decision_score":              floatString(decision.Score),
-				"simulation_architecture":     estimate.Architecture,
-				"simulation_estimated_ms":     strconv.FormatInt(estimate.EstimatedTime.Milliseconds(), 10),
-				"simulation_confidence":       floatString(estimate.Confidence),
-				"simulation_cost_json":        string(estimateJSON),
-				"simulation_is_not_hardware":  "true",
+				"decision_id":                decision.ID,
+				"decision_score":             floatString(decision.Score),
+				"simulation_architecture":    estimate.Architecture,
+				"simulation_estimated_ms":    strconv.FormatInt(estimate.EstimatedTime.Milliseconds(), 10),
+				"simulation_confidence":      floatString(estimate.Confidence),
+				"simulation_cost_json":       string(estimateJSON),
+				"simulation_is_not_hardware": "true",
 			},
 		}, nil
 	}
@@ -128,8 +128,8 @@ func transcendentalEstimateHandler(sim *executor.SimulatedExecutor) Handler {
 			TraceID: m.TraceID, CorrelationID: m.CorrelationID,
 			Source: "N07.tce", Target: m.Source, Status: "ok",
 			Metadata: map[string]string{
-				"cost_json":      string(b),
-				"architecture":  estimate.Architecture,
+				"cost_json":       string(b),
+				"architecture":    estimate.Architecture,
 				"simulation_only": "true",
 			},
 		}, nil
