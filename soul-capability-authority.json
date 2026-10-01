@@ -79,7 +79,9 @@
       "orchestration",
       "federation",
       "supergpu",
-      "jev.systemone@1.0.0"
+      "jev.systemone@1.0.0",
+      "prefrontal.orbital.evaluate@1.0.0",
+      "transcendental.estimate@1.0.0"
     ],
     "SARA": [
       "sara.health",
@@ -545,6 +547,18 @@
         "repository": "divibisoul/Orquestrador-",
         "path": "orchestrator/jev.go",
         "ref": "3c86290c3ba61ea9343b9510a677052b584507f2"
+      },
+      {
+        "id": "prefrontal.orbital.evaluate@1.0.0",
+        "repository": "divibisoul/Orquestrador-",
+        "path": "orchestrator/orbital_ops.go",
+        "ref": "5ec47d4fa53f18c2c8208be7262fd6de41267b6c"
+      },
+      {
+        "id": "transcendental.estimate@1.0.0",
+        "repository": "divibisoul/Orquestrador-",
+        "path": "orchestrator/orbital_ops.go",
+        "ref": "5ec47d4fa53f18c2c8208be7262fd6de41267b6c"
       }
     ]
   },
