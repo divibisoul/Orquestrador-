@@ -74,6 +74,7 @@ func (p *PeerClient) ResolveOSSAffinity(ctx context.Context, capability, correla
 			}
 
 			var description map[string]any
+			var err error
 			if _, ok := configured[nucleus]; ok {
 				report.Configured = true
 				discoveryCtx, cancel := context.WithTimeout(ctx, 2*time.Second)
