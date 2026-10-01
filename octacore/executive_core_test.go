@@ -187,4 +187,13 @@ func TestUnifiedExecutiveCoreUsesExplicitEightLogicalLanes(t *testing.T) {
 	if !ok || len(components) != 4 {
 		t.Fatalf("unexpected component list: %#v", description["components"])
 	}
+	lanes, ok := description["lanes"].([]ExecutiveLane)
+	if !ok || len(lanes) != 8 {
+		t.Fatalf("expected eight executable logical lanes, got %#v", description["lanes"])
+	}
+	for _, lane := range lanes {
+		if lane.ID == "" || lane.Component == "" || lane.Role == "" || lane.Transport == "" || !lane.Required {
+			t.Fatalf("invalid executive lane: %#v", lane)
+		}
+	}
 }
