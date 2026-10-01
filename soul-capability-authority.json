@@ -81,7 +81,10 @@
       "supergpu",
       "jev.systemone@1.0.0",
       "prefrontal.orbital.evaluate@1.0.0",
-      "transcendental.estimate@1.0.0"
+      "transcendental.estimate@1.0.0",
+      "octacore.core.describe@1.0.0",
+      "octacore.core.health@1.0.0",
+      "octacore.core.execute@1.0.0"
     ],
     "SARA": [
       "sara.health",
@@ -559,6 +562,24 @@
         "repository": "divibisoul/Orquestrador-",
         "path": "orchestrator/orbital_ops.go",
         "ref": "47c9bf19053abb6630bd4b200efb2cec8d7e2022"
+      },
+      {
+        "id": "octacore.core.describe@1.0.0",
+        "repository": "divibisoul/Orquestrador-",
+        "path": "octacore/operations.go",
+        "ref": "feat/oss-similarity-routing-2026-10-01"
+      },
+      {
+        "id": "octacore.core.health@1.0.0",
+        "repository": "divibisoul/Orquestrador-",
+        "path": "octacore/operations.go",
+        "ref": "feat/oss-similarity-routing-2026-10-01"
+      },
+      {
+        "id": "octacore.core.execute@1.0.0",
+        "repository": "divibisoul/Orquestrador-",
+        "path": "octacore/operations.go",
+        "ref": "feat/oss-similarity-routing-2026-10-01"
       }
     ]
   },
