@@ -131,7 +131,7 @@ func defaultSlots() map[SlotID]Slot {
 		G4: {Slot: G4, Nucleus: "N04", Role: "tools / documents / research kernels", Status: SlotAdapterReady, Execution: []Backend{BackendRemoteMesh}},
 		G5: {Slot: G5, Nucleus: "N05", Role: "dispatch kernels", Status: SlotRepoPresent, Execution: []Backend{BackendRemoteMesh}},
 		G6: {Slot: G6, Nucleus: "N06", Role: "cognition / session batching + SARA client", Status: SlotAdapterReady, Execution: []Backend{BackendRemoteMesh}},
-		G7: {Slot: G7, Nucleus: "N07", Role: "SuperGPU scheduler + Mesh router + correlation", Status: SlotImplemented, Capabilities: []string{"octacore.submit", "octacore.batch", "octacore.health", "supergpu.execute", "mesh.supergpu.parallel"}, Execution: []Backend{BackendInProcess}},
+		G7: {Slot: G7, Nucleus: "N07", Role: "SuperGPU scheduler + Mesh router + correlation", Status: SlotImplemented, Capabilities: []string{"octacore.submit", "octacore.batch", "octacore.health", "octacore.core.describe", "octacore.core.health", "octacore.core.execute", "supergpu.execute", "mesh.supergpu.parallel"}, Execution: []Backend{BackendInProcess}},
 	}
 }
 
