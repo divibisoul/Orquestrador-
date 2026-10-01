@@ -10,6 +10,7 @@ type AgentProfile struct {
 	Capability    string   `json:"capability"`
 	Role          string   `json:"role"`
 	TargetNucleus string   `json:"target_nucleus"`
+	AdapterOwner  string   `json:"adapter_owner"`
 	UseInCore     string   `json:"use_in_core"`
 }
 
@@ -21,6 +22,7 @@ var agentProfiles = []AgentProfile{
 		Capability:    "mlfg",
 		Role:         "meta-learning design and bounded task iteration advisory",
 		TargetNucleus: "N06",
+		AdapterOwner: "N02",
 		UseInCore:     "optional collaborative advisory stage before resource estimation",
 	},
 	{
@@ -30,6 +32,7 @@ var agentProfiles = []AgentProfile{
 		Capability:    "skill_acquisition",
 		Role:          "reusable skill specification from demonstrations",
 		TargetNucleus: "N04",
+		AdapterOwner: "N02",
 		UseInCore:     "optional collaborative skill-learning stage when demonstrations are supplied",
 	},
 	{
@@ -39,6 +42,7 @@ var agentProfiles = []AgentProfile{
 		Capability:    "emergent_cognition",
 		Role:          "bounded subtask decomposition and synthesis",
 		TargetNucleus: "N07",
+		AdapterOwner: "N02",
 		UseInCore:     "optional collaborative decomposition stage over Mesh",
 	},
 	{
@@ -48,6 +52,7 @@ var agentProfiles = []AgentProfile{
 		Capability:    "uci",
 		Role:          "universal protocol/capability translation advisory",
 		TargetNucleus: "N04",
+		AdapterOwner: "N02",
 		UseInCore:     "optional contract-translation stage for heterogeneous tool requests",
 	},
 	{
