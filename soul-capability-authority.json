@@ -79,6 +79,8 @@
       "orchestration",
       "federation",
       "supergpu",
+      "mesh.capability.resolve@1.0.0",
+      "cognitive.planning.sources@1.0.0",
       "jev.systemone@1.0.0",
       "prefrontal.orbital.evaluate@1.0.0",
       "transcendental.estimate@1.0.0"
