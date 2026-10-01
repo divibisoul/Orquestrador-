@@ -21,7 +21,7 @@ func RegisterExternalPlanningSourceOperation(e *Engine) error {
 			TraceID: m.TraceID, CorrelationID: m.CorrelationID,
 			Source: "N07.cognitive", Target: m.Source, Status: "ok",
 			Metadata: map[string]string{
-				"sources_json": string(raw),
+				"sources_json":       string(raw),
 				"execution_boundary": "descriptive provenance only; upstream code is not copied or executed",
 			},
 		}, nil
