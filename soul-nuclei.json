@@ -56,7 +56,7 @@
         "N02"
       ],
       "manifestAuthority": "SOUL-FUSION-MANIFEST.json",
-      "sourceRef": "6f79bc2405e2afc409cc2646ab5c500d356714a7",
+      "sourceRef": "b1fa8246ca9f6877fe7e353c2c5f1511d85a4b7b",
       "status": "main-live-recovery-and-hortacore-bridge-merged"
     },
     "N02": {
@@ -79,7 +79,7 @@
         "N03"
       ],
       "manifestAuthority": "SOUL-FUSION-MANIFEST.json",
-      "sourceRef": "5f8a7dfb42359925f52ea9b51a5f4610b16baa7d",
+      "sourceRef": "50b090171645df82ae861e5af3d41cc38adada35",
       "status": "main-live-bncv2-csae-dcrs-reintegrated"
     },
     "N03": {
@@ -103,7 +103,7 @@
         "N04"
       ],
       "manifestAuthority": "SOUL-FUSION-MANIFEST.json",
-      "sourceRef": "cd34cd0624edfa33714cfc12045ee1a8301a39e8",
+      "sourceRef": "09e34aa5b5deea68ecbc66cf2c01f6607e16ba78",
       "status": "main-live-composition-contract-reconciled"
     },
     "N04": {
@@ -126,7 +126,7 @@
         "N05"
       ],
       "manifestAuthority": "SOUL-FUSION-MANIFEST.json",
-      "sourceRef": "45ab7c7fc9f4ee67636f3062cedefab5a0d33de8",
+      "sourceRef": "13501b343d789c198640414238d0c9edfc7cfe6e",
       "status": "main-live-tool-capability-alias-reconciled"
     },
     "N05": {
@@ -150,7 +150,7 @@
         "N06"
       ],
       "manifestAuthority": "SOUL-FUSION-MANIFEST.json",
-      "sourceRef": "06ffb029477680cfef51a7bbd310c450979b0dc0",
+      "sourceRef": "2207a168861c1b64e1554540b18d47a102387400",
       "status": "main-live-inference-capability-catalog-reconciled"
     },
     "N06": {
@@ -174,7 +174,7 @@
         "N07"
       ],
       "manifestAuthority": "SOUL-FUSION-MANIFEST.json",
-      "sourceRef": "df3cead2b92a84eaad99e46c83c9a9997ada219e",
+      "sourceRef": "4ab735aac01d8493209ae43941bd1db95e421c10",
       "status": "main-live-composition-targets-reconciled"
     },
     "N07": {
@@ -211,7 +211,7 @@
         "src/sara/__init__.py"
       ],
       "authority": "sara.meta / sara.core / sara.governance",
-      "sourceRef": "730b622ad158a5119a7c7be55bbc1a266081f598",
+      "sourceRef": "777b7827ee0ab4bff5c73e22cb42dd911ace37bc",
       "status": "main-live-chimera-and-bayesian-runtime-merged"
     }
   },
