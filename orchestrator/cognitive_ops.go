@@ -149,15 +149,15 @@ func cognitiveResult(message protocol.Message, raw []byte, err error) (protocol.
 
 func geminiDelegateFor(capability string) (string, bool) {
 	switch strings.TrimSpace(capability) {
-	case geminiText:
+	case geminiText, "gemini.text.generate":
 		return "gemini.delegate.text@1.0.0", true
-	case geminiMultimodal:
+	case geminiMultimodal, "gemini.multimodal.generate":
 		return "gemini.delegate.multimodal@1.0.0", true
-	case geminiAudioTranscribe:
+	case geminiAudioTranscribe, "gemini.audio.transcribe":
 		return "gemini.delegate.audio.transcribe@1.0.0", true
 	case geminiAudioAnalyze, "gemini.audio.analyze":
 		return "gemini.delegate.audio.analyze@1.0.0", true
-	case geminiSpeechSynthesize:
+	case geminiSpeechSynthesize, "gemini.speech.synthesize":
 		return "gemini.delegate.speech.synthesize@1.0.0", true
 	default:
 		return "", false
