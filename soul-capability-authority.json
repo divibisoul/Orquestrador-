@@ -259,18 +259,6 @@
         "ref": "main"
       },
       {
-        "id": "clareira.ingest",
-        "repository": "divibisoul/Eternium-",
-        "path": "src/soul-mesh/SoulMeshCapabilities.ts",
-        "ref": "main"
-      },
-      {
-        "id": "clareira.metrics",
-        "repository": "divibisoul/Eternium-",
-        "path": "src/soul-mesh/SoulMeshCapabilities.ts",
-        "ref": "main"
-      },
-      {
         "id": "cognitive-processing",
         "repository": "divibisoul/Eternium-",
         "path": "src/soul-mesh/SoulMeshCapabilities.ts",
@@ -556,7 +544,7 @@
         "id": "jev.systemone@1.0.0",
         "repository": "divibisoul/Orquestrador-",
         "path": "orchestrator/jev.go",
-        "ref": "e657cb095295da92e6920e4c0eb2952404d7cfa0"
+        "ref": "daa4b8705d36376893765ecaec412e7ab250edf8"
       }
     ]
   },
