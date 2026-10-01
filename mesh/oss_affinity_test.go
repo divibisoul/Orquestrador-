@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -30,24 +32,40 @@ func TestLoadOSSAffinityFromBytes(t *testing.T) {
 	}
 }
 
-func TestCallBestDynamicHonorsOSSAffinityAtRuntime(t *testing.T) {
-	secret := "test-secret-oss-affinity-2026"
-	var n02Tasks atomic.Int32
-	var n03Tasks atomic.Int32
+func TestCallBestDynamicRoutesAllOSSCapabilitiesByAffinity(t *testing.T) {
+	affinity := loadOSSAffinityFile()
+	if len(affinity) == 0 {
+		t.Fatal("canonical OSS affinity manifest was not loaded")
+	}
 
-	newPeer := func(nucleus string, taskCount *atomic.Int32) *httptest.Server {
-		return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	secret := "test-secret-oss-affinity-2026"
+	var mu sync.Mutex
+	taskCounts := map[string]map[string]int{}
+	servers := make(map[string]*httptest.Server, 6)
+
+	for _, nucleus := range []string{protocol.N01, protocol.N02, protocol.N03, protocol.N04, protocol.N05, protocol.N06} {
+		taskCounts[nucleus] = map[string]int{}
+		nucleus := nucleus
+		servers[nucleus] = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			var request canonicalWireEnvelope
 			if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
-				t.Fatalf("%s decode request: %v", nucleus, err)
+				t.Errorf("%s decode request: %v", nucleus, err)
+				return
 			}
 
 			responsePayload := map[string]any{}
 			if request.Capability == "mesh.discovery" || request.Capability == "mesh.describe" {
-				responsePayload["executableCapabilities"] = []any{"mesh.discovery", "mesh.describe", "multimodal_cortex"}
-			} else if request.Capability == "multimodal_cortex" {
-				taskCount.Add(1)
+				capabilities := []any{"mesh.discovery", "mesh.describe"}
+				for capability := range affinity {
+					capabilities = append(capabilities, capability)
+				}
+				responsePayload["executableCapabilities"] = capabilities
+			} else {
+				mu.Lock()
+				taskCounts[nucleus][request.Capability]++
+				mu.Unlock()
 				responsePayload["handledBy"] = nucleus
+				responsePayload["capability"] = request.Capability
 			}
 
 			envelope := protocol.MeshEnvelope{
@@ -66,7 +84,8 @@ func TestCallBestDynamicHonorsOSSAffinityAtRuntime(t *testing.T) {
 				},
 			}
 			if err := protocol.SignHMAC(&envelope, secret); err != nil {
-				t.Fatalf("%s sign response: %v", nucleus, err)
+				t.Errorf("%s sign response: %v", nucleus, err)
+				return
 			}
 
 			body := map[string]any{
@@ -86,40 +105,65 @@ func TestCallBestDynamicHonorsOSSAffinityAtRuntime(t *testing.T) {
 			w.Header().Set("Content-Type", "application/json")
 			_ = json.NewEncoder(w).Encode(body)
 		}))
+		defer servers[nucleus].Close()
 	}
-
-	n02 := newPeer(protocol.N02, &n02Tasks)
-	defer n02.Close()
-	n03 := newPeer(protocol.N03, &n03Tasks)
-	defer n03.Close()
 
 	client := &PeerClient{
-		peers: map[string]PeerInfo{
-			protocol.N02: {Nucleus: protocol.N02, URL: n02.URL, Circuit: CircuitClosed},
-			protocol.N03: {Nucleus: protocol.N03, URL: n03.URL, Circuit: CircuitClosed},
-		},
-		client:            &http.Client{Timeout: 5 * time.Second},
-		secret:            secret,
-		maxRetry:          1,
-		cooldown:          time.Second,
-		discoveryCache:    make(map[string]discoveryCacheEntry),
+		peers: map[string]PeerInfo{},
+		client: &http.Client{Timeout: 5 * time.Second},
+		secret: secret,
+		maxRetry: 1,
+		cooldown: time.Second,
+		discoveryCache: make(map[string]discoveryCacheEntry),
 		discoveryCacheTTL: time.Minute,
 	}
+	for nucleus, server := range servers {
+		client.peers[nucleus] = PeerInfo{Nucleus: nucleus, URL: server.URL, Circuit: CircuitClosed}
+	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
+	for capability := range affinity {
+		targets := affinity[capability]
+		expected := ""
+		for _, target := range targets {
+			if _, ok := client.peers[target]; ok {
+				expected = target
+				break
+			}
+		}
+		if expected == "" {
+			t.Fatalf("%s has no routable N01..N06 affinity target: %#v", capability, targets)
+		}
 
-	_, owner, err := client.CallBestDynamic(ctx, "multimodal_cortex", map[string]any{"text": "probe"}, "oss-affinity-e2e")
-	if err != nil {
-		t.Fatalf("CallBestDynamic: %v", err)
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		_, owner, err := client.CallBestDynamic(ctx, capability, map[string]any{"probe": capability}, "oss-affinity-"+capability)
+		cancel()
+		if err != nil {
+			t.Fatalf("%s CallBestDynamic: %v", capability, err)
+		}
+		if owner != expected {
+			t.Fatalf("%s routed to %s, expected affinity target %s from %#v", capability, owner, expected, targets)
+		}
+
+		mu.Lock()
+		got := taskCounts[owner][capability]
+		mu.Unlock()
+		if got != 1 {
+			t.Fatalf("%s task count on %s = %d, expected 1", capability, owner, got)
+		}
 	}
-	if owner != protocol.N03 {
-		t.Fatalf("affinity route selected %s, expected %s", owner, protocol.N03)
+
+	var totalTasks int
+	mu.Lock()
+	for _, counts := range taskCounts {
+		for _, count := range counts {
+			totalTasks += count
+		}
 	}
-	if n03Tasks.Load() != 1 {
-		t.Fatalf("N03 task count = %d, expected 1", n03Tasks.Load())
+	mu.Unlock()
+	if totalTasks != len(affinity) {
+		t.Fatalf("executed OSS capabilities = %d, manifest entries = %d", totalTasks, len(affinity))
 	}
-	if n02Tasks.Load() != 0 {
-		t.Fatalf("N02 task count = %d, expected 0 because N03 is the first affinity target", n02Tasks.Load())
-	}
+
+	_ = os.Getenv("SOUL_CAPABILITY_AUTHORITY_PATH")
+	_ = atomic.Int32{}
 }
