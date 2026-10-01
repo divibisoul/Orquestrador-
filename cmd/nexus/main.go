@@ -119,6 +119,9 @@ func main() {
 	if err := orchestrator.RegisterAdvancedOperations(e); err != nil {
 		log.Fatal(err)
 	}
+	if err := orchestrator.RegisterOrbitalReasoningOperations(e); err != nil {
+		log.Fatal(err)
+	}
 	if client, err := jev.NewFromEnv(); err == nil {
 		if err := orchestrator.RegisterJevOperations(e, client); err != nil {
 			log.Fatal(err)
@@ -219,8 +222,23 @@ func main() {
 	if err := rgo.RegisterTrinityOperation(e, saraProxy, peerClient); err != nil {
 		log.Fatal(err)
 	}
+	tceSimulator, err := orchestrator.NewTranscendentalSimulatorFromEnv()
+	if err != nil {
+		log.Fatal(err)
+	}
+	prefrontalNeocortex, err := prefrontal.NewNeocortex(c, n)
+	if err != nil {
+		log.Fatal(err)
+	}
 	octacoreProcessor, err := octacore.NewProcessor(octacore.DefaultConfig(), g, peerClient, saraProxy)
 	if err != nil {
+		log.Fatal(err)
+	}
+	executiveCore, err := octacore.NewExecutiveCore(e, prefrontalNeocortex, tceSimulator, g, peerClient)
+	if err != nil {
+		log.Fatal(err)
+	}
+	if err := octacoreProcessor.SetExecutiveCore(executiveCore); err != nil {
 		log.Fatal(err)
 	}
 	octacoreProcessor.SetVagusPublisher(func(ctx context.Context, event octacore.VagusEnvelope) error {
