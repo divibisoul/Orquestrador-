@@ -54,7 +54,14 @@ func estimateRoofline(wl core.Workload, m PerformanceModel, efficiency float64) 
 	compute := flops / (pflops * 1e15)
 	memory := float64(max64(wl.DataBytes, 0)) / (m.GetBandwidthGBs() * 1e9)
 	seconds := math.Max(compute, memory) / efficiency
-	return time.Duration(seconds * float64(time.Second))
+	// time.Duration truncates sub-nanosecond estimates to zero. Keep the
+	// deterministic simulation positive for valid small workloads by rounding
+	// up to the nearest nanosecond instead of silently producing zero latency.
+	nanos := math.Ceil(seconds * float64(time.Second))
+	if nanos < 1 {
+		nanos = 1
+	}
+	return time.Duration(nanos)
 }
 func eff(v float64) float64 {
 	if v == 0 {
