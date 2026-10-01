@@ -17,6 +17,9 @@ const (
 	OpSubmit   = "octacore.submit@1.0.0"
 	OpBatch    = "octacore.batch@1.0.0"
 	OpSignal   = "octacore.signal@1.0.0"
+	OpCoreDescribe = "octacore.core.describe@1.0.0"
+	OpCoreHealth   = "octacore.core.health@1.0.0"
+	OpCoreExecute  = "octacore.core.execute@1.0.0"
 )
 
 func RegisterOperations(engine *orchestrator.Engine, processor *Processor) error {
@@ -85,6 +88,50 @@ func RegisterOperations(engine *orchestrator.Engine, processor *Processor) error
 				raw, marshalErr := json.Marshal(results)
 				if marshalErr != nil {
 					return protocolResult(message, nil, marshalErr)
+				}
+				return protocolResult(message, raw, nil)
+			},
+		},
+
+		{
+			name: OpCoreDescribe,
+			handler: func(_ context.Context, message protocol.Message) (protocol.Result, error) {
+				core := processor.ExecutiveCore()
+				if core == nil {
+					return protocolResult(message, nil, errors.New("executive core is not connected"))
+				}
+				raw, err := json.Marshal(core.Describe())
+				return protocolResult(message, raw, err)
+			},
+		},
+		{
+			name: OpCoreHealth,
+			handler: func(_ context.Context, message protocol.Message) (protocol.Result, error) {
+				core := processor.ExecutiveCore()
+				if core == nil {
+					return protocolResult(message, nil, errors.New("executive core is not connected"))
+				}
+				raw, err := json.Marshal(core.Health())
+				return protocolResult(message, raw, err)
+			},
+		},
+		{
+			name: OpCoreExecute,
+			handler: func(ctx context.Context, message protocol.Message) (protocol.Result, error) {
+				req, err := DecodeExecutiveCoreRequest(message.Metadata)
+				if err != nil {
+					return protocolResult(message, nil, fmt.Errorf("INVALID_EXECUTIVE_CORE_REQUEST: %w", err))
+				}
+				if message.CorrelationID != "" && req.CorrelationID != message.CorrelationID {
+					return protocolResult(message, nil, errors.New("CORRELATION_ID_MISMATCH"))
+				}
+				result, err := processor.ExecutiveExecute(ctx, req)
+				raw, marshalErr := json.Marshal(result)
+				if marshalErr != nil {
+					return protocolResult(message, nil, marshalErr)
+				}
+				if err != nil {
+					return protocolResult(message, raw, err)
 				}
 				return protocolResult(message, raw, nil)
 			},
