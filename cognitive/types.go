@@ -5,6 +5,13 @@ import (
 	"time"
 )
 
+var ExternalPlanningSources = []map[string]string{
+	{"name": "BabyAGI", "role": "iterative task planning", "state": "PROVENANCE_ONLY"},
+	{"name": "AutoGPT", "role": "agent task decomposition and execution loops", "state": "PROVENANCE_ONLY"},
+	{"name": "DeerFlow", "role": "research/planning workflow patterns", "state": "PROVENANCE_ONLY"},
+	{"name": "SuperAGI", "role": "multi-agent workflows, task queues and tool execution", "state": "PROVENANCE_ONLY"},
+}
+
 type PeerDescriptor struct {
 	Nucleus string
 }
