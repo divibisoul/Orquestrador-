@@ -82,6 +82,13 @@ func (h *OpenAICompatHandler) ServeModels(w http.ResponseWriter, r *http.Request
 	})
 }
 
+func requestCorrelationID(r *http.Request) string {
+	if value := strings.TrimSpace(r.Header.Get("X-Request-ID")); value != "" && len(value) <= 200 {
+		return value
+	}
+	return fmt.Sprintf("openai-%d", time.Now().UnixNano())
+}
+
 func (h *OpenAICompatHandler) ServeChat(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		writeJSON(w, http.StatusMethodNotAllowed, map[string]any{"error": map[string]any{"message": "POST required", "type": "invalid_request_error"}})
@@ -119,7 +126,7 @@ func (h *OpenAICompatHandler) ServeChat(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	correlation := fmt.Sprintf("openai-%d", time.Now().UnixNano())
+	correlation := requestCorrelationID(r)
 	result, owner, callErr := h.peers.CallBestDynamic(r.Context(), openAICapability(), map[string]any{
 		"text": prompt, "source": "openai-compat", "model": "soul-auto",
 	}, correlation)
