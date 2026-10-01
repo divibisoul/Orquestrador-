@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/divibisoul/Orquestrador-/protocol"
+	"github.com/divibisoul/Orquestrador-/supergpu"
 )
 
 // RegisterSuperGPUOperations exposes the existing SuperGPU runtime through the
@@ -52,7 +53,8 @@ func RegisterSuperGPUOperations(e *Engine) error {
 				if op == "" {
 					op = "identity"
 				}
-				values, err := e.compute.Execute(ctx, device, op, message.Payload)
+				computeCtx := supergpu.WithCorrelationID(ctx, message.CorrelationID)
+				values, err := e.compute.Execute(computeCtx, device, op, message.Payload)
 				return protocol.Result{TraceID: message.TraceID, CorrelationID: message.CorrelationID, Source: "N07.supergpu", Target: message.Source, Status: status(err), Payload: values, Metadata: map[string]string{"device": device.ID, "operation": op}, Error: errorText(err)}, err
 			},
 		},

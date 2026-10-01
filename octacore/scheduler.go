@@ -559,7 +559,8 @@ func (s *Scheduler) run(ctx context.Context, job Job, slot Slot) (map[string]any
 				lastErr = err
 				continue
 			}
-			out, err := s.compute.Execute(ctx, device, operation, values)
+			computeCtx := supergpu.WithCorrelationID(ctx, job.CorrelationID)
+			out, err := s.compute.Execute(computeCtx, device, operation, values)
 			_ = s.compute.Release(device.ID, job.JobID)
 			if err != nil {
 				lastErr = err
