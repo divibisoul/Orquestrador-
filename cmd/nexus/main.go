@@ -147,6 +147,17 @@ func main() {
 	}
 	peerClient.SetRouteScorer(learningMachine)
 	peerClient.SetRouteOutcomeObserver(learningMachine)
+	peerClient.SetAffinityProbe(protocol.N07, func(context.Context, string) (map[string]any, error) {
+		return map[string]any{"operations": e.Operations()}, nil
+	})
+	if saraProxy.Configured() {
+		peerClient.SetAffinityProbe("SARA", func(ctx context.Context, correlation string) (map[string]any, error) {
+			return saraProxy.Capabilities(ctx, correlation)
+		})
+	}
+	if err := orchestrator.RegisterCapabilityResolutionOperation(e, peerClient); err != nil {
+		log.Fatal(err)
+	}
 
 	coordinator, err := cooperation.New(peerClient, learningMachine)
 	if err != nil {
@@ -203,6 +214,9 @@ func main() {
 	}
 	hortaCore.SetPeerClient(peerClient)
 	if err := orchestrator.RegisterCognitiveOperations(e, n07CognitiveMeshAdapter{peers: peerClient}, saraProxy, backend.NewSupabaseStore(cfg)); err != nil {
+		log.Fatal(err)
+	}
+	if err := orchestrator.RegisterExternalPlanningSourceOperation(e); err != nil {
 		log.Fatal(err)
 	}
 	if err := orchestrator.RegisterPrimordialCompositionOperation(e); err != nil {
