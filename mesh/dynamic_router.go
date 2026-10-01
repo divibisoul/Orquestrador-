@@ -12,12 +12,13 @@ import (
 // DynamicRouteCandidate is an observable routing choice without exposing
 // internal PeerClient state to callers.
 type DynamicRouteCandidate struct {
-	Nucleus    string        `json:"nucleus"`
-	Latency    time.Duration `json:"latency"`
-	Healthy    bool          `json:"healthy"`
-	Failures   int           `json:"failures"`
-	Capability bool          `json:"capability"`
-	Score      float64       `json:"score"`
+	Nucleus      string        `json:"nucleus"`
+	Latency      time.Duration `json:"latency"`
+	Healthy      bool          `json:"healthy"`
+	Failures     int           `json:"failures"`
+	Capability   bool          `json:"capability"`
+	AffinityRank int           `json:"affinityRank"`
+	Score        float64       `json:"score"`
 }
 
 // CallBestDynamic resolves a capability across all configured peers in
@@ -52,7 +53,8 @@ func (p *PeerClient) CallBestDynamic(ctx context.Context, capability string, pay
 				Nucleus:  candidatePeer.Nucleus,
 				Latency:  candidatePeer.Latency,
 				Healthy:  candidatePeer.Healthy,
-				Failures: candidatePeer.Failures,
+				Failures:     candidatePeer.Failures,
+				AffinityRank: ossAffinityRank(capability, candidatePeer.Nucleus),
 			}
 			if candidatePeer.Circuit == CircuitOpen && time.Now().Before(candidatePeer.RetryAfter) {
 				candidates[index] = candidate
@@ -73,6 +75,9 @@ func (p *PeerClient) CallBestDynamic(ctx context.Context, capability string, pay
 	sort.SliceStable(candidates, func(i, j int) bool {
 		if candidates[i].Capability != candidates[j].Capability {
 			return candidates[i].Capability
+		}
+		if candidates[i].AffinityRank != candidates[j].AffinityRank {
+			return candidates[i].AffinityRank < candidates[j].AffinityRank
 		}
 		if candidates[i].Score != candidates[j].Score {
 			return candidates[i].Score > candidates[j].Score
