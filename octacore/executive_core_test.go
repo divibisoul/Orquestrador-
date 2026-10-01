@@ -91,7 +91,7 @@ func TestUnifiedExecutiveCoreMeshE2E(t *testing.T) {
 		CorrelationID: "mesh-octa-correlation",
 		TaskID: "mesh-octa-task",
 		Operation: "identity",
-		Input: []float64{1, 2, 3, 4},
+		Input: []float64{1, 2, 3, 4, 5, 6, 7, 8},
 		Workloads: []core.Workload{workload},
 		Risk: 0,
 		Cost: 0,
