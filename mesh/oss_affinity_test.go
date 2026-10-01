@@ -65,15 +65,15 @@ func TestCallBestDynamicRoutesAllOSSCapabilitiesByAffinity(t *testing.T) {
 				responsePayload["capability"] = request.Capability
 			}
 			envelope := protocol.MeshEnvelope{
-				Version: protocol.SoulMeshVersion,
+				Version:         protocol.SoulMeshVersion,
 				ContractVersion: protocol.SoulMeshContractVersion,
-				MessageID: protocol.NewTraceID(),
-				Source: nucleus,
-				Target: protocol.N07,
-				Timestamp: time.Now().UnixMilli(),
-				Nonce: protocol.NewTraceID(),
-				CorrelationID: request.CorrelationID,
-				Type: "TASK_RESULT",
+				MessageID:       protocol.NewTraceID(),
+				Source:          nucleus,
+				Target:          protocol.N07,
+				Timestamp:       time.Now().UnixMilli(),
+				Nonce:           protocol.NewTraceID(),
+				CorrelationID:   request.CorrelationID,
+				Type:            "TASK_RESULT",
 				Payload: map[string]any{
 					"capability": request.Capability,
 					"payload":    responsePayload,
@@ -104,12 +104,12 @@ func TestCallBestDynamicRoutesAllOSSCapabilitiesByAffinity(t *testing.T) {
 	}
 
 	client := &PeerClient{
-		peers: map[string]PeerInfo{},
-		client: &http.Client{Timeout: 5 * time.Second},
-		secret: secret,
-		maxRetry: 1,
-		cooldown: time.Second,
-		discoveryCache: make(map[string]discoveryCacheEntry),
+		peers:             map[string]PeerInfo{},
+		client:            &http.Client{Timeout: 5 * time.Second},
+		secret:            secret,
+		maxRetry:          1,
+		cooldown:          time.Second,
+		discoveryCache:    make(map[string]discoveryCacheEntry),
 		discoveryCacheTTL: time.Minute,
 	}
 	for nucleus, server := range servers {
