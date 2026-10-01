@@ -56,7 +56,7 @@
         "N02"
       ],
       "manifestAuthority": "SOUL-FUSION-MANIFEST.json",
-      "sourceRef": "4bd0ba59533117c6c33fdda8fa0a22089ff25992",
+      "sourceRef": "6f79bc2405e2afc409cc2646ab5c500d356714a7",
       "status": "main-live-recovery-and-hortacore-bridge-merged"
     },
     "N02": {
@@ -79,7 +79,7 @@
         "N03"
       ],
       "manifestAuthority": "SOUL-FUSION-MANIFEST.json",
-      "sourceRef": "b4f841fc01f5a2a182535fdab244a709165755ac",
+      "sourceRef": "5f8a7dfb42359925f52ea9b51a5f4610b16baa7d",
       "status": "main-live-bncv2-csae-dcrs-reintegrated"
     },
     "N03": {
@@ -103,7 +103,7 @@
         "N04"
       ],
       "manifestAuthority": "SOUL-FUSION-MANIFEST.json",
-      "sourceRef": "6460ac61b7a248c426aff6262714f88d76b76745",
+      "sourceRef": "cd34cd0624edfa33714cfc12045ee1a8301a39e8",
       "status": "main-live-composition-contract-reconciled"
     },
     "N04": {
@@ -126,7 +126,7 @@
         "N05"
       ],
       "manifestAuthority": "SOUL-FUSION-MANIFEST.json",
-      "sourceRef": "ce8b642605ea73d2ebcb911d913df03e9bcc8eb8",
+      "sourceRef": "45ab7c7fc9f4ee67636f3062cedefab5a0d33de8",
       "status": "main-live-tool-capability-alias-reconciled"
     },
     "N05": {
@@ -150,7 +150,7 @@
         "N06"
       ],
       "manifestAuthority": "SOUL-FUSION-MANIFEST.json",
-      "sourceRef": "ebe88d7e272b71984ac498b40ba343c737b1e13b",
+      "sourceRef": "06ffb029477680cfef51a7bbd310c450979b0dc0",
       "status": "main-live-inference-capability-catalog-reconciled"
     },
     "N06": {
@@ -174,7 +174,7 @@
         "N07"
       ],
       "manifestAuthority": "SOUL-FUSION-MANIFEST.json",
-      "sourceRef": "ba2be09f3987c196d7e3daae70a9d9beabe7969a",
+      "sourceRef": "df3cead2b92a84eaad99e46c83c9a9997ada219e",
       "status": "main-live-composition-targets-reconciled"
     },
     "N07": {
