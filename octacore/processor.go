@@ -12,7 +12,8 @@ import (
 
 type Processor struct {
 	scheduler *Scheduler
-	executive *ExecutiveCore
+	executiveMu sync.RWMutex
+	executive   *ExecutiveCore
 }
 
 type Config struct {
@@ -52,9 +53,9 @@ func (p *Processor) SetExecutiveCore(core *ExecutiveCore) error {
 	if core == nil {
 		return errors.New("executive core is required")
 	}
-	p.scheduler.eventMu.Lock()
+	p.executiveMu.Lock()
 	p.executive = core
-	p.scheduler.eventMu.Unlock()
+	p.executiveMu.Unlock()
 	return nil
 }
 
@@ -62,8 +63,8 @@ func (p *Processor) ExecutiveCore() *ExecutiveCore {
 	if p == nil || p.scheduler == nil {
 		return nil
 	}
-	p.scheduler.eventMu.RLock()
-	defer p.scheduler.eventMu.RUnlock()
+	p.executiveMu.RLock()
+	defer p.executiveMu.RUnlock()
 	return p.executive
 }
 
