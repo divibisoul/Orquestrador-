@@ -204,3 +204,24 @@ func TestHTTPGatewayHonorsContextCancellation(t *testing.T) {
 		t.Fatal("cancelled request must not be reported as a successful request")
 	}
 }
+
+func TestStructuredCooperationPayloadContract(t *testing.T) {
+	if !structuredMeshCapability("cooperation.handshake") || !structuredMeshCapability("cooperation.exchange") {
+		t.Fatal("cooperation capabilities must use structured transport")
+	}
+	if structuredMeshCapability("neural.forward") || structuredMeshCapability("memory.search") {
+		t.Fatal("neural and memory contracts must remain numeric")
+	}
+	metadata := map[string]string{}
+	err := copyStructuredCapabilityMetadata(metadata, "cooperation.exchange", map[string]any{
+		"target":     "N05",
+		"capability": "inference.analyze",
+		"payload":    map[string]any{"prompt": "cooperative continuity"},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if metadata["target"] != "N05" || metadata["capability"] != "inference.analyze" || metadata["payload"] == "" {
+		t.Fatalf("structured cooperative fields were not preserved: %#v", metadata)
+	}
+}
