@@ -2,6 +2,7 @@ package mesh
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
@@ -102,4 +103,25 @@ func (p *PeerClient) ResolveOSSAffinity(ctx context.Context, capability, correla
 	wg.Wait()
 
 	return OSSAffinityResolution{Capability: capability, Targets: reports}, nil
+}
+
+
+type CapabilityResolutionSource interface {
+	ResolveCapability(ctx context.Context, capability, correlation string) (map[string]any, error)
+}
+
+func (p *PeerClient) ResolveCapability(ctx context.Context, capability, correlation string) (map[string]any, error) {
+	resolution, err := p.ResolveOSSAffinity(ctx, capability, correlation)
+	if err != nil {
+		return nil, err
+	}
+	raw, err := json.Marshal(resolution)
+	if err != nil {
+		return nil, err
+	}
+	var document map[string]any
+	if err := json.Unmarshal(raw, &document); err != nil {
+		return nil, err
+	}
+	return document, nil
 }
