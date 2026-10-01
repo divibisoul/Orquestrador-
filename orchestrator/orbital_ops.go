@@ -17,13 +17,10 @@ import (
 
 // NewTranscendentalSimulatorFromEnv constructs the canonical deterministic
 // TCE simulator shared by the orbital operations and the OctaCore executive unit.
-// A disabled TCE returns (nil, nil) so existing fail-closed behavior is preserved.
+// The TCE remains instantiated when disabled so the unified core has a stable component boundary; execution still fails closed while disabled.
 func NewTranscendentalSimulatorFromEnv() (*executor.SimulatedExecutor, error) {
-	if !strings.EqualFold(strings.TrimSpace(os.Getenv("N07_TCE_ENABLED")), "true") {
-		return nil, nil
-	}
 	cfg := core.DefaultConfig()
-	cfg.Enabled = true
+	cfg.Enabled = strings.EqualFold(strings.TrimSpace(os.Getenv("N07_TCE_ENABLED")), "true")
 	if mode := strings.TrimSpace(os.Getenv("N07_TCE_MODE")); mode != "" {
 		cfg.Mode = mode
 	}
