@@ -147,6 +147,12 @@ func main() {
 	}
 	peerClient.SetRouteScorer(learningMachine)
 	peerClient.SetRouteOutcomeObserver(learningMachine)
+	if err := orchestrator.RegisterCapabilityResolutionOperation(e, peerClient); err != nil {
+		log.Fatal(err)
+	}
+	if err := orchestrator.RegisterExternalPlanningSourceOperation(e); err != nil {
+		log.Fatal(err)
+	}
 
 	coordinator, err := cooperation.New(peerClient, learningMachine)
 	if err != nil {
