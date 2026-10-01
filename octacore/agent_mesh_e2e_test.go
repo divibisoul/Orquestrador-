@@ -64,7 +64,10 @@ func TestExecutiveCoreUsesSuperAGIMeshCapability(t *testing.T) {
 			Nonce:           protocol.NewTraceID(),
 			CorrelationID:   correlation,
 			Type:            "TASK_RESULT",
-			Payload:         payload,
+			Payload: map[string]any{
+				"capability": wire.Capability,
+				"payload":    payload,
+			},
 		}
 		if err := protocol.SignHMAC(&env, secret); err != nil {
 			t.Fatalf("sign test Mesh response: %v", err)
