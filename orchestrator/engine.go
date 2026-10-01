@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/divibisoul/Orquestrador-/neural"
+	"github.com/divibisoul/Orquestrador-/memory"
 	"github.com/divibisoul/Orquestrador-/observability"
 	"github.com/divibisoul/Orquestrador-/prefrontal"
 	"github.com/divibisoul/Orquestrador-/protocol"
@@ -59,6 +60,7 @@ type Engine struct {
 	rates            map[string]rateState
 	neural           *neural.Network
 	cortex           *prefrontal.Cortex
+	memory           memory.Store
 	compute          *supergpu.Runtime
 	running          atomic.Bool
 	sequence         atomic.Uint64
