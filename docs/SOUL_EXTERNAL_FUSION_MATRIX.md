@@ -151,3 +151,33 @@ NeMo is kept outside the production Go binary and outside SARA. Its current use 
 ### Candidate policy after F4
 
 LangGraph and NeMo are integrated as external N07-side adapters. LlamaIndex remains a pending N04 RAG candidate because the current N04 repository has document/tool capabilities but no verified vector/embedding pipeline to attach it to without inventing a new authority. LiteLLM remains conditional because Gemini + Ollama already cover the current provider requirement.
+
+
+## Live connection addendum — 2026-10-01
+
+This addendum preserves the historical snapshots above and records the current connection state discovered on GitHub main.
+
+### New repository discovered
+
+| Repository | Nature | Correct placement | State |
+|---|---|---|---|
+| divibisoul/jev-api | Published Jev website/API documentation surface; not a nucleus runtime | External reference for the N07 Jev adapter | CONNECTED THROUGH N07 BOUNDARY |
+
+The executable Jev boundary remains N07: `jev.systemone@1.0.0`. The upstream repository is not copied into N07 or turned into a new nucleus.
+
+### Connected tools and agents
+
+| Component | Owning nucleus / boundary | Agent | Connection | Proof state |
+|---|---|---|---|---|
+| Jev System One | N07 | n07.jev | `prefrontal.admission@1.0.0` can explicitly require `jev.systemone@1.0.0`; parent correlation is preserved and the Jev call receives a child trace | IMPLEMENTED; CI REVALIDATING |
+| LangGraph | N07-side external planner | external LangGraph planner, no Mesh identity | task id propagates through `X-Request-ID` into N07 `correlationId`; execution remains CallBestDynamic/N07 | CI_VALIDATED on OSS bridge; N07 revalidation in progress |
+| NVIDIA NeMo Agent Toolkit | N07-side external evaluation environment | NeMo evaluator/toolkit | installs `nvidia-nat`; does not become Mesh or SARA authority | CI_VALIDATED for toolkit installation/CLI |
+| N04 Gemini Skills | N04 | N04 native tool/runtime boundary | `gemini.skills.list` and `gemini.skills.describe` are executed by the existing N04 runtime and exposed only when configured | IMPLEMENTED in N04 runtime |
+
+### Placement law
+
+Jev decides; N07 orchestrates; LangGraph plans; NeMo evaluates; N04 executes Gemini Skill assets. None of these components is promoted to a new nucleus, second Mesh, second public ingress, or replacement for an existing native owner.
+
+### Current remediation vector
+
+Use the remaining CI evidence to close the JEV admission integration first. Then re-audit any capability that reports `declared` without a corresponding executable agent/runtime path. Do not promote a capability solely because it exists in a catalog.
