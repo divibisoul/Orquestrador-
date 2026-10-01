@@ -552,13 +552,13 @@
         "id": "prefrontal.orbital.evaluate@1.0.0",
         "repository": "divibisoul/Orquestrador-",
         "path": "orchestrator/orbital_ops.go",
-        "ref": "edd7c11ecb95cf6e4faaad0c2b115d71ac2a82a7"
+        "ref": "47c9bf19053abb6630bd4b200efb2cec8d7e2022"
       },
       {
         "id": "transcendental.estimate@1.0.0",
         "repository": "divibisoul/Orquestrador-",
         "path": "orchestrator/orbital_ops.go",
-        "ref": "edd7c11ecb95cf6e4faaad0c2b115d71ac2a82a7"
+        "ref": "47c9bf19053abb6630bd4b200efb2cec8d7e2022"
       }
     ]
   },
