@@ -35,7 +35,7 @@ func TestResolveCompositionPreservesPrimordialEssenceAndSupportsHigherOrderCompo
 	ledger.PrimordialEssence.CompositionSeeds = []Seed{
 		{Participants: []string{"N02", "N03", "N04"}, Mode: "higher-order", DerivedFunction: "perceive -> reason -> act", ExistingEvidence: []string{"evidence/N02-N03-N04"}, Status: string(Seeded)},
 		{Participants: []string{"N01", "N05"}, Mode: "orchestrated", DerivedFunction: "context -> inference", ExistingEvidence: []string{"evidence/N01-N05"}, Status: string(Seeded)},
-		{Participants: []string{"N04", "SARA"}, Mode: "transversal", DerivedFunction: "tool execution under governance", ExistingEvidence: []string{"evidence/N04-SARA"}, Status: Seeded},
+		{Participants: []string{"N04", "SARA"}, Mode: "transversal", DerivedFunction: "tool execution under governance", ExistingEvidence: []string{"evidence/N04-SARA"}, Status: string(Seeded)},
 	}
 
 	plan, err := ResolveComposition(ledger, "N03", "N02", "N04")
