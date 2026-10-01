@@ -714,6 +714,18 @@
         "N07"
       ]
     },
-    "unresolved": []
+    "unresolved": [],
+    "upstreams": {
+      "xun-agent": {
+        "repository": "MenxLi/xun",
+        "ref": "129065cb94748d6a9e8cbe6b51d8f46d8bbeae80",
+        "license": "UNVERIFIED",
+        "affinity": [
+          "uci",
+          "emergent_cognition"
+        ],
+        "target": "N04"
+      }
+    }
   }
 }
