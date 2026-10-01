@@ -29,6 +29,8 @@ const (
 	KindCustom      JobKind = "custom"
 )
 
+const UnifiedCoreLaneCount = 8
+
 type LaneID string
 
 const (
