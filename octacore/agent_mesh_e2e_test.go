@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/divibisoul/Orquestrador-/compute/transcendental/core"
-	"github.com/divibisoul/Orquestrador-/compute/transcendental/executor"
 	"github.com/divibisoul/Orquestrador-/compute/transcendental/models"
 	"github.com/divibisoul/Orquestrador-/mesh"
 	"github.com/divibisoul/Orquestrador-/neural"
