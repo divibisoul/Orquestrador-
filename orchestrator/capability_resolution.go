@@ -6,23 +6,26 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/divibisoul/Orquestrador-/mesh"
 	"github.com/divibisoul/Orquestrador-/protocol"
 )
 
-func RegisterCapabilityResolutionOperation(e *Engine, peers *mesh.PeerClient) error {
+type CapabilityResolutionSource interface {
+	ResolveCapability(context.Context, string, string) (map[string]any, error)
+}
+
+func RegisterCapabilityResolutionOperation(e *Engine, resolver CapabilityResolutionSource) error {
 	if e == nil {
 		return errors.New("orchestrator engine is required")
 	}
-	if peers == nil {
-		return errors.New("mesh peer client is required")
+	if resolver == nil {
+		return errors.New("capability resolution source is required")
 	}
 	return e.Register("mesh.capability.resolve@1.0.0", func(ctx context.Context, m protocol.Message) (protocol.Result, error) {
 		capability := strings.TrimSpace(m.Metadata["capability"])
 		if capability == "" {
 			return protocol.Result{}, errors.New("metadata.capability is required")
 		}
-		resolution, err := peers.ResolveOSSAffinity(ctx, capability, m.CorrelationID)
+		resolution, err := resolver.ResolveCapability(ctx, capability, m.CorrelationID)
 		if err != nil {
 			return protocol.Result{
 				TraceID: m.TraceID, CorrelationID: m.CorrelationID,
@@ -37,7 +40,7 @@ func RegisterCapabilityResolutionOperation(e *Engine, peers *mesh.PeerClient) er
 			}, err
 		}
 		metadata := map[string]string{
-			"capability": capability,
+			"capability":      capability,
 			"resolution_json": string(raw),
 		}
 		return protocol.Result{
