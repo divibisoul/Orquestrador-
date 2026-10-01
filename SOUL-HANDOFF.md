@@ -6,4 +6,7 @@
 **Proof gate:** synthetic N01→N07→N04/N05/N06 peer doubles were removed from the federation test. The integration test is credential-gated; without real endpoint/HMAC secrets it records BLOCKED_ENV and does not claim online proof.
 **Historical branches:** #61/#64/#67/#68/#81 were closed after selective rescue; #69 remains archaeology because only unique residuals should be extracted.
 **Evidence state:** source-level implementation is verified. No CI_VALIDATED/ONLINE_VERIFIED claim is made for the latest rescue because commit-scoped workflow evidence was not returned by the connector.
+
+**Cross-front intervention — 2026-10-01:** PR #97 (`fix/n07-execute-correlation-preservation-2026-10-01`) adds an explicit `ExecuteWithCorrelation` boundary and routes `/v1/execute` through it. This gives SARA a canonical execution path that preserves caller correlation without removing `Execute` or `ExecuteWithTrace`. Regression test added. **State: IMPLEMENTED-IN-PR / RECOVERY_PENDING** until checks/merge are observed.
+
 **Anti-loop termination rule:** each historical front must end in exactly one terminal state—RESCUED, ABSORBED, BLOCKED_ENV, or UNMEASURABLE—before the next front is opened.
