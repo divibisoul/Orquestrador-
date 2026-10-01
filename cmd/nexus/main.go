@@ -216,6 +216,9 @@ func main() {
 	if err := orchestrator.RegisterCognitiveOperations(e, n07CognitiveMeshAdapter{peers: peerClient}, saraProxy, backend.NewSupabaseStore(cfg)); err != nil {
 		log.Fatal(err)
 	}
+	if err := orchestrator.RegisterExternalPlanningSourceOperation(e); err != nil {
+		log.Fatal(err)
+	}
 	if err := orchestrator.RegisterPrimordialCompositionOperation(e); err != nil {
 		log.Fatal(err)
 	}
