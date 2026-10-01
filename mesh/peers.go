@@ -43,6 +43,10 @@ type RouteOutcomeObserver interface {
 	ObserveRoute(ctx context.Context, source, target, capability, correlation string, success bool) error
 }
 
+// AffinityCapabilityProbe supplies capability inventory from a non-Mesh
+// authority (for example SARA) without turning that service into a nucleus peer.
+type AffinityCapabilityProbe func(context.Context, string) (map[string]any, error)
+
 type PeerInfo struct {
 	Nucleus    string
 	URL        string
@@ -72,6 +76,7 @@ type PeerClient struct {
 	routeMu           sync.RWMutex
 	routeScorer       RouteScorer
 	routeObserver     RouteOutcomeObserver
+	affinityProbes    map[string]AffinityCapabilityProbe
 }
 
 func NewPeerClient(client *http.Client) (*PeerClient, error) {
@@ -92,6 +97,7 @@ func NewPeerClient(client *http.Client) (*PeerClient, error) {
 		cooldown:          30 * time.Second,
 		discoveryCache:    make(map[string]discoveryCacheEntry),
 		discoveryCacheTTL: defaultDiscoveryCacheTTL,
+		affinityProbes:    make(map[string]AffinityCapabilityProbe),
 	}, nil
 }
 
@@ -167,6 +173,32 @@ func (p *PeerClient) SetRouteOutcomeObserver(observer RouteOutcomeObserver) {
 	p.routeMu.Lock()
 	p.routeObserver = observer
 	p.routeMu.Unlock()
+}
+
+func (p *PeerClient) SetAffinityProbe(nucleus string, probe AffinityCapabilityProbe) {
+	if p == nil {
+		return
+	}
+	nucleus = strings.TrimSpace(nucleus)
+	if nucleus == "" {
+		return
+	}
+	p.routeMu.Lock()
+	defer p.routeMu.Unlock()
+	if p.affinityProbes == nil {
+		p.affinityProbes = make(map[string]AffinityCapabilityProbe)
+	}
+	if probe == nil {
+		delete(p.affinityProbes, nucleus)
+		return
+	}
+	p.affinityProbes[nucleus] = probe
+}
+
+func (p *PeerClient) affinityProbe(nucleus string) AffinityCapabilityProbe {
+	p.routeMu.RLock()
+	defer p.routeMu.RUnlock()
+	return p.affinityProbes[strings.TrimSpace(nucleus)]
 }
 
 func (p *PeerClient) routeHooks() (RouteScorer, RouteOutcomeObserver) {
@@ -301,13 +333,22 @@ func supportsExecutableCapability(description map[string]any, capability string)
 	}
 	requestedName, requestedVersion := splitPeerCapabilityVersion(capability)
 	for _, item := range items {
-		value, ok := item.(string)
-		if !ok {
+		if value, ok := item.(string); ok {
+			name, version := splitPeerCapabilityVersion(strings.TrimSpace(value))
+			if name == requestedName && (requestedVersion == "" || requestedVersion == version) {
+				return true
+			}
 			continue
 		}
-		name, version := splitPeerCapabilityVersion(strings.TrimSpace(value))
-		if name == requestedName && (requestedVersion == "" || requestedVersion == version) {
-			return true
+		if descriptor, ok := item.(map[string]any); ok {
+			for _, key := range []string{"operation", "capability", "name"} {
+				if value, ok := descriptor[key].(string); ok {
+					name, version := splitPeerCapabilityVersion(strings.TrimSpace(value))
+					if name == requestedName && (requestedVersion == "" || requestedVersion == version) {
+						return true
+					}
+				}
+			}
 		}
 	}
 	return false
