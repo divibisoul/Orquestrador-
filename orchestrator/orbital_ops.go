@@ -16,10 +16,9 @@ import (
 )
 
 // NewTranscendentalSimulatorFromEnv constructs the canonical deterministic
-// TCE simulator used by both orbital operations and the OctaCore executive unit.
+// TCE simulator shared by the orbital operations and the OctaCore executive unit.
 // A disabled TCE returns (nil, nil) so existing fail-closed behavior is preserved.
 func NewTranscendentalSimulatorFromEnv() (*executor.SimulatedExecutor, error) {
-	var sim *executor.SimulatedExecutor
 	if !strings.EqualFold(strings.TrimSpace(os.Getenv("N07_TCE_ENABLED")), "true") {
 		return nil, nil
 	}
@@ -43,17 +42,24 @@ func NewTranscendentalSimulatorFromEnv() (*executor.SimulatedExecutor, error) {
 }
 
 // RegisterOrbitalReasoningOperations connects the deterministic TCE simulation
-// boundary to the canonical Prefrontal admission boundary. TCE supplies
-// resource evidence; Prefrontal remains the decision authority.
+// boundary to the canonical Prefrontal admission boundary.
 func RegisterOrbitalReasoningOperations(e *Engine) error {
 	if e == nil {
 		return errors.New("orchestrator engine is required")
 	}
-sim, err := NewTranscendentalSimulatorFromEnv()
+	sim, err := NewTranscendentalSimulatorFromEnv()
 	if err != nil {
 		return err
 	}
+	return RegisterOrbitalReasoningOperationsWithSimulator(e, sim)
+}
 
+// RegisterOrbitalReasoningOperationsWithSimulator registers the orbital
+// capabilities against a caller-supplied shared TCE instance.
+func RegisterOrbitalReasoningOperationsWithSimulator(e *Engine, sim *executor.SimulatedExecutor) error {
+	if e == nil {
+		return errors.New("orchestrator engine is required")
+	}
 	if err := e.Register("prefrontal.orbital.evaluate@1.0.0", orbitalEvaluationHandler(e, sim)); err != nil {
 		return err
 	}
