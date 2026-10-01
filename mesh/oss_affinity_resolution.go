@@ -73,24 +73,35 @@ func (p *PeerClient) ResolveOSSAffinity(ctx context.Context, capability, correla
 				State:      OSSAffinityBlocked,
 			}
 
-			if _, ok := configured[nucleus]; !ok {
+			if _, ok := configured[nucleus]; ok {
+				report.Configured = true
+				discoveryCtx, cancel := context.WithTimeout(ctx, 2*time.Second)
+				description, err := p.Discover(discoveryCtx, nucleus)
+				cancel()
+				if err != nil {
+					report.State = OSSAffinityUnmeasurable
+					report.Error = err.Error()
+					reports[rank] = report
+					return
+				}
+				report.Executable = supportsExecutableCapability(description, capability)
+			} else if probe := p.affinityProbe(nucleus); probe != nil {
+				report.Configured = true
+				probeCtx, cancel := context.WithTimeout(ctx, 2*time.Second)
+				description, err := probe(probeCtx, correlation)
+				cancel()
+				if err != nil {
+					report.State = OSSAffinityUnmeasurable
+					report.Error = err.Error()
+					reports[rank] = report
+					return
+				}
+				report.Executable = supportsExecutableCapability(description, capability)
+			} else {
 				report.Error = "peer transport is not configured"
 				reports[rank] = report
 				return
 			}
-			report.Configured = true
-
-			discoveryCtx, cancel := context.WithTimeout(ctx, 2*time.Second)
-			description, err := p.Discover(discoveryCtx, nucleus)
-			cancel()
-			if err != nil {
-				report.State = OSSAffinityUnmeasurable
-				report.Error = err.Error()
-				reports[rank] = report
-				return
-			}
-
-			report.Executable = supportsExecutableCapability(description, capability)
 			if report.Executable {
 				report.State = OSSAffinityReal
 			} else {
