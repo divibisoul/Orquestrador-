@@ -98,7 +98,6 @@ func (f *Fusion) execute(ctx context.Context, m protocol.Message) (protocol.Resu
 		"workloads_json": workloads,
 		"strategy":       strings.TrimSpace(m.Metadata["strategy"]),
 		"correlation_id": m.CorrelationID,
-		"trace_id":       m.TraceID,
 	})
 	if err != nil {
 		return f.fail(m, "ORBITAL_STAGE_FAILED", err)
@@ -109,7 +108,6 @@ func (f *Fusion) execute(ctx context.Context, m protocol.Message) (protocol.Resu
 		"candidate_json": candidate,
 		"strategy":       strings.TrimSpace(m.Metadata["strategy"]),
 		"correlation_id": m.CorrelationID,
-		"trace_id":       m.TraceID,
 	})
 	if err != nil {
 		return f.fail(m, "PREFRONTAL_STAGE_FAILED", err)
@@ -132,7 +130,6 @@ func (f *Fusion) execute(ctx context.Context, m protocol.Message) (protocol.Resu
 		"device":         device,
 		"operation":      operation,
 		"correlation_id": m.CorrelationID,
-		"trace_id":       m.TraceID,
 	})
 	if err != nil {
 		return f.fail(m, "SUPERGPU_STAGE_FAILED", err)
