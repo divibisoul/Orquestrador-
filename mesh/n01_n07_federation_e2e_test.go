@@ -1,13 +1,26 @@
 //go:build integration
 
+package mesh
+
+import (
+	"context"
 	"fmt"
+	"net/http"
 	"os"
+	"strings"
+	"testing"
+	"time"
+)
+
 func requiredEnv(t *testing.T, key string) string {
 	t.Helper()
 	value := strings.TrimSpace(os.Getenv(key))
 	if value == "" {
 		t.Fatalf("REAL_MESH_E2E_BLOCKED: required environment variable %s is not configured", key)
+	}
 	return value
+}
+
 func advertisedCapability(description map[string]any, capability string) bool {
 	capability = strings.SplitN(strings.TrimSpace(capability), "@", 2)[0]
 	for _, key := range []string{"executableCapabilities", "declaredCapabilities", "capabilities"} {
@@ -38,6 +51,7 @@ func advertisedCapability(description map[string]any, capability string) bool {
 				}
 			}
 		}
+	}
 	return false
 }
 
@@ -45,10 +59,13 @@ func TestN07FederatesToRealN04N05N06NativeCapabilities(t *testing.T) {
 	requiredEnv(t, "SOUL_MESH_HMAC_SECRET")
 	for _, nucleus := range []string{"N04", "N05", "N06"} {
 		requiredEnv(t, "SOUL_MESH_"+nucleus+"_URL")
+	}
 
 	client, err := NewPeerClient(&http.Client{Timeout: 15 * time.Second})
 	if err != nil {
 		t.Fatalf("peer client initialization failed: %v", err)
+	}
+
 	cases := []struct {
 		nucleus    string
 		capability string
@@ -77,6 +94,8 @@ func TestN07FederatesToRealN04N05N06NativeCapabilities(t *testing.T) {
 				}
 			},
 		},
+	}
+
 	for _, tc := range cases {
 		tc := tc
 		t.Run(fmt.Sprintf("%s_%s", tc.nucleus, strings.ReplaceAll(tc.capability, ".", "_")), func(t *testing.T) {
@@ -87,23 +106,33 @@ func TestN07FederatesToRealN04N05N06NativeCapabilities(t *testing.T) {
 			description, err := client.CallWithCorrelation(ctx, tc.nucleus, "mesh.describe", map[string]any{"from": "N07"}, describeCorrelation)
 			if err != nil {
 				t.Fatalf("REAL_MESH_DISCOVERY_FAILED nucleus=%s correlation=%s: %v", tc.nucleus, describeCorrelation, err)
+			}
 			if !advertisedCapability(description, tc.capability) {
 				t.Fatalf("REAL_MESH_CAPABILITY_NOT_ADVERTISED nucleus=%s capability=%s description=%#v", tc.nucleus, tc.capability, description)
+			}
 
 			correlation := fmt.Sprintf("phase1-n07-%s", strings.ToLower(tc.nucleus))
 			result, err := client.CallWithCorrelation(ctx, tc.nucleus, tc.capability, tc.payload, correlation)
 			if err != nil {
 				t.Fatalf("REAL_MESH_EXECUTION_FAILED nucleus=%s capability=%s correlation=%s: %v", tc.nucleus, tc.capability, correlation, err)
+			}
 			if got, _ := result["correlationId"].(string); got != correlation {
 				t.Fatalf("REAL_MESH_CORRELATION_MISMATCH nucleus=%s expected=%s got=%q", tc.nucleus, correlation, got)
+			}
 			if got, _ := result["source"].(string); got != tc.nucleus {
 				t.Fatalf("REAL_MESH_SOURCE_MISMATCH nucleus=%s got=%q", tc.nucleus, got)
+			}
 			if got, _ := result["target"].(string); got != "N07" {
 				t.Fatalf("REAL_MESH_TARGET_MISMATCH nucleus=%s got=%q", tc.nucleus, got)
+			}
+
 			payload, ok := result["payload"].(map[string]any)
 			if !ok {
 				t.Fatalf("REAL_MESH_PAYLOAD_MISSING nucleus=%s result=%#v", tc.nucleus, result)
+			}
 			if tc.validate != nil {
 				tc.validate(t, payload)
 			}
 		})
+	}
+}
