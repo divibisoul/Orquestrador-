@@ -1,3 +1,5 @@
+Preserved verbatim before repair of the active N07 CI workflow on 2026-09-30.
+
 name: N07 Orquestrador CI
 
 on:
@@ -48,15 +50,12 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-
       - uses: actions/setup-go@v5
         with:
           go-version: '1.25.x'
           cache: true
-
       - name: Normalize Go formatting
         run: gofmt -w $(git ls-files '*.go')
-
       - name: Commit formatting normalization
         run: |
           set -euo pipefail
@@ -80,20 +79,15 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-
       - uses: actions/setup-node@v4
         with:
           node-version: '22.x'
-
       - name: Architectural integrity
         run: node scripts/soul-architectural-integrity.mjs
-
       - name: Live source integrity
         run: node scripts/soul-live-source-audit.mjs
-
       - name: Declarative crossfront generation
         run: node scripts/generate-crossfront-state.mjs
-
       - name: Verify generated diagnostics are tracked
         run: |
           set -euo pipefail
@@ -101,7 +95,6 @@ jobs:
           test -s SOUL-LIVE-SOURCE-AUDIT.json
           test -s SOUL-CROSSFRONT-EVIDENCE.json
           test -s SOUL-SYSTEM-CROSSFRONT-STATE.md
-
       - name: Upload Integrity Reports
         uses: actions/upload-artifact@v4
         with:
@@ -114,22 +107,19 @@ jobs:
   verify:
     needs: integrity
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-
       - name: Assert declarative SOUL source
         run: |
           set -euo pipefail
           node -e "const fs=require('node:fs');const m=JSON.parse(fs.readFileSync('soul-nuclei.json','utf8'));if(m.system!=='SOUL')throw new Error('SOUL_MATRIX_SYSTEM_INVALID');if(m.canonicalMesh?.protocol!=='soul-mesh/1')throw new Error('SOUL_MATRIX_PROTOCOL_INVALID');if(m.canonicalMesh?.contractVersion!=='1.1.0')throw new Error('SOUL_MATRIX_CONTRACT_INVALID');for(const id of ['N01','N02','N03','N04','N05','N06','N07'])if(!m.nuclei?.[id])throw new Error('SOUL_MATRIX_NUCLEUS_MISSING:'+id);for(const [id,n] of Object.entries(m.nuclei)){if(id!=='N07'&&(typeof n.sourceRef!=='string'||!/^[0-9a-f]{40}$/.test(n.sourceRef)))throw new Error('SOUL_MATRIX_SOURCE_REF_INVALID:'+id);if(!Array.isArray(n.adjacentPeers))throw new Error('SOUL_MATRIX_ADJACENCY_MISSING:'+id)};if(m.hardware?.simulation!==false||m.hardware?.realHardwareOnly!==true)throw new Error('SOUL_MATRIX_HARDWARE_POLICY_INVALID');console.log('SOUL declarative source verified.');"
-
       - uses: actions/setup-go@v5
         with:
           go-version: '1.25.x'
           cache: true
-
       - name: Normalize Go formatting for verification workspace
         run: |
           set -euo pipefail
@@ -138,33 +128,40 @@ jobs:
 
       - name: Vet
         run: go vet ./...
-
       - name: Test
         run: go test ./...
-
       - name: Race test
         run: go test -race ./...
-
       - name: Build
         run: go build ./...
-
       - name: Backend regression
         run: go test ./backend -run 'Test(Web3Storage|Supabase|Server|Intent)' -count=1
-
       - name: Mesh regression suite
         run: go test ./mesh -count=1 -v
-
-      - name: Assert federation E2E test is integration-only and has no peer doubles
+      - name: Assert real federation test is integration-only and contains no peer server doubles
         run: |
           set -euo pipefail
-          test -f mesh/n01_n07_federation_e2e_test.go
-          grep -q '^//go:build integration$' mesh/n01_n07_federation_e2e_test.go
-          if grep -qE 'httptest\.NewServer|e2e\.n04|e2e\.n05|e2e\.n06' mesh/n01_n07_federation_e2e_test.go; then
+          grep -q '^//go:build integration
+  container:
+    needs: verify
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build production image
+        run: docker build --pull --tag n07-orquestrador:ci .
+      - name: Inspect image without starting the server
+        run: |
+          set -euo pipefail
+          docker image inspect n07-orquestrador:ci >/dev/null
+          test "$(docker run --rm --entrypoint /bin/sh n07-orquestrador:ci -c 'test -x /app/n07 && test -x /usr/local/bin/guppy && echo ok')" = ok
+ mesh/n01_n07_federation_e2e_test.go
+          if grep -qE 'httptest\\.NewServer|e2e\\.n04|e2e\\.n05|e2e\\.n06' mesh/n01_n07_federation_e2e_test.go; then
             echo 'synthetic federation peer evidence detected'
             exit 1
           fi
-
-      - name: Real federation E2E when configured
+      - name: Real federation E2E when credentials and endpoints are configured
         env:
           SOUL_MESH_HMAC_SECRET: ${{ secrets.SOUL_MESH_HMAC_SECRET }}
           SOUL_MESH_N04_URL: ${{ secrets.SOUL_MESH_N04_URL }}
@@ -176,7 +173,22 @@ jobs:
             echo 'REAL_MESH_E2E: BLOCKED_ENV — required endpoint/secret secrets are not configured; no online proof is claimed.'
             exit 0
           fi
-          go test -tags integration ./mesh -run '^TestN07FederatesToRealN04N05N06NativeCapabilities$' -count=1 -v
+          go test -tags integration ./mesh -run '^TestN07FederatesToRealN04N05N06NativeCapabilities
+  container:
+    needs: verify
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build production image
+        run: docker build --pull --tag n07-orquestrador:ci .
+      - name: Inspect image without starting the server
+        run: |
+          set -euo pipefail
+          docker image inspect n07-orquestrador:ci >/dev/null
+          test "$(docker run --rm --entrypoint /bin/sh n07-orquestrador:ci -c 'test -x /app/n07 && test -x /usr/local/bin/guppy && echo ok')" = ok
+ -count=1 -v
 
   container:
     needs: verify
@@ -185,10 +197,8 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
-
       - name: Build production image
         run: docker build --pull --tag n07-orquestrador:ci .
-
       - name: Inspect image without starting the server
         run: |
           set -euo pipefail

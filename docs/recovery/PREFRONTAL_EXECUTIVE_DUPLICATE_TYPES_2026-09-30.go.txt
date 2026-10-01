@@ -1,3 +1,5 @@
+Exact pre-repair content preserved on 2026-09-30.
+
 package prefrontal
 
 import (
@@ -8,8 +10,15 @@ import (
 	"time"
 )
 
-// workingMemoryEntry and TaskFrame are defined in cortex.go as the canonical
-// shared runtime types. This file preserves the behavior built on them.
+type workingMemoryEntry struct {
+	Candidate Candidate
+	UpdatedAt time.Time
+}
+
+type TaskFrame struct {
+	TaskID      string
+	ActivatedAt time.Time
+}
 
 type OutcomeObservation struct {
 	DecisionID string
