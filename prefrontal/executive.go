@@ -169,7 +169,7 @@ func (c *Cortex) ObserveOutcome(decisionID, outcome string, value float64) (Outc
 	}
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	for i := len(c.decisions)-1; i >= 0; i-- {
+	for i := len(c.decisions) - 1; i >= 0; i-- {
 		if c.decisions[i].ID == decisionID {
 			c.decisions[i].Outcome = outcome
 			return OutcomeObservation{DecisionID: decisionID, Outcome: outcome, Value: value, At: time.Now().UTC()}, nil

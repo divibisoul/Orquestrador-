@@ -36,11 +36,11 @@ func SOULTopology() map[string]any {
 		"mesh":           "canonical-soul-mesh",
 		"execution":      "prefrontal-admission→discovery→routing→delegation→decision(Jev)→hardware-lease/fusion→execution→response→correlation",
 		"cooperation": map[string]any{
-			"transport": "canonical-soul-mesh",
-			"negotiation": "discovery→handshake→exchange",
+			"transport":            "canonical-soul-mesh",
+			"negotiation":          "discovery→handshake→exchange",
 			"correlation_required": true,
-			"outcome_observation": "learning-machine",
-			"second_bus": false,
+			"outcome_observation":  "learning-machine",
+			"second_bus":           false,
 		},
 		"decision_layer": map[string]any{"provider": "TypeSafe/Jev", "operation": "jev.systemone@1.0.0", "transport": "server-side HTTP", "enabled_when": "JEV_API_KEY configured"},
 	}

@@ -2,8 +2,8 @@ package mesh
 
 import (
 	"context"
-	"net/http"
 	"fmt"
+	"net/http"
 	"os"
 	"testing"
 	"time"
@@ -106,7 +106,6 @@ func TestDiscoveryCacheExpires(t *testing.T) {
 	}
 }
 
-
 type fixedRouteScorer map[string]float64
 
 func (s fixedRouteScorer) Weight(_, target, _ string) float64 { return s[target] }
@@ -128,7 +127,7 @@ func TestPeerClientOrdersPeersByLearnedRouteWeight(t *testing.T) {
 			protocol.N03: {Nucleus: protocol.N03, URL: "http://n03", Healthy: true, Latency: 10 * time.Millisecond},
 		},
 	}
-	p.SetRouteScorer(fixedRouteScorer{protocol.N01:0.2,protocol.N02:0.9,protocol.N03:0.9})
+	p.SetRouteScorer(fixedRouteScorer{protocol.N01: 0.2, protocol.N02: 0.9, protocol.N03: 0.9})
 	ordered := p.orderedPeers("ai.generate")
 	if ordered[0].Nucleus != protocol.N03 || ordered[1].Nucleus != protocol.N02 || ordered[2].Nucleus != protocol.N01 {
 		t.Fatalf("unexpected learned route order: %+v", ordered)
@@ -137,19 +136,21 @@ func TestPeerClientOrdersPeersByLearnedRouteWeight(t *testing.T) {
 
 func TestPeerClientNeutralizesInvalidLearnedWeight(t *testing.T) {
 	p := &PeerClient{peers: map[string]PeerInfo{
-		protocol.N01:{Nucleus:protocol.N01,URL:"http://n01"},
-		protocol.N02:{Nucleus:protocol.N02,URL:"http://n02"},
+		protocol.N01: {Nucleus: protocol.N01, URL: "http://n01"},
+		protocol.N02: {Nucleus: protocol.N02, URL: "http://n02"},
 	}}
-	p.SetRouteScorer(fixedRouteScorer{protocol.N01:2,protocol.N02:0.9})
+	p.SetRouteScorer(fixedRouteScorer{protocol.N01: 2, protocol.N02: 0.9})
 	ordered := p.orderedPeers("neural.forward")
-	if ordered[0].Nucleus != protocol.N02 { t.Fatalf("invalid learned weight not neutralized: %+v", ordered) }
+	if ordered[0].Nucleus != protocol.N02 {
+		t.Fatalf("invalid learned weight not neutralized: %+v", ordered)
+	}
 }
 
 func TestPeerClientObserveRouteDoesNotRewriteOutcome(t *testing.T) {
-	p := &PeerClient{peers: map[string]PeerInfo{protocol.N01:{Nucleus:protocol.N01,URL:"http://n01"}}}
+	p := &PeerClient{peers: map[string]PeerInfo{protocol.N01: {Nucleus: protocol.N01, URL: "http://n01"}}}
 	o := &recordingRouteObserver{}
 	p.SetRouteOutcomeObserver(o)
-	p.observeRoute(protocol.N01,"core.health","corr-test",true)
+	p.observeRoute(protocol.N01, "core.health", "corr-test", true)
 	if len(o.outcomes) != 1 || o.outcomes[0] != "N01:core.health:corr-test:true" {
 		t.Fatalf("unexpected observed outcome: %#v", o.outcomes)
 	}

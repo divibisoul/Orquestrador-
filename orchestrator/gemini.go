@@ -48,16 +48,16 @@ type geminiPolicy struct {
 
 const (
 	geminiProvider         = "google-gemini"
-	geminiText              = "ai.generate"
-	geminiMultimodal        = "ai.multimodal"
-	geminiGoogleSearch      = "gemini.google_search"
-	geminiCodeExecution     = "gemini.code_execution"
-	geminiURLContext        = "gemini.url_context"
-	geminiFileSearch        = "gemini.file_search"
-	geminiGoogleMaps        = "gemini.google_maps"
-	geminiAudioTranscribe   = "audio.transcribe"
-	geminiAudioAnalyze      = "audio.analyze.emotion"
-	geminiSpeechSynthesize  = "speech.synthesize"
+	geminiText             = "ai.generate"
+	geminiMultimodal       = "ai.multimodal"
+	geminiGoogleSearch     = "gemini.google_search"
+	geminiCodeExecution    = "gemini.code_execution"
+	geminiURLContext       = "gemini.url_context"
+	geminiFileSearch       = "gemini.file_search"
+	geminiGoogleMaps       = "gemini.google_maps"
+	geminiAudioTranscribe  = "audio.transcribe"
+	geminiAudioAnalyze     = "audio.analyze.emotion"
+	geminiSpeechSynthesize = "speech.synthesize"
 )
 
 func RegisterGeminiOperations(e *Engine, peer GeminiPeerCaller, reporter GeminiExecutionReporter) error {
@@ -194,7 +194,6 @@ func executeGemini(
 	}, nil
 }
 
-
 func parseGeminiPolicy(raw string) (geminiPolicy, error) {
 	raw = strings.TrimSpace(raw)
 	if raw == "" {
@@ -278,7 +277,7 @@ func geminiPayload(message protocol.Message, semanticText string) map[string]any
 		{"speech_text", "speechText"},
 		{"voice", "voice"},
 		{"mode", "mode"},
-	}{
+	} {
 		copyMetadata(item[0], item[1])
 	}
 	if value := strings.TrimSpace(message.Metadata["use_web_search"]); value != "" {
@@ -453,7 +452,6 @@ func reportGeminiFailure(ctx context.Context, reporter GeminiExecutionReporter, 
 		InputSize: inputSize, Error: err.Error(), At: time.Now().UTC(),
 	})
 }
-
 
 func geminiTarget(capability string) string {
 	switch capability {

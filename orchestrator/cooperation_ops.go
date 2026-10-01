@@ -28,7 +28,7 @@ func RegisterCooperationOperations(e *Engine, c *cooperation.Coordinator) error 
 		result := protocol.Result{
 			TraceID: m.TraceID, CorrelationID: m.CorrelationID,
 			Source: "N07.cooperation", Target: m.Source,
-			Status: handshake.Status,
+			Status:   handshake.Status,
 			Metadata: map[string]string{"handshake_json": string(raw)},
 		}
 		if err != nil {
@@ -73,8 +73,8 @@ func RegisterCooperationOperations(e *Engine, c *cooperation.Coordinator) error 
 			TraceID: m.TraceID, CorrelationID: m.CorrelationID,
 			Source: "N07.cooperation", Target: m.Source, Status: "ok",
 			Metadata: map[string]string{
-				"mode": "canonical-mesh",
-				"protocol": cooperation.ProtocolVersion,
+				"mode":             "canonical-mesh",
+				"protocol":         cooperation.ProtocolVersion,
 				"contract_version": cooperation.ContractVersion,
 				"outcome_observer": "learning-machine-when-attached",
 			},

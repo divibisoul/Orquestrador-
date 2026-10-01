@@ -13,20 +13,20 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/divibisoul/Orquestrador-/api"
 	"github.com/divibisoul/Orquestrador-/aeternum"
+	"github.com/divibisoul/Orquestrador-/api"
 	"github.com/divibisoul/Orquestrador-/api/health"
 	"github.com/divibisoul/Orquestrador-/backend"
-	"github.com/divibisoul/Orquestrador-/cooperation"
 	"github.com/divibisoul/Orquestrador-/cognitive"
+	"github.com/divibisoul/Orquestrador-/cooperation"
 	"github.com/divibisoul/Orquestrador-/jev"
 	"github.com/divibisoul/Orquestrador-/learning"
 	"github.com/divibisoul/Orquestrador-/mesh"
 	"github.com/divibisoul/Orquestrador-/neural"
 	"github.com/divibisoul/Orquestrador-/octacore"
 	"github.com/divibisoul/Orquestrador-/orchestrator"
-	"github.com/divibisoul/Orquestrador-/protocol"
 	"github.com/divibisoul/Orquestrador-/prefrontal"
+	"github.com/divibisoul/Orquestrador-/protocol"
 	"github.com/divibisoul/Orquestrador-/rgo"
 	"github.com/divibisoul/Orquestrador-/supergpu"
 )
@@ -168,21 +168,21 @@ func main() {
 			return clareiraErr
 		}
 		_, vagusErr := saraProxy.PublishVagus(ctx, map[string]any{
-			"vagus_version": "1.0",
-			"message_id": protocol.NewTraceID(),
+			"vagus_version":  "1.0",
+			"message_id":     protocol.NewTraceID(),
 			"correlation_id": correlationID,
-			"source": "N07.SuperGPU",
-			"target": "VagusNerveBus",
-			"priority": 100,
-			"ttl": 5000,
-			"type": "supergpu." + event.Phase,
+			"source":         "N07.SuperGPU",
+			"target":         "VagusNerveBus",
+			"priority":       100,
+			"ttl":            5000,
+			"type":           "supergpu." + event.Phase,
 			"payload": map[string]any{
-				"operation": event.Operation,
-				"device_id": event.DeviceID,
-				"backend": event.Backend,
-				"input_size": event.InputSize,
+				"operation":   event.Operation,
+				"device_id":   event.DeviceID,
+				"backend":     event.Backend,
+				"input_size":  event.InputSize,
 				"output_size": event.OutputSize,
-				"error": event.Error,
+				"error":       event.Error,
 			},
 		}, correlationID)
 		if clareiraErr != nil && vagusErr != nil {
@@ -254,28 +254,52 @@ func main() {
 	mux.HandleFunc("/identity", func(w http.ResponseWriter, r *http.Request) { writeJSON(w, http.StatusOK, orchestrator.N07Identity()) })
 	mux.HandleFunc("/topology", func(w http.ResponseWriter, r *http.Request) { writeJSON(w, http.StatusOK, orchestrator.SOULTopology()) })
 	mux.HandleFunc("/v1/aeternum/health", func(w http.ResponseWriter, r *http.Request) {
-		if err := requireAppBearer(r); err != nil { writeJSON(w, http.StatusUnauthorized, map[string]string{"error": err.Error()}); return }
+		if err := requireAppBearer(r); err != nil {
+			writeJSON(w, http.StatusUnauthorized, map[string]string{"error": err.Error()})
+			return
+		}
 		writeJSON(w, http.StatusOK, hortaCore.Health())
 	})
 	mux.HandleFunc("/v1/aeternum/processors", func(w http.ResponseWriter, r *http.Request) {
-		if err := requireAppBearer(r); err != nil { writeJSON(w, http.StatusUnauthorized, map[string]string{"error": err.Error()}); return }
+		if err := requireAppBearer(r); err != nil {
+			writeJSON(w, http.StatusUnauthorized, map[string]string{"error": err.Error()})
+			return
+		}
 		writeJSON(w, http.StatusOK, map[string]any{"count": len(hortaCore.Processors()), "processors": hortaCore.Processors()})
 	})
 	mux.HandleFunc("/v1/aeternum/capabilities", func(w http.ResponseWriter, r *http.Request) {
-		if err := requireAppBearer(r); err != nil { writeJSON(w, http.StatusUnauthorized, map[string]string{"error": err.Error()}); return }
+		if err := requireAppBearer(r); err != nil {
+			writeJSON(w, http.StatusUnauthorized, map[string]string{"error": err.Error()})
+			return
+		}
 		writeJSON(w, http.StatusOK, map[string]any{"count": len(hortaCore.Capabilities()), "modules": hortaCore.Capabilities()})
 	})
 	mux.HandleFunc("/v1/aeternum/module", func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodPost { writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "POST required"}); return }
-		if err := requireAppBearer(r); err != nil { writeJSON(w, http.StatusUnauthorized, map[string]string{"error": err.Error()}); return }
-		var req struct { ModuleID string `json:"module_id"`; Payload []float64 `json:"payload"`; Metadata map[string]string `json:"metadata"` }
-		if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 1<<20)).Decode(&req); err != nil { writeJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()}); return }
+		if r.Method != http.MethodPost {
+			writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "POST required"})
+			return
+		}
+		if err := requireAppBearer(r); err != nil {
+			writeJSON(w, http.StatusUnauthorized, map[string]string{"error": err.Error()})
+			return
+		}
+		var req struct {
+			ModuleID string            `json:"module_id"`
+			Payload  []float64         `json:"payload"`
+			Metadata map[string]string `json:"metadata"`
+		}
+		if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 1<<20)).Decode(&req); err != nil {
+			writeJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
+			return
+		}
 		result, err := hortaCore.Execute(r.Context(), req.ModuleID, req.Payload, req.Metadata)
 		if err != nil {
 			if strings.HasPrefix(err.Error(), "AETERNUM_BLOCKED_INFRASTRUCTURE:") || strings.HasPrefix(err.Error(), "AETERNUM_ADAPTER_REQUIRED:") || strings.HasPrefix(err.Error(), "AETERNUM_PEER_REQUIRED:") {
-				writeJSON(w, http.StatusConflict, map[string]any{"status": "BLOCKED", "error": err.Error()}); return
+				writeJSON(w, http.StatusConflict, map[string]any{"status": "BLOCKED", "error": err.Error()})
+				return
 			}
-			writeJSON(w, http.StatusBadRequest, map[string]any{"status": "ERROR", "error": err.Error()}); return
+			writeJSON(w, http.StatusBadRequest, map[string]any{"status": "ERROR", "error": err.Error()})
+			return
 		}
 		writeJSON(w, http.StatusOK, result)
 	})

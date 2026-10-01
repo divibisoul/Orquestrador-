@@ -21,13 +21,13 @@ type Record struct {
 }
 
 type Match struct {
-	ID         string `json:"id"`
-	UserID     string `json:"user_id"`
-	SessionID  string `json:"session_id"`
-	Summary    string `json:"summary"`
-	Tags       []string `json:"tags"`
+	ID         string    `json:"id"`
+	UserID     string    `json:"user_id"`
+	SessionID  string    `json:"session_id"`
+	Summary    string    `json:"summary"`
+	Tags       []string  `json:"tags"`
 	CreatedAt  time.Time `json:"created_at"`
-	Similarity float64 `json:"similarity"`
+	Similarity float64   `json:"similarity"`
 }
 
 type Store interface {

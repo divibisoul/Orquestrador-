@@ -9,8 +9,8 @@ import (
 	"time"
 
 	"github.com/divibisoul/Orquestrador-/backend"
-	"github.com/divibisoul/Orquestrador-/orchestrator"
 	"github.com/divibisoul/Orquestrador-/mesh"
+	"github.com/divibisoul/Orquestrador-/orchestrator"
 	"github.com/divibisoul/Orquestrador-/protocol"
 )
 
@@ -161,22 +161,22 @@ func (h *HortaCore) executeAdapter(ctx context.Context, spec ModuleSpec, payload
 		input = fmt.Sprintf("numeric-payload:%v", payload)
 	}
 	wirePayload := map[string]any{
-		"input": input,
-		"values": payload,
+		"input":     input,
+		"values":    payload,
 		"module_id": spec.ID,
-		"source": "N07.AeternumHortaCore",
+		"source":    "N07.AeternumHortaCore",
 	}
 	result, err := h.peers.CallWithCorrelation(ctx, "N02", spec.Operation, wirePayload, correlation)
 	if err != nil {
 		return nil, err
 	}
 	return map[string]any{
-		"module": spec.ID,
-		"status": "ADAPTER_EXECUTED",
-		"operation": spec.Operation,
-		"owner": "N02",
+		"module":        spec.ID,
+		"status":        "ADAPTER_EXECUTED",
+		"operation":     spec.Operation,
+		"owner":         "N02",
 		"correlationId": correlation,
-		"result": result["payload"],
+		"result":        result["payload"],
 	}, nil
 }
 

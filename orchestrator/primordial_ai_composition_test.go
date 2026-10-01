@@ -16,7 +16,9 @@ func TestPrimordialCompositionOperationExposesAIProfilesAndHigherOrderCompositio
 	n, _ := neural.New(8, .05)
 	c, _ := prefrontal.New(.1, 16)
 	e, err := New(n, c, supergpu.New(nil))
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	dir := t.TempDir()
 	ledger := filepath.Join(dir, "soul-nuclei.json")
@@ -45,14 +47,20 @@ func TestPrimordialCompositionOperationExposesAIProfilesAndHigherOrderCompositio
 	// Add N05 to the fixture without changing the runtime code under test.
 	contents = stringReplace(contents, `"N04":{"repository":"N04","role":"tools","entrypoints":["n04"],"capabilityOwnership":"native"}`, `"N04":{"repository":"N04","role":"tools","entrypoints":["n04"],"capabilityOwnership":"native"},"N05":{"repository":"N05","role":"inference","entrypoints":["n05"],"capabilityOwnership":"native"}`)
 	contents = stringReplace(contents, `"N04":{"nativeRole":"tools","essence":"tools","evidence":["n04"]}`, `"N04":{"nativeRole":"tools","essence":"tools","evidence":["n04"]},"N05":{"nativeRole":"inference","essence":"inference","evidence":["n05"]}`)
-	if err := os.WriteFile(ledger, []byte(contents), 0o600); err != nil { t.Fatal(err) }
+	if err := os.WriteFile(ledger, []byte(contents), 0o600); err != nil {
+		t.Fatal(err)
+	}
 
-	if err := RegisterPrimordialCompositionOperation(e); err != nil { t.Fatal(err) }
+	if err := RegisterPrimordialCompositionOperation(e); err != nil {
+		t.Fatal(err)
+	}
 
 	compositionMessage := protocol.NewMessage("N03", "N07", "command", "composition.primordial.resolve@1.0.0", nil)
 	compositionMessage.Metadata = map[string]string{"ledger_path": ledger, "mode": "composition", "participants": "N03,N02,N04"}
 	result, err := e.Submit(context.Background(), compositionMessage)
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	if result.Metadata["mode"] != "composition" || result.Metadata["primordial_json"] == "" {
 		t.Fatalf("unexpected composition result: %#v", result.Metadata)
 	}
@@ -60,24 +68,32 @@ func TestPrimordialCompositionOperationExposesAIProfilesAndHigherOrderCompositio
 	profileMessage := protocol.NewMessage("N01", "N07", "command", "composition.primordial.resolve@1.0.0", nil)
 	profileMessage.Metadata = map[string]string{"ledger_path": ledger, "mode": "profile", "participant": "SARA"}
 	profileResult, err := e.Submit(context.Background(), profileMessage)
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	if profileResult.Metadata["mode"] != "profile" || profileResult.Metadata["primordial_json"] == "" {
 		t.Fatalf("unexpected profile result: %#v", profileResult.Metadata)
 	}
 }
 
 func stringReplace(value, old, replacement string) string {
-	if old == replacement { return value }
+	if old == replacement {
+		return value
+	}
 	for {
 		idx := indexOf(value, old)
-		if idx < 0 { return value }
+		if idx < 0 {
+			return value
+		}
 		value = value[:idx] + replacement + value[idx+len(old):]
 	}
 }
 
 func indexOf(value, needle string) int {
 	for i := 0; i+len(needle) <= len(value); i++ {
-		if value[i:i+len(needle)] == needle { return i }
+		if value[i:i+len(needle)] == needle {
+			return i
+		}
 	}
 	return -1
 }

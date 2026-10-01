@@ -41,12 +41,12 @@ func (r *ClareiraReporter) Report(ctx context.Context, event supergpu.ExecutionE
 	raw, err := json.Marshal(map[string]any{
 		"phase":          event.Phase,
 		"operation":      event.Operation,
-		"device_id":     event.DeviceID,
+		"device_id":      event.DeviceID,
 		"backend":        event.Backend,
-		"input_size":    event.InputSize,
-		"output_size":   event.OutputSize,
+		"input_size":     event.InputSize,
+		"output_size":    event.OutputSize,
 		"correlation_id": correlationID,
-		"error":         event.Error,
+		"error":          event.Error,
 	})
 	if err != nil {
 		return fmt.Errorf("clareira event encode: %w", err)
@@ -113,10 +113,10 @@ func (r *ClareiraReporter) ReportCapability(ctx context.Context, event Capabilit
 		"model":          event.Model,
 		"source":         event.Source,
 		"owner":          event.Owner,
-		"input_size":    event.InputSize,
-		"output_size":   event.OutputSize,
+		"input_size":     event.InputSize,
+		"output_size":    event.OutputSize,
 		"correlation_id": correlationID,
-		"error":         event.Error,
+		"error":          event.Error,
 	})
 	if err != nil {
 		return fmt.Errorf("clareira capability event encode: %w", err)
@@ -133,11 +133,11 @@ func (r *ClareiraReporter) ReportCapability(ctx context.Context, event Capabilit
 		"metadata": map[string]any{
 			"component": "gemini",
 			"operation": event.Operation,
-			"provider":   event.Provider,
-			"model":      event.Model,
-			"owner":      event.Owner,
-			"source":     event.Source,
-			"phase":      event.Phase,
+			"provider":  event.Provider,
+			"model":     event.Model,
+			"owner":     event.Owner,
+			"source":    event.Source,
+			"phase":     event.Phase,
 		},
 	}
 	_, err = r.peers.CallWithCorrelation(ctx, "N01", ClareiraCapability, map[string]any{"packet": packet}, correlationID)

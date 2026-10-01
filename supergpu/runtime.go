@@ -118,7 +118,9 @@ func (r *Runtime) reportExecution(ctx context.Context, event ExecutionEvent) {
 	r.mu.RLock()
 	reporter := r.reporter
 	r.mu.RUnlock()
-	if reporter == nil { return }
+	if reporter == nil {
+		return
+	}
 	_ = reporter.Report(ctx, event)
 }
 

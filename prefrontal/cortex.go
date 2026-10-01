@@ -38,27 +38,33 @@ type Policy struct {
 	Epsilon           float64
 	Horizon           time.Duration
 }
-type workingMemoryEntry struct { Candidate Candidate; UpdatedAt time.Time }
-type TaskFrame struct { TaskID string; ActivatedAt time.Time }
+type workingMemoryEntry struct {
+	Candidate Candidate
+	UpdatedAt time.Time
+}
+type TaskFrame struct {
+	TaskID      string
+	ActivatedAt time.Time
+}
 
 type Cortex struct {
-	mu            sync.RWMutex
-	decisions     []Decision
-	threshold     float64
-	capacity      int
-	policy        Policy
-	inhibited     uint64
-	evaluated     uint64
-	decisionNanos uint64
-	lastDecision  time.Time
-	inhibitionChecks uint64
-	commits uint64
-	decisionCount uint64
-	evaluationNanos uint64
-	commitNanos uint64
-	workingMemory map[string]workingMemoryEntry
-	taskFrames []TaskFrame
-	currentTask string
+	mu                   sync.RWMutex
+	decisions            []Decision
+	threshold            float64
+	capacity             int
+	policy               Policy
+	inhibited            uint64
+	evaluated            uint64
+	decisionNanos        uint64
+	lastDecision         time.Time
+	inhibitionChecks     uint64
+	commits              uint64
+	decisionCount        uint64
+	evaluationNanos      uint64
+	commitNanos          uint64
+	workingMemory        map[string]workingMemoryEntry
+	taskFrames           []TaskFrame
+	currentTask          string
 	learningObservations []LearningObservation
 }
 

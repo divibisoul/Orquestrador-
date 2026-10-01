@@ -12,8 +12,8 @@ import (
 	"io"
 	"math"
 	"net/http"
-	"sort"
 	"os"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -197,7 +197,7 @@ func (p *PeerClient) orderedPeers(capability string) []PeerInfo {
 	ranked := make([]rankedPeer, 0, len(peers))
 	for _, peer := range peers {
 		ranked = append(ranked, rankedPeer{
-			peer: peer,
+			peer:   peer,
 			weight: learnedRouteWeight(scorer, protocol.N07, peer.Nucleus, capability),
 		})
 	}
