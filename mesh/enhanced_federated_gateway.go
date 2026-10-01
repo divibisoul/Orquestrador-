@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/divibisoul/Orquestrador-/orchestrator"
 	"io"
 	"net/http"
 	"strings"
@@ -17,7 +16,7 @@ const federatedTaskTimeout = 15 * time.Second
 
 type EnhancedFederatedGateway struct{ base *FederatedGateway }
 
-func NewEnhancedFederatedHTTPGateway(engine *orchestrator.Engine) *EnhancedFederatedGateway {
+func NewEnhancedFederatedHTTPGateway(engine OperationEngine) *EnhancedFederatedGateway {
 	return &EnhancedFederatedGateway{base: NewFederatedHTTPGateway(engine)}
 }
 func (g *EnhancedFederatedGateway) ServeHTTP(w http.ResponseWriter, r *http.Request) {
