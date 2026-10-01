@@ -49,10 +49,14 @@ func (e *meshHTTPTestEngine) Submit(ctx context.Context, message protocol.Messag
 	}
 	switch message.Operation {
 	case "mesh.ping", "mesh.ping@1.0.0":
-		base.Payload = map[string]any{"ok": true, "nucleus": "N07", "contractVersion": protocol.SoulMeshContractVersion}
+		base.Metadata = map[string]string{"ok": "true", "nucleus": "N07", "contract_version": protocol.SoulMeshContractVersion}
 		return base, nil
 	case "mesh.describe", "mesh.describe@1.0.0":
-		base.Payload = map[string]any{"nucleus": "N07", "operations": e.Operations()}
+		encoded, err := json.Marshal(map[string]any{"nucleus": "N07", "operations": e.Operations()})
+		if err != nil {
+			return protocol.Result{}, err
+		}
+		base.Metadata = map[string]string{"describe_json": string(encoded)}
 		return base, nil
 	case "neural.forward", "neural.forward@1.0.0":
 		values, err := e.neural.Forward(ctx, message.Payload)
