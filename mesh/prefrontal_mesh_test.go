@@ -1,16 +1,9 @@
 package mesh
 
-import (
-	"testing"
-
-	"github.com/divibisoul/Orquestrador-/orchestrator"
-)
+import "testing"
 
 func TestMeshRoutesIntoPrefrontalExecutiveAdmission(t *testing.T) {
 	h := newTestGateway(t)
-	if err := orchestrator.RegisterAdvancedOperations(h.Engine); err != nil {
-		t.Fatal(err)
-	}
 
 	wire := canonicalRequest("request", "prefrontal.admission", "mesh-pfc-correlation", []float64{1, 2, 3, 4, 5, 6, 7, 8})
 	wire["metadata"] = map[string]string{
