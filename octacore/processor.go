@@ -12,6 +12,7 @@ import (
 
 type Processor struct {
 	scheduler *Scheduler
+	executive *ExecutiveCore
 }
 
 type Config struct {
@@ -40,6 +41,38 @@ func NewProcessor(cfg Config, compute *supergpu.Runtime, peers *mesh.PeerClient,
 		return nil, errors.New("Octacore requires existing N07 Mesh peer client")
 	}
 	return &Processor{scheduler: newScheduler(cfg, compute, peers, sara)}, nil
+}
+
+
+
+func (p *Processor) SetExecutiveCore(core *ExecutiveCore) error {
+	if p == nil || p.scheduler == nil {
+		return errors.New("Octacore processor is unavailable")
+	}
+	if core == nil {
+		return errors.New("executive core is required")
+	}
+	p.scheduler.eventMu.Lock()
+	p.executive = core
+	p.scheduler.eventMu.Unlock()
+	return nil
+}
+
+func (p *Processor) ExecutiveCore() *ExecutiveCore {
+	if p == nil || p.scheduler == nil {
+		return nil
+	}
+	p.scheduler.eventMu.RLock()
+	defer p.scheduler.eventMu.RUnlock()
+	return p.executive
+}
+
+func (p *Processor) ExecutiveExecute(ctx context.Context, req ExecutiveCoreRequest) (ExecutiveCoreResult, error) {
+	core := p.ExecutiveCore()
+	if core == nil {
+		return ExecutiveCoreResult{}, errors.New("executive core is not connected")
+	}
+	return core.Execute(ctx, req)
 }
 
 func (p *Processor) Submit(ctx context.Context, job Job) Result {
