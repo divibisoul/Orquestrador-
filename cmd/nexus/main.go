@@ -147,6 +147,14 @@ func main() {
 	}
 	peerClient.SetRouteScorer(learningMachine)
 	peerClient.SetRouteOutcomeObserver(learningMachine)
+	peerClient.SetAffinityProbe(protocol.N07, func(context.Context, string) (map[string]any, error) {
+		return map[string]any{"executableCapabilities": e.Operations()}, nil
+	})
+	if saraProxy.Configured() {
+		peerClient.SetAffinityProbe("SARA", func(ctx context.Context, correlation string) (map[string]any, error) {
+			return saraProxy.Capabilities(ctx, correlation)
+		})
+	}
 	if err := orchestrator.RegisterCapabilityResolutionOperation(e, peerClient); err != nil {
 		log.Fatal(err)
 	}
