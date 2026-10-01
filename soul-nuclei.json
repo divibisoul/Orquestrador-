@@ -103,7 +103,7 @@
         "N04"
       ],
       "manifestAuthority": "SOUL-FUSION-MANIFEST.json",
-      "sourceRef": "0d74306b41c0a140f70c37cb1500722e6e741375",
+      "sourceRef": "6460ac61b7a248c426aff6262714f88d76b76745",
       "status": "main-live-composition-contract-reconciled"
     },
     "N04": {
@@ -211,7 +211,7 @@
         "src/sara/__init__.py"
       ],
       "authority": "sara.meta / sara.core / sara.governance",
-      "sourceRef": "20d550029c5320bf559fe356af02ed7aa49cb4ad",
+      "sourceRef": "730b622ad158a5119a7c7be55bbc1a266081f598",
       "status": "main-live-chimera-and-bayesian-runtime-merged"
     }
   },
