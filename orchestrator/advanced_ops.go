@@ -48,6 +48,42 @@ func RegisterAdvancedOperations(e *Engine) error {
 			if err != nil {
 				return protocol.Result{TraceID: m.TraceID, CorrelationID: m.CorrelationID, Source: "N07.prefrontal", Target: m.Source, Status: "rejected", Error: err.Error()}, err
 			}
+			jevMetadata := map[string]string{}
+			if strings.EqualFold(strings.TrimSpace(m.Metadata["jev_required"]), "true") {
+				questionsJSON := strings.TrimSpace(m.Metadata["jev_questions_json"])
+				if questionsJSON == "" {
+					return protocol.Result{TraceID: m.TraceID, CorrelationID: m.CorrelationID, Source: "N07.prefrontal", Target: m.Source, Status: "rejected", Error: "JEV_REQUIRED_QUESTIONS_MISSING"}, errors.New("metadata.jev_questions_json is required when jev_required=true")
+				}
+				jevState := strings.TrimSpace(m.Metadata["jev_state"])
+				jevStateJSON := strings.TrimSpace(m.Metadata["jev_state_json"])
+				if jevState == "" && jevStateJSON == "" {
+					stateJSON, marshalErr := json.Marshal(map[string]any{"candidate": c, "payload": m.Payload})
+					if marshalErr != nil {
+						return protocol.Result{TraceID: m.TraceID, CorrelationID: m.CorrelationID, Source: "N07.prefrontal", Target: m.Source, Status: "rejected", Error: marshalErr.Error()}, marshalErr
+					}
+					jevStateJSON = string(stateJSON)
+				}
+				metadata := map[string]string{
+					"correlation_id": m.CorrelationID,
+					"trace_id": m.TraceID,
+					"questions_json": questionsJSON,
+					"state":         jevState,
+					"state_json":    jevStateJSON,
+				}
+				if model := strings.TrimSpace(m.Metadata["jev_model"]); model != "" {
+					metadata["model"] = model
+				}
+				decision, decisionErr := e.Execute(ctx, "jev.systemone@1.0.0", nil, metadata)
+				if decisionErr != nil {
+					return protocol.Result{TraceID: m.TraceID, CorrelationID: m.CorrelationID, Source: "N07.prefrontal", Target: m.Source, Status: "rejected", Error: "JEV_REQUIRED_FAILED: " + decisionErr.Error()}, decisionErr
+				}
+				jevMetadata["jev_checked"] = "true"
+				for _, key := range []string{"decision_json", "answers_json", "usage_json", "model"} {
+					if value := strings.TrimSpace(decision.Metadata[key]); value != "" {
+						jevMetadata["jev_"+key] = value
+					}
+				}
+			}
 			if err := neocortex.UpdateWorkingMemory([]prefrontal.Candidate{candidate}); err != nil {
 				return protocol.Result{}, err
 			}
@@ -55,7 +91,11 @@ func RegisterAdvancedOperations(e *Engine) error {
 			if err != nil {
 				return protocol.Result{}, err
 			}
-			return protocol.Result{TraceID: m.TraceID, CorrelationID: m.CorrelationID, Source: "N07.prefrontal", Target: m.Source, Status: "ok", Metadata: map[string]string{"decision_id": decision.ID, "score": floatString(decision.Score), "neural_dimensions": itoa(int(candidate.Context["neural_dimensions"].(int)))}}, nil
+			metadata := map[string]string{"decision_id": decision.ID, "score": floatString(decision.Score), "neural_dimensions": itoa(int(candidate.Context["neural_dimensions"].(int)))}
+			for key, value := range jevMetadata {
+				metadata[key] = value
+			}
+			return protocol.Result{TraceID: m.TraceID, CorrelationID: m.CorrelationID, Source: "N07.prefrontal", Target: m.Source, Status: "ok", Metadata: metadata}, nil
 		}},
 		{name: "mesh.fusion.describe@1.0.0", handler: func(ctx context.Context, m protocol.Message) (protocol.Result, error) {
 			if err := ctx.Err(); err != nil {
