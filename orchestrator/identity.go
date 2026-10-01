@@ -13,7 +13,9 @@ type AgentDescriptor struct {
 
 func N07Agents() []AgentDescriptor {
 	return []AgentDescriptor{
-		{ID: "n07.discovery", Role: "discovery", Capabilities: []string{"mesh.discovery", "mesh.capabilities", "mesh.capability.resolve"}, Inputs: []string{"capability", "peer-state"}, Outputs: []string{"capability-owner", "peer-candidates"}},
+		{ID: "n07.discovery", Role: "discovery", Capabilities: []string{"mesh.discovery", "mesh.capabilities", "mesh.capability.resolve@1.0.0"}, Inputs: []string{"capability", "peer-state"}, Outputs: []string{"capability-owner", "peer-candidates"}},
+		{ID: "n07.affinity-resolver", Role: "functional-affinity-routing", Capabilities: []string{"mesh.capability.resolve@1.0.0", "dynamic-affinity-routing"}, Tools: []string{"SOUL capability authority", "OSS affinity manifest", "real peer discovery"}, Inputs: []string{"capability", "correlationId", "configured-peers"}, Outputs: []string{"REAL/PROJECTED/BLOCKED/UNMEASURABLE target states", "affinity-ranked routes"}},
+		{ID: "n07.external-planning", Role: "external-planning-provenance", Capabilities: []string{"cognitive.planning.sources@1.0.0"}, Tools: []string{"BabyAGI pattern", "AutoGPT pattern", "DeerFlow subagent pattern", "SuperAGI queue pattern"}, Inputs: []string{"planning-source-catalog-request"}, Outputs: []string{"pinned-provenance-catalog"}},
 		{ID: "n07.router", Role: "router", Capabilities: []string{"mesh.delegate", "dynamic-routing"}, Inputs: []string{"capability", "health", "latency", "load"}, Outputs: []string{"selected-peer", "route-score"}},
 		{ID: "n07.executor", Role: "executor", Capabilities: []string{"local-execution", "mesh.supergpu.execute", "mesh.supergpu.parallel"}, Inputs: []string{"task", "payload"}, Outputs: []string{"result", "duration"}},
 		{ID: "n07.composer", Role: "composer", Capabilities: []string{"mesh.fusion.execute", "capability-composition"}, Inputs: []string{"component-capabilities", "dependencies"}, Outputs: []string{"composed-result", "component-trace"}},
