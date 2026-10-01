@@ -5,9 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"sync"
-	"sync/atomic"
 	"testing"
 	"time"
 
@@ -164,6 +162,4 @@ func TestCallBestDynamicRoutesAllOSSCapabilitiesByAffinity(t *testing.T) {
 		t.Fatalf("executed OSS capabilities = %d, manifest entries = %d", totalTasks, len(affinity))
 	}
 
-	_ = os.Getenv("SOUL_CAPABILITY_AUTHORITY_PATH")
-	_ = atomic.Int32{}
 }
