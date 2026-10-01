@@ -17,7 +17,9 @@
       "android.network",
       "android.events",
       "shizuku.bridge",
-      "brightness"
+      "brightness",
+      "clareira.ingest",
+      "clareira.metrics"
     ],
     "N02": [
       "ai.generate",
@@ -30,8 +32,6 @@
       "neural.bnc_v2",
       "cognitive.csae",
       "resource.dcrs",
-      "clareira.ingest",
-      "clareira.metrics",
       "octacore.execute",
       "neural_forge",
       "asc"
@@ -39,7 +39,10 @@
     "N03": [
       "audio.transcribe",
       "speech.synthesize",
-      "audio.analyze.emotion"
+      "audio.analyze.emotion",
+      "speech.translate",
+      "audio.summarize",
+      "speaker.identify"
     ],
     "N04": [
       "ai-pilot",
@@ -102,15 +105,6 @@
   ],
   "declaredNotExecutable": [
     {
-      "id": "audio.summarize",
-      "owner": "N03",
-      "evidence": {
-        "repository": "divibisoul/nexus-aeternum-fusion",
-        "path": "src/mesh/N03AudioCapabilityRegistry.ts",
-        "ref": "main"
-      }
-    },
-    {
       "id": "audio.listen.continuous",
       "owner": "N03",
       "evidence": {
@@ -121,15 +115,6 @@
     },
     {
       "id": "audio.denoise",
-      "owner": "N03",
-      "evidence": {
-        "repository": "divibisoul/nexus-aeternum-fusion",
-        "path": "src/mesh/N03AudioCapabilityRegistry.ts",
-        "ref": "main"
-      }
-    },
-    {
-      "id": "speaker.identify",
       "owner": "N03",
       "evidence": {
         "repository": "divibisoul/nexus-aeternum-fusion",
@@ -226,6 +211,18 @@
         "repository": "divibisoul/aeternum-core-29",
         "path": "docs/SOUL-CAPABILITY-MASTER-MAP.md",
         "ref": "main"
+      },
+      {
+        "id": "clareira.ingest",
+        "repository": "divibisoul/aeternum-core-29",
+        "path": "scripts/soul-mesh-server.mjs",
+        "ref": "4bd0ba59533117c6c33fdda8fa0a22089ff25992"
+      },
+      {
+        "id": "clareira.metrics",
+        "repository": "divibisoul/aeternum-core-29",
+        "path": "scripts/soul-mesh-server.mjs",
+        "ref": "4bd0ba59533117c6c33fdda8fa0a22089ff25992"
       }
     ],
     "N02": [
@@ -338,6 +335,24 @@
         "repository": "divibisoul/nexus-aeternum-fusion",
         "path": "src/mesh/N03AudioCapabilityRegistry.ts",
         "ref": "main"
+      },
+      {
+        "id": "speech.translate",
+        "repository": "divibisoul/nexus-aeternum-fusion",
+        "path": "src/mesh/N03AudioCapabilityRegistry.ts",
+        "ref": "0d74306b41c0a140f70c37cb1500722e6e741375"
+      },
+      {
+        "id": "audio.summarize",
+        "repository": "divibisoul/nexus-aeternum-fusion",
+        "path": "src/mesh/N03AudioCapabilityRegistry.ts",
+        "ref": "0d74306b41c0a140f70c37cb1500722e6e741375"
+      },
+      {
+        "id": "speaker.identify",
+        "repository": "divibisoul/nexus-aeternum-fusion",
+        "path": "src/mesh/N03AudioCapabilityRegistry.ts",
+        "ref": "0d74306b41c0a140f70c37cb1500722e6e741375"
       }
     ],
     "N04": [
