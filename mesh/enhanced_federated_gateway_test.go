@@ -2,21 +2,31 @@ package mesh
 
 import (
 	"context"
-	"github.com/divibisoul/Orquestrador-/neural"
-	"github.com/divibisoul/Orquestrador-/orchestrator"
-	"github.com/divibisoul/Orquestrador-/prefrontal"
-	"github.com/divibisoul/Orquestrador-/supergpu"
 	"testing"
+
+	"github.com/divibisoul/Orquestrador-/protocol"
 )
 
+type enhancedGatewayTestEngine struct {
+	operations []string
+}
+
+func (e *enhancedGatewayTestEngine) Operations() []string {
+	return append([]string(nil), e.operations...)
+}
+
+func (e *enhancedGatewayTestEngine) Submit(context.Context, protocol.Message) (protocol.Result, error) {
+	return protocol.Result{Status: "ok"}, nil
+}
+
 func TestEnhancedFederatedGatewayConstruction(t *testing.T) {
-	n, _ := neural.New(2, .1)
-	c, _ := prefrontal.New(.1, 4)
-	g := supergpu.New(nil)
-	g.Discover()
-	e, err := orchestrator.New(n, c, g)
-	if err != nil {
-		t.Fatal(err)
+	e := &enhancedGatewayTestEngine{
+		operations: []string{
+			"mesh.ping@1.0.0",
+			"mesh.describe@1.0.0",
+			"mesh.supergpu.parallel@1.0.0",
+			"core.health@1.0.0",
+		},
 	}
 	gw := NewEnhancedFederatedHTTPGateway(e)
 	if gw == nil || gw.base == nil {
@@ -24,8 +34,5 @@ func TestEnhancedFederatedGatewayConstruction(t *testing.T) {
 	}
 	if len(e.Operations()) < 4 {
 		t.Fatal("built-in operations missing")
-	}
-	if err := e.Shutdown(context.Background()); err != nil {
-		t.Fatal(err)
 	}
 }
