@@ -60,7 +60,10 @@ func (e *Engine) Estimate(ctx context.Context, wl Workload, model PerformanceMod
 
 	t := model.EstimateTime(Workload{ID: wl.ID, Operation: wl.Operation, Precision: effectivePrecision, MatrixSize: wl.MatrixSize, BatchSize: wl.BatchSize, DataBytes: wl.DataBytes, MemoryNeeded: wl.MemoryNeeded, Priority: wl.Priority, Metadata: wl.Metadata})
 	if t <= 0 {
-		return CostEstimate{}, errors.New("model returned non-positive estimate")
+		// The model can produce a mathematically sub-nanosecond estimate for
+		// tiny workloads; time.Duration cannot represent that value. Preserve
+		// the positive estimate invariant at the smallest representable unit.
+		t = time.Nanosecond
 	}
 	confidence := 0.90 - math.Max(0, math.Min(0.50, confidencePenalty))
 	return CostEstimate{
@@ -91,7 +94,7 @@ func (e *Engine) Metrics(wl Workload, model PerformanceModel, effectivePrecision
 	}
 	t := model.EstimateTime(Workload{ID: wl.ID, Operation: wl.Operation, Precision: effectivePrecision, MatrixSize: wl.MatrixSize, BatchSize: wl.BatchSize, DataBytes: wl.DataBytes, MemoryNeeded: wl.MemoryNeeded, Priority: wl.Priority, Metadata: wl.Metadata})
 	if t <= 0 {
-		return Metrics{}, errors.New("model returned non-positive estimate")
+		t = time.Nanosecond
 	}
 	seconds := t.Seconds()
 	bandwidth := float64(wl.DataBytes) / seconds / 1e9
