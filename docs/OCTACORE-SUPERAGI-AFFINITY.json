@@ -1,0 +1,41 @@
+{
+  "schema_version": "1.0.0",
+  "source": {
+    "repository": "TransformerOptimus/SuperAGI",
+    "pinned_commit": "c3c1982e7bd6a11cfed53c5a193ea502f924b1b6",
+    "license": "MIT"
+  },
+  "purpose": "Similarity-first capability extension for the N07 Octacore fusion. Source agents and tools remain external provenance; no ownership transfer or source-code copy is implied.",
+  "fusion_targets": {
+    "mlfg": {
+      "affinity": ["supergpu", "orchestrator"],
+      "role": "learning-feedback/resource-routing candidate generation",
+      "state": "PROJECTED"
+    },
+    "skill_acquisition": {
+      "affinity": ["prefrontal", "orchestrator"],
+      "role": "tool/skill acquisition and capability expansion candidate generation",
+      "state": "PROJECTED"
+    },
+    "agent_workflow": {
+      "affinity": ["orchestrator", "prefrontal"],
+      "source_paths": [
+        "superagi/agent/agent_iteration_step_handler.py",
+        "superagi/agent/queue_step_handler.py",
+        "superagi/agent/tool_executor.py",
+        "superagi/agent/task_queue.py",
+        "superagi/agent/workflow_seed.py"
+      ],
+      "role": "multi-agent task decomposition, queueing and tool execution patterns",
+      "state": "PROJECTED"
+    },
+    "tool_manager": {
+      "affinity": ["orchestrator", "supergpu"],
+      "source_path": "superagi/tool_manager.py",
+      "role": "tool registry/selection patterns for federated capability composition",
+      "state": "PROJECTED"
+    }
+  },
+  "integration_rule": "Only a capability exposed by a real target runtime may become REAL; similarity alone never creates executable authority.",
+  "ci_requirement": "Every promoted adapter must have deterministic unit coverage and fail-closed behavior."
+}

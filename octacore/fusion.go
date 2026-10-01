@@ -50,21 +50,21 @@ func (f *Fusion) Register() error {
 
 func (f *Fusion) describe(ctx context.Context, m protocol.Message) (protocol.Result, error) {
 	payload := map[string]any{
-		"name":         "N07 Octacore Fusion",
+		"name": "N07 Octacore Fusion",
 		"architecture": "orchestrator+prefrontal-neocortex+TCE-orbital-reasoner+SuperGPU",
-		"transport":    "soul-mesh/1",
+		"transport": "soul-mesh/1",
 		"ownership": map[string]string{
-			"orchestrator":           "N07",
-			"prefrontal":             "N07",
-			"orbital_reasoner":       "N07",
+			"orchestrator": "N07",
+			"prefrontal": "N07",
+			"orbital_reasoner": "N07",
 			"supergpu_control_plane": "N07",
 		},
 		"stages": []string{
 			"transcendental.estimate@1.0.0",
-			"prefrontal.orbital.evaluate@1.0.0",
+			"prefrontal.admission@1.0.0",
 			"supergpu.execute@1.0.0",
 		},
-		"fail_closed":    true,
+		"fail_closed": true,
 		"hardware_claim": "none",
 		"superagi_affinity": []string{
 			"mlfg",
@@ -104,7 +104,7 @@ func (f *Fusion) execute(ctx context.Context, m protocol.Message) (protocol.Resu
 		return f.fail(m, "ORBITAL_STAGE_FAILED", err)
 	}
 
-	admission, err := f.engine.Execute(ctx, "prefrontal.orbital.evaluate@1.0.0", m.Payload, map[string]string{
+	admission, err := f.engine.Execute(ctx, "prefrontal.admission@1.0.0", m.Payload, map[string]string{
 		"workloads_json": workloads,
 		"candidate_json": candidate,
 		"strategy":       strings.TrimSpace(m.Metadata["strategy"]),
@@ -141,8 +141,8 @@ func (f *Fusion) execute(ctx context.Context, m protocol.Message) (protocol.Resu
 	// Mesh remains the system transport boundary. The fusion itself is local to
 	// N07 ownership, while peers can invoke it through soul-mesh/1.
 	meshState := map[string]any{
-		"transport":         "soul-mesh/1",
-		"canonical_owner":   "N07",
+		"transport": "soul-mesh/1",
+		"canonical_owner": "N07",
 		"peer_client_ready": f.peers != nil,
 	}
 	raw, _ := json.Marshal(map[string]any{
@@ -157,12 +157,12 @@ func (f *Fusion) execute(ctx context.Context, m protocol.Message) (protocol.Resu
 		TraceID: m.TraceID, CorrelationID: m.CorrelationID,
 		Source: "N07.octacore", Target: m.Source, Status: "ok",
 		Metadata: map[string]string{
-			"fusion_json":        string(raw),
+			"fusion_json": string(raw),
 			"orchestrator_stage": "completed",
-			"orbital_stage":      "completed",
-			"prefrontal_stage":   "completed",
-			"supergpu_stage":     "completed",
-			"hardware_claim":     "none",
+			"orbital_stage": "completed",
+			"prefrontal_stage": "completed",
+			"supergpu_stage": "completed",
+			"hardware_claim": "none",
 		},
 	}, nil
 }
