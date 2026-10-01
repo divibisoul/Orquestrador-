@@ -199,7 +199,29 @@
       ],
       "manifestAuthority": "soul-nuclei.json",
       "sourceRef": "release-identity:self",
-      "status": "self-audited-current-main-composition-ledger-merged"
+      "status": "self-audited-current-main-composition-ledger-merged",
+      "evidence": [
+        "orchestrator/engine.go",
+        "orchestrator/orbital_ops.go",
+        "prefrontal/neocortex.go",
+        "octacore/executive_core.go",
+        "octacore/processor.go",
+        "octacore/operations.go",
+        "supergpu/runtime.go"
+      ],
+      "unifiedCore": {
+        "name": "N07.executive-octacore",
+        "type": "unified_logical_processing_core",
+        "components": [
+          "orchestrator",
+          "prefrontal_neocortex",
+          "orbital_reasoning_tce",
+          "supergpu"
+        ],
+        "lanes": 8,
+        "communication": "canonical-soul-mesh",
+        "hardwareStatement": "logical composition only; no physical 8-core silicon claim"
+      }
     }
   },
   "transversal": {
