@@ -140,7 +140,7 @@ func TestExecutiveCoreUsesSuperAGIMeshCapability(t *testing.T) {
 		CorrelationID: "superagi-correlation",
 		TaskID:        "superagi-task",
 		Operation:     "identity",
-		Input:         []float64{1, 2, 3, 4},
+		Input:         []float64{1, 2, 3, 4, 5, 6, 7, 8},
 		Workloads: []core.Workload{{
 			ID: "superagi-workload",
 			Operation: "identity",
