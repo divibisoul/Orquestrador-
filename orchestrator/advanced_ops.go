@@ -64,12 +64,12 @@ func RegisterAdvancedOperations(e *Engine) error {
 					jevStateJSON = string(stateJSON)
 				}
 				metadata := map[string]string{
-					"correlation_id": m.CorrelationID,
-					"trace_id":       protocol.NewTraceID(),
+					"correlation_id":  m.CorrelationID,
+					"trace_id":        protocol.NewTraceID(),
 					"parent_trace_id": m.TraceID,
-					"questions_json": questionsJSON,
-					"state":          jevState,
-					"state_json":     jevStateJSON,
+					"questions_json":  questionsJSON,
+					"state":           jevState,
+					"state_json":      jevStateJSON,
 				}
 				if model := strings.TrimSpace(m.Metadata["jev_model"]); model != "" {
 					metadata["model"] = model
