@@ -7,7 +7,8 @@
     "oneCanonicalOwnerPerLeafCapability": true,
     "legacyAliasesPreserved": true,
     "declaredDoesNotImplyExecutable": true,
-    "sourceEvidenceRequired": true
+    "sourceEvidenceRequired": true,
+    "integrationBoundary": "external typed-decision service is owned by N07 adapter; source repository remains independent and is not copied into nuclei"
   },
   "owners": {
     "N01": [
@@ -77,7 +78,8 @@
     "N07": [
       "orchestration",
       "federation",
-      "supergpu"
+      "supergpu",
+      "jev.systemone@1.0.0"
     ],
     "SARA": [
       "sara.health",
@@ -547,6 +549,14 @@
         "repository": "divibisoul/SARA",
         "path": "src/sara/meta/soul_federation.py",
         "ref": "main"
+      }
+    ],
+    "N07": [
+      {
+        "id": "jev.systemone@1.0.0",
+        "repository": "divibisoul/Orquestrador-",
+        "path": "orchestrator/jev.go",
+        "ref": "e657cb095295da92e6920e4c0eb2952404d7cfa0"
       }
     ]
   },
