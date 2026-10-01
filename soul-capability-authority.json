@@ -223,7 +223,7 @@
         "id": "external.capability.execute@1.0.0",
         "repository": "divibisoul/aeternum-core-29",
         "path": "src/core/mesh/SoulMeshRuntime.ts",
-        "ref": "main"
+        "ref": "9ebc0c9e3bd6adaa3fb710acd8f3507a7d45660e"
       },
       {
         "id": "clareira.ingest",
