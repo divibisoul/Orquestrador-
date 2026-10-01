@@ -332,6 +332,29 @@ func (c *ExecutiveCore) runCollaborators(ctx context.Context, req ExecutiveCoreR
 				results[i] = contribution
 				return
 			}
+			if profile != nil && strings.TrimSpace(profile.AdapterOwner) != "" {
+				out, err := c.peers.CallWithCorrelation(ctx, profile.AdapterOwner, contribution.Capability, collaboration.Payload, req.CorrelationID)
+				if err != nil {
+					contribution.State = "UNMEASURABLE"
+					contribution.Target = profile.AdapterOwner
+					contribution.Error = err.Error()
+					if collaboration.Required {
+						errMu.Lock()
+						if firstRequiredErr == nil {
+							firstRequiredErr = err
+						}
+						errMu.Unlock()
+					}
+					results[i] = contribution
+					return
+				}
+				contribution.State = "REAL"
+				contribution.Target = profile.AdapterOwner
+				contribution.Output = out
+				results[i] = contribution
+				return
+			}
+
 			out, target, err := c.peers.CallBestDynamic(ctx, contribution.Capability, collaboration.Payload, req.CorrelationID)
 			if err != nil {
 				contribution.State = "UNMEASURABLE"
