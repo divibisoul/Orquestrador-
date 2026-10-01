@@ -60,18 +60,36 @@ func loadOSSAffinityFromBytes(data []byte) (map[string][]string, error) {
 }
 
 func loadOSSAffinityFile() map[string][]string {
-	candidates := make([]string, 0, 3)
+	candidates := make([]string, 0, 12)
+	addParentCandidates := func(start string) {
+		start = filepath.Clean(start)
+		for {
+			candidates = append(candidates, filepath.Join(start, "soul-capability-authority.json"))
+			parent := filepath.Dir(start)
+			if parent == start {
+				break
+			}
+			start = parent
+		}
+	}
+
 	if configured := strings.TrimSpace(os.Getenv("SOUL_CAPABILITY_AUTHORITY_PATH")); configured != "" {
 		candidates = append(candidates, configured)
 	}
 	if cwd, err := os.Getwd(); err == nil && cwd != "" {
-		candidates = append(candidates, filepath.Join(cwd, "soul-capability-authority.json"))
+		addParentCandidates(cwd)
 	}
 	if executable, err := os.Executable(); err == nil {
-		candidates = append(candidates, filepath.Join(filepath.Dir(executable), "soul-capability-authority.json"))
+		addParentCandidates(filepath.Dir(executable))
 	}
 
+	seen := make(map[string]struct{}, len(candidates))
 	for _, path := range candidates {
+		path = filepath.Clean(path)
+		if _, ok := seen[path]; ok {
+			continue
+		}
+		seen[path] = struct{}{}
 		data, err := os.ReadFile(path)
 		if err != nil {
 			continue
