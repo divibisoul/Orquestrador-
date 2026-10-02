@@ -591,13 +591,13 @@
         "id": "multiagent.crews.execute@1.0.0",
         "repository": "divibisoul/Orquestrador-",
         "path": "orchestrator/multiagent_facade.go",
-        "ref": "HEAD"
+        "ref": "e5d3ee2163135fcafb7f7d55865e9ffeabaf8611"
       },
       {
         "id": "multiagent.crews.describe@1.0.0",
         "repository": "divibisoul/Orquestrador-",
         "path": "orchestrator/multiagent_facade.go",
-        "ref": "HEAD"
+        "ref": "e5d3ee2163135fcafb7f7d55865e9ffeabaf8611"
       }
     ]
   },
