@@ -57,7 +57,10 @@
       ],
       "manifestAuthority": "SOUL-FUSION-MANIFEST.json",
       "sourceRef": "bbe9c9f3bfbc7a6d3a86516a137def6f401a51a4",
-      "status": "main-live-recovery-and-hortacore-bridge-merged"
+      "status": "main-live-recovery-and-hortacore-bridge-merged",
+      "contractEvidencePaths": [
+        "scripts/soul-mesh-server.mjs"
+      ]
     },
     "N02": {
       "repository": "divibisoul/Eternium-",
@@ -80,7 +83,10 @@
       ],
       "manifestAuthority": "SOUL-FUSION-MANIFEST.json",
       "sourceRef": "0b080492fd869d3d0d37e84c604446e05e257aff",
-      "status": "main-live-bncv2-csae-dcrs-reintegrated"
+      "status": "main-live-bncv2-csae-dcrs-reintegrated",
+      "contractEvidencePaths": [
+        "src/soul-mesh/SoulMeshProtocol.ts"
+      ]
     },
     "N03": {
       "repository": "divibisoul/nexus-aeternum-fusion",
@@ -104,7 +110,10 @@
       ],
       "manifestAuthority": "SOUL-FUSION-MANIFEST.json",
       "sourceRef": "09e34aa5b5deea68ecbc66cf2c01f6607e16ba78",
-      "status": "main-live-composition-contract-reconciled"
+      "status": "main-live-composition-contract-reconciled",
+      "contractEvidencePaths": [
+        "src/mesh/SoulMeshProtocol.ts"
+      ]
     },
     "N04": {
       "repository": "divibisoul/nextjs-ai-chatbots",
@@ -127,7 +136,10 @@
       ],
       "manifestAuthority": "SOUL-FUSION-MANIFEST.json",
       "sourceRef": "13501b343d789c198640414238d0c9edfc7cfe6e",
-      "status": "main-live-tool-capability-alias-reconciled"
+      "status": "main-live-tool-capability-alias-reconciled",
+      "contractEvidencePaths": [
+        "lib/soul-mesh/SoulMeshProtocol.ts"
+      ]
     },
     "N05": {
       "repository": "divibisoul/nextjs-ai-chatbot",
@@ -151,7 +163,11 @@
       ],
       "manifestAuthority": "SOUL-FUSION-MANIFEST.json",
       "sourceRef": "2207a168861c1b64e1554540b18d47a102387400",
-      "status": "main-live-inference-capability-catalog-reconciled"
+      "status": "main-live-inference-capability-catalog-reconciled",
+      "contractEvidencePaths": [
+        "lib/soul-mesh/endpoint.ts",
+        "lib/soul-mesh/SoulMeshProtocol.ts"
+      ]
     },
     "N06": {
       "repository": "divibisoul/nextjs-ai-chatbot-2000",
@@ -175,7 +191,10 @@
       ],
       "manifestAuthority": "SOUL-FUSION-MANIFEST.json",
       "sourceRef": "576d81b1ced65f860beaecc458492295ac9732fc",
-      "status": "main-live-composition-targets-reconciled"
+      "status": "main-live-composition-targets-reconciled",
+      "contractEvidencePaths": [
+        "lib/soul-mesh/SoulMeshProtocol.ts"
+      ]
     },
     "N07": {
       "repository": "divibisoul/Orquestrador-",
@@ -199,7 +218,11 @@
       ],
       "manifestAuthority": "soul-nuclei.json",
       "sourceRef": "release-identity:self",
-      "status": "self-audited-current-main-composition-ledger-merged"
+      "status": "self-audited-current-main-composition-ledger-merged",
+      "contractEvidencePaths": [
+        "protocol/mesh.go",
+        "protocol/protocol.go"
+      ]
     }
   },
   "transversal": {
