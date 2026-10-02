@@ -4,7 +4,7 @@
   "component_id": "N07",
   "component_repository": "divibisoul/Orquestrador-",
   "native_authority": "preserved",
-  "access_model": "All 16 upstream capability sources are discoverable through canonical N07; direct-affinity providers are preferred for this component.",
+  "access_model": "All 16 upstream sources remain catalogued by N07; only providers with direct_affinity=true are direct N07 adapter candidates. Other providers are routed to their native-affinity nuclei through canonical federation.",
   "external_provider_count": 16,
   "external_providers": [
     {
@@ -18,7 +18,7 @@
         "debugging"
       ],
       "direct_affinity": true,
-      "access": "N07 canonical federation",
+      "access": "N07 direct-adapter boundary",
       "structural_state": "REAL",
       "runtime_state": "PROJECTED",
       "requires_adapter": true
@@ -33,7 +33,7 @@
         "telemetry"
       ],
       "direct_affinity": true,
-      "access": "N07 canonical federation",
+      "access": "N07 direct-adapter boundary",
       "structural_state": "REAL",
       "runtime_state": "PROJECTED",
       "requires_adapter": true
@@ -46,7 +46,7 @@
         "orchestration"
       ],
       "direct_affinity": true,
-      "access": "N07 canonical federation",
+      "access": "N07 direct-adapter boundary",
       "structural_state": "REAL",
       "runtime_state": "PROJECTED",
       "requires_adapter": true
@@ -59,7 +59,7 @@
         "role-specialization"
       ],
       "direct_affinity": true,
-      "access": "N07 canonical federation",
+      "access": "N07 direct-adapter boundary",
       "structural_state": "REAL",
       "runtime_state": "PROJECTED",
       "requires_adapter": true
@@ -73,7 +73,7 @@
         "A2A"
       ],
       "direct_affinity": true,
-      "access": "N07 canonical federation",
+      "access": "N07 direct-adapter boundary",
       "structural_state": "REAL",
       "runtime_state": "PROJECTED",
       "requires_adapter": true
@@ -85,8 +85,8 @@
         "tool-use",
         "execution"
       ],
-      "direct_affinity": true,
-      "access": "N07 canonical federation",
+      "direct_affinity": false,
+      "access": "N07 canonical federation catalog",
       "structural_state": "REAL",
       "runtime_state": "PROJECTED",
       "requires_adapter": true
@@ -99,7 +99,7 @@
         "software-process"
       ],
       "direct_affinity": true,
-      "access": "N07 canonical federation",
+      "access": "N07 direct-adapter boundary",
       "structural_state": "REAL",
       "runtime_state": "PROJECTED",
       "requires_adapter": true
@@ -116,7 +116,7 @@
         "voice"
       ],
       "direct_affinity": true,
-      "access": "N07 canonical federation",
+      "access": "N07 direct-adapter boundary",
       "structural_state": "REAL",
       "runtime_state": "PROJECTED",
       "requires_adapter": true
@@ -128,8 +128,8 @@
         "persistent-memory",
         "identity"
       ],
-      "direct_affinity": true,
-      "access": "N07 canonical federation",
+      "direct_affinity": false,
+      "access": "N07 canonical federation catalog",
       "structural_state": "REAL",
       "runtime_state": "PROJECTED",
       "requires_adapter": true
@@ -140,8 +140,8 @@
         "browser-agents",
         "web-automation"
       ],
-      "direct_affinity": true,
-      "access": "N07 canonical federation",
+      "direct_affinity": false,
+      "access": "N07 canonical federation catalog",
       "structural_state": "REAL",
       "runtime_state": "PROJECTED",
       "requires_adapter": true
@@ -154,8 +154,8 @@
         "MCP",
         "multimodal"
       ],
-      "direct_affinity": true,
-      "access": "N07 canonical federation",
+      "direct_affinity": false,
+      "access": "N07 canonical federation catalog",
       "structural_state": "REAL",
       "runtime_state": "PROJECTED",
       "requires_adapter": true
@@ -168,8 +168,8 @@
         "subagents",
         "durable-execution"
       ],
-      "direct_affinity": true,
-      "access": "N07 canonical federation",
+      "direct_affinity": false,
+      "access": "N07 canonical federation catalog",
       "structural_state": "REAL",
       "runtime_state": "PROJECTED",
       "requires_adapter": true
@@ -182,8 +182,8 @@
         "retrieval",
         "agent-workflows"
       ],
-      "direct_affinity": true,
-      "access": "N07 canonical federation",
+      "direct_affinity": false,
+      "access": "N07 canonical federation catalog",
       "structural_state": "REAL",
       "runtime_state": "PROJECTED",
       "requires_adapter": true
@@ -195,8 +195,8 @@
         "optimization",
         "reasoning-pipelines"
       ],
-      "direct_affinity": true,
-      "access": "N07 canonical federation",
+      "direct_affinity": false,
+      "access": "N07 canonical federation catalog",
       "structural_state": "REAL",
       "runtime_state": "PROJECTED",
       "requires_adapter": true
@@ -206,8 +206,8 @@
       "capabilities": [
         "speech-to-text"
       ],
-      "direct_affinity": true,
-      "access": "N07 canonical federation",
+      "direct_affinity": false,
+      "access": "N07 canonical federation catalog",
       "structural_state": "REAL",
       "runtime_state": "PROJECTED",
       "requires_adapter": true
@@ -217,8 +217,8 @@
       "capabilities": [
         "text-to-speech"
       ],
-      "direct_affinity": true,
-      "access": "N07 canonical federation",
+      "direct_affinity": false,
+      "access": "N07 canonical federation catalog",
       "structural_state": "REAL",
       "runtime_state": "PROJECTED",
       "requires_adapter": true
@@ -251,5 +251,6 @@
       "soul.engineer.resilience"
     ]
   },
-  "rule": "External capabilities reinforce native SOUL functions; they do not replace ownership. Runtime success requires real adapter/configuration/evidence."
+  "rule": "External capabilities reinforce native SOUL functions; they do not replace ownership. Runtime success requires real adapter/configuration/evidence.",
+  "direct_affinity_rule": "direct_affinity identifies adapter-host affinity, never native ownership"
 }
