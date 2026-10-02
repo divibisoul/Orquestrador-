@@ -42,3 +42,18 @@ func TestSuperpowersAgentRouteRejectsUnboundOperation(t *testing.T) {
   if err == nil { t.Fatal("expected fail-closed rejection") }
 }
 
+func TestResidentAgentDescribeIsRegistered(t *testing.T) {
+  n, err := neural.New(2, .05)
+  if err != nil { t.Fatal(err) }
+  p, err := prefrontal.New(.1, 8)
+  if err != nil { t.Fatal(err) }
+  g := supergpu.New(nil)
+  e, err := New(n, p, g)
+  if err != nil { t.Fatal(err) }
+  if err := RegisterSuperpowersAgentOperations(e); err != nil { t.Fatal(err) }
+  m := protocol.NewMessage("N01", "N07", "command", ResidentAgentDescribeOperation, nil)
+  result, err := e.Submit(context.Background(), m)
+  if err != nil { t.Fatal(err) }
+  if result.Status != "ok" { t.Fatalf("status=%s error=%s", result.Status, result.Error) }
+  if result.Metadata["resident_agent_json"] == "" { t.Fatal("missing resident agent evidence") }
+}
