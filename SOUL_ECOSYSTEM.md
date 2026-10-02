@@ -30,5 +30,9 @@ The binding contract for this component is recorded in `integrations/capability-
 
 This component participates in the shared SOUL 25-repository capability fabric. The local binding is recorded in `integrations/soul-25-augmentation.json`; external capabilities are consumed through the canonical N07 federation and remain evidence-gated.
 
+## 25-repository upgrade fabric
+
+Architecture and functional roles are documented in `docs/SOUL_25_REPOSITORY_UPGRADE.md`. N07 exposes the canonical capability-upgrade surface at `/v1/capability-upgrade`, with runtime activation remaining evidence-gated.
+
 ## Runtime truth
 Git links and registry entries establish structural integration. Runtime activation is reported only when an adapter, configuration and end-to-end verification exist.
