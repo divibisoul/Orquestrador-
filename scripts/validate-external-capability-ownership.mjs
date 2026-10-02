@@ -18,4 +18,12 @@ for (const row of rows) {
     throw new Error(`SOURCE_MISMATCH:${row.id}`);
   }
 }
+
+const targetMap = new Map(registry.repositories.map(x => [x.id, new Set(x.targets)]));
+for (const row of rows) {
+  const targets = targetMap.get(row.id);
+  if (!targets?.has(row.primaryOwner)) throw new Error(`PRIMARY_OWNER_NOT_A_DIRECT_TARGET:${row.id}`);
+  if (row.id === 'superpowers' && row.mode !== 'dev-skill-pack') throw new Error('SUPERPOWERS_MODE_INVALID');
+}
+
 console.log(JSON.stringify({ok:true,capabilities:rows.length,owners:[...new Set(rows.map(x=>x.primaryOwner))].sort()},null,2));
