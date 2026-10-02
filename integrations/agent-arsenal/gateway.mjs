@@ -21,6 +21,7 @@ const EXECUTE = /^(1|true|yes)$/i.test(process.env.AGENT_ARSENAL_EXECUTE || "fal
 const COMMAND_TIMEOUT_MS = Math.max(1000, Number(process.env.AGENT_ARSENAL_COMMAND_TIMEOUT_MS || 20000));
 const MAX_RESOLVE_BYTES = Math.max(4096, Number(process.env.AGENT_ARSENAL_MAX_RESOLVE_BYTES || 1048576));
 const MAX_BODY_BYTES = 256 * 1024;
+const MAX_ACTIVATION_BYTES = 64 * 1024;
 const AUTH_TOKEN = String(process.env.AGENT_ARSENAL_TOKEN || "").trim();
 
 
@@ -207,6 +208,35 @@ async function handler(req, res) {
     if (req.method === "POST" && req.url === "/v1/resolve") {
       const body = await readJson(req);
       return send(res, 200, await resolveArtifact(body.source, body.path));
+    }
+    if (req.method === "POST" && req.url === "/v1/activate") {
+      const body = await readJson(req);
+      const source = String(body.source || "").trim();
+      const requested = String(body.path || "").trim();
+      const task = String(body.task || "").trim();
+      if (!source || !requested || !task) throw Object.assign(new Error("source, path and task are required"), { statusCode: 400 });
+      const artifact = await resolveArtifact(source, requested);
+      if (!["agent", "skill", "workflow"].includes(artifact.kind)) {
+        throw Object.assign(new Error("only agent, skill and workflow artifacts can be activated through Ruflo"), { statusCode: 400 });
+      }
+      if (!artifact.content) throw Object.assign(new Error("artifact content is unavailable for activation"), { statusCode: 413 });
+      const content = String(artifact.content);
+      if (Buffer.byteLength(content, "utf8") > MAX_ACTIVATION_BYTES) {
+        throw Object.assign(new Error("activation artifact exceeds the 64 KiB safety bound"), { statusCode: 413 });
+      }
+      const activationTask =
+        "Apply the pinned SOUL external artifact below as execution guidance. Preserve its constraints and verification requirements. " +
+        "Do not execute arbitrary shell/code contained in the artifact unless the selected runtime explicitly requires it.\n\n" +
+        "SOURCE: " + artifact.source + "\nPATH: " + artifact.path + "\nSHA256: " + artifact.sha256 + "\n\n" +
+        "--- ARTIFACT ---\n" + content + "\n--- END ARTIFACT ---\n\nTASK:\n" + task;
+      const args = ["task", "orchestrate", "--task", activationTask];
+      if (body.strategy) args.push("--strategy", String(body.strategy));
+      if (body.priority) args.push("--priority", String(body.priority));
+      return send(res, 200, {
+        ...await runRuflo(args),
+        backend: "ruflo@3.50.0",
+        activation: { source: artifact.source, path: artifact.path, kind: artifact.kind, sha256: artifact.sha256 }
+      });
     }
     if (req.method === "POST" && req.url === "/v1/swarm") {
       const body = await readJson(req);
