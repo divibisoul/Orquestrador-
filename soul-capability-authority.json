@@ -85,6 +85,7 @@
       "transcendental.estimate@1.0.0",
       "mesh.capability.resolve@1.0.0",
       "cognitive.planning.sources@1.0.0",
+      "agent.arsenal.inventory@1.0.0",
       "agent.arsenal.catalog@1.0.0",
       "agent.arsenal.resolve@1.0.0",
       "agent.arsenal.swarm@1.0.0",
@@ -612,6 +613,13 @@
         "path": "orchestrator/agent_arsenal.go",
         "ref": "085f7c5c9e43f4a3fbb73f7e2b9b4a2dbd9f23e4",
         "source": "pinned upstream gateway: obra/superpowers, affaan-m/ECC, ruvnet/ruflo"
+      },
+      {
+        "id": "agent.arsenal.inventory@1.0.0",
+        "repository": "divibisoul/Orquestrador-",
+        "path": "orchestrator/agent_arsenal.go",
+        "ref": "8291ba4c13eb5bdb6a6878c8c25107460be6a998",
+        "source": "complete inventory surface over pinned obra/superpowers, affaan-m/ECC, ruvnet/ruflo"
       }
     ]
   },
