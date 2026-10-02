@@ -745,7 +745,7 @@
       ],
       "langgraph": [
         "N07",
-        "N02",
+        "N01",
         "N06"
       ],
       "crewai": [
@@ -764,46 +764,56 @@
         "N07"
       ],
       "metagpt": [
-        "N06",
-        "N07"
+        "N07",
+        "N06"
       ],
       "agentscope": [
         "N03",
         "N01",
+        "N02",
         "N07"
       ],
       "letta-code": [
         "N01",
-        "N07"
+        "N05",
+        "N06",
+        "SARA"
       ],
       "browser-use": [
+        "N04",
         "N05",
         "N07"
       ],
       "smolagents": [
         "N06",
+        "N04",
         "N07"
       ],
       "pydantic-ai": [
         "N01",
-        "N07"
+        "JEV",
+        "N07",
+        "SARA"
       ],
       "llama-index": [
         "N05",
+        "N04",
         "N06",
         "N07"
       ],
       "dspy": [
         "N06",
+        "N02",
+        "N05",
         "N07"
       ],
       "whisper": [
         "N03",
-        "N07"
+        "N05"
       ],
       "kokoro": [
         "N03",
-        "N07"
+        "N05"
       ]
     },
     "unresolved": []
