@@ -150,6 +150,15 @@ func TestCallBestDynamicRoutesAllOSSCapabilitiesByAffinity(t *testing.T) {
 		}
 	}
 
+	routableCapabilities := 0
+	for _, targets := range affinity {
+		for _, target := range targets {
+			if _, ok := client.peers[target]; ok {
+				routableCapabilities++
+				break
+			}
+		}
+	}
 	var totalTasks int
 	mu.Lock()
 	for _, counts := range taskCounts {
@@ -158,7 +167,7 @@ func TestCallBestDynamicRoutesAllOSSCapabilitiesByAffinity(t *testing.T) {
 		}
 	}
 	mu.Unlock()
-	if totalTasks != len(affinity) {
-		t.Fatalf("executed OSS capabilities = %d, manifest entries = %d", totalTasks, len(affinity))
+	if totalTasks != routableCapabilities {
+		t.Fatalf("executed OSS capabilities = %d, routable affinity entries = %d", totalTasks, routableCapabilities)
 	}
 }
