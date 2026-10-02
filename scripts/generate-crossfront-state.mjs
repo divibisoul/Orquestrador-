@@ -22,7 +22,7 @@ function has(text, terms) { return terms.some((term) => text.toLowerCase().inclu
 const rows = [];
 for (const [id, nucleus] of Object.entries(matrix.nuclei ?? {})) {
   const missing = [];
-  const root = path.join(ROOT, 'sources', id);
+  const root = id === 'N07' ? ROOT : path.join(ROOT, 'sources', id);
   const all = [];
   for (const candidate of nucleus.entrypoints ?? []) {
     const item = await readOptional(root, candidate, missing);
@@ -35,7 +35,7 @@ for (const [id, nucleus] of Object.entries(matrix.nuclei ?? {})) {
     repo: nucleus.repository,
     role: nucleus.role,
     contract: contractOf(joined),
-    mesh: has(joined, ['soul-mesh/1', 'soul mesh']),
+    mesh: has(joined, ['soul-mesh/1', 'soul mesh', 'SOUL_MESH_PROTOCOL', 'SOUL_MESH_VERSION']),
     neuralBridge: has(joined, ['synapticnodebridge', 'neural', 'federation']),
     source,
     state: missing.length > 0 || source === 'not-found' ? 'DEGRADED' : 'OBSERVED',
