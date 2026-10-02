@@ -80,3 +80,15 @@ Superpowers provides methodology at explicit boundaries through the previously i
 Native SOUL functions are preserved. External providers do not become new SOUL nuclei, do not receive Mesh authority, and do not silently replace a native capability.
 
 Runtime success is never synthesized when a provider is unavailable.
+
+## Native-function reinforcement layer
+
+The 16 upstream sources are now mapped against concrete native capability families in `integrations/native-capability-augmentation.json`.
+
+This creates a reinforcement relationship for the existing 9 components:
+
+**native capability -> compatible upstream providers -> canonical N07 resolver -> explicit adapter -> evidence-gated execution**
+
+The resolver does not replace the native implementation. It identifies which upstream capability sources can strengthen the native function and which of those sources have an adapter boundary that is actually available.
+
+At the current stage, all 25 repositories are structurally integrated and the augmentation graph is real; external provider runtime execution remains PROJECTED until provider-specific runtime adapters and end-to-end evidence exist.
