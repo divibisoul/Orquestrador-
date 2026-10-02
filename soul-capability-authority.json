@@ -84,7 +84,11 @@
       "prefrontal.orbital.evaluate@1.0.0",
       "transcendental.estimate@1.0.0",
       "mesh.capability.resolve@1.0.0",
-      "cognitive.planning.sources@1.0.0"
+      "cognitive.planning.sources@1.0.0",
+      "soul.integration.engineers.describe@1.0.0",
+      "soul.integration.engineer.prepare@1.0.0",
+      "superpowers.agent.describe@1.0.0",
+      "superpowers.agent.route@1.0.0"
     ],
     "SARA": [
       "sara.health",
@@ -223,7 +227,7 @@
         "id": "external.capability.execute@1.0.0",
         "repository": "divibisoul/aeternum-core-29",
         "path": "src/core/mesh/SoulMeshRuntime.ts",
-        "ref": "9ebc0c9e3bd6adaa3fb710acd8f3507a7d45660e"
+        "ref": "7b49dc4c716dd1cfde943734bf509008df042803"
       },
       {
         "id": "clareira.ingest",
@@ -573,13 +577,13 @@
         "id": "mesh.capability.resolve@1.0.0",
         "repository": "divibisoul/Orquestrador-",
         "path": "orchestrator/capability_resolution.go",
-        "ref": "3d5d189209ffd792c4379e0a3570a7524c772a2d"
+        "ref": "b6abde1d144e5930a3b3e19b7300c9519508e057"
       },
       {
         "id": "cognitive.planning.sources@1.0.0",
         "repository": "divibisoul/Orquestrador-",
         "path": "orchestrator/external_planning_ops.go",
-        "ref": "43809bf9f4543d1183296dc00149a4c8e7af5328"
+        "ref": "b6abde1d144e5930a3b3e19b7300c9519508e057"
       }
     ]
   },
@@ -736,5 +740,24 @@
       ]
     },
     "unresolved": []
+  },
+  "integrationControlPlane": {
+    "canonicalRepository": "divibisoul/Orquestrador-",
+    "providerContract": "integrations/soul-provider-contracts.json",
+    "componentContract": "integrations/soul-component-contracts.json",
+    "engineeringSpec": "docs/SOUL_INTEGRATION_ENGINEERING.md",
+    "engineeringAgents": [
+      "soul.engineer.provenance",
+      "soul.engineer.adapter",
+      "soul.engineer.runtime",
+      "soul.engineer.verification",
+      "soul.engineer.resilience"
+    ],
+    "operations": [
+      "soul.integration.engineers.describe@1.0.0",
+      "soul.integration.engineer.prepare@1.0.0"
+    ],
+    "stateRule": "provider attachment is structural; executable state requires explicit adapter, configuration and verification evidence",
+    "failureRule": "missing infrastructure produces BLOCKED or UNMEASURABLE, never synthetic PASS"
   }
 }

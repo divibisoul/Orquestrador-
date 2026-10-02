@@ -23,6 +23,7 @@ type Fusion struct {
 	engine *orchestrator.Engine
 	peers  *mesh.PeerClient
 	gpu    *supergpu.Runtime
+	agent  *SuperpowersOctacoreAgent
 }
 
 func NewFusion(engine *orchestrator.Engine, peers *mesh.PeerClient, gpu *supergpu.Runtime) (*Fusion, error) {
@@ -35,7 +36,7 @@ func NewFusion(engine *orchestrator.Engine, peers *mesh.PeerClient, gpu *supergp
 	if gpu == nil {
 		return nil, errors.New("Octacore fusion requires existing N07 SuperGPU runtime")
 	}
-	return &Fusion{engine: engine, peers: peers, gpu: gpu}, nil
+	return &Fusion{engine: engine, peers: peers, gpu: gpu, agent: NewSuperpowersOctacoreAgent()}, nil
 }
 
 func (f *Fusion) Register() error {
@@ -86,6 +87,7 @@ func (f *Fusion) execute(ctx context.Context, m protocol.Message) (protocol.Resu
 	if ctx == nil {
 		return protocol.Result{}, errors.New("context is nil")
 	}
+	if err := f.agent.Preflight(OpFusionExecute); err != nil { return f.fail(m, "SUPERPOWERS_AGENT_PREFLIGHT_FAILED", err) }
 	workloads := strings.TrimSpace(m.Metadata["workloads_json"])
 	candidate := strings.TrimSpace(m.Metadata["candidate_json"])
 	if workloads == "" || candidate == "" {

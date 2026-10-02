@@ -1,0 +1,210 @@
+{
+  "schema_version": "1.0.0",
+  "evidence_states": [
+    "REAL",
+    "PROJECTED",
+    "BLOCKED",
+    "UNMEASURABLE"
+  ],
+  "canonical_owner": "N07",
+  "providers": [
+    {
+      "id": "superpowers",
+      "intent": "engenharia do projeto: especificação, planejamento, subagentes, TDD, revisão e verificação",
+      "targets": [
+        "N02",
+        "N07",
+        "SARA"
+      ],
+      "activation_boundary": "explicit-skill-agent-adapter",
+      "adapter_state": "IMPLEMENTED_AT_N07",
+      "verification_state": "PROJECTED",
+      "fail_closed": true
+    },
+    {
+      "id": "superagi",
+      "intent": "agentes autônomos, ferramentas, memória, multimodalidade e telemetria",
+      "targets": [
+        "N01",
+        "N07"
+      ],
+      "activation_boundary": "capability-adapter",
+      "adapter_state": "CATALOGED",
+      "verification_state": "PROJECTED",
+      "fail_closed": true
+    },
+    {
+      "id": "langgraph",
+      "intent": "grafos de estado, agentes duráveis e workflows",
+      "targets": [
+        "N01",
+        "N02",
+        "N07"
+      ],
+      "activation_boundary": "workflow-adapter",
+      "adapter_state": "CATALOGED",
+      "verification_state": "PROJECTED",
+      "fail_closed": true
+    },
+    {
+      "id": "crewai",
+      "intent": "equipes multiagente e especialização por papel",
+      "targets": [
+        "N02",
+        "N07"
+      ],
+      "activation_boundary": "team-role-adapter",
+      "adapter_state": "CATALOGED",
+      "verification_state": "PROJECTED",
+      "fail_closed": true
+    },
+    {
+      "id": "microsoft-agent-framework",
+      "intent": "agentes, workflows, MCP e A2A",
+      "targets": [
+        "N02",
+        "N07"
+      ],
+      "activation_boundary": "mcp-a2a-adapter",
+      "adapter_state": "CATALOGED",
+      "verification_state": "PROJECTED",
+      "fail_closed": true
+    },
+    {
+      "id": "openhands",
+      "intent": "agentes de engenharia de software, ferramentas e execução",
+      "targets": [
+        "N02",
+        "N06",
+        "N07"
+      ],
+      "activation_boundary": "sandboxed-execution-adapter",
+      "adapter_state": "CATALOGED",
+      "verification_state": "PROJECTED",
+      "fail_closed": true
+    },
+    {
+      "id": "metagpt",
+      "intent": "processo de software por papéis e colaboração multiagente",
+      "targets": [
+        "N02",
+        "N06",
+        "N07"
+      ],
+      "activation_boundary": "role-process-adapter",
+      "adapter_state": "CATALOGED",
+      "verification_state": "PROJECTED",
+      "fail_closed": true
+    },
+    {
+      "id": "agentscope",
+      "intent": "agentes, equipes, ferramentas, memória, sandbox, A2A e voz",
+      "targets": [
+        "N01",
+        "N02",
+        "N03",
+        "N07"
+      ],
+      "activation_boundary": "agent-tool-adapter",
+      "adapter_state": "CATALOGED",
+      "verification_state": "PROJECTED",
+      "fail_closed": true
+    },
+    {
+      "id": "letta-code",
+      "intent": "estado persistente, memória e identidade de agentes",
+      "targets": [
+        "N01"
+      ],
+      "activation_boundary": "persistent-agent-adapter",
+      "adapter_state": "CATALOGED",
+      "verification_state": "PROJECTED",
+      "fail_closed": true
+    },
+    {
+      "id": "browser-use",
+      "intent": "agentes de navegador e automação web",
+      "targets": [
+        "N02",
+        "N05",
+        "N07"
+      ],
+      "activation_boundary": "browser-sandbox-adapter",
+      "adapter_state": "CATALOGED",
+      "verification_state": "PROJECTED",
+      "fail_closed": true
+    },
+    {
+      "id": "smolagents",
+      "intent": "agentes de código, ferramentas, MCP e multimodalidade",
+      "targets": [
+        "N02",
+        "N06",
+        "N07"
+      ],
+      "activation_boundary": "tool-code-agent-adapter",
+      "adapter_state": "CATALOGED",
+      "verification_state": "PROJECTED",
+      "fail_closed": true
+    },
+    {
+      "id": "pydantic-ai",
+      "intent": "agentes tipados, ferramentas, subagentes e execução durável",
+      "targets": [
+        "N01",
+        "N07",
+        "SARA",
+        "JEV"
+      ],
+      "activation_boundary": "typed-contract-adapter",
+      "adapter_state": "CATALOGED",
+      "verification_state": "PROJECTED",
+      "fail_closed": true
+    },
+    {
+      "id": "llama-index",
+      "intent": "RAG, indexação, recuperação e workflows de agentes",
+      "targets": [
+        "N05",
+        "N06"
+      ],
+      "activation_boundary": "retrieval-adapter",
+      "adapter_state": "CATALOGED",
+      "verification_state": "PROJECTED",
+      "fail_closed": true
+    },
+    {
+      "id": "dspy",
+      "intent": "programação de LM, otimização e pipelines de raciocínio",
+      "targets": [
+        "N06"
+      ],
+      "activation_boundary": "reasoning-optimization-adapter",
+      "adapter_state": "CATALOGED",
+      "verification_state": "PROJECTED",
+      "fail_closed": true
+    },
+    {
+      "id": "whisper",
+      "intent": "fala para texto",
+      "targets": [
+        "N03"
+      ],
+      "activation_boundary": "speech-to-text-adapter",
+      "adapter_state": "CATALOGED",
+      "verification_state": "PROJECTED",
+      "fail_closed": true
+    },
+    {
+      "id": "kokoro",
+      "intent": "texto para fala",
+      "targets": [
+        "N03"
+      ],
+      "activation_boundary": "text-to-speech-adapter",
+      "adapter_state": "CATALOGED",
+      "verification_state": "PROJECTED",
+      "fail_closed": true
+    }
+  ]
+}

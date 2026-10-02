@@ -1,0 +1,32 @@
+name: Superpowers Crossfront Agents
+
+on:
+  pull_request:
+    paths:
+      - "integrations/superpowers/**"
+      - "orchestrator/superpowers_agents.go"
+      - "orchestrator/superpowers_agents_test.go"
+      - "mesh/superpowers_mesh_clareira_agent.go"
+      - "mesh/superpowers_mesh_clareira_agent_test.go"
+      - "mesh/clareira_reporter.go"
+      - "octacore/superpowers_octacore_agent.go"
+      - "octacore/superpowers_octacore_agent_test.go"
+      - "octacore/fusion.go"
+      - "cmd/nexus/main.go"
+      - "go.mod"
+      - "go.sum"
+  push:
+    branches:
+      - "feat/superpowers-crossfront-agents-2026-10-02"
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+      - run: go test ./...
+
