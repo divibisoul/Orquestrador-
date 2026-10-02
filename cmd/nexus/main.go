@@ -16,6 +16,7 @@ import (
 	"github.com/divibisoul/Orquestrador-/aeternum"
 	"github.com/divibisoul/Orquestrador-/api"
 	"github.com/divibisoul/Orquestrador-/api/health"
+	"github.com/divibisoul/Orquestrador-/agentarsenal"
 	"github.com/divibisoul/Orquestrador-/backend"
 	"github.com/divibisoul/Orquestrador-/cognitive"
 	"github.com/divibisoul/Orquestrador-/cooperation"
@@ -160,6 +161,15 @@ func main() {
 	}
 	if err := orchestrator.RegisterExternalPlanningSourceOperation(e); err != nil {
 		log.Fatal(err)
+	}
+	agentArsenalProxy := agentarsenal.NewFromEnv()
+	if agentArsenalProxy.Configured() {
+		if err := orchestrator.RegisterAgentArsenalOperations(e, agentArsenalProxy); err != nil {
+			log.Fatal(err)
+		}
+		log.Printf("SOUL agent arsenal enabled: superpowers + ECC + Ruflo swarm")
+	} else {
+		log.Printf("SOUL agent arsenal disabled: SOUL_AGENT_ARSENAL_URL is not configured")
 	}
 
 	coordinator, err := cooperation.New(peerClient, learningMachine)
