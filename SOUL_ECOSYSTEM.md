@@ -22,5 +22,9 @@ It identifies source repository, pinned revision, target SOUL nucleus and declar
 - SARA: https://github.com/divibisoul/SARA
 - Jev API: https://github.com/divibisoul/jev-api
 
+## Functional integration boundary
+
+The binding contract for this component is recorded in `integrations/capability-boundary.json`. It states why each upstream capability is present, the canonical routing boundary, the engineering agent responsible, and the evidence gate before runtime activation.
+
 ## Runtime truth
 Git links and registry entries establish structural integration. Runtime activation is reported only when an adapter, configuration and end-to-end verification exist.
