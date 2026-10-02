@@ -14,6 +14,12 @@ The safe default is an **embedded-local worker**, not seven new always-on networ
 
 This avoids creating an eighth control plane, avoids process explosion, and keeps failure isolated to the owning nucleus. A future deployment may host the worker as a separate process only when a concrete isolation requirement is demonstrated and the same Mesh contract is retained.
 
+## Auth and storage
+
+Resident Agents reuse the existing nucleus Mesh authenticator. HMAC is the primary mode; Bearer remains only where an existing nucleus route already requires it. Each nucleus keeps its existing secret configuration. The contract is fail-closed and introduces no new secret namespace.
+
+Plans are persisted in nucleus-owned state keyed by nucleus + correlationId and are not Git-tracked. Test/runtime evidence uses the existing CI artifact/runtime evidence path with schema `soul-evidence/1`. Resident Agents do not commit these records into repository history.
+
 ## Seven agents
 
 | Nucleus | Agent | Native owner | Superpowers focus | Published scope |
