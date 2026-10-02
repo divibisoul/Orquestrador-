@@ -5,6 +5,7 @@ on:
     paths:
       - "integrations/langgraph/**"
       - "integrations/nemo-agent-toolkit/**"
+      - "integrations/agent-arsenal/**"
       - ".github/workflows/soul-oss-bridges.yml"
   pull_request:
     paths:
@@ -42,3 +43,23 @@ jobs:
         run: python -m pip install --disable-pip-version-check -r integrations/nemo-agent-toolkit/requirements.txt
       - name: Verify NAT CLI
         run: nat --version
+
+  agent-arsenal:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Syntax check gateway
+        run: node --check integrations/agent-arsenal/gateway.mjs
+      - name: Bootstrap pinned upstream sources
+        run: bash integrations/agent-arsenal/bootstrap.sh "$RUNNER_TEMP/soul-agent-arsenal"
+      - name: Validate provenance pins
+        run: |
+          test "$(git -C "$RUNNER_TEMP/soul-agent-arsenal/superpowers" rev-parse HEAD)" = "8ca22dba9a94f28898bbce59f2537ff4d87c747d"
+          test "$(git -C "$RUNNER_TEMP/soul-agent-arsenal/ecc" rev-parse HEAD)" = "c05b2d6614f62f6db0047669aa4eefb223d478f9"
+          test "$(git -C "$RUNNER_TEMP/soul-agent-arsenal/ruflo" rev-parse HEAD)" = "27982983ea6cdc4767c0b6614a4ad9a9d9497cce"
+      - name: Go tests
+        run: go test ./...

@@ -31,6 +31,23 @@ See `docs/ANDROID_INTEGRATION.md` for the current request/response contract and 
 The v1 release is finite. The repository tracks structural, integrated and online states in `RELEASE_GATES_V1.md` and `SOUL_EXECUTION_QUEUE.md`. CI is required evidence; online completion additionally requires live peer E2E.
 
 
+## SOUL Agent Arsenal
+
+N07 exposes a unified external agent surface through `integrations/agent-arsenal`. The gateway pins and provisions three upstream MIT projects without copying their source into a SOUL nucleus:
+
+- `obra/superpowers` — agentic development skills, parallel dispatch, subagent-driven development and verification.
+- `affaan-m/ECC` — agents, skills, hooks, commands, MCP configuration, memory and harness adapters.
+- `ruvnet/ruflo` — multi-agent swarm coordination, agent spawning, memory and MCP capabilities.
+
+N07 operations:
+- `agent.arsenal.catalog@1.0.0`
+- `agent.arsenal.resolve@1.0.0`
+- `agent.arsenal.activate@1.0.0`
+- `agent.arsenal.swarm@1.0.0`
+- `agent.arsenal.agent.spawn@1.0.0`
+
+The catalog covers all checked-out files and classifies them as agent, skill, hook, command, MCP, plugin, workflow or source. Superpowers/ECC are discoverable/retrievable harness assets; Ruflo supplies the executable swarm backend. Execution is opt-in in the gateway and enabled by the production compose service.
+
 ## SARA regenerative service
 
 N07 integrates the SARA regenerative core without creating a new SOUL nucleus or

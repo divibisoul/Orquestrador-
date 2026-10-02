@@ -84,7 +84,13 @@
       "prefrontal.orbital.evaluate@1.0.0",
       "transcendental.estimate@1.0.0",
       "mesh.capability.resolve@1.0.0",
-      "cognitive.planning.sources@1.0.0"
+      "cognitive.planning.sources@1.0.0",
+      "agent.arsenal.inventory@1.0.0",
+      "agent.arsenal.catalog@1.0.0",
+      "agent.arsenal.resolve@1.0.0",
+      "agent.arsenal.activate@1.0.0",
+      "agent.arsenal.swarm@1.0.0",
+      "agent.arsenal.agent.spawn@1.0.0"
     ],
     "SARA": [
       "sara.health",
@@ -223,7 +229,7 @@
         "id": "external.capability.execute@1.0.0",
         "repository": "divibisoul/aeternum-core-29",
         "path": "src/core/mesh/SoulMeshRuntime.ts",
-        "ref": "9ebc0c9e3bd6adaa3fb710acd8f3507a7d45660e"
+        "ref": "7175c6232f7e685d1aea41746c57e9fb6f33e23a"
       },
       {
         "id": "clareira.ingest",
@@ -573,13 +579,55 @@
         "id": "mesh.capability.resolve@1.0.0",
         "repository": "divibisoul/Orquestrador-",
         "path": "orchestrator/capability_resolution.go",
-        "ref": "3d5d189209ffd792c4379e0a3570a7524c772a2d"
+        "ref": "38a02133fcb4d973eb2c3f2fbbe289c6786f2fa0"
       },
       {
         "id": "cognitive.planning.sources@1.0.0",
         "repository": "divibisoul/Orquestrador-",
         "path": "orchestrator/external_planning_ops.go",
-        "ref": "43809bf9f4543d1183296dc00149a4c8e7af5328"
+        "ref": "38a02133fcb4d973eb2c3f2fbbe289c6786f2fa0"
+      },
+      {
+        "id": "agent.arsenal.catalog@1.0.0",
+        "repository": "divibisoul/Orquestrador-",
+        "path": "orchestrator/agent_arsenal.go",
+        "ref": "085f7c5c9e43f4a3fbb73f7e2b9b4a2dbd9f23e4",
+        "source": "pinned upstream gateway: obra/superpowers, affaan-m/ECC, ruvnet/ruflo"
+      },
+      {
+        "id": "agent.arsenal.resolve@1.0.0",
+        "repository": "divibisoul/Orquestrador-",
+        "path": "orchestrator/agent_arsenal.go",
+        "ref": "085f7c5c9e43f4a3fbb73f7e2b9b4a2dbd9f23e4",
+        "source": "pinned upstream gateway: obra/superpowers, affaan-m/ECC, ruvnet/ruflo"
+      },
+      {
+        "id": "agent.arsenal.swarm@1.0.0",
+        "repository": "divibisoul/Orquestrador-",
+        "path": "orchestrator/agent_arsenal.go",
+        "ref": "085f7c5c9e43f4a3fbb73f7e2b9b4a2dbd9f23e4",
+        "source": "pinned upstream gateway: obra/superpowers, affaan-m/ECC, ruvnet/ruflo"
+      },
+      {
+        "id": "agent.arsenal.agent.spawn@1.0.0",
+        "repository": "divibisoul/Orquestrador-",
+        "path": "orchestrator/agent_arsenal.go",
+        "ref": "085f7c5c9e43f4a3fbb73f7e2b9b4a2dbd9f23e4",
+        "source": "pinned upstream gateway: obra/superpowers, affaan-m/ECC, ruvnet/ruflo"
+      },
+      {
+        "id": "agent.arsenal.inventory@1.0.0",
+        "repository": "divibisoul/Orquestrador-",
+        "path": "orchestrator/agent_arsenal.go",
+        "ref": "8291ba4c13eb5bdb6a6878c8c25107460be6a998",
+        "source": "complete inventory surface over pinned obra/superpowers, affaan-m/ECC, ruvnet/ruflo"
+      },
+      {
+        "id": "agent.arsenal.activate@1.0.0",
+        "repository": "divibisoul/Orquestrador-",
+        "path": "orchestrator/agent_arsenal.go",
+        "ref": "b88926f0e143e455862386afe069ec9fdb999a8f",
+        "source": "activates pinned agent/skill/workflow artifacts through Ruflo task orchestration"
       }
     ]
   },
