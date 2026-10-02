@@ -59,7 +59,7 @@ func multiAgentRequestFromMessage(m protocol.Message) MultiAgentFacadeRequest {
  q.Provider=strings.TrimSpace(m.Metadata["provider"])
  q.Goal=strings.TrimSpace(m.Metadata["goal"])
  if raw:=strings.TrimSpace(m.Metadata["roles"]); raw!="" { _=json.Unmarshal([]byte(raw),&q.Roles) }
- if raw:=strings.TrimSpace(m.Metadata["maxRounds"]); raw!="" { var n int; if err:=json.Unmarshal([]byte(raw),&n)==nil { q.MaxRounds=n } }
+ if raw:=strings.TrimSpace(m.Metadata["maxRounds"]); raw!="" { var n int; err:=json.Unmarshal([]byte(raw),&n); if err==nil { q.MaxRounds=n } }
  return q
 }
 
