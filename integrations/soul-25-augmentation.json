@@ -18,10 +18,11 @@
         "debugging"
       ],
       "direct_affinity": true,
-      "access": "N07 direct-adapter boundary",
+      "access": "N07 canonical federation",
       "structural_state": "REAL",
       "runtime_state": "PROJECTED",
-      "requires_adapter": true
+      "requires_adapter": true,
+      "direct_adapter_host": "N07"
     },
     {
       "id": "superagi",
@@ -33,10 +34,11 @@
         "telemetry"
       ],
       "direct_affinity": true,
-      "access": "N07 direct-adapter boundary",
+      "access": "N07 canonical federation",
       "structural_state": "REAL",
       "runtime_state": "PROJECTED",
-      "requires_adapter": true
+      "requires_adapter": true,
+      "direct_adapter_host": "N07"
     },
     {
       "id": "langgraph",
@@ -46,10 +48,11 @@
         "orchestration"
       ],
       "direct_affinity": true,
-      "access": "N07 direct-adapter boundary",
+      "access": "N07 canonical federation",
       "structural_state": "REAL",
       "runtime_state": "PROJECTED",
-      "requires_adapter": true
+      "requires_adapter": true,
+      "direct_adapter_host": "N07"
     },
     {
       "id": "crewai",
@@ -59,10 +62,11 @@
         "role-specialization"
       ],
       "direct_affinity": true,
-      "access": "N07 direct-adapter boundary",
+      "access": "N07 canonical federation",
       "structural_state": "REAL",
       "runtime_state": "PROJECTED",
-      "requires_adapter": true
+      "requires_adapter": true,
+      "direct_adapter_host": "N07"
     },
     {
       "id": "microsoft-agent-framework",
@@ -73,10 +77,11 @@
         "A2A"
       ],
       "direct_affinity": true,
-      "access": "N07 direct-adapter boundary",
+      "access": "N07 canonical federation",
       "structural_state": "REAL",
       "runtime_state": "PROJECTED",
-      "requires_adapter": true
+      "requires_adapter": true,
+      "direct_adapter_host": "N07"
     },
     {
       "id": "openhands",
@@ -86,10 +91,11 @@
         "execution"
       ],
       "direct_affinity": false,
-      "access": "N07 canonical federation catalog",
+      "access": "N07 canonical federation",
       "structural_state": "REAL",
       "runtime_state": "PROJECTED",
-      "requires_adapter": true
+      "requires_adapter": true,
+      "direct_adapter_host": "N06"
     },
     {
       "id": "metagpt",
@@ -99,10 +105,11 @@
         "software-process"
       ],
       "direct_affinity": true,
-      "access": "N07 direct-adapter boundary",
+      "access": "N07 canonical federation",
       "structural_state": "REAL",
       "runtime_state": "PROJECTED",
-      "requires_adapter": true
+      "requires_adapter": true,
+      "direct_adapter_host": "N07"
     },
     {
       "id": "agentscope",
@@ -116,10 +123,11 @@
         "voice"
       ],
       "direct_affinity": true,
-      "access": "N07 direct-adapter boundary",
+      "access": "N07 canonical federation",
       "structural_state": "REAL",
       "runtime_state": "PROJECTED",
-      "requires_adapter": true
+      "requires_adapter": true,
+      "direct_adapter_host": "N03"
     },
     {
       "id": "letta-code",
@@ -129,10 +137,11 @@
         "identity"
       ],
       "direct_affinity": false,
-      "access": "N07 canonical federation catalog",
+      "access": "N07 canonical federation",
       "structural_state": "REAL",
       "runtime_state": "PROJECTED",
-      "requires_adapter": true
+      "requires_adapter": true,
+      "direct_adapter_host": "N01"
     },
     {
       "id": "browser-use",
@@ -141,10 +150,11 @@
         "web-automation"
       ],
       "direct_affinity": false,
-      "access": "N07 canonical federation catalog",
+      "access": "N07 canonical federation",
       "structural_state": "REAL",
       "runtime_state": "PROJECTED",
-      "requires_adapter": true
+      "requires_adapter": true,
+      "direct_adapter_host": "N04"
     },
     {
       "id": "smolagents",
@@ -155,10 +165,11 @@
         "multimodal"
       ],
       "direct_affinity": false,
-      "access": "N07 canonical federation catalog",
+      "access": "N07 canonical federation",
       "structural_state": "REAL",
       "runtime_state": "PROJECTED",
-      "requires_adapter": true
+      "requires_adapter": true,
+      "direct_adapter_host": "N06"
     },
     {
       "id": "pydantic-ai",
@@ -169,10 +180,11 @@
         "durable-execution"
       ],
       "direct_affinity": false,
-      "access": "N07 canonical federation catalog",
+      "access": "N07 canonical federation",
       "structural_state": "REAL",
       "runtime_state": "PROJECTED",
-      "requires_adapter": true
+      "requires_adapter": true,
+      "direct_adapter_host": "N01"
     },
     {
       "id": "llama-index",
@@ -183,10 +195,11 @@
         "agent-workflows"
       ],
       "direct_affinity": false,
-      "access": "N07 canonical federation catalog",
+      "access": "N07 canonical federation",
       "structural_state": "REAL",
       "runtime_state": "PROJECTED",
-      "requires_adapter": true
+      "requires_adapter": true,
+      "direct_adapter_host": "N05"
     },
     {
       "id": "dspy",
@@ -196,10 +209,11 @@
         "reasoning-pipelines"
       ],
       "direct_affinity": false,
-      "access": "N07 canonical federation catalog",
+      "access": "N07 canonical federation",
       "structural_state": "REAL",
       "runtime_state": "PROJECTED",
-      "requires_adapter": true
+      "requires_adapter": true,
+      "direct_adapter_host": "N06"
     },
     {
       "id": "whisper",
@@ -207,10 +221,11 @@
         "speech-to-text"
       ],
       "direct_affinity": false,
-      "access": "N07 canonical federation catalog",
+      "access": "N07 canonical federation",
       "structural_state": "REAL",
       "runtime_state": "PROJECTED",
-      "requires_adapter": true
+      "requires_adapter": true,
+      "direct_adapter_host": "N03"
     },
     {
       "id": "kokoro",
@@ -218,10 +233,11 @@
         "text-to-speech"
       ],
       "direct_affinity": false,
-      "access": "N07 canonical federation catalog",
+      "access": "N07 canonical federation",
       "structural_state": "REAL",
       "runtime_state": "PROJECTED",
-      "requires_adapter": true
+      "requires_adapter": true,
+      "direct_adapter_host": "N03"
     }
   ],
   "soul_peer_count": 9,
