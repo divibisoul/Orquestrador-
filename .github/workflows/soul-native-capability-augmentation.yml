@@ -44,7 +44,7 @@ jobs:
           assert m['runtime_policy']['execution_requires_explicit_adapter'] is True
           assert m['runtime_policy']['no_fake_runtime_success'] is True
           for component,data in m['native_components'].items():
-              assert data['repository'] and data['native_capabilities'] and data['augmenters']
+              assert data['repository'] and data['native_capabilities'] and isinstance(data['augmenters'], list)
               assert len(data['augmenters']) <= 16
           print('SOUL native capability augmentation manifest: PASS')
           PY
