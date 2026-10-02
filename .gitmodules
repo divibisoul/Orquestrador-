@@ -43,3 +43,7 @@
 [submodule "integrations/external/kokoro"]
   path = integrations/external/kokoro
   url = https://github.com/hexgrad/kokoro.git
+
+[submodule "integrations/external/metagpt"]
+  path = integrations/external/metagpt
+  url = https://github.com/FoundationAgents/MetaGPT.git
