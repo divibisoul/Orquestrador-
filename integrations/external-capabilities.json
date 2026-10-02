@@ -15,7 +15,7 @@
     {"id":"crewai","source":"https://github.com/crewAIInc/crewAI","revision":"8078f9130c35a47be95d4a55bf1d73b3fd44fc88","targets":["N07"],"capabilities":["multi-agent-crews","flows","role-specialization"]},
     {"id":"microsoft-agent-framework","source":"https://github.com/microsoft/agent-framework","revision":"a2f4506c0ba30cea7c9bbe907fc158c0db2cc6a3","targets":["N07"],"capabilities":["agents","workflows","MCP","A2A"]},
     {"id":"openhands","source":"https://github.com/OpenHands/OpenHands","revision":"2414d6ee5e31bede2e78211f72b58e9949575a75","targets":["N07","N06"],"capabilities":["software-agents","tool-use","execution"]},
-    {"id":"metagpt","source":"https://github.com/geekan/MetaGPT","revision":null,"targets":["N07","N06"],"capabilities":["role-based-agents","multi-agent-collaboration","software-process"]},
+    {"id":"metagpt","source":"https://github.com/FoundationAgents/MetaGPT","revision":"11cdf466d042aece04fc6cfd13b28e1a70341b1f","targets":["N07","N06"],"capabilities":["role-based-agents","multi-agent-collaboration","software-process"]},
     {"id":"agentscope","source":"https://github.com/agentscope-ai/agentscope","revision":"72f3f6fa0b2fc38b8517f408ab616f0f2bd229e6","targets":["N07","N03","N01"],"capabilities":["agents","teams","tools","memory","sandbox","A2A","voice"]},
     {"id":"letta-code","source":"https://github.com/letta-ai/letta-code","revision":"1fcc9666817ab852bc2532a3a989f712e1fd6c19","targets":["N01"],"capabilities":["stateful-agents","persistent-memory","identity"]},
     {"id":"browser-use","source":"https://github.com/browser-use/browser-use","revision":"302d8fcb245a7a63fb7531a4734c9ce3c7792779","targets":["N07"],"capabilities":["browser-agents","web-automation"]},
