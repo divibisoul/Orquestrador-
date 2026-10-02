@@ -201,7 +201,7 @@
       ],
       "manifestAuthority": "soul-nuclei.json",
       "sourceRef": "release-identity:self",
-      "status": "agent-arsenal-gateway-integrated-on-feature-branch"
+      "status": "main-live-agent-arsenal-gateway-integrated"
     }
   },
   "transversal": {
