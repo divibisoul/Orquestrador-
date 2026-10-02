@@ -84,7 +84,11 @@
       "prefrontal.orbital.evaluate@1.0.0",
       "transcendental.estimate@1.0.0",
       "mesh.capability.resolve@1.0.0",
-      "cognitive.planning.sources@1.0.0"
+      "cognitive.planning.sources@1.0.0",
+      "soul.integration.engineers.describe@1.0.0",
+      "soul.integration.engineer.prepare@1.0.0",
+      "superpowers.agent.describe@1.0.0",
+      "superpowers.agent.route@1.0.0"
     ],
     "SARA": [
       "sara.health",
@@ -736,5 +740,24 @@
       ]
     },
     "unresolved": []
+  },
+  "integrationControlPlane": {
+    "canonicalRepository": "divibisoul/Orquestrador-",
+    "providerContract": "integrations/soul-provider-contracts.json",
+    "componentContract": "integrations/soul-component-contracts.json",
+    "engineeringSpec": "docs/SOUL_INTEGRATION_ENGINEERING.md",
+    "engineeringAgents": [
+      "soul.engineer.provenance",
+      "soul.engineer.adapter",
+      "soul.engineer.runtime",
+      "soul.engineer.verification",
+      "soul.engineer.resilience"
+    ],
+    "operations": [
+      "soul.integration.engineers.describe@1.0.0",
+      "soul.integration.engineer.prepare@1.0.0"
+    ],
+    "stateRule": "provider attachment is structural; executable state requires explicit adapter, configuration and verification evidence",
+    "failureRule": "missing infrastructure produces BLOCKED or UNMEASURABLE, never synthetic PASS"
   }
 }
