@@ -16,9 +16,7 @@
         "clareira.metrics"
       ],
       "augmenters": [
-        "superagi",
         "langgraph",
-        "agentscope",
         "letta-code",
         "pydantic-ai"
       ]
@@ -35,20 +33,7 @@
         "neural.bnc_v2",
         "neural_forge"
       ],
-      "augmenters": [
-        "superpowers",
-        "superagi",
-        "langgraph",
-        "crewai",
-        "microsoft-agent-framework",
-        "openhands",
-        "metagpt",
-        "agentscope",
-        "browser-use",
-        "smolagents",
-        "pydantic-ai",
-        "dspy"
-      ]
+      "augmenters": []
     },
     "N03": {
       "repository": "divibisoul/nexus-aeternum-fusion",
@@ -78,13 +63,7 @@
         "document.edit"
       ],
       "augmenters": [
-        "superpowers",
-        "microsoft-agent-framework",
-        "agentscope",
-        "browser-use",
-        "smolagents",
-        "pydantic-ai",
-        "llama-index"
+        "browser-use"
       ]
     },
     "N05": {
@@ -100,12 +79,6 @@
         "conversation.memory"
       ],
       "augmenters": [
-        "langgraph",
-        "agentscope",
-        "letta-code",
-        "browser-use",
-        "smolagents",
-        "pydantic-ai",
         "llama-index"
       ]
     },
@@ -124,18 +97,8 @@
         "composition"
       ],
       "augmenters": [
-        "superpowers",
-        "superagi",
-        "langgraph",
-        "crewai",
-        "microsoft-agent-framework",
         "openhands",
-        "metagpt",
-        "agentscope",
-        "letta-code",
         "smolagents",
-        "pydantic-ai",
-        "llama-index",
         "dspy"
       ]
     },
@@ -156,14 +119,8 @@
         "langgraph",
         "crewai",
         "microsoft-agent-framework",
-        "openhands",
         "metagpt",
-        "agentscope",
-        "browser-use",
-        "smolagents",
-        "pydantic-ai",
-        "dspy",
-        "llama-index"
+        "agentscope"
       ]
     },
     "SARA": {
@@ -182,14 +139,7 @@
         "RGO",
         "MMD"
       ],
-      "augmenters": [
-        "superpowers",
-        "pydantic-ai",
-        "langgraph",
-        "agentscope",
-        "openhands",
-        "metagpt"
-      ]
+      "augmenters": []
     },
     "JEV": {
       "repository": "divibisoul/jev-api",
@@ -361,6 +311,169 @@
     "execution_requires_explicit_adapter": true,
     "missing_adapter_state": "BLOCKED",
     "no_fake_runtime_success": true,
-    "preserve_history": true
+    "preserve_history": true,
+    "direct_affinity_semantics": "targets in external-capabilities.json are direct adapter hosts; consumers are Mesh users and do not imply provider ownership"
+  },
+  "capability_families": {
+    "memory.identity.persistent": {
+      "native_owner": "N01",
+      "external": {
+        "primary": [
+          "letta-code"
+        ],
+        "secondary": [
+          "pydantic-ai"
+        ]
+      },
+      "mesh_consumers": [
+        "N05",
+        "N06",
+        "SARA"
+      ]
+    },
+    "workflow.stateful.graph": {
+      "native_owner": "N07",
+      "ingress_owner": "N01",
+      "external": {
+        "primary": [
+          "langgraph"
+        ]
+      },
+      "mesh_consumers": [
+        "N02",
+        "N06"
+      ]
+    },
+    "multiagent.crews": {
+      "native_owner": "N07",
+      "external": {
+        "primary": [
+          "crewai"
+        ],
+        "secondary": [
+          "metagpt"
+        ]
+      },
+      "mesh_consumers": [
+        "N02",
+        "N06"
+      ]
+    },
+    "software.agent.execution": {
+      "native_owner": "N06",
+      "external": {
+        "primary": [
+          "openhands",
+          "smolagents"
+        ]
+      },
+      "mesh_consumers": [
+        "N04",
+        "N07"
+      ]
+    },
+    "rag.retrieval": {
+      "native_owner": "N05",
+      "external": {
+        "primary": [
+          "llama-index"
+        ]
+      },
+      "mesh_consumers": [
+        "N04",
+        "N06"
+      ]
+    },
+    "reasoning.prompt.optimization": {
+      "native_owner": "N06",
+      "external": {
+        "primary": [
+          "dspy"
+        ]
+      },
+      "mesh_consumers": [
+        "N02",
+        "N05"
+      ]
+    },
+    "speech.to.text": {
+      "native_owner": "N03",
+      "external": {
+        "primary": [
+          "whisper"
+        ]
+      },
+      "mesh_consumers": [
+        "N05"
+      ]
+    },
+    "speech.text.to.audio": {
+      "native_owner": "N03",
+      "external": {
+        "primary": [
+          "kokoro"
+        ],
+        "secondary": [
+          "agentscope"
+        ]
+      },
+      "mesh_consumers": [
+        "N05"
+      ]
+    },
+    "browser.automation": {
+      "native_owner": "N04",
+      "external": {
+        "primary": [
+          "browser-use"
+        ]
+      },
+      "mesh_consumers": [
+        "N05",
+        "N07"
+      ]
+    },
+    "typed.decisions.guardrails": {
+      "native_owner": "JEV",
+      "external": {
+        "primary": [
+          "pydantic-ai"
+        ]
+      },
+      "mesh_consumers": [
+        "N07",
+        "SARA"
+      ]
+    },
+    "engineering.methodology": {
+      "native_owner": "TRANSVERSAL",
+      "external": {
+        "primary": [
+          "superpowers"
+        ]
+      },
+      "distribution": "resident-agents",
+      "runtime_bridge": "N07"
+    },
+    "telemetry.generic.agents": {
+      "native_owner": "N07",
+      "external": {
+        "catalog": [
+          "superagi",
+          "microsoft-agent-framework",
+          "agentscope"
+        ]
+      },
+      "mesh_consumers": [
+        "N01",
+        "N02",
+        "N03",
+        "N04",
+        "N05",
+        "N06",
+        "SARA",
+        "JEV"
+      ]
+    }
   }
 }
