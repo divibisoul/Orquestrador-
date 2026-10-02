@@ -1,0 +1,55 @@
+{
+  "schema": "soul-resident-agent/1.0",
+  "transport": {
+    "protocol": "soul-mesh/1",
+    "contractVersion": "1.1.0",
+    "correlationRequired": true
+  },
+  "lifecycle": [
+    "CONSTRUCTED",
+    "BOUND",
+    "AVAILABLE",
+    "DEGRADED",
+    "STOPPED"
+  ],
+  "executionModel": "embedded-local-worker",
+  "authorityRule": "resident agent never becomes canonical owner of another nucleus capability",
+  "repositoryWrite": false,
+  "evidenceRequired": true,
+  "humanApprovalRequiredFor": [
+    "delete",
+    "payment",
+    "deploy",
+    "credential-rotation"
+  ],
+  "superpowers": {
+    "source": "https://github.com/obra/superpowers",
+    "revision": "8ca22dba9a94f28898bbce59f2537ff4d87c747d",
+    "integration": "development-methodology-and-skill-pack",
+    "runtimePolicyEngine": false
+  },
+  "interface": {
+    "describe": "mesh.resident.describe@1.0.0",
+    "execute": "native nucleus capability handlers only",
+    "evidence": "soul-evidence/1.0",
+    "stateSemantics": [
+      "PASS",
+      "FAIL",
+      "DEGRADED"
+    ]
+  },
+  "startupOrder": [
+    "N01",
+    "N02",
+    "N03",
+    "N04",
+    "N05",
+    "N06",
+    "N07"
+  ],
+  "onlineGate": {
+    "allSevenMeshHealthVerified": true,
+    "authenticatedE2E": "N01↔N07↔N03",
+    "crossfrontEvidenceCurrent": true
+  }
+}
