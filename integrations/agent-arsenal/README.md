@@ -25,6 +25,7 @@ N07 registers:
 - `agent.arsenal.inventory@1.0.0`
 - `agent.arsenal.catalog@1.0.0`
 - `agent.arsenal.resolve@1.0.0`
+- `agent.arsenal.activate@1.0.0`
 - `agent.arsenal.swarm@1.0.0`
 - `agent.arsenal.agent.spawn@1.0.0`
 
