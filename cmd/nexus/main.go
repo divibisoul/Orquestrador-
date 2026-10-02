@@ -170,6 +170,9 @@ func main() {
 	if err := orchestrator.RegisterCapabilityUpgradeOperations(e); err != nil {
 		log.Fatal(err)
 	}
+	if err := orchestrator.RegisterCapabilityAugmentationOperations(e); err != nil {
+		log.Fatal(err)
+	}
 
 	coordinator, err := cooperation.New(peerClient, learningMachine)
 	if err != nil {
