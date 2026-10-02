@@ -9,10 +9,16 @@ func TestIntegrationEngineeringAgentSet(t *testing.T) {
 }
 
 func TestN07IdentityExposesAllEngineeringAgents(t *testing.T) {
-  ids := map[string]bool{}
-  for _, a := range N07Agents() { ids[a.ID] = true }
-  for _, id := range []string{
-    "soul.engineer.fabric", "soul.engineer.provenance", "soul.engineer.adapter",
-    "soul.engineer.runtime", "soul.engineer.verification", "soul.engineer.resilience",
-  } { if !ids[id] { t.Fatalf("missing engineering agent %s", id) } }
+	ids := map[string]bool{}
+	for _, a := range N07Agents() {
+		ids[a.ID] = true
+	}
+	for _, id := range []string{
+		"soul.engineer.fabric", "soul.engineer.provenance", "soul.engineer.adapter",
+		"soul.engineer.runtime", "soul.engineer.verification", "soul.engineer.resilience",
+	} {
+		if !ids[id] {
+			t.Fatalf("missing engineering agent %s", id)
+		}
+	}
 }

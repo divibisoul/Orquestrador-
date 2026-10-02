@@ -87,7 +87,9 @@ func (f *Fusion) execute(ctx context.Context, m protocol.Message) (protocol.Resu
 	if ctx == nil {
 		return protocol.Result{}, errors.New("context is nil")
 	}
-	if err := f.agent.Preflight(OpFusionExecute); err != nil { return f.fail(m, "SUPERPOWERS_AGENT_PREFLIGHT_FAILED", err) }
+	if err := f.agent.Preflight(OpFusionExecute); err != nil {
+		return f.fail(m, "SUPERPOWERS_AGENT_PREFLIGHT_FAILED", err)
+	}
 	workloads := strings.TrimSpace(m.Metadata["workloads_json"])
 	candidate := strings.TrimSpace(m.Metadata["candidate_json"])
 	if workloads == "" || candidate == "" {

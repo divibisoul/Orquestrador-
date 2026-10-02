@@ -34,7 +34,9 @@ func (r *ClareiraReporter) Report(ctx context.Context, event supergpu.ExecutionE
 	if ctx == nil {
 		return errors.New("context is nil")
 	}
-	if err := r.agent.Preflight(event); err != nil { return err }
+	if err := r.agent.Preflight(event); err != nil {
+		return err
+	}
 	correlationID := strings.TrimSpace(event.CorrelationID)
 	if correlationID == "" {
 		correlationID = protocol.NewTraceID()

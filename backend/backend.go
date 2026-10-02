@@ -357,11 +357,11 @@ func (s *Server) capabilities(w http.ResponseWriter, r *http.Request) {
 		jevOperations = []string{"jev.systemone@1.0.0"}
 	}
 	writeJSON(w, http.StatusOK, map[string]any{
-		"nucleus":    "N07",
-		"operations": s.Engine.Operations(),
-		"capability_upgrade": map[string]any{"endpoint":"/v1/capability-upgrade","method":"GET|POST","evidence":"PROJECTED until provider runtime adapter/configuration/e2e evidence exists"},
-		"storage":    map[string]any{"configured": s.Storage.Configured(), "api": "web3.storage-compatible"},
-		"supabase":   map[string]any{"configured": s.Store.Configured()},
+		"nucleus":            "N07",
+		"operations":         s.Engine.Operations(),
+		"capability_upgrade": map[string]any{"endpoint": "/v1/capability-upgrade", "method": "GET|POST", "evidence": "PROJECTED until provider runtime adapter/configuration/e2e evidence exists"},
+		"storage":            map[string]any{"configured": s.Storage.Configured(), "api": "web3.storage-compatible"},
+		"supabase":           map[string]any{"configured": s.Store.Configured()},
 		"jev": map[string]any{
 			"installed":           true,
 			"configured":          jevConfigured,
