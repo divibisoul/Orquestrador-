@@ -183,7 +183,9 @@
       "entrypoints": [
         "go.mod",
         "cmd/nexus/main.go",
-        "scripts/soul-architectural-integrity.mjs"
+        "scripts/soul-architectural-integrity.mjs",
+        "integrations/agent-arsenal/gateway.mjs",
+        "agentarsenal/proxy.go"
       ],
       "capabilityOwnership": "system-governance",
       "peers": [
@@ -199,7 +201,7 @@
       ],
       "manifestAuthority": "soul-nuclei.json",
       "sourceRef": "release-identity:self",
-      "status": "self-audited-current-main-composition-ledger-merged"
+      "status": "agent-arsenal-gateway-integrated-on-feature-branch"
     }
   },
   "transversal": {
