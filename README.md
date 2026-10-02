@@ -42,6 +42,7 @@ N07 exposes a unified external agent surface through `integrations/agent-arsenal
 N07 operations:
 - `agent.arsenal.catalog@1.0.0`
 - `agent.arsenal.resolve@1.0.0`
+- `agent.arsenal.activate@1.0.0`
 - `agent.arsenal.swarm@1.0.0`
 - `agent.arsenal.agent.spawn@1.0.0`
 
