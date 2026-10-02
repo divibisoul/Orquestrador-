@@ -5,6 +5,7 @@ on:
     paths:
       - "integrations/langgraph/**"
       - "integrations/nemo-agent-toolkit/**"
+      - "integrations/agent-arsenal/**"
       - ".github/workflows/soul-oss-bridges.yml"
   pull_request:
     paths:
