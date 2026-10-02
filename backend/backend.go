@@ -77,6 +77,7 @@ func New(engine *orchestrator.Engine, cfg Config) *Server {
 func (s *Server) Handler() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/v1/capabilities", s.capabilities)
+	mux.HandleFunc("/v1/capability-upgrade", s.capabilityUpgrade)
 	mux.HandleFunc("/v1/health", s.health)
 	mux.HandleFunc("/v1/execute", s.execute)
 	mux.HandleFunc("/v1/intent", s.intent)
@@ -358,6 +359,7 @@ func (s *Server) capabilities(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]any{
 		"nucleus":    "N07",
 		"operations": s.Engine.Operations(),
+		"capability_upgrade": map[string]any{"endpoint":"/v1/capability-upgrade","method":"GET|POST","evidence":"PROJECTED until provider runtime adapter/configuration/e2e evidence exists"},
 		"storage":    map[string]any{"configured": s.Storage.Configured(), "api": "web3.storage-compatible"},
 		"supabase":   map[string]any{"configured": s.Store.Configured()},
 		"jev": map[string]any{
