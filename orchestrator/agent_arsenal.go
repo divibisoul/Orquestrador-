@@ -25,6 +25,16 @@ func RegisterAgentArsenalOperations(e *Engine, proxy *agentarsenal.Proxy) error 
 	if e == nil { return errors.New("orchestrator engine is required") }
 	if proxy == nil { return errors.New("agent arsenal proxy is required") }
 
+	if err := e.Register("agent.arsenal.inventory@1.0.0", func(ctx context.Context, m protocol.Message) (protocol.Result, error) {
+		result, err := proxy.Catalog(ctx, "", "", 1000, 0)
+		if err != nil {
+			return protocol.Result{TraceID:m.TraceID, CorrelationID:m.CorrelationID, Source:"N07.agent-arsenal", Target:m.Source, Status:"error", Error:err.Error()}, err
+		}
+		raw, err := json.Marshal(result)
+		if err != nil { return protocol.Result{}, err }
+		return protocol.Result{TraceID:m.TraceID, CorrelationID:m.CorrelationID, Source:"N07.agent-arsenal", Target:m.Source, Status:"ok", Metadata:map[string]string{"inventory_json":string(raw)}}, nil
+	}); err != nil { return err }
+
 	if err := e.Register("agent.arsenal.catalog@1.0.0", func(ctx context.Context, m protocol.Message) (protocol.Result, error) {
 		source := strings.TrimSpace(m.Metadata["source"])
 		kind := strings.TrimSpace(m.Metadata["kind"])
