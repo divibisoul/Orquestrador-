@@ -13,6 +13,7 @@ import (
 const (
   SuperpowersAgentRouteOperation = "superpowers.agent.route@1.0.0"
   SuperpowersAgentDescribeOperation = "superpowers.agent.describe@1.0.0"
+  ResidentAgentDescribeOperation = "mesh.resident.describe@1.0.0"
 )
 
 type SuperpowersAgentBinding struct {
@@ -33,6 +34,28 @@ var superpowersBindings = []SuperpowersAgentBinding{
   {ID:"superpowers.octacore", Bridge:"N07", Role:"octacore-coordination-agent", Targets:[]string{"Octacore","Mesh","SuperGPU"}, Operations:[]string{"octacore.fusion.describe@1.0.0","octacore.fusion.execute@1.0.0","octacore.submit","octacore.batch"}, Skills:[]string{"writing-plans","subagent-driven-development","test-driven-development","systematic-debugging","verification-before-completion"}, FailClosed:true},
 }
 
+var n07ResidentAgent = map[string]any{
+  "id":"N07.resident",
+  "name":"Agent-Orchestrator Steward",
+  "nucleus":"N07",
+  "version":"1.0.0",
+  "role":"orchestration-federation-control-plane",
+  "executionMode":"embedded-local-worker",
+  "lifecycle":"BOUND",
+  "repositoryWrite":false,
+  "superpowers":map[string]any{"revision":"8ca22dba9a94f28898bbce59f2537ff4d87c747d","mode":"development-methodology-and-skill-pack","runtimePolicyEngine":false},
+  "skills":[]string{"dispatching-parallel-agents","subagent-driven-development","test-driven-development","requesting-code-review","verification-before-completion"},
+  "publishedCapabilities":[]string{"mesh.health","mesh.discovery","mesh.resident.describe@1.0.0","execute","intent","federation","oss.routing"},
+  "authority":"N07 owns orchestration/federation/routing; provider runtimes remain bounded adapters.",
+  "evidence":"soul-evidence/1",
+}
+
+func residentAgentDescribe(ctx context.Context, m protocol.Message) (protocol.Result, error) {
+  raw, err := json.Marshal(n07ResidentAgent)
+  if err != nil { return protocol.Result{}, err }
+  return protocol.Result{TraceID:m.TraceID, CorrelationID:m.CorrelationID, Source:"N07.resident", Target:m.Source, Status:"ok", Metadata:map[string]string{"resident_agent_json":string(raw)}}, nil
+}
+
 func SuperpowersAgentBindings() []SuperpowersAgentBinding {
   out := make([]SuperpowersAgentBinding, len(superpowersBindings))
   copy(out, superpowersBindings)
@@ -42,6 +65,7 @@ func SuperpowersAgentBindings() []SuperpowersAgentBinding {
 func RegisterSuperpowersAgentOperations(e *Engine) error {
   if e == nil { return errors.New("engine is nil") }
   if err := e.Register(SuperpowersAgentDescribeOperation, superpowersAgentDescribe); err != nil { return err }
+  if err := e.Register(ResidentAgentDescribeOperation, residentAgentDescribe); err != nil { return err }
   return e.Register(SuperpowersAgentRouteOperation, superpowersAgentRoute(e))
 }
 
