@@ -17,7 +17,7 @@ async function readOptional(root, relative, missing) {
 function contractOf(text) {
   return text.match(/(?:contractVersion|SOUL_MESH_CONTRACT_VERSION|contract)\s*[:=]\s*["'`]?((?:1)\.\d+\.\d+)/i)?.[1] ?? 'not-detected';
 }
-function has(text, terms) { return terms.some((term) => text.toLowerCase().includes(term)); }
+function has(text, terms) { const normalized = text.toLowerCase(); return terms.some((term) => normalized.includes(String(term).toLowerCase())); }
 
 const rows = [];
 for (const [id, nucleus] of Object.entries(matrix.nuclei ?? {})) {
@@ -28,7 +28,11 @@ for (const [id, nucleus] of Object.entries(matrix.nuclei ?? {})) {
     const item = await readOptional(root, candidate, missing);
     if (item) all.push(item);
   }
-  const joined = all.map((item) => item.content).join('\n');
+  const contractEvidence = [];
+  for (const candidate of nucleus.contractEvidencePaths ?? []) {
+    try { contractEvidence.push(await fs.readFile(path.join(root, candidate), 'utf8')); } catch { /* optional evidence path; missing does not degrade a valid entrypoint */ }
+  }
+  const joined = [...all.map((item) => item.content), ...contractEvidence].join('\n');
   const source = all[0]?.path ?? 'not-found';
   rows.push({
     id,
