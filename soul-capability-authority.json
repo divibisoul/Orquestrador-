@@ -88,7 +88,9 @@
       "soul.integration.engineers.describe@1.0.0",
       "soul.integration.engineer.prepare@1.0.0",
       "superpowers.agent.describe@1.0.0",
-      "superpowers.agent.route@1.0.0"
+      "superpowers.agent.route@1.0.0",
+      "multiagent.crews.execute@1.0.0",
+      "multiagent.crews.describe@1.0.0"
     ],
     "SARA": [
       "sara.health",
@@ -584,6 +586,18 @@
         "repository": "divibisoul/Orquestrador-",
         "path": "orchestrator/external_planning_ops.go",
         "ref": "b6abde1d144e5930a3b3e19b7300c9519508e057"
+      },
+      {
+        "id": "multiagent.crews.execute@1.0.0",
+        "repository": "divibisoul/Orquestrador-",
+        "path": "orchestrator/multiagent_facade.go",
+        "ref": "HEAD"
+      },
+      {
+        "id": "multiagent.crews.describe@1.0.0",
+        "repository": "divibisoul/Orquestrador-",
+        "path": "orchestrator/multiagent_facade.go",
+        "ref": "HEAD"
       }
     ]
   },
