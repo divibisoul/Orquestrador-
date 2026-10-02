@@ -22,14 +22,15 @@ type IntegrationEngineer struct {
   Capabilities []string `json:"capabilities"`
   Inputs       []string `json:"inputs"`
   Outputs      []string `json:"outputs"`
+  Methodology string `json:"methodology"`
 }
 
 var integrationEngineers = []IntegrationEngineer{
-  {ID:"soul.engineer.provenance",Role:"provenance-engineer",Scope:[]string{"all-16-upstreams","all-9-soul-components"},Capabilities:[]string{"source-verification","revision-pinning","attribution"},Inputs:[]string{"provider","revision"},Outputs:[]string{"provenance-record","source-state"}},
-  {ID:"soul.engineer.adapter",Role:"capability-adapter-engineer",Scope:[]string{"all-16-upstreams"},Capabilities:[]string{"capability-contract","adapter-design","authority-preservation"},Inputs:[]string{"provider","capability","target"},Outputs:[]string{"adapter-plan","activation-boundary"}},
-  {ID:"soul.engineer.runtime",Role:"runtime-integration-engineer",Scope:[]string{"N01","N02","N03","N04","N05","N06","N07","SARA","JEV"},Capabilities:[]string{"mesh-routing","tool-binding","sandboxed-execution","dependency-isolation"},Inputs:[]string{"adapter","target","configuration"},Outputs:[]string{"runtime-route","activation-state"}},
-  {ID:"soul.engineer.verification",Role:"verification-engineer",Scope:[]string{"all-integrations"},Capabilities:[]string{"contract-tests","smoke-tests","e2e-verification","verification-before-completion"},Inputs:[]string{"integration","test-contract"},Outputs:[]string{"evidence-state","failure-record"}},
-  {ID:"soul.engineer.resilience",Role:"resilience-observability-engineer",Scope:[]string{"Mesh","Clareira","SuperGPU","Octacore","SARA"},Capabilities:[]string{"fail-closed","correlation","bounded-execution","observability","re-audit"},Inputs:[]string{"execution-event","health","failure"},Outputs:[]string{"health-state","trace","re-audit-trigger"}},
+  {ID:"soul.engineer.provenance",Role:"provenance-engineer",Scope:[]string{"all-16-upstreams","all-9-soul-components"},Capabilities:[]string{"source-verification","revision-pinning","attribution"},Inputs:[]string{"provider","revision"},Outputs:[]string{"provenance-record","source-state"},Methodology:"superpowers.sara-trinity"},
+  {ID:"soul.engineer.adapter",Role:"capability-adapter-engineer",Scope:[]string{"all-16-upstreams"},Capabilities:[]string{"capability-contract","adapter-design","authority-preservation"},Inputs:[]string{"provider","capability","target"},Outputs:[]string{"adapter-plan","activation-boundary"},Methodology:"superpowers.octacore"},
+  {ID:"soul.engineer.runtime",Role:"runtime-integration-engineer",Scope:[]string{"N01","N02","N03","N04","N05","N06","N07","SARA","JEV"},Capabilities:[]string{"mesh-routing","tool-binding","sandboxed-execution","dependency-isolation"},Inputs:[]string{"adapter","target","configuration"},Outputs:[]string{"runtime-route","activation-state"},Methodology:"superpowers.cortex-orbital-supergpu"},
+  {ID:"soul.engineer.verification",Role:"verification-engineer",Scope:[]string{"all-integrations"},Capabilities:[]string{"contract-tests","smoke-tests","e2e-verification","verification-before-completion"},Inputs:[]string{"integration","test-contract"},Outputs:[]string{"evidence-state","failure-record"},Methodology:"superpowers.sara-trinity"},
+  {ID:"soul.engineer.resilience",Role:"resilience-observability-engineer",Scope:[]string{"Mesh","Clareira","SuperGPU","Octacore","SARA"},Capabilities:[]string{"fail-closed","correlation","bounded-execution","observability","re-audit"},Inputs:[]string{"execution-event","health","failure"},Outputs:[]string{"health-state","trace","re-audit-trigger"},Methodology:"superpowers.mesh-clareira"},
 }
 
 func IntegrationEngineers() []IntegrationEngineer {
