@@ -1,0 +1,262 @@
+{
+  "schema_version": "1.0.0",
+  "source_registry": "integrations/external-capabilities.json",
+  "canonical_control_plane": "N07",
+  "owner_rule": "One primary executable owner per capability slice; upstream repositories remain implementation sources, never SOUL authorities.",
+  "status_semantics": {
+    "structural-only": "Source is pinned/catalogued; no explicit SOUL runtime adapter is proven.",
+    "adapter-planned": "An explicit adapter boundary is designed or implemented in code, but live runtime execution is not yet proven.",
+    "adapter-live": "Adapter execution has passed a real authenticated E2E with runtime evidence; CI alone never grants this state."
+  },
+  "capabilities": [
+    {
+      "id": "superpowers",
+      "source": "obra/superpowers",
+      "primaryOwner": "N07",
+      "consumers": [
+        "N01",
+        "N02",
+        "N03",
+        "N04",
+        "N05",
+        "N06",
+        "SARA"
+      ],
+      "affinity": [
+        "engineering-methodology",
+        "skills",
+        "coding-agent-workflow"
+      ],
+      "status": "structural-only",
+      "mode": "dev-skill-pack"
+    },
+    {
+      "id": "superagi",
+      "source": "TransformerOptimus/SuperAGI",
+      "primaryOwner": "N07",
+      "consumers": [
+        "N01",
+        "N06"
+      ],
+      "affinity": [
+        "autonomous-agent-facade",
+        "tools",
+        "memory",
+        "multimodal",
+        "telemetry"
+      ],
+      "status": "structural-only",
+      "mode": "explicit-adapter"
+    },
+    {
+      "id": "langgraph",
+      "source": "langchain-ai/langgraph",
+      "primaryOwner": "N07",
+      "consumers": [
+        "N02",
+        "N06"
+      ],
+      "affinity": [
+        "stateful-workflows",
+        "durable-orchestration"
+      ],
+      "status": "structural-only",
+      "mode": "explicit-adapter"
+    },
+    {
+      "id": "crewai",
+      "source": "crewAIInc/crewAI",
+      "primaryOwner": "N07",
+      "consumers": [
+        "N02",
+        "N06"
+      ],
+      "affinity": [
+        "team-role-execution"
+      ],
+      "status": "structural-only",
+      "mode": "explicit-adapter"
+    },
+    {
+      "id": "microsoft-agent-framework",
+      "source": "microsoft/agent-framework",
+      "primaryOwner": "N07",
+      "consumers": [
+        "N04",
+        "N05",
+        "N06"
+      ],
+      "affinity": [
+        "agent-workflows",
+        "MCP",
+        "A2A"
+      ],
+      "status": "structural-only",
+      "mode": "explicit-adapter"
+    },
+    {
+      "id": "openhands",
+      "source": "OpenHands/OpenHands",
+      "primaryOwner": "N06",
+      "consumers": [
+        "N07"
+      ],
+      "affinity": [
+        "software-agent",
+        "tool-use",
+        "bounded-execution"
+      ],
+      "status": "structural-only",
+      "mode": "explicit-adapter"
+    },
+    {
+      "id": "metagpt",
+      "source": "FoundationAgents/MetaGPT",
+      "primaryOwner": "N06",
+      "consumers": [
+        "N07"
+      ],
+      "affinity": [
+        "role-based-agents",
+        "software-process",
+        "multi-agent-collaboration"
+      ],
+      "status": "structural-only",
+      "mode": "explicit-adapter"
+    },
+    {
+      "id": "agentscope",
+      "source": "agentscope-ai/agentscope",
+      "primaryOwner": "N03",
+      "consumers": [
+        "N01",
+        "N07"
+      ],
+      "affinity": [
+        "voice",
+        "multimodal",
+        "agent-team-boundary"
+      ],
+      "status": "structural-only",
+      "mode": "explicit-adapter"
+    },
+    {
+      "id": "letta-code",
+      "source": "letta-ai/letta-code",
+      "primaryOwner": "N01",
+      "consumers": [
+        "N07"
+      ],
+      "affinity": [
+        "persistent-memory",
+        "identity",
+        "stateful-agent"
+      ],
+      "status": "structural-only",
+      "mode": "explicit-adapter"
+    },
+    {
+      "id": "browser-use",
+      "source": "browser-use/browser-use",
+      "primaryOwner": "N05",
+      "consumers": [
+        "N07"
+      ],
+      "affinity": [
+        "browser-automation",
+        "web-retrieval"
+      ],
+      "status": "structural-only",
+      "mode": "explicit-adapter"
+    },
+    {
+      "id": "smolagents",
+      "source": "huggingface/smolagents",
+      "primaryOwner": "N06",
+      "consumers": [
+        "N07"
+      ],
+      "affinity": [
+        "code-agents",
+        "tools",
+        "MCP",
+        "multimodal"
+      ],
+      "status": "structural-only",
+      "mode": "explicit-adapter"
+    },
+    {
+      "id": "pydantic-ai",
+      "source": "pydantic/pydantic-ai",
+      "primaryOwner": "N01",
+      "consumers": [
+        "N07"
+      ],
+      "affinity": [
+        "typed-agent-contracts",
+        "tools",
+        "subagents"
+      ],
+      "status": "structural-only",
+      "mode": "explicit-adapter"
+    },
+    {
+      "id": "llama-index",
+      "source": "run-llama/llama_index",
+      "primaryOwner": "N05",
+      "consumers": [
+        "N06",
+        "N07"
+      ],
+      "affinity": [
+        "RAG",
+        "indexing",
+        "retrieval",
+        "agent-workflows"
+      ],
+      "status": "structural-only",
+      "mode": "explicit-adapter"
+    },
+    {
+      "id": "dspy",
+      "source": "stanfordnlp/dspy",
+      "primaryOwner": "N06",
+      "consumers": [
+        "N07"
+      ],
+      "affinity": [
+        "LM-programming",
+        "optimization",
+        "reasoning-pipelines"
+      ],
+      "status": "structural-only",
+      "mode": "explicit-adapter"
+    },
+    {
+      "id": "whisper",
+      "source": "openai/whisper",
+      "primaryOwner": "N03",
+      "consumers": [
+        "N07"
+      ],
+      "affinity": [
+        "speech-to-text"
+      ],
+      "status": "adapter-planned",
+      "mode": "explicit-adapter"
+    },
+    {
+      "id": "kokoro",
+      "source": "hexgrad/kokoro",
+      "primaryOwner": "N03",
+      "consumers": [
+        "N07"
+      ],
+      "affinity": [
+        "text-to-speech"
+      ],
+      "status": "structural-only",
+      "mode": "explicit-adapter"
+    }
+  ]
+}
