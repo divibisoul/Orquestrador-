@@ -112,9 +112,10 @@
     {
       "id": "metagpt",
       "source": "FoundationAgents/MetaGPT",
-      "primaryOwner": "N06",
+      "primaryOwner": "N07",
       "consumers": [
-        "N07"
+        "N02",
+        "N06"
       ],
       "affinity": [
         "role-based-agents",
@@ -130,6 +131,7 @@
       "primaryOwner": "N03",
       "consumers": [
         "N01",
+        "N02",
         "N07"
       ],
       "affinity": [
@@ -145,7 +147,9 @@
       "source": "letta-ai/letta-code",
       "primaryOwner": "N01",
       "consumers": [
-        "N07"
+        "N05",
+        "N06",
+        "SARA"
       ],
       "affinity": [
         "persistent-memory",
@@ -158,8 +162,9 @@
     {
       "id": "browser-use",
       "source": "browser-use/browser-use",
-      "primaryOwner": "N05",
+      "primaryOwner": "N04",
       "consumers": [
+        "N05",
         "N07"
       ],
       "affinity": [
@@ -174,6 +179,7 @@
       "source": "huggingface/smolagents",
       "primaryOwner": "N06",
       "consumers": [
+        "N04",
         "N07"
       ],
       "affinity": [
@@ -190,7 +196,9 @@
       "source": "pydantic/pydantic-ai",
       "primaryOwner": "N01",
       "consumers": [
-        "N07"
+        "N07",
+        "SARA",
+        "JEV"
       ],
       "affinity": [
         "typed-agent-contracts",
@@ -205,8 +213,8 @@
       "source": "run-llama/llama_index",
       "primaryOwner": "N05",
       "consumers": [
-        "N06",
-        "N07"
+        "N04",
+        "N06"
       ],
       "affinity": [
         "RAG",
@@ -222,6 +230,8 @@
       "source": "stanfordnlp/dspy",
       "primaryOwner": "N06",
       "consumers": [
+        "N02",
+        "N05",
         "N07"
       ],
       "affinity": [
@@ -237,7 +247,7 @@
       "source": "openai/whisper",
       "primaryOwner": "N03",
       "consumers": [
-        "N07"
+        "N05"
       ],
       "affinity": [
         "speech-to-text"
@@ -250,7 +260,7 @@
       "source": "hexgrad/kokoro",
       "primaryOwner": "N03",
       "consumers": [
-        "N07"
+        "N05"
       ],
       "affinity": [
         "text-to-speech"
