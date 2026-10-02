@@ -372,4 +372,4 @@ createServer(handler).listen(PORT, HOST, () => {
     executeEnabled: EXECUTE,
     sources: Object.fromEntries(Object.entries(SOURCES).map(([name, cfg]) => [name, cfg.ref]))
   }));
-}
+});
