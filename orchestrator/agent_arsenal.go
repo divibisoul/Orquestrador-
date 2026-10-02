@@ -68,6 +68,22 @@ func RegisterAgentArsenalOperations(e *Engine, proxy *agentarsenal.Proxy) error 
 		}, nil
 	}); err != nil { return err }
 
+	if err := e.Register("agent.arsenal.activate@1.0.0", func(ctx context.Context, m protocol.Message) (protocol.Result, error) {
+		source := strings.TrimSpace(m.Metadata["source"])
+		artifactPath := strings.TrimSpace(m.Metadata["path"])
+		task := strings.TrimSpace(m.Metadata["task"])
+		if source == "" || artifactPath == "" || task == "" {
+			return protocol.Result{}, errors.New("metadata.source, metadata.path and metadata.task are required")
+		}
+		result, err := proxy.Activate(ctx, source, artifactPath, task, strings.TrimSpace(m.Metadata["strategy"]), strings.TrimSpace(m.Metadata["priority"]))
+		if err != nil {
+			return protocol.Result{TraceID:m.TraceID, CorrelationID:m.CorrelationID, Source:"N07.agent-arsenal", Target:m.Source, Status:"error", Error:err.Error()}, err
+		}
+		raw, err := json.Marshal(result)
+		if err != nil { return protocol.Result{}, err }
+		return protocol.Result{TraceID:m.TraceID, CorrelationID:m.CorrelationID, Source:"N07.agent-arsenal", Target:m.Source, Status:"ok", Metadata:map[string]string{"activation_json":string(raw)}}, nil
+	}); err != nil { return err }
+
 	if err := e.Register("agent.arsenal.swarm@1.0.0", func(ctx context.Context, m protocol.Message) (protocol.Result, error) {
 		task := strings.TrimSpace(m.Metadata["task"])
 		if task == "" { return protocol.Result{}, errors.New("metadata.task is required") }
