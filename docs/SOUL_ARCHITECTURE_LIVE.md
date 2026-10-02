@@ -146,7 +146,7 @@ No provider is a nucleus. No second public /v1 ingress is introduced. SARA remai
 
 ### OSS boundary
 
-OSS integrations are deferred until the minimum F2 closure. LangGraph is mapped to N07 orchestration, LiteLLM remains conditional behind N02/private sidecar, and NeMo Agent Toolkit remains an optional N07 bridge. CrewAI/LlamaIndex/Letta/Agent Framework/AgentScope/CAMEL/Dify remain research candidates until the earlier gates are green.
+SOUL now has an active N07 Agent Arsenal Gateway for the pinned Superpowers, ECC and Ruflo ecosystems. LangGraph and NeMo remain separate bridges with their existing ownership boundaries. Additional OSS frameworks remain candidates until their executable contracts are independently validated.
 
 See docs/SOUL_EXTERNAL_FUSION_MATRIX.md for the complete mapping and exact audit snapshot.
 
