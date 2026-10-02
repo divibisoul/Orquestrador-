@@ -7,6 +7,7 @@ services:
     init: true
     environment:
       AGENT_ARSENAL_EXECUTE: "true"
+      AGENT_ARSENAL_TOKEN: "${SOUL_AGENT_ARSENAL_TOKEN:?SOUL_AGENT_ARSENAL_TOKEN must be set}"
       AGENT_ARSENAL_ROOT: /var/lib/soul-agent-arsenal
       AGENT_ARSENAL_PORT: "8090"
       AGENT_ARSENAL_COMMAND_TIMEOUT_MS: "20000"
@@ -36,6 +37,7 @@ services:
     environment:
       N07_HTTP_ADDR: ":8080"
       SOUL_AGENT_ARSENAL_URL: "http://agent-arsenal:8090"
+      SOUL_AGENT_ARSENAL_TOKEN: "${SOUL_AGENT_ARSENAL_TOKEN:?SOUL_AGENT_ARSENAL_TOKEN must be set}"
       STORACHA_GUPPY_BIN: "/usr/local/bin/guppy"
       STORACHA_DATA_DIR: "/var/lib/n07/storacha"
     volumes:
