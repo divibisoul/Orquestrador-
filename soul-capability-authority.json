@@ -90,7 +90,13 @@
       "superpowers.agent.describe@1.0.0",
       "superpowers.agent.route@1.0.0",
       "multiagent.crews.execute@1.0.0",
-      "multiagent.crews.describe@1.0.0"
+      "multiagent.crews.describe@1.0.0",
+      "agent.arsenal.inventory@1.0.0",
+      "agent.arsenal.catalog@1.0.0",
+      "agent.arsenal.resolve@1.0.0",
+      "agent.arsenal.activate@1.0.0",
+      "agent.arsenal.swarm@1.0.0",
+      "agent.arsenal.agent.spawn@1.0.0"
     ],
     "SARA": [
       "sara.health",
@@ -598,6 +604,48 @@
         "repository": "divibisoul/Orquestrador-",
         "path": "orchestrator/multiagent_facade.go",
         "ref": "e5d3ee2163135fcafb7f7d55865e9ffeabaf8611"
+      },
+      {
+        "id": "agent.arsenal.inventory@1.0.0",
+        "repository": "divibisoul/Orquestrador-",
+        "path": "orchestrator/agent_arsenal.go",
+        "ref": "6be840823754e4b1dd88c8c7d754a17ea9b486ec",
+        "source": "N07 canonical Agent Arsenal adapter over pinned Superpowers/ECC/Ruflo"
+      },
+      {
+        "id": "agent.arsenal.catalog@1.0.0",
+        "repository": "divibisoul/Orquestrador-",
+        "path": "orchestrator/agent_arsenal.go",
+        "ref": "6be840823754e4b1dd88c8c7d754a17ea9b486ec",
+        "source": "N07 canonical Agent Arsenal adapter over pinned Superpowers/ECC/Ruflo"
+      },
+      {
+        "id": "agent.arsenal.resolve@1.0.0",
+        "repository": "divibisoul/Orquestrador-",
+        "path": "orchestrator/agent_arsenal.go",
+        "ref": "6be840823754e4b1dd88c8c7d754a17ea9b486ec",
+        "source": "N07 canonical Agent Arsenal adapter over pinned Superpowers/ECC/Ruflo"
+      },
+      {
+        "id": "agent.arsenal.activate@1.0.0",
+        "repository": "divibisoul/Orquestrador-",
+        "path": "orchestrator/agent_arsenal.go",
+        "ref": "6be840823754e4b1dd88c8c7d754a17ea9b486ec",
+        "source": "N07 canonical Agent Arsenal adapter over pinned Superpowers/ECC/Ruflo"
+      },
+      {
+        "id": "agent.arsenal.swarm@1.0.0",
+        "repository": "divibisoul/Orquestrador-",
+        "path": "orchestrator/agent_arsenal.go",
+        "ref": "6be840823754e4b1dd88c8c7d754a17ea9b486ec",
+        "source": "N07 canonical Agent Arsenal adapter over pinned Superpowers/ECC/Ruflo"
+      },
+      {
+        "id": "agent.arsenal.agent.spawn@1.0.0",
+        "repository": "divibisoul/Orquestrador-",
+        "path": "orchestrator/agent_arsenal.go",
+        "ref": "6be840823754e4b1dd88c8c7d754a17ea9b486ec",
+        "source": "N07 canonical Agent Arsenal adapter over pinned Superpowers/ECC/Ruflo"
       }
     ]
   },

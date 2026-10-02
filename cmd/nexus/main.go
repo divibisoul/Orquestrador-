@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/divibisoul/Orquestrador-/aeternum"
+	"github.com/divibisoul/Orquestrador-/agentarsenal"
 	"github.com/divibisoul/Orquestrador-/api"
 	"github.com/divibisoul/Orquestrador-/api/health"
 	"github.com/divibisoul/Orquestrador-/backend"
@@ -171,6 +172,10 @@ func main() {
 		log.Fatal(err)
 	}
 	if err := orchestrator.RegisterMultiAgentFacadeOperations(e); err != nil {
+		log.Fatal(err)
+	}
+	agentArsenalProxy := agentarsenal.NewFromEnv()
+	if err := orchestrator.RegisterAgentArsenalOperations(e, agentArsenalProxy); err != nil {
 		log.Fatal(err)
 	}
 	if err := orchestrator.RegisterCapabilityAugmentationOperations(e); err != nil {

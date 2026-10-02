@@ -23,8 +23,8 @@ func TestSOULIntegrationContracts(t *testing.T) {
 	if err := json.Unmarshal(providerData, &providers); err != nil {
 		t.Fatal(err)
 	}
-	if len(providers.Providers) != 16 {
-		t.Fatalf("providers=%d want=16", len(providers.Providers))
+	if len(providers.Providers) != 17 {
+		t.Fatalf("providers=%d want=17", len(providers.Providers))
 	}
 	for _, p := range providers.Providers {
 		if p.ID == "" || p.Intent == "" || p.Boundary == "" || p.State == "" || !p.FailClosed {

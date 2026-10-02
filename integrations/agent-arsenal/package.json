@@ -1,0 +1,12 @@
+{
+  "name": "soul-agent-arsenal-gateway",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "syntaxcheck": "node --check gateway.mjs"
+  }
+}

@@ -237,6 +237,20 @@
       "directAdapterHosts": [
         "N03"
       ]
+    },
+    {
+      "id": "agent-arsenal",
+      "intent": "catálogo, resolução e execução limitada dos artefatos externos Superpowers, ECC e Ruflo",
+      "targets": [
+        "N07"
+      ],
+      "activation_boundary": "sidecar-bounded-agent-gateway",
+      "adapter_state": "IMPLEMENTED_AT_N07",
+      "verification_state": "PROJECTED",
+      "fail_closed": true,
+      "directAdapterHosts": [
+        "N07"
+      ]
     }
   ],
   "target_semantics": "targets/directAdapterHosts identify direct adapter hosts; provider consumers are Mesh consumers and are not ownership transfers"
