@@ -58,5 +58,7 @@ jobs:
           fetch-depth: 1
       - name: Generate real crossfront evidence
         run: node scripts/generate-crossfront-state.mjs
+      - name: Inspect generated evidence
+        run: cat SOUL-CROSSFRONT-EVIDENCE.json
       - name: Assert N05/N07 discovery
         run: node scripts/assert-crossfront-state.mjs
