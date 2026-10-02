@@ -13,7 +13,7 @@ type PeerChannel struct {
 // non-adjacent work is delegated through normal Mesh routing.
 func SOULTopology() map[string]any {
 	nuclei := []string{protocol.N01, protocol.N02, protocol.N03, protocol.N04, protocol.N05, protocol.N06, protocol.N07}
-	ops := []string{"mesh.ping", "mesh.health", "mesh.discovery", "mesh.capabilities", "mesh.capability.resolve@1.0.0", "mesh.delegate", "mesh.fusion.describe", "mesh.fusion.execute", "mesh.supergpu.describe", "mesh.supergpu.execute", "mesh.supergpu.parallel", "supergpu.federated.execute", "prefrontal.admission", "prefrontal.orbital.evaluate@1.0.0", "transcendental.estimate@1.0.0", "neural.forward", "neural.learn", "jev.systemone@1.0.0", "cooperation.handshake@1.0.0", "cooperation.exchange@1.0.0", "cooperation.health@1.0.0", "cognitive.planning.sources@1.0.0"}
+	ops := []string{"mesh.ping", "mesh.health", "mesh.discovery", "mesh.capabilities", "mesh.capability.resolve@1.0.0", "mesh.delegate", "mesh.fusion.describe", "mesh.fusion.execute", "mesh.supergpu.describe", "mesh.supergpu.execute", "mesh.supergpu.parallel", "supergpu.federated.execute", "prefrontal.admission", "prefrontal.orbital.evaluate@1.0.0", "transcendental.estimate@1.0.0", "neural.forward", "neural.learn", "jev.systemone@1.0.0", "cooperation.handshake@1.0.0", "cooperation.exchange@1.0.0", "cooperation.health@1.0.0", "cognitive.planning.sources@1.0.0", "superpowers.agent.describe@1.0.0", "superpowers.agent.route@1.0.0", "soul.integration.engineers.describe@1.0.0", "soul.integration.engineer.prepare@1.0.0"}
 	transports := []string{"IN_PROCESS", "LOOPBACK_HTTP", "HTTP", "REALTIME", "EVENT"}
 	channels := make([]PeerChannel, 0, 12)
 	for i := 0; i < len(nuclei)-1; i++ {
