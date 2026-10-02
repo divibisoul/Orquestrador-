@@ -17,25 +17,29 @@ async function readOptional(root, relative, missing) {
 function contractOf(text) {
   return text.match(/(?:contractVersion|SOUL_MESH_CONTRACT_VERSION|contract)\s*[:=]\s*["'`]?((?:1)\.\d+\.\d+)/i)?.[1] ?? 'not-detected';
 }
-function has(text, terms) { return terms.some((term) => text.toLowerCase().includes(term)); }
+function has(text, terms) { const normalized = text.toLowerCase(); return terms.some((term) => normalized.includes(String(term).toLowerCase())); }
 
 const rows = [];
 for (const [id, nucleus] of Object.entries(matrix.nuclei ?? {})) {
   const missing = [];
-  const root = path.join(ROOT, 'sources', id);
+  const root = id === 'N07' ? ROOT : path.join(ROOT, 'sources', id);
   const all = [];
   for (const candidate of nucleus.entrypoints ?? []) {
     const item = await readOptional(root, candidate, missing);
     if (item) all.push(item);
   }
-  const joined = all.map((item) => item.content).join('\n');
+  const contractEvidence = [];
+  for (const candidate of nucleus.contractEvidencePaths ?? []) {
+    try { contractEvidence.push(await fs.readFile(path.join(root, candidate), 'utf8')); } catch { /* optional evidence path; missing does not degrade a valid entrypoint */ }
+  }
+  const joined = [...all.map((item) => item.content), ...contractEvidence].join('\n');
   const source = all[0]?.path ?? 'not-found';
   rows.push({
     id,
     repo: nucleus.repository,
     role: nucleus.role,
     contract: contractOf(joined),
-    mesh: has(joined, ['soul-mesh/1', 'soul mesh']),
+    mesh: has(joined, ['soul-mesh/1', 'soul mesh', 'SOUL_MESH_PROTOCOL', 'SOUL_MESH_VERSION']),
     neuralBridge: has(joined, ['synapticnodebridge', 'neural', 'federation']),
     source,
     state: missing.length > 0 || source === 'not-found' ? 'DEGRADED' : 'OBSERVED',
