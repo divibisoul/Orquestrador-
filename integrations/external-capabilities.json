@@ -1,0 +1,29 @@
+{
+  "schema_version": "1.0.0",
+  "integration_mode": "external-capability-federation",
+  "policy": {
+    "preserve_existing_code": true,
+    "preserve_external_repositories": true,
+    "no_fake_runtime_success": true,
+    "pin_external_revisions": true,
+    "runtime_activation_requires_explicit_adapter": true
+  },
+  "repositories": [
+    {"id":"superpowers","source":"https://github.com/obra/superpowers","revision":"8ca22dba9a94f28898bbce59f2537ff4d87c747d","targets":["N07"],"capabilities":["agentic-skills","subagents","planning","tdd","review","debugging"]},
+    {"id":"superagi","source":"https://github.com/TransformerOptimus/SuperAGI","revision":"c3c1982e7bd6a11cfed53c5a193ea502f924b1b6","targets":["N07","N01"],"capabilities":["autonomous-agents","tools","memory","multimodal","telemetry"]},
+    {"id":"langgraph","source":"https://github.com/langchain-ai/langgraph","revision":"157a06dda988d85afeb8751ff27b35ab3f4f8bf4","targets":["N07"],"capabilities":["stateful-agents","durable-workflows","orchestration"]},
+    {"id":"crewai","source":"https://github.com/crewAIInc/crewAI","revision":"8078f9130c35a47be95d4a55bf1d73b3fd44fc88","targets":["N07"],"capabilities":["multi-agent-crews","flows","role-specialization"]},
+    {"id":"microsoft-agent-framework","source":"https://github.com/microsoft/agent-framework","revision":"a2f4506c0ba30cea7c9bbe907fc158c0db2cc6a3","targets":["N07"],"capabilities":["agents","workflows","MCP","A2A"]},
+    {"id":"openhands","source":"https://github.com/OpenHands/OpenHands","revision":"2414d6ee5e31bede2e78211f72b58e9949575a75","targets":["N07","N06"],"capabilities":["software-agents","tool-use","execution"]},
+    {"id":"metagpt","source":"https://github.com/geekan/MetaGPT","revision":null,"targets":["N07","N06"],"capabilities":["role-based-agents","multi-agent-collaboration","software-process"]},
+    {"id":"agentscope","source":"https://github.com/agentscope-ai/agentscope","revision":"72f3f6fa0b2fc38b8517f408ab616f0f2bd229e6","targets":["N07","N03","N01"],"capabilities":["agents","teams","tools","memory","sandbox","A2A","voice"]},
+    {"id":"letta-code","source":"https://github.com/letta-ai/letta-code","revision":"1fcc9666817ab852bc2532a3a989f712e1fd6c19","targets":["N01"],"capabilities":["stateful-agents","persistent-memory","identity"]},
+    {"id":"browser-use","source":"https://github.com/browser-use/browser-use","revision":"302d8fcb245a7a63fb7531a4734c9ce3c7792779","targets":["N07"],"capabilities":["browser-agents","web-automation"]},
+    {"id":"smolagents","source":"https://github.com/huggingface/smolagents","revision":"c30b115286e000e98711fae5e85993547b73d826","targets":["N06","N07"],"capabilities":["code-agents","tools","MCP","multimodal"]},
+    {"id":"pydantic-ai","source":"https://github.com/pydantic/pydantic-ai","revision":"6bc07cf18b0641ea92343d8c589cfb922108b802","targets":["N01","N07"],"capabilities":["typed-agents","tools","subagents","durable-execution"]},
+    {"id":"llama-index","source":"https://github.com/run-llama/llama_index","revision":"962940ddc079cc21701d28d1237c84c82a7c5164","targets":["N05","N06"],"capabilities":["RAG","indexing","retrieval","agent-workflows"]},
+    {"id":"dspy","source":"https://github.com/stanfordnlp/dspy","revision":"ba3f9198efe5d125c7c1a2b40b1f1e6166209bd2","targets":["N06"],"capabilities":["LM-programming","optimization","reasoning-pipelines"]},
+    {"id":"whisper","source":"https://github.com/openai/whisper","revision":"86098128c0b4f24f0e2aa2994de830614b474227","targets":["N03"],"capabilities":["speech-to-text"]},
+    {"id":"kokoro","source":"https://github.com/hexgrad/kokoro","revision":"dfb907a02bba8152ca444717ca5d78747ccb4bec","targets":["N03"],"capabilities":["text-to-speech"]}
+  ]
+}
