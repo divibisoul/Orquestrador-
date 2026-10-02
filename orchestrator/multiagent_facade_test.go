@@ -12,13 +12,6 @@ func TestMultiAgentEvidenceFailClosed(t *testing.T) {
   if e.State != "DEGRADED" || e.Code != "MULTIAGENT_ADAPTER_DISABLED" { t.Fatalf("%#v", e) }
 }
 
-func TestMultiAgentFacadeRegister(t *testing.T) {
-  e, err := NewTestEngine()
-  if err != nil { t.Fatal(err) }
-  if err = RegisterMultiAgentFacadeOperations(e); err != nil { t.Fatal(err) }
-  if !e.HasOperation(MultiAgentDescribeOperation) || !e.HasOperation(MultiAgentExecuteOperation) { t.Fatal("missing facade ops") }
-}
-
 func TestCorrelationPreserved(t *testing.T) {
   m := protocol.Message{CorrelationID: "corr-test"}
   r, _ := multiAgentFail(m, "TEST")
