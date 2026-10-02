@@ -41,3 +41,4 @@ func TestSuperpowersAgentRouteRejectsUnboundOperation(t *testing.T) {
   _, err = e.Submit(context.Background(), m)
   if err == nil { t.Fatal("expected fail-closed rejection") }
 }
+
