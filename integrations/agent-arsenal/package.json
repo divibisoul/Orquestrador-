@@ -1,0 +1,6 @@
+{
+  "name": "soul-agent-arsenal-gateway",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=20" }
+}
