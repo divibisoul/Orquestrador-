@@ -1,0 +1,32 @@
+{
+  "schema_version": "1.0.0",
+  "component": {
+    "id": "N07",
+    "role": "orquestração, federação e capability control plane"
+  },
+  "reason": "functional-complementation-and-system-integration",
+  "canonical_control_plane": "N07",
+  "upstream_capability_source_count": 16,
+  "soul_component_count": 9,
+  "integration": {
+    "agent_engineering": [
+      "soul.engineer.provenance",
+      "soul.engineer.adapter",
+      "soul.engineer.runtime",
+      "soul.engineer.verification",
+      "soul.engineer.resilience"
+    ],
+    "superpowers_agents": [
+      "superpowers.sara-trinity",
+      "superpowers.cortex-orbital-supergpu",
+      "superpowers.mesh-clareira",
+      "superpowers.octacore"
+    ],
+    "routing": "canonical soul-mesh/1",
+    "execution": "N07 Engine + SuperGPU + Octacore",
+    "observation": "Clareira + correlated evidence",
+    "structural_state": "REAL",
+    "runtime_state": "PROJECTED"
+  },
+  "rule": "N07 coordinates; it does not absorb upstream ownership or create shadow authorities."
+}
