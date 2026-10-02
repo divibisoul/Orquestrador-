@@ -36,4 +36,4 @@ jobs:
           go-version-file: go.mod
           cache: true
       - name: Test orchestration, Mesh and Octacore
-        run: go test ./orchestrator ./mesh ./octacore
+        run: go test ./backend ./orchestrator ./mesh ./octacore
