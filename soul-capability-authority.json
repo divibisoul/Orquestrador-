@@ -737,6 +737,73 @@
         "SARA",
         "N01",
         "N07"
+      ],
+      "superagi": [
+        "N07",
+        "N01",
+        "N06"
+      ],
+      "langgraph": [
+        "N07",
+        "N02",
+        "N06"
+      ],
+      "crewai": [
+        "N07",
+        "N02",
+        "N06"
+      ],
+      "microsoft-agent-framework": [
+        "N07",
+        "N04",
+        "N05",
+        "N06"
+      ],
+      "openhands": [
+        "N06",
+        "N07"
+      ],
+      "metagpt": [
+        "N06",
+        "N07"
+      ],
+      "agentscope": [
+        "N03",
+        "N01",
+        "N07"
+      ],
+      "letta-code": [
+        "N01",
+        "N07"
+      ],
+      "browser-use": [
+        "N05",
+        "N07"
+      ],
+      "smolagents": [
+        "N06",
+        "N07"
+      ],
+      "pydantic-ai": [
+        "N01",
+        "N07"
+      ],
+      "llama-index": [
+        "N05",
+        "N06",
+        "N07"
+      ],
+      "dspy": [
+        "N06",
+        "N07"
+      ],
+      "whisper": [
+        "N03",
+        "N07"
+      ],
+      "kokoro": [
+        "N03",
+        "N07"
       ]
     },
     "unresolved": []
