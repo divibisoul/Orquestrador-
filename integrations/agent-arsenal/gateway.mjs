@@ -21,6 +21,15 @@ const EXECUTE = /^(1|true|yes)$/i.test(process.env.AGENT_ARSENAL_EXECUTE || "fal
 const COMMAND_TIMEOUT_MS = Math.max(1000, Number(process.env.AGENT_ARSENAL_COMMAND_TIMEOUT_MS || 20000));
 const MAX_RESOLVE_BYTES = Math.max(4096, Number(process.env.AGENT_ARSENAL_MAX_RESOLVE_BYTES || 1048576));
 const MAX_BODY_BYTES = 256 * 1024;
+const AUTH_TOKEN = String(process.env.AGENT_ARSENAL_TOKEN || "").trim();
+
+
+function authorized(req) {
+  if (!AUTH_TOKEN) return false;
+  const header = String(req.headers.authorization || "");
+  if (!header.toLowerCase().startsWith("bearer ")) return false;
+  return header.slice(7).trim() === AUTH_TOKEN;
+}
 
 function send(res, status, body) {
   const raw = Buffer.from(JSON.stringify(body));
@@ -59,6 +68,9 @@ async function ensureSource(name) {
   const dir = path.join(ROOT, name);
   const pinFile = path.join(dir, ".soul-agent-arsenal-pin");
   try {
+    if (req.url !== "/health" && !authorized(req)) {
+      return send(res, 401, { error: "agent arsenal authentication required" });
+    }
     if ((await readFile(pinFile, "utf8")).trim() === cfg.ref) return dir;
   } catch {}
   await rm(dir, { recursive: true, force: true });
