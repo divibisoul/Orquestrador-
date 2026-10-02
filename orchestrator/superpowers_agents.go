@@ -45,7 +45,7 @@ var n07ResidentAgent = map[string]any{
 	"repositoryWrite":       false,
 	"superpowers":           map[string]any{"revision": "8ca22dba9a94f28898bbce59f2537ff4d87c747d", "mode": "development-methodology-and-skill-pack", "runtimePolicyEngine": false},
 	"skills":                []string{"dispatching-parallel-agents", "subagent-driven-development", "test-driven-development", "requesting-code-review", "verification-before-completion"},
-	"publishedCapabilities": []string{"mesh.health", "mesh.discovery", "mesh.resident.describe@1.0.0", "execute", "intent", "federation", "oss.routing"},
+	"publishedCapabilities": []string{"mesh.health", "mesh.discovery", "mesh.resident.describe@1.0.0", "execute", "intent", "federation", "oss.routing", "multiagent.crews.execute@1.0.0"},
 	"authority":             "N07 owns orchestration/federation/routing; provider runtimes remain bounded adapters.",
 	"evidence":              "soul-evidence/1",
 }
