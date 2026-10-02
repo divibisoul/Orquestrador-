@@ -56,7 +56,7 @@
         "N02"
       ],
       "manifestAuthority": "SOUL-FUSION-MANIFEST.json",
-      "sourceRef": "bbe9c9f3bfbc7a6d3a86516a137def6f401a51a4",
+      "sourceRef": "7b49dc4c716dd1cfde943734bf509008df042803",
       "status": "main-live-recovery-and-hortacore-bridge-merged",
       "contractEvidencePaths": [
         "scripts/soul-mesh-server.mjs"
@@ -82,7 +82,7 @@
         "N03"
       ],
       "manifestAuthority": "SOUL-FUSION-MANIFEST.json",
-      "sourceRef": "0b080492fd869d3d0d37e84c604446e05e257aff",
+      "sourceRef": "fd5459e8eb5eea759469d4d6cb75beadd68e3b17",
       "status": "main-live-bncv2-csae-dcrs-reintegrated",
       "contractEvidencePaths": [
         "src/soul-mesh/SoulMeshProtocol.ts"
@@ -109,7 +109,7 @@
         "N04"
       ],
       "manifestAuthority": "SOUL-FUSION-MANIFEST.json",
-      "sourceRef": "09e34aa5b5deea68ecbc66cf2c01f6607e16ba78",
+      "sourceRef": "59dee2a0314f60bd30f6069b31ad0e63fe155ece",
       "status": "main-live-composition-contract-reconciled",
       "contractEvidencePaths": [
         "src/mesh/SoulMeshProtocol.ts"
@@ -135,7 +135,7 @@
         "N05"
       ],
       "manifestAuthority": "SOUL-FUSION-MANIFEST.json",
-      "sourceRef": "13501b343d789c198640414238d0c9edfc7cfe6e",
+      "sourceRef": "dd702a5ec9560515714b8d3652be917855202edb",
       "status": "main-live-tool-capability-alias-reconciled",
       "contractEvidencePaths": [
         "lib/soul-mesh/SoulMeshProtocol.ts"
@@ -162,7 +162,7 @@
         "N06"
       ],
       "manifestAuthority": "SOUL-FUSION-MANIFEST.json",
-      "sourceRef": "2207a168861c1b64e1554540b18d47a102387400",
+      "sourceRef": "b01dd21056c86e0ab4ed577d4916507de506a427",
       "status": "main-live-inference-capability-catalog-reconciled",
       "contractEvidencePaths": [
         "lib/soul-mesh/endpoint.ts",
@@ -190,7 +190,7 @@
         "N07"
       ],
       "manifestAuthority": "SOUL-FUSION-MANIFEST.json",
-      "sourceRef": "576d81b1ced65f860beaecc458492295ac9732fc",
+      "sourceRef": "7d8646f7f86f515979c2f3309cc44ab99a5a265b",
       "status": "main-live-composition-targets-reconciled",
       "contractEvidencePaths": [
         "lib/soul-mesh/SoulMeshProtocol.ts"
@@ -234,7 +234,7 @@
         "src/sara/__init__.py"
       ],
       "authority": "sara.meta / sara.core / sara.governance",
-      "sourceRef": "08f26f1b00146181e7424c3d7a749fdab6e33cd9",
+      "sourceRef": "5d7efbca92fd7f155083bedd252be98a17132a7a",
       "status": "main-live-chimera-and-bayesian-runtime-merged"
     }
   },
