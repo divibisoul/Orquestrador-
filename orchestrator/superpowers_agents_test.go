@@ -3,6 +3,10 @@ package orchestrator
 import (
   "context"
   "testing"
+
+  "github.com/divibisoul/Orquestrador-/neural"
+  "github.com/divibisoul/Orquestrador-/prefrontal"
+  "github.com/divibisoul/Orquestrador-/supergpu"
 )
 
 func TestSuperpowersAgentBindingsCoverRequestedCrossfronts(t *testing.T) {
@@ -22,11 +26,17 @@ func TestSuperpowersAgentBindingsCoverRequestedCrossfronts(t *testing.T) {
 }
 
 func TestSuperpowersAgentRouteRejectsUnboundOperation(t *testing.T) {
-  e := NewTestEngine()
+  n, err := neural.New(2, .05)
+  if err != nil { t.Fatal(err) }
+  p, err := prefrontal.New(.1, 8)
+  if err != nil { t.Fatal(err) }
+  g := supergpu.New(nil)
+  e, err := New(n, p, g)
+  if err != nil { t.Fatal(err) }
   if err := RegisterSuperpowersAgentOperations(e); err != nil { t.Fatal(err) }
-  m := NewTestMessage("N01","N07","superpowers.agent.route@1.0.0")
+  m := NewMessage("N01", "N07", "command", SuperpowersAgentRouteOperation, nil)
   m.Metadata["agent_id"] = "superpowers.mesh-clareira"
   m.Metadata["operation"] = "octacore.batch"
-  _, err := e.Submit(context.Background(), m)
+  _, err = e.Submit(context.Background(), m)
   if err == nil { t.Fatal("expected fail-closed rejection") }
 }
