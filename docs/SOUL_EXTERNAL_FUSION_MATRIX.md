@@ -198,3 +198,20 @@ The canonical implementation remains N07. Consumers are deliberately separated b
 | SARA (G0) | ARA, ETR, ITR, ERU, governance/memory | SARA can consume N07 orbital/Prefrontal evidence through its explicit adapter | SARA governance/regeneration authority |
 
 No consumer copies TCE, Prefrontal, or another nucleus' agent. Invocation uses the existing Soul Mesh/N07 service boundary and preserves correlation/provenance.
+
+## Agent Arsenal — 2026-10-01
+
+The three video-referenced agent ecosystems are now integrated through the N07 Agent Arsenal Gateway with pinned provenance:
+
+| Source | SOUL role | Surface |
+|---|---|---|
+| obra/superpowers | methodology + skills + subagent workflows | catalog + artifact resolution |
+| affaan-m/ECC | agent/skill/hook/command/MCP/memory harness library | catalog + artifact resolution |
+| ruvnet/ruflo | executable multi-agent runtime | catalog + artifact resolution + swarm + agent spawn |
+
+The integration is additive. It does not replace N01-N07/SARA native ownership. All upstream artifacts remain independently sourced; N07 owns only the typed gateway boundary and provenance pins. Ruflo execution is explicitly controlled by the gateway environment and is not an unrestricted shell.
+
+Pinned refs:
+- superpowers: `8ca22dba9a94f28898bbce59f2537ff4d87c747d`
+- ECC: `c05b2d6614f62f6db0047669aa4eefb223d478f9`
+- Ruflo: `27982983ea6cdc4767c0b6614a4ad9a9d9497cce`
