@@ -7,6 +7,7 @@ import (
   "github.com/divibisoul/Orquestrador-/neural"
   "github.com/divibisoul/Orquestrador-/prefrontal"
   "github.com/divibisoul/Orquestrador-/supergpu"
+  "github.com/divibisoul/Orquestrador-/protocol"
 )
 
 func TestSuperpowersAgentBindingsCoverRequestedCrossfronts(t *testing.T) {
@@ -34,7 +35,7 @@ func TestSuperpowersAgentRouteRejectsUnboundOperation(t *testing.T) {
   e, err := New(n, p, g)
   if err != nil { t.Fatal(err) }
   if err := RegisterSuperpowersAgentOperations(e); err != nil { t.Fatal(err) }
-  m := NewMessage("N01", "N07", "command", SuperpowersAgentRouteOperation, nil)
+  m := protocol.NewMessage("N01", "N07", "command", SuperpowersAgentRouteOperation, nil)
   m.Metadata["agent_id"] = "superpowers.mesh-clareira"
   m.Metadata["operation"] = "octacore.batch"
   _, err = e.Submit(context.Background(), m)
