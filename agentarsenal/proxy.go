@@ -114,3 +114,13 @@ func (p *Proxy) Spawn(ctx context.Context, agentType, name string) (map[string]a
 		"type": strings.TrimSpace(agentType), "name": strings.TrimSpace(name),
 	})
 }
+
+func (p *Proxy) Activate(ctx context.Context, source, artifactPath, task, strategy, priority string) (map[string]any, error) {
+	return p.do(ctx, http.MethodPost, "/v1/activate", nil, map[string]string{
+		"source": strings.TrimSpace(source),
+		"path": strings.TrimSpace(artifactPath),
+		"task": strings.TrimSpace(task),
+		"strategy": strings.TrimSpace(strategy),
+		"priority": strings.TrimSpace(priority),
+	})
+}
