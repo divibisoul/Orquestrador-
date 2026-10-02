@@ -26,6 +26,7 @@ type IntegrationEngineer struct {
 }
 
 var integrationEngineers = []IntegrationEngineer{
+  {ID:"soul.engineer.fabric",Role:"cross-repository-fusion-engineer",Scope:[]string{"all-25-repositories"},Capabilities:[]string{"capability-composition","cross-repo-reinforcement","compatibility-analysis","dependency-isolation"},Inputs:[]string{"provider-graph","component-graph","capability-request"},Outputs:[]string{"augmentation-plan","compatibility-plan","reconciliation-trigger"},Methodology:"superpowers.octacore"},
   {ID:"soul.engineer.provenance",Role:"provenance-engineer",Scope:[]string{"all-16-upstreams","all-9-soul-components"},Capabilities:[]string{"source-verification","revision-pinning","attribution"},Inputs:[]string{"provider","revision"},Outputs:[]string{"provenance-record","source-state"},Methodology:"superpowers.sara-trinity"},
   {ID:"soul.engineer.adapter",Role:"capability-adapter-engineer",Scope:[]string{"all-16-upstreams"},Capabilities:[]string{"capability-contract","adapter-design","authority-preservation"},Inputs:[]string{"provider","capability","target"},Outputs:[]string{"adapter-plan","activation-boundary"},Methodology:"superpowers.octacore"},
   {ID:"soul.engineer.runtime",Role:"runtime-integration-engineer",Scope:[]string{"N01","N02","N03","N04","N05","N06","N07","SARA","JEV"},Capabilities:[]string{"mesh-routing","tool-binding","sandboxed-execution","dependency-isolation"},Inputs:[]string{"adapter","target","configuration"},Outputs:[]string{"runtime-route","activation-state"},Methodology:"superpowers.cortex-orbital-supergpu"},
