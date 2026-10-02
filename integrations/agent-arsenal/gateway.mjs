@@ -252,15 +252,11 @@ async function runRuflo(args) {
       sourceVerified: true
     };
   } catch (err) {
-    return {
-      status: "error",
-      exitCode: typeof err.code === "number" ? err.code : 1,
-      stdout: String(err.stdout || ""),
-      stderr: String(err.stderr || err.message || err),
-      timedOut: Boolean(err.killed),
-      backend: "ruflo@27982983ea6cdc4767c0b6614a4ad9a9d9497cce",
-      sourceVerified: true
-    };
+    const timeout = Boolean(err.killed);
+    throw Object.assign(
+      new Error(timeout ? "RUFLO_EXECUTION_TIMEOUT" : "RUFLO_EXECUTION_FAILED"),
+      { statusCode: 502, code: timeout ? "RUFLO_EXECUTION_TIMEOUT" : "RUFLO_EXECUTION_FAILED" }
+    );
   }
 }
 
