@@ -56,7 +56,7 @@
         "N02"
       ],
       "manifestAuthority": "SOUL-FUSION-MANIFEST.json",
-      "sourceRef": "bbe9c9f3bfbc7a6d3a86516a137def6f401a51a4",
+      "sourceRef": "7175c6232f7e685d1aea41746c57e9fb6f33e23a",
       "status": "main-live-recovery-and-hortacore-bridge-merged"
     },
     "N02": {
@@ -79,7 +79,7 @@
         "N03"
       ],
       "manifestAuthority": "SOUL-FUSION-MANIFEST.json",
-      "sourceRef": "0b080492fd869d3d0d37e84c604446e05e257aff",
+      "sourceRef": "fa3369a9a33443289941b6630ee85f0f28d5faa4",
       "status": "main-live-bncv2-csae-dcrs-reintegrated"
     },
     "N03": {
@@ -103,7 +103,7 @@
         "N04"
       ],
       "manifestAuthority": "SOUL-FUSION-MANIFEST.json",
-      "sourceRef": "09e34aa5b5deea68ecbc66cf2c01f6607e16ba78",
+      "sourceRef": "9832dcc4399b99362afd9d130fd2f636273424cb",
       "status": "main-live-composition-contract-reconciled"
     },
     "N04": {
@@ -213,7 +213,7 @@
         "src/sara/__init__.py"
       ],
       "authority": "sara.meta / sara.core / sara.governance",
-      "sourceRef": "08f26f1b00146181e7424c3d7a749fdab6e33cd9",
+      "sourceRef": "c33791cd285f11c6666cdcbd125ad370df326acb",
       "status": "main-live-chimera-and-bayesian-runtime-merged"
     }
   },
