@@ -56,7 +56,7 @@
         "N02"
       ],
       "manifestAuthority": "SOUL-FUSION-MANIFEST.json",
-      "sourceRef": "960ef02dad3e658d76c4642802cf5c3d0b95d9ba",
+      "sourceRef": "bba43a86f8e98de52aeb606a00ac3f51244c862a",
       "status": "main-live-recovery-and-hortacore-bridge-merged",
       "contractEvidencePaths": [
         "scripts/soul-mesh-server.mjs"
@@ -109,7 +109,7 @@
         "N04"
       ],
       "manifestAuthority": "SOUL-FUSION-MANIFEST.json",
-      "sourceRef": "1ae43220f009c5fab1c393bb7999486cac0b461a",
+      "sourceRef": "7a56c4d07d31e3dacfb0fa8ef3114ab0c253a49c",
       "status": "main-live-composition-contract-reconciled",
       "contractEvidencePaths": [
         "src/mesh/SoulMeshProtocol.ts"
@@ -135,7 +135,7 @@
         "N05"
       ],
       "manifestAuthority": "SOUL-FUSION-MANIFEST.json",
-      "sourceRef": "69791078bd7572cf16cde95d9c613683b0d03e96",
+      "sourceRef": "2bc605a1d2114ac1e39de63e922e937306dde1c4",
       "status": "main-live-tool-capability-alias-reconciled",
       "contractEvidencePaths": [
         "lib/soul-mesh/SoulMeshProtocol.ts"
@@ -162,7 +162,7 @@
         "N06"
       ],
       "manifestAuthority": "SOUL-FUSION-MANIFEST.json",
-      "sourceRef": "ca62ede141e5889c4409352ee8dda364df4fe1c4",
+      "sourceRef": "3bce0da91dd03bcf2c1e3765687dc357f187388b",
       "status": "main-live-inference-capability-catalog-reconciled",
       "contractEvidencePaths": [
         "lib/soul-mesh/endpoint.ts",
@@ -190,7 +190,7 @@
         "N07"
       ],
       "manifestAuthority": "SOUL-FUSION-MANIFEST.json",
-      "sourceRef": "ec8adb69735979db87a2f17cd17cb5de231e3fbd",
+      "sourceRef": "17c46a0ddd5edfcdb570539d2d250a78799016f2",
       "status": "main-live-composition-targets-reconciled",
       "contractEvidencePaths": [
         "lib/soul-mesh/SoulMeshProtocol.ts"
@@ -242,7 +242,7 @@
         "src/sara/__init__.py"
       ],
       "authority": "sara.meta / sara.core / sara.governance",
-      "sourceRef": "a4c095c66e3a3dfb9793131ef52def55cbe40e03",
+      "sourceRef": "f114b2ed5b2663a6c3e4f44c6fcb4c56f1ed7592",
       "status": "main-live-chimera-and-bayesian-runtime-merged"
     }
   },
