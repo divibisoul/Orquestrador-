@@ -1,0 +1,366 @@
+{
+  "schema_version": "1.0.0",
+  "graph": "SOUL-native-capability-augmentation",
+  "principle": "external providers reinforce native SOUL capabilities; they never replace native ownership",
+  "native_components": {
+    "N01": {
+      "repository": "divibisoul/aeternum-core-29",
+      "native_capabilities": [
+        "memory.semantic.vector.recall",
+        "memory.semantic.vector.remember",
+        "external.capability.execute@1.0.0",
+        "supercompute.execute",
+        "mesh.capabilities",
+        "mesh.discovery",
+        "clareira.ingest",
+        "clareira.metrics"
+      ],
+      "augmenters": [
+        "superagi",
+        "langgraph",
+        "agentscope",
+        "letta-code",
+        "pydantic-ai"
+      ]
+    },
+    "N02": {
+      "repository": "divibisoul/Eternium-",
+      "native_capabilities": [
+        "ai.generate",
+        "ai.multimodal",
+        "cognitive-processing",
+        "cognitive.csae",
+        "resource.dcrs",
+        "octacore.execute",
+        "neural.bnc_v2",
+        "neural_forge"
+      ],
+      "augmenters": [
+        "superpowers",
+        "superagi",
+        "langgraph",
+        "crewai",
+        "microsoft-agent-framework",
+        "openhands",
+        "metagpt",
+        "agentscope",
+        "browser-use",
+        "smolagents",
+        "pydantic-ai",
+        "dspy"
+      ]
+    },
+    "N03": {
+      "repository": "divibisoul/nexus-aeternum-fusion",
+      "native_capabilities": [
+        "audio.transcribe",
+        "speech.synthesize",
+        "audio.analyze.emotion",
+        "speech.translate",
+        "audio.summarize",
+        "speaker.identify"
+      ],
+      "augmenters": [
+        "agentscope",
+        "whisper",
+        "kokoro"
+      ]
+    },
+    "N04": {
+      "repository": "divibisoul/nextjs-ai-chatbots",
+      "native_capabilities": [
+        "tool-execution",
+        "artifact-processing",
+        "document-processing",
+        "context-orchestration",
+        "tool.run",
+        "document.create",
+        "document.edit"
+      ],
+      "augmenters": [
+        "superpowers",
+        "microsoft-agent-framework",
+        "agentscope",
+        "browser-use",
+        "smolagents",
+        "pydantic-ai",
+        "llama-index"
+      ]
+    },
+    "N05": {
+      "repository": "divibisoul/nextjs-ai-chatbot",
+      "native_capabilities": [
+        "ai.infer",
+        "inference.reason",
+        "inference.analyze",
+        "inference.summarize",
+        "inference.translate",
+        "inference.classify",
+        "conversation.chat",
+        "conversation.memory"
+      ],
+      "augmenters": [
+        "langgraph",
+        "agentscope",
+        "letta-code",
+        "browser-use",
+        "smolagents",
+        "pydantic-ai",
+        "llama-index"
+      ]
+    },
+    "N06": {
+      "repository": "divibisoul/nextjs-ai-chatbot-2000",
+      "native_capabilities": [
+        "support.context",
+        "support.artifacts",
+        "support.documents",
+        "support.tool-execution",
+        "support.streaming",
+        "support.mesh",
+        "support.ai-pilot",
+        "planning",
+        "reasoning",
+        "composition"
+      ],
+      "augmenters": [
+        "superpowers",
+        "superagi",
+        "langgraph",
+        "crewai",
+        "microsoft-agent-framework",
+        "openhands",
+        "metagpt",
+        "agentscope",
+        "letta-code",
+        "smolagents",
+        "pydantic-ai",
+        "llama-index",
+        "dspy"
+      ]
+    },
+    "N07": {
+      "repository": "divibisoul/Orquestrador-",
+      "native_capabilities": [
+        "orchestration",
+        "federation",
+        "supergpu",
+        "mesh.capability.resolve@1.0.0",
+        "cognitive.planning.sources@1.0.0",
+        "prefrontal.orbital.evaluate@1.0.0",
+        "transcendental.estimate@1.0.0"
+      ],
+      "augmenters": [
+        "superpowers",
+        "superagi",
+        "langgraph",
+        "crewai",
+        "microsoft-agent-framework",
+        "openhands",
+        "metagpt",
+        "agentscope",
+        "browser-use",
+        "smolagents",
+        "pydantic-ai",
+        "dspy",
+        "llama-index"
+      ]
+    },
+    "SARA": {
+      "repository": "divibisoul/SARA",
+      "native_capabilities": [
+        "sara.health",
+        "sara.cycle",
+        "sara.audit",
+        "sara.regenerate",
+        "sara.state",
+        "sara.capabilities",
+        "sara.trace",
+        "ARA",
+        "ETR",
+        "ITR",
+        "RGO",
+        "MMD"
+      ],
+      "augmenters": [
+        "superpowers",
+        "pydantic-ai",
+        "langgraph",
+        "agentscope",
+        "openhands",
+        "metagpt"
+      ]
+    },
+    "JEV": {
+      "repository": "divibisoul/jev-api",
+      "native_capabilities": [
+        "jev.systemone@1.0.0"
+      ],
+      "augmenters": [
+        "pydantic-ai"
+      ]
+    }
+  },
+  "providers": {
+    "superpowers": {
+      "role": "engineering_methodology",
+      "capabilities": [
+        "planning",
+        "subagents",
+        "tdd",
+        "review",
+        "debugging",
+        "verification"
+      ],
+      "state": "ADAPTER_BOUND"
+    },
+    "superagi": {
+      "role": "agent_runtime_pattern",
+      "capabilities": [
+        "autonomous-agents",
+        "tools",
+        "memory",
+        "multimodal",
+        "telemetry"
+      ],
+      "state": "CATALOG_BOUND"
+    },
+    "langgraph": {
+      "role": "stateful_workflow_engine",
+      "capabilities": [
+        "stateful-agents",
+        "durable-workflows",
+        "orchestration"
+      ],
+      "state": "CATALOG_BOUND"
+    },
+    "crewai": {
+      "role": "multi_agent_coordination",
+      "capabilities": [
+        "multi-agent-crews",
+        "flows",
+        "role-specialization"
+      ],
+      "state": "CATALOG_BOUND"
+    },
+    "microsoft-agent-framework": {
+      "role": "interoperable_agents",
+      "capabilities": [
+        "agents",
+        "workflows",
+        "MCP",
+        "A2A"
+      ],
+      "state": "CATALOG_BOUND"
+    },
+    "openhands": {
+      "role": "software_engineering_agents",
+      "capabilities": [
+        "software-agents",
+        "tool-use",
+        "execution"
+      ],
+      "state": "CATALOG_BOUND"
+    },
+    "metagpt": {
+      "role": "software_process_agents",
+      "capabilities": [
+        "role-based-agents",
+        "multi-agent-collaboration",
+        "software-process"
+      ],
+      "state": "CATALOG_BOUND"
+    },
+    "agentscope": {
+      "role": "agent_and_tool_runtime",
+      "capabilities": [
+        "agents",
+        "teams",
+        "tools",
+        "memory",
+        "sandbox",
+        "A2A",
+        "voice"
+      ],
+      "state": "CATALOG_BOUND"
+    },
+    "letta-code": {
+      "role": "persistent_agent_memory",
+      "capabilities": [
+        "stateful-agents",
+        "persistent-memory",
+        "identity"
+      ],
+      "state": "CATALOG_BOUND"
+    },
+    "browser-use": {
+      "role": "browser_automation",
+      "capabilities": [
+        "browser-agents",
+        "web-automation"
+      ],
+      "state": "CATALOG_BOUND"
+    },
+    "smolagents": {
+      "role": "code_tool_agents",
+      "capabilities": [
+        "code-agents",
+        "tools",
+        "MCP",
+        "multimodal"
+      ],
+      "state": "CATALOG_BOUND"
+    },
+    "pydantic-ai": {
+      "role": "typed_agent_contracts",
+      "capabilities": [
+        "typed-agents",
+        "tools",
+        "subagents",
+        "durable-execution"
+      ],
+      "state": "CATALOG_BOUND"
+    },
+    "llama-index": {
+      "role": "retrieval_and_rag",
+      "capabilities": [
+        "RAG",
+        "indexing",
+        "retrieval",
+        "agent-workflows"
+      ],
+      "state": "CATALOG_BOUND"
+    },
+    "dspy": {
+      "role": "reasoning_and_optimization",
+      "capabilities": [
+        "LM-programming",
+        "optimization",
+        "reasoning-pipelines"
+      ],
+      "state": "CATALOG_BOUND"
+    },
+    "whisper": {
+      "role": "speech_recognition",
+      "capabilities": [
+        "speech-to-text"
+      ],
+      "state": "CATALOG_BOUND"
+    },
+    "kokoro": {
+      "role": "speech_synthesis",
+      "capabilities": [
+        "text-to-speech"
+      ],
+      "state": "CATALOG_BOUND"
+    }
+  },
+  "runtime_policy": {
+    "native_owner_first": true,
+    "external_provider_is_optional_augmenter": true,
+    "execution_requires_explicit_adapter": true,
+    "missing_adapter_state": "BLOCKED",
+    "no_fake_runtime_success": true,
+    "preserve_history": true
+  }
+}
