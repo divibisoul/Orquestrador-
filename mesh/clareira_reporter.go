@@ -20,19 +20,21 @@ type PeerCaller interface {
 
 type ClareiraReporter struct {
 	peers PeerCaller
+	agent *SuperpowersMeshClareiraAgent
 }
 
 func NewClareiraReporter(peers PeerCaller) (*ClareiraReporter, error) {
 	if peers == nil {
 		return nil, errors.New("Clareira reporter requires N07 Mesh peer client")
 	}
-	return &ClareiraReporter{peers: peers}, nil
+	return &ClareiraReporter{peers: peers, agent: NewSuperpowersMeshClareiraAgent()}, nil
 }
 
 func (r *ClareiraReporter) Report(ctx context.Context, event supergpu.ExecutionEvent) error {
 	if ctx == nil {
 		return errors.New("context is nil")
 	}
+	if err := r.agent.Preflight(event); err != nil { return err }
 	correlationID := strings.TrimSpace(event.CorrelationID)
 	if correlationID == "" {
 		correlationID = protocol.NewTraceID()
