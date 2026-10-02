@@ -18,6 +18,7 @@ import (
 type Proxy struct {
 	baseURL string
 	client  *http.Client
+	token   string
 }
 
 func NewFromEnv() *Proxy {
@@ -28,7 +29,7 @@ func NewFromEnv() *Proxy {
 			timeout = time.Duration(seconds) * time.Second
 		}
 	}
-	return &Proxy{baseURL: baseURL, client: &http.Client{Timeout: timeout}}
+	return &Proxy{baseURL: baseURL, token: strings.TrimSpace(os.Getenv("SOUL_AGENT_ARSENAL_TOKEN")), client: &http.Client{Timeout: timeout}}
 }
 
 func (p *Proxy) Configured() bool { return p != nil && p.baseURL != "" }
@@ -57,6 +58,9 @@ func (p *Proxy) do(ctx context.Context, method, endpointPath string, query url.V
 		return nil, err
 	}
 	req.Header.Set("Accept", "application/json")
+	if p.token != "" {
+		req.Header.Set("Authorization", "Bearer "+p.token)
+	}
 	if body != nil {
 		req.Header.Set("Content-Type", "application/json")
 	}
