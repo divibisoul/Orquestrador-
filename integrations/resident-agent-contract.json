@@ -51,5 +51,25 @@
     "allSevenMeshHealthVerified": true,
     "authenticatedE2E": "N01↔N07↔N03",
     "crossfrontEvidenceCurrent": true
+  },
+  "auth": {
+    "mode": "existing-nucleus-mesh-auth",
+    "primary": "HMAC",
+    "bearer": "allowed only where an existing nucleus Mesh endpoint already requires it",
+    "secretResolution": "preserve each nucleus' existing canonical secret configuration; no new secret name is introduced by the Resident Agent contract",
+    "failClosed": true
+  },
+  "storage": {
+    "plan": {
+      "mode": "nucleus-owned-persistent-state",
+      "gitTracked": false,
+      "key": "resident-agent-plan:{nucleus}:{correlationId}"
+    },
+    "testEvidence": {
+      "mode": "ci-artifact-and-runtime-evidence-store",
+      "gitTracked": false,
+      "schema": "soul-evidence/1"
+    },
+    "rule": "Resident Agents do not commit plans or evidence into repository history; CI/human workflows may persist selected artifacts."
   }
 }
