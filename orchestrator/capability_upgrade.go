@@ -61,8 +61,12 @@ var soulComponentAuthorities = map[string]string{
 
 func loadExternalProviderManifest() (externalProviderManifest, error) {
 	candidates := []string{}
-	if p := strings.TrimSpace(os.Getenv("SOUL_EXTERNAL_CAPABILITY_REGISTRY_PATH")); p != "" {
-		candidates = append(candidates, p)
+	// Explicit paths are accepted only when they exist; stale absolute paths must not
+	// shadow the repository-local canonical registry.
+	if p := strings.TrimSpace(os.Getenv("SOUL_EXTERNAL_CAPABILITY_REGISTRY_PATH")); p != "" && filepath.IsAbs(p) {
+		if _, err := os.Stat(p); err == nil {
+			candidates = append(candidates, p)
+		}
 	}
 	if cwd, err := os.Getwd(); err == nil {
 		for dir := filepath.Clean(cwd); ; dir = filepath.Dir(dir) {
