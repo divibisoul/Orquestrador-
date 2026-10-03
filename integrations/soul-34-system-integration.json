@@ -22,7 +22,8 @@
       "branch": "feat/n01-soul25-integration-20261003",
       "resident_agent": "Agent-Clareira Gateway Steward",
       "fabric": "src/core/fusion/N01ExternalCapabilityFabric.ts",
-      "runtime_boundary": "src/core/mesh/SoulMeshRuntime.ts"
+      "runtime_boundary": "src/core/mesh/SoulMeshRuntime.ts",
+      "resident_agent_path": "scripts/soul-resident-agent.mjs"
     },
     {
       "id": "N02",
@@ -30,7 +31,8 @@
       "branch": "feat/n02-soul25-integration-20261003",
       "resident_agent": "N02 resident agent",
       "fabric": "src/soul-mesh/N02ExternalCapabilityFabric.ts",
-      "runtime_boundary": "src/soul-mesh/N02CapabilityRuntime.ts"
+      "runtime_boundary": "src/soul-mesh/N02CapabilityRuntime.ts",
+      "resident_agent_path": "src/soul-mesh/N02ResidentAgent.ts"
     },
     {
       "id": "N03",
@@ -38,7 +40,8 @@
       "branch": "feat/n03-soul25-integration-20261003",
       "resident_agent": "Agent-Audio Steward",
       "fabric": "src/mesh/N03ExternalCapabilityFabric.ts",
-      "runtime_boundary": "api/soul-mesh.ts"
+      "runtime_boundary": "api/soul-mesh.ts",
+      "resident_agent_path": "src/mesh/N03ResidentAgent.ts"
     },
     {
       "id": "N04",
@@ -46,7 +49,8 @@
       "branch": "feat/n04-soul25-integration-20261003",
       "resident_agent": "N04 resident agent",
       "fabric": "lib/soul-mesh/N04ExternalCapabilityFabric.ts",
-      "runtime_boundary": "lib/soul-core/Nucleus04Runtime.ts"
+      "runtime_boundary": "lib/soul-core/Nucleus04Runtime.ts",
+      "resident_agent_path": "lib/soul-mesh/N04ResidentAgent.ts"
     },
     {
       "id": "N05",
@@ -54,7 +58,8 @@
       "branch": "feat/n05-soul25-integration-20261003",
       "resident_agent": "N05-inference-agent",
       "fabric": "lib/soul-mesh/N05ExternalCapabilityFabric.ts",
-      "runtime_boundary": "src/mesh/N05Capabilities.ts"
+      "runtime_boundary": "src/mesh/N05Capabilities.ts",
+      "resident_agent_path": "lib/soul-mesh/N05ResidentAgent.ts"
     },
     {
       "id": "N06",
@@ -62,7 +67,8 @@
       "branch": "feat/n06-metagpt-runtime",
       "resident_agent": "N06 Cognitive Agent",
       "fabric": "lib/soul-core/N06ExternalCapabilityFabric.ts",
-      "runtime_boundary": "lib/soul-core/N06NativeCapabilityRuntime.ts"
+      "runtime_boundary": "lib/soul-core/N06NativeCapabilityRuntime.ts",
+      "resident_agent_path": "lib/soul-mesh/N06ResidentAgent.ts"
     },
     {
       "id": "N07",
@@ -70,7 +76,8 @@
       "branch": "feat/soul-oss-fusion-wave1",
       "resident_agent": "external-provider-runtime",
       "fabric": "integrations/soul-25-capability-fabric.json",
-      "runtime_boundary": "orchestrator/external_provider_runtime.go"
+      "runtime_boundary": "orchestrator/external_provider_runtime.go",
+      "resident_agent_path": "orchestrator/n07_resident_agent.go"
     },
     {
       "id": "SARA",
@@ -78,7 +85,8 @@
       "branch": "feat/mem0-memory-adapter",
       "resident_agent": "SARA.resident",
       "fabric": "src/sara/meta/soul_external_fabric.py",
-      "runtime_boundary": "src/sara/service/http_api.py"
+      "runtime_boundary": "src/sara/service/http_api.py",
+      "resident_agent_path": "src/sara/meta/resident_agent.py"
     },
     {
       "id": "JEV",
@@ -86,7 +94,8 @@
       "branch": "feat/jev-soul25-integration-20261003",
       "resident_agent": "JEV.resident",
       "fabric": "scripts/jev-capability-fabric.mjs",
-      "runtime_boundary": "N07 jev.systemone@1.0.0"
+      "runtime_boundary": "N07 jev.systemone@1.0.0",
+      "resident_agent_path": "scripts/jev-resident-agent.mjs"
     }
   ],
   "upstream_sources": [
@@ -234,5 +243,16 @@
     "ADAPTER_BOUND": "native adapter/runner exists",
     "LIVE": "real endpoint/runner completed successfully with correlation and provider evidence",
     "VERIFIED": "LIVE plus CI/E2E and retained evidence"
+  },
+  "gate": {
+    "script": "scripts/soul-34-system-gate.py",
+    "requirements": [
+      "9 native component manifests",
+      "9 resident-agent paths",
+      "9 external fabrics",
+      "25 upstream source records",
+      "exact pinned upstream revisions"
+    ],
+    "rule": "Any missing, malformed or contradictory component blocks SOUL-34 promotion."
   }
 }
