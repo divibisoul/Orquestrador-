@@ -117,6 +117,16 @@ func main() {
 	if err := orchestrator.RegisterSuperGPUOperations(e); err != nil {
 		log.Fatal(err)
 	}
+	gpuFederation, err := supergpu.NewFederation(g)
+	if err != nil {
+		log.Fatal(err)
+	}
+	if err := orchestrator.RegisterSuperGPUMeshOperations(e, gpuFederation); err != nil {
+		log.Fatal(err)
+	}
+	if err := orchestrator.RegisterSuperAGIFabricOperations(e); err != nil {
+		log.Fatal(err)
+	}
 	if err := orchestrator.RegisterAdvancedOperations(e); err != nil {
 		log.Fatal(err)
 	}
