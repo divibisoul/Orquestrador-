@@ -21,15 +21,15 @@ jobs:
           if test -f .gitmodules; then
             git config -f .gitmodules --get-regexp '^submodule\..*\.path$' | awk '{print $2}' | while read p; do test -e "$p"; done
           fi
-      - name: Validate 16-repository registry
+      - name: Validate 25-source capability registry
         if: github.event.repository.name == 'Orquestrador-'
         run: |
           python - <<'PY'
           import json
           d=json.load(open('integrations/external-capabilities.json'))
-          assert len(d['repositories']) == 16
+          assert len(d['repositories']) == 25
           for x in d['repositories']:
               assert x['source'].startswith('https://github.com/')
               assert x['revision'] and x['targets']
-          print('16/16 external repositories: VALID')
+          print('25/25 external capability sources: VALID')
           PY
