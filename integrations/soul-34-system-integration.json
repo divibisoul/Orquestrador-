@@ -1,0 +1,238 @@
+{
+  "schema": "SOUL-34/1.0.0",
+  "system": "SOUL",
+  "repository_count": 34,
+  "native_count": 9,
+  "upstream_count": 25,
+  "integration_order": [
+    "N01",
+    "N02",
+    "N03",
+    "N04",
+    "N05",
+    "N06",
+    "N07",
+    "SARA",
+    "JEV"
+  ],
+  "native_components": [
+    {
+      "id": "N01",
+      "repository": "divibisoul/aeternum-core-29",
+      "branch": "feat/n01-soul25-integration-20261003",
+      "resident_agent": "Agent-Clareira Gateway Steward",
+      "fabric": "src/core/fusion/N01ExternalCapabilityFabric.ts",
+      "runtime_boundary": "src/core/mesh/SoulMeshRuntime.ts"
+    },
+    {
+      "id": "N02",
+      "repository": "divibisoul/Eternium-",
+      "branch": "feat/n02-soul25-integration-20261003",
+      "resident_agent": "N02 resident agent",
+      "fabric": "src/soul-mesh/N02ExternalCapabilityFabric.ts",
+      "runtime_boundary": "src/soul-mesh/N02CapabilityRuntime.ts"
+    },
+    {
+      "id": "N03",
+      "repository": "divibisoul/nexus-aeternum-fusion",
+      "branch": "feat/n03-soul25-integration-20261003",
+      "resident_agent": "Agent-Audio Steward",
+      "fabric": "src/mesh/N03ExternalCapabilityFabric.ts",
+      "runtime_boundary": "api/soul-mesh.ts"
+    },
+    {
+      "id": "N04",
+      "repository": "divibisoul/nextjs-ai-chatbots",
+      "branch": "feat/n04-soul25-integration-20261003",
+      "resident_agent": "N04 resident agent",
+      "fabric": "lib/soul-mesh/N04ExternalCapabilityFabric.ts",
+      "runtime_boundary": "lib/soul-core/Nucleus04Runtime.ts"
+    },
+    {
+      "id": "N05",
+      "repository": "divibisoul/nextjs-ai-chatbot",
+      "branch": "feat/n05-soul25-integration-20261003",
+      "resident_agent": "N05-inference-agent",
+      "fabric": "lib/soul-mesh/N05ExternalCapabilityFabric.ts",
+      "runtime_boundary": "src/mesh/N05Capabilities.ts"
+    },
+    {
+      "id": "N06",
+      "repository": "divibisoul/nextjs-ai-chatbot-2000",
+      "branch": "feat/n06-metagpt-runtime",
+      "resident_agent": "N06 Cognitive Agent",
+      "fabric": "lib/soul-core/N06ExternalCapabilityFabric.ts",
+      "runtime_boundary": "lib/soul-core/N06NativeCapabilityRuntime.ts"
+    },
+    {
+      "id": "N07",
+      "repository": "divibisoul/Orquestrador-",
+      "branch": "feat/soul-oss-fusion-wave1",
+      "resident_agent": "external-provider-runtime",
+      "fabric": "integrations/soul-25-capability-fabric.json",
+      "runtime_boundary": "orchestrator/external_provider_runtime.go"
+    },
+    {
+      "id": "SARA",
+      "repository": "divibisoul/SARA",
+      "branch": "feat/mem0-memory-adapter",
+      "resident_agent": "SARA.resident",
+      "fabric": "src/sara/meta/soul_external_fabric.py",
+      "runtime_boundary": "src/sara/service/http_api.py"
+    },
+    {
+      "id": "JEV",
+      "repository": "divibisoul/jev-api",
+      "branch": "feat/jev-soul25-integration-20261003",
+      "resident_agent": "JEV.resident",
+      "fabric": "scripts/jev-capability-fabric.mjs",
+      "runtime_boundary": "N07 jev.systemone@1.0.0"
+    }
+  ],
+  "upstream_sources": [
+    {
+      "id": "superpowers",
+      "repository": "obra/superpowers",
+      "revision": "8ca22dba9a94f28898bbce59f2537ff4d87c747d"
+    },
+    {
+      "id": "superagi",
+      "repository": "TransformerOptimus/SuperAGI",
+      "revision": "c3c1982e7bd6a11cfed53c5a193ea502f924b1b6"
+    },
+    {
+      "id": "langgraph",
+      "repository": "langchain-ai/langgraph",
+      "revision": "157a06dda988d85afeb8751ff27b35ab3f4f8bf4"
+    },
+    {
+      "id": "crewai",
+      "repository": "crewAIInc/crewAI",
+      "revision": "8078f9130c35a47be95d4a55bf1d73b3fd44fc88"
+    },
+    {
+      "id": "microsoft-agent-framework",
+      "repository": "microsoft/agent-framework",
+      "revision": "a2f4506c0ba30cea7c9bbe907fc158c0db2cc6a3"
+    },
+    {
+      "id": "openhands",
+      "repository": "OpenHands/OpenHands",
+      "revision": "2414d6ee5e31bede2e78211f72b58e9949575a75"
+    },
+    {
+      "id": "metagpt",
+      "repository": "FoundationAgents/MetaGPT",
+      "revision": "11cdf466d042aece04fc6cfd13b28e1a70341b1f"
+    },
+    {
+      "id": "agentscope",
+      "repository": "agentscope-ai/agentscope",
+      "revision": "72f3f6fa0b2fc38b8517f408ab616f0f2bd229e6"
+    },
+    {
+      "id": "letta-code",
+      "repository": "letta-ai/letta-code",
+      "revision": "1fcc9666817ab852bc2532a3a989f712e1fd6c19"
+    },
+    {
+      "id": "browser-use",
+      "repository": "browser-use/browser-use",
+      "revision": "302d8fcb245a7a63fb7531a4734c9ce3c7792779"
+    },
+    {
+      "id": "smolagents",
+      "repository": "huggingface/smolagents",
+      "revision": "c30b115286e000e98711fae5e85993547b73d826"
+    },
+    {
+      "id": "pydantic-ai",
+      "repository": "pydantic/pydantic-ai",
+      "revision": "6bc07cf18b0641ea92343d8c589cfb922108b802"
+    },
+    {
+      "id": "llama-index",
+      "repository": "run-llama/llama_index",
+      "revision": "962940ddc079cc21701d28d1237c84c82a7c5164"
+    },
+    {
+      "id": "dspy",
+      "repository": "stanfordnlp/dspy",
+      "revision": "ba3f9198efe5d125c7c1a2b40b1f1e6166209bd2"
+    },
+    {
+      "id": "whisper",
+      "repository": "openai/whisper",
+      "revision": "86098128c0b4f24f0e2aa2994de830614b474227"
+    },
+    {
+      "id": "kokoro",
+      "repository": "hexgrad/kokoro",
+      "revision": "dfb907a02bba8152ca444717ca5d78747ccb4bec"
+    },
+    {
+      "id": "everything-claude-code",
+      "repository": "affaan-m/ECC",
+      "revision": "ef648e01899ba3e8dc6371642deaaf64b4477775"
+    },
+    {
+      "id": "swarmclaw",
+      "repository": "swarmclawai/swarmclaw",
+      "revision": "ed38ba5329c20e48c03b4a4028f4a76a1a75e2d1"
+    },
+    {
+      "id": "mem0",
+      "repository": "mem0ai/mem0",
+      "revision": "abb81c88e1f738a8117d8293530fbc31a5ef8fd9"
+    },
+    {
+      "id": "letta",
+      "repository": "letta-ai/letta",
+      "revision": "5bcdd177d70fa2b31a754cfcd801e77b2e1ab16a"
+    },
+    {
+      "id": "langfuse",
+      "repository": "langfuse/langfuse",
+      "revision": "f75c661dbe8c6b85523c81486b39e8403ac2c141"
+    },
+    {
+      "id": "vllm",
+      "repository": "vllm-project/vllm",
+      "revision": "7dfe3338d5f15dd3ccb233326aa65fde46e427ad"
+    },
+    {
+      "id": "sglang",
+      "repository": "sgl-project/sglang",
+      "revision": "65f759144d192671af5301568113e38686999871"
+    },
+    {
+      "id": "ray",
+      "repository": "ray-project/ray",
+      "revision": "f8a314bf077c9772fee2a8a1073368ca2ef9360b"
+    },
+    {
+      "id": "megatron-lm",
+      "repository": "NVIDIA/Megatron-LM",
+      "revision": "160561d12927b36b1429ac35f86793cb2ece0ec6"
+    }
+  ],
+  "invariants": {
+    "additive_only": true,
+    "preserve_native_components": true,
+    "preserve_upstream_sources": true,
+    "canonical_owner_required": true,
+    "resident_agent_required": true,
+    "provider_pin_required": true,
+    "executable_adapter_required": true,
+    "real_evidence_required": true,
+    "fake_success_forbidden": true,
+    "unbound_runtime_state": "BLOCKED_OR_DEGRADED"
+  },
+  "proof_model": {
+    "STRUCTURAL": "pinned source/submodule and fabric record",
+    "CATALOG": "source resolved by native fabric",
+    "ADAPTER_BOUND": "native adapter/runner exists",
+    "LIVE": "real endpoint/runner completed successfully with correlation and provider evidence",
+    "VERIFIED": "LIVE plus CI/E2E and retained evidence"
+  }
+}
