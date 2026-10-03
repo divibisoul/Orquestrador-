@@ -25,8 +25,6 @@
         "superagi",
         "crewai",
         "superpowers",
-        "ecc",
-        "ruflo",
         "langgraph",
         "microsoft-agent-framework",
         "metagpt",
@@ -39,7 +37,8 @@
         "pydantic-ai",
         "llama-index",
         "whisper",
-        "kokoro"
+        "kokoro",
+        "agent-arsenal"
       ],
       "owner": "N07"
     },
@@ -106,8 +105,6 @@
       "superagi",
       "crewai",
       "superpowers",
-      "ecc",
-      "ruflo",
       "langgraph",
       "microsoft-agent-framework",
       "metagpt",
@@ -131,7 +128,17 @@
     "speech": [
       "whisper",
       "kokoro"
-    ]
+    ],
+    "agent_arsenal": {
+      "provider": "agent-arsenal",
+      "sources": [
+        "superpowers",
+        "ecc",
+        "ruflo"
+      ],
+      "owner": "N07",
+      "execution": "explicit-adapter-and-real-evidence"
+    }
   },
   "specializedMeshConsumers": {
     "N01": [
