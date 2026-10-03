@@ -2,16 +2,88 @@
   "schema_version": "1.0.0",
   "system": "SOUL",
   "name": "SOUL SuperAGI Control Fabric",
-  "state_model": ["STRUCTURAL", "EXECUTABLE", "VERIFIED", "FUSED", "BLOCKED"],
-  "canonical_owner": "N07",
-  "transport": {"protocol": "soul-mesh/1", "contractVersion": "1.1.0"},
-  "pipeline": [
-    {"stage": "agent", "capabilities": ["multiagent.crews.execute@1.0.0", "agent.arsenal.activate@1.0.0"], "providers": ["superagi","crewai","superpowers","ecc","ruflo","langgraph","microsoft-agent-framework","metagpt","agentscope","openhands","smolagents","dspy"], "owner": "N07"},
-    {"stage": "compute", "capabilities": ["mesh.supergpu.execute@1.0.0","mesh.supergpu.parallel@1.0.0","octacore.submit@1.0.0"], "owner": "N07", "acceleratorPolicy": "real-accelerator-only-for-accelerated-routes"},
-    {"stage": "governance", "capabilities": ["prefrontal.orbital.evaluate@1.0.0","jev.systemone@1.0.0","sara.audit","sara.trace"], "owner": "N07/SARA/JEV"}
+  "state_model": [
+    "STRUCTURAL",
+    "EXECUTABLE",
+    "VERIFIED",
+    "FUSED",
+    "BLOCKED"
   ],
-  "resident_agents": {"N01":"Agent-Clareira/Gateway Steward","N02":"Agent-Neural/Inference Steward","N03":"Agent-Audio Steward","N04":"Agent-Tools Steward","N05":"Agent-Conversation Steward","N06":"Agent-Cognition Steward","N07":"Agent-Orchestrator Steward","SARA":"Agent-Regen"},
-  "consumers": ["N01","N02","N03","N04","N05","N06","SARA","JEV"],
+  "canonical_owner": "N07",
+  "transport": {
+    "protocol": "soul-mesh/1",
+    "contractVersion": "1.1.0"
+  },
+  "pipeline": [
+    {
+      "stage": "agent",
+      "capabilities": [
+        "multiagent.crews.execute@1.0.0",
+        "agent.arsenal.activate@1.0.0"
+      ],
+      "providers": [
+        "superagi",
+        "crewai",
+        "superpowers",
+        "ecc",
+        "ruflo",
+        "langgraph",
+        "microsoft-agent-framework",
+        "metagpt",
+        "agentscope",
+        "openhands",
+        "smolagents",
+        "dspy",
+        "letta-code",
+        "browser-use",
+        "pydantic-ai",
+        "llama-index",
+        "whisper",
+        "kokoro"
+      ],
+      "owner": "N07"
+    },
+    {
+      "stage": "compute",
+      "capabilities": [
+        "mesh.supergpu.execute@1.0.0",
+        "mesh.supergpu.parallel@1.0.0",
+        "octacore.submit@1.0.0"
+      ],
+      "owner": "N07",
+      "acceleratorPolicy": "real-accelerator-only-for-accelerated-routes"
+    },
+    {
+      "stage": "governance",
+      "capabilities": [
+        "prefrontal.orbital.evaluate@1.0.0",
+        "jev.systemone@1.0.0",
+        "sara.audit",
+        "sara.trace"
+      ],
+      "owner": "N07/SARA/JEV"
+    }
+  ],
+  "resident_agents": {
+    "N01": "Agent-Clareira/Gateway Steward",
+    "N02": "Agent-Neural/Inference Steward",
+    "N03": "Agent-Audio Steward",
+    "N04": "Agent-Tools Steward",
+    "N05": "Agent-Conversation Steward",
+    "N06": "Agent-Cognition Steward",
+    "N07": "Agent-Orchestrator Steward",
+    "SARA": "Agent-Regen"
+  },
+  "consumers": [
+    "N01",
+    "N02",
+    "N03",
+    "N04",
+    "N05",
+    "N06",
+    "SARA",
+    "JEV"
+  ],
   "rules": {
     "singleMesh": true,
     "singleCanonicalControlPlane": true,
@@ -26,7 +98,82 @@
     "supergpuMeshArchitecture": "VERIFIED_BY_CI",
     "localRuntimeSmoke": "VERIFIED_WHEN_CI_PASSES",
     "realAcceleratorExecution": "ENVIRONMENT_DEPENDENT",
-    "externalProviderExecution": "ENVIRONMENT_AND_CREDENTIAL_DEPENDENT",
+    "externalProviderExecution": "ENVIRONMENT_AND_CREDENTIAL_DEPENDENT; each provider requires its explicit adapter and current revision",
     "generalIntelligenceClaim": "NOT_ASSERTED"
+  },
+  "providers": {
+    "agent_fabric": [
+      "superagi",
+      "crewai",
+      "superpowers",
+      "ecc",
+      "ruflo",
+      "langgraph",
+      "microsoft-agent-framework",
+      "metagpt",
+      "agentscope",
+      "openhands",
+      "smolagents",
+      "dspy"
+    ],
+    "memory_state": [
+      "letta-code"
+    ],
+    "browser": [
+      "browser-use"
+    ],
+    "typed_decision": [
+      "pydantic-ai"
+    ],
+    "retrieval": [
+      "llama-index"
+    ],
+    "speech": [
+      "whisper",
+      "kokoro"
+    ]
+  },
+  "specializedMeshConsumers": {
+    "N01": [
+      "letta-code",
+      "pydantic-ai"
+    ],
+    "N02": [
+      "langgraph",
+      "microsoft-agent-framework"
+    ],
+    "N03": [
+      "agentscope",
+      "whisper",
+      "kokoro"
+    ],
+    "N04": [
+      "browser-use"
+    ],
+    "N05": [
+      "llama-index"
+    ],
+    "N06": [
+      "openhands",
+      "smolagents",
+      "dspy",
+      "metagpt"
+    ],
+    "N07": [
+      "superagi",
+      "crewai",
+      "superpowers",
+      "ecc",
+      "ruflo",
+      "langgraph",
+      "microsoft-agent-framework",
+      "agentscope"
+    ],
+    "SARA": [
+      "pydantic-ai"
+    ],
+    "JEV": [
+      "pydantic-ai"
+    ]
   }
 }
