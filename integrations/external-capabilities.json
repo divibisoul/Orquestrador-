@@ -99,7 +99,7 @@
       "source": "https://github.com/FoundationAgents/MetaGPT",
       "revision": "11cdf466d042aece04fc6cfd13b28e1a70341b1f",
       "targets": [
-        "N07"
+        "N06"
       ],
       "capabilities": [
         "role-based-agents",
