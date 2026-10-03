@@ -26,6 +26,7 @@ const (
 	externalSGLangRevision   = "65f759144d192671af5301568113e38686999871"
 	externalSwarmClawRevision = "ed38ba5329c20e48c03b4a4028f4a76a1a75e2d1"
 	externalLangfuseRevision = "f75c661dbe8c6b85523c81486b39e8403ac2c141"
+	externalRayRevision = "f8a314bf077c9772fee2a8a1073368ca2ef9360b"
 )
 
 type externalProviderRuntime struct {
@@ -48,6 +49,8 @@ func externalProviderRuntimeConfig(provider string) externalProviderRuntime {
 		return externalProviderRuntime{ID: p, Revision: externalSwarmClawRevision, BaseURL: strings.TrimRight(strings.TrimSpace(os.Getenv("SOUL_SWARMCLAW_URL")), "/"), Token: strings.TrimSpace(os.Getenv("SOUL_SWARMCLAW_TOKEN")), Mode: "a2a-jsonrpc-http", LiveProbe: "/.well-known/agent-card.json"}
 	case "langfuse":
 		return externalProviderRuntime{ID: p, Revision: externalLangfuseRevision, BaseURL: strings.TrimRight(strings.TrimSpace(os.Getenv("SOUL_LANGFUSE_URL")), "/"), Token: strings.TrimSpace(os.Getenv("SOUL_LANGFUSE_TOKEN")), Mode: "health-only-http", LiveProbe: "/api/public/health"}
+	case "ray":
+		return externalProviderRuntime{ID: p, Revision: externalRayRevision, BaseURL: strings.TrimRight(strings.TrimSpace(os.Getenv("SOUL_RAY_URL")), "/"), Token: strings.TrimSpace(os.Getenv("SOUL_RAY_TOKEN")), Mode: "ray-jobs-http", LiveProbe: "/api/version"}
 	default:
 		return externalProviderRuntime{ID: p}
 	}
@@ -266,6 +269,44 @@ func externalSwarmClawInvoke(ctx context.Context, cfg externalProviderRuntime, g
 	return nil, errors.New("SWARMCLAW_TASK_TIMEOUT")
 }
 
+func externalRayInvoke(ctx context.Context, cfg externalProviderRuntime, entrypoint, submissionID string, runtimeEnv map[string]any, numCPU, numGPU float64, timeout time.Duration) (map[string]any, error) {
+	if strings.TrimSpace(entrypoint) == "" {
+		return nil, errors.New("RAY_ENTRYPOINT_REQUIRED")
+	}
+	body := map[string]any{"entrypoint": entrypoint, "runtime_env": runtimeEnv}
+	if strings.TrimSpace(submissionID) != "" { body["submission_id"] = submissionID }
+	if numCPU > 0 { body["entrypoint_num_cpus"] = numCPU }
+	if numGPU > 0 { body["entrypoint_num_gpus"] = numGPU }
+	status, raw, err := externalHTTP(ctx, cfg, http.MethodPost, "/api/jobs/", body)
+	if err != nil { return nil, err }
+	if status < 200 || status >= 300 { return nil, fmt.Errorf("Ray Jobs returned HTTP %d: %s", status, strings.TrimSpace(string(raw))) }
+	var submitted map[string]any
+	if err := json.Unmarshal(raw, &submitted); err != nil { return nil, fmt.Errorf("Ray Jobs returned invalid JSON: %w", err) }
+	jobID := strings.TrimSpace(fmt.Sprint(submitted["submission_id"]))
+	if jobID == "" || jobID == "<nil>" { jobID = strings.TrimSpace(fmt.Sprint(submitted["job_id"])) }
+	if jobID == "" || jobID == "<nil>" { return nil, errors.New("RAY_SUBMISSION_ID_MISSING") }
+	deadline := time.Now().Add(timeout)
+	for time.Now().Before(deadline) {
+		pollStatus, pollRaw, pollErr := externalHTTP(ctx, cfg, http.MethodGet, "/api/jobs/"+jobID, nil)
+		if pollErr != nil { return nil, pollErr }
+		if pollStatus < 200 || pollStatus >= 300 { return nil, fmt.Errorf("Ray Jobs status returned HTTP %d: %s", pollStatus, strings.TrimSpace(string(pollRaw))) }
+		var details map[string]any
+		if err := json.Unmarshal(pollRaw, &details); err != nil { return nil, fmt.Errorf("Ray Jobs status invalid JSON: %w", err) }
+		state := strings.ToUpper(strings.TrimSpace(fmt.Sprint(details["status"])))
+		switch state {
+		case "SUCCEEDED":
+			return map[string]any{"provider": cfg.ID, "providerRevision": cfg.Revision, "submission_id": jobID, "status": state, "details": details}, nil
+		case "FAILED", "STOPPED":
+			return nil, fmt.Errorf("RAY_JOB_%s:%s", state, strings.TrimSpace(fmt.Sprint(details["message"])))
+		}
+		select {
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		case <-time.After(time.Second):
+		}
+	}
+	return nil, errors.New("RAY_JOB_TIMEOUT")
+}
 func RegisterExternalProviderRuntimeOperations(e *Engine) error {
 	if e == nil {
 		return errors.New("engine is nil")
