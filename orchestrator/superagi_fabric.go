@@ -87,15 +87,36 @@ func RegisterSuperAGIFabricOperations(e *Engine) error {
 			return superAGIFabricFail(m, "SUPERAGI_COMPUTE_STAGE_REQUIRED")
 		}
 
-		agentMetadata := map[string]string{
-			"provider":  provider,
-			"goal":      goal,
-			"roles":     m.Metadata["roles"],
-			"maxRounds": m.Metadata["maxRounds"],
+		agentMode := strings.ToLower(strings.TrimSpace(m.Metadata["agent_mode"]))
+		var agentResult protocol.Result
+		var agentErr error
+		switch agentMode {
+		case "", "multiagent-facade":
+			agentMetadata := map[string]string{
+				"provider":  provider,
+				"goal":      goal,
+				"roles":     m.Metadata["roles"],
+				"maxRounds": m.Metadata["maxRounds"],
+			}
+			agentMessage := protocol.Propagate(m, "N07.superagi", "N07", MultiAgentExecuteOperation, nil)
+			agentMessage.Metadata = agentMetadata
+			agentResult, agentErr = fexecute(ctx, e, agentMessage)
+		case "agent-arsenal":
+			source := strings.TrimSpace(m.Metadata["agent_source"])
+			artifactPath := strings.TrimSpace(m.Metadata["agent_path"])
+			if source == "" || artifactPath == "" {
+				return superAGIFabricFail(m, "SUPERAGI_AGENT_ARSENAL_BOUNDARY_REQUIRED")
+			}
+			agentMessage := protocol.Propagate(m, "N07.superagi", "N07", "agent.arsenal.activate@1.0.0", nil)
+			agentMessage.Metadata = map[string]string{
+				"source": source,
+				"path":   artifactPath,
+				"task":   goal,
+			}
+			agentResult, agentErr = fexecute(ctx, e, agentMessage)
+		default:
+			return superAGIFabricFail(m, "SUPERAGI_AGENT_MODE_UNSUPPORTED")
 		}
-		agentMessage := protocol.Propagate(m, "N07.superagi", "N07", MultiAgentExecuteOperation, nil)
-		agentMessage.Metadata = agentMetadata
-		agentResult, agentErr := fexecute(ctx, e, agentMessage)
 		if agentErr != nil {
 			return superAGIFabricFail(m, "SUPERAGI_AGENT_STAGE_FAILED:"+agentResult.Error)
 		}
