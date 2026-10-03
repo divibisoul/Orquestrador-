@@ -11,7 +11,7 @@ import (
 
 const (
 	SuperAGIFabricDescribeOperation = "superagi.fabric.describe@1.0.0"
-	SuperAGIFabricExecuteOperation = "superagi.fabric.execute@1.0.0"
+	SuperAGIFabricExecuteOperation  = "superagi.fabric.execute@1.0.0"
 )
 
 type SuperAGIFabric struct {
@@ -27,11 +27,11 @@ func NewSuperAGIFabric(engine *Engine) (*SuperAGIFabric, error) {
 
 func (f *SuperAGIFabric) Describe() map[string]any {
 	return map[string]any{
-		"name": "SOUL SuperAGI Control Fabric",
-		"nature": "composed-control-plane",
-		"claim": "architecture-composition; not proof of general intelligence",
-		"canonicalOwner": "N07",
-		"mesh": "soul-mesh/1",
+		"name":            "SOUL SuperAGI Control Fabric",
+		"nature":          "composed-control-plane",
+		"claim":           "architecture-composition; not proof of general intelligence",
+		"canonicalOwner":  "N07",
+		"mesh":            "soul-mesh/1",
 		"contractVersion": protocol.SoulMeshContractVersion,
 		"components": []string{
 			"native-nuclei-N01-N06",
@@ -45,7 +45,7 @@ func (f *SuperAGIFabric) Describe() map[string]any {
 			"JEV",
 		},
 		"executionRule": "agent-stage -> optional accelerator-stage -> result-validation",
-		"failClosed": true,
+		"failClosed":    true,
 	}
 }
 
@@ -88,9 +88,9 @@ func RegisterSuperAGIFabricOperations(e *Engine) error {
 		}
 
 		agentMetadata := map[string]string{
-			"provider": provider,
-			"goal": goal,
-			"roles": m.Metadata["roles"],
+			"provider":  provider,
+			"goal":      goal,
+			"roles":     m.Metadata["roles"],
 			"maxRounds": m.Metadata["maxRounds"],
 		}
 		agentMessage := protocol.Propagate(m, "N07.superagi", "N07", MultiAgentExecuteOperation, nil)
@@ -106,8 +106,8 @@ func RegisterSuperAGIFabricOperations(e *Engine) error {
 		}
 		computeMessage := protocol.Propagate(m, m.Source, "N07", "mesh.supergpu.execute@1.0.0", values)
 		computeMessage.Metadata = map[string]string{
-			"operation": computeOperation,
-			"device": m.Metadata["device"],
+			"operation":           computeOperation,
+			"device":              m.Metadata["device"],
 			"require_accelerator": m.Metadata["require_accelerator"],
 		}
 		computeResult, computeErr := fexecute(ctx, e, computeMessage)
@@ -119,12 +119,12 @@ func RegisterSuperAGIFabricOperations(e *Engine) error {
 			Source: "N07.superagi", Target: m.Source, Status: "ok",
 			Payload: computeResult.Payload,
 			Metadata: map[string]string{
-				"agent_stage": "PASS",
+				"agent_stage":   "PASS",
 				"compute_stage": "PASS",
-				"device": computeResult.Metadata["device"],
-				"backend": computeResult.Metadata["backend"],
-				"accelerator": computeResult.Metadata["accelerator"],
-				"provider": provider,
+				"device":        computeResult.Metadata["device"],
+				"backend":       computeResult.Metadata["backend"],
+				"accelerator":   computeResult.Metadata["accelerator"],
+				"provider":      provider,
 			},
 		}, nil
 	})
