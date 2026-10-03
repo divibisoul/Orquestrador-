@@ -96,7 +96,12 @@
       "agent.arsenal.resolve@1.0.0",
       "agent.arsenal.activate@1.0.0",
       "agent.arsenal.swarm@1.0.0",
-      "agent.arsenal.agent.spawn@1.0.0"
+      "agent.arsenal.agent.spawn@1.0.0",
+      "mesh.supergpu.describe@1.0.0",
+      "mesh.supergpu.execute@1.0.0",
+      "mesh.supergpu.parallel@1.0.0",
+      "superagi.fabric.describe@1.0.0",
+      "superagi.fabric.execute@1.0.0"
     ],
     "SARA": [
       "sara.health",
@@ -646,6 +651,36 @@
         "path": "orchestrator/agent_arsenal.go",
         "ref": "6be840823754e4b1dd88c8c7d754a17ea9b486ec",
         "source": "N07 canonical Agent Arsenal adapter over pinned Superpowers/ECC/Ruflo"
+      },
+      {
+        "id": "mesh.supergpu.describe@1.0.0",
+        "repository": "divibisoul/Orquestrador-",
+        "path": "orchestrator/supergpu_mesh.go",
+        "ref": "17b2375cf76bf030e0f74abe4d59328b482f30a2"
+      },
+      {
+        "id": "mesh.supergpu.execute@1.0.0",
+        "repository": "divibisoul/Orquestrador-",
+        "path": "orchestrator/supergpu_mesh.go",
+        "ref": "17b2375cf76bf030e0f74abe4d59328b482f30a2"
+      },
+      {
+        "id": "mesh.supergpu.parallel@1.0.0",
+        "repository": "divibisoul/Orquestrador-",
+        "path": "orchestrator/supergpu_mesh.go",
+        "ref": "17b2375cf76bf030e0f74abe4d59328b482f30a2"
+      },
+      {
+        "id": "superagi.fabric.describe@1.0.0",
+        "repository": "divibisoul/Orquestrador-",
+        "path": "orchestrator/superagi_fabric.go",
+        "ref": "17b2375cf76bf030e0f74abe4d59328b482f30a2"
+      },
+      {
+        "id": "superagi.fabric.execute@1.0.0",
+        "repository": "divibisoul/Orquestrador-",
+        "path": "orchestrator/superagi_fabric.go",
+        "ref": "17b2375cf76bf030e0f74abe4d59328b482f30a2"
       }
     ]
   },
