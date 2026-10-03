@@ -108,3 +108,27 @@ func TestExternalSwarmClawInvokeUsesA2AAndPollsRealTask(t *testing.T) {
 		t.Fatalf("result=%#v", result)
 	}
 }
+
+func TestExternalRayInvokeSubmitsAndPolls(t *testing.T) {
+  calls := 0
+  srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+    calls++
+    w.Header().Set("Content-Type", "application/json")
+    if r.URL.Path == "/api/jobs/" && r.Method == http.MethodPost {
+      _, _ = w.Write([]byte(`{"submission_id":"job-1","status":"PENDING"}`))
+      return
+    }
+    if r.URL.Path == "/api/jobs/job-1" && r.Method == http.MethodGet {
+      _, _ = w.Write([]byte(`{"submission_id":"job-1","status":"SUCCEEDED"}`))
+      return
+    }
+    t.Fatalf("unexpected %s %s", r.Method, r.URL.Path)
+  }))
+  defer srv.Close()
+  t.Setenv("SOUL_RAY_URL", srv.URL)
+  cfg := externalProviderRuntimeConfig("ray")
+  result, err := externalRayInvoke(context.Background(), cfg, "python train.py", "", map[string]any{}, 2, 1, 2*time.Second)
+  if err != nil { t.Fatal(err) }
+  if calls != 2 { t.Fatalf("calls=%d want=2", calls) }
+  if result["status"] != "SUCCEEDED" { t.Fatalf("result=%#v", result) }
+}
