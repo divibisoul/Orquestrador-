@@ -408,7 +408,7 @@
         "parallelism",
         "AI workloads"
       ],
-      "state": "ADAPTER_PLANNED"
+      "state": "ADAPTER_BOUND"
     },
     "megatron-lm": {
       "role": "distributed_training_backend",
