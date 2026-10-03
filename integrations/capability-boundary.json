@@ -6,7 +6,7 @@
   },
   "reason": "functional-complementation-and-system-integration",
   "canonical_control_plane": "N07",
-  "upstream_capability_source_count": 16,
+  "upstream_capability_source_count": 25,
   "soul_component_count": 9,
   "integration": {
     "agent_engineering": [
@@ -26,7 +26,7 @@
     "execution": "N07 Engine + SuperGPU + Octacore",
     "observation": "Clareira + correlated evidence",
     "structural_state": "REAL",
-    "runtime_state": "PROJECTED"
+    "runtime_state": "PROJECTED_UNTIL_PROVIDER_E2E"
   },
   "rule": "N07 coordinates; it does not absorb upstream ownership or create shadow authorities."
 }

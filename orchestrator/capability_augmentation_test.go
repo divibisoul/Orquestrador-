@@ -13,8 +13,8 @@ func TestCapabilityAugmentationManifestCovers25RepositoryFabric(t *testing.T) {
 	if len(m.NativeComponents) != 9 {
 		t.Fatalf("components=%d want=9", len(m.NativeComponents))
 	}
-	if len(m.Providers) != 16 {
-		t.Fatalf("providers=%d want=16", len(m.Providers))
+	if len(m.Providers) != 25 {
+		t.Fatalf("providers=%d want=25", len(m.Providers))
 	}
 }
 

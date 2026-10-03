@@ -33,7 +33,14 @@
         "neural.bnc_v2",
         "neural_forge"
       ],
-      "augmenters": []
+      "augmenters": [
+        "vllm",
+        "sglang",
+        "ray",
+        "megatron-lm",
+        "swarmclaw",
+        "everything-claude-code"
+      ]
     },
     "N03": {
       "repository": "divibisoul/nexus-aeternum-fusion",
@@ -63,7 +70,10 @@
         "document.edit"
       ],
       "augmenters": [
-        "browser-use"
+        "browser-use",
+        "swarmclaw",
+        "everything-claude-code",
+        "ray"
       ]
     },
     "N05": {
@@ -79,7 +89,10 @@
         "conversation.memory"
       ],
       "augmenters": [
-        "llama-index"
+        "llama-index",
+        "vllm",
+        "sglang",
+        "langfuse"
       ]
     },
     "N06": {
@@ -99,7 +112,13 @@
       "augmenters": [
         "openhands",
         "smolagents",
-        "dspy"
+        "dspy",
+        "everything-claude-code",
+        "swarmclaw",
+        "mem0",
+        "letta",
+        "langfuse",
+        "metagpt"
       ]
     },
     "N07": {
@@ -119,8 +138,13 @@
         "langgraph",
         "crewai",
         "microsoft-agent-framework",
-        "metagpt",
-        "agentscope"
+        "agentscope",
+        "everything-claude-code",
+        "swarmclaw",
+        "vllm",
+        "sglang",
+        "ray",
+        "megatron-lm"
       ]
     },
     "SARA": {
@@ -139,7 +163,13 @@
         "RGO",
         "MMD"
       ],
-      "augmenters": []
+      "augmenters": [
+        "mem0",
+        "letta",
+        "langfuse",
+        "everything-claude-code",
+        "swarmclaw"
+      ]
     },
     "JEV": {
       "repository": "divibisoul/jev-api",
@@ -303,6 +333,90 @@
         "text-to-speech"
       ],
       "state": "CATALOG_BOUND"
+    },
+    "everything-claude-code": {
+      "role": "agent_harness_engineering",
+      "capabilities": [
+        "skills",
+        "instincts",
+        "memory-optimization",
+        "continuous-learning",
+        "security-scanning",
+        "research-first-development"
+      ],
+      "state": "ADAPTER_PLANNED"
+    },
+    "swarmclaw": {
+      "role": "multi_agent_swarm_runtime",
+      "capabilities": [
+        "multi-agent-swarms",
+        "memory",
+        "MCP",
+        "delegation",
+        "scheduling"
+      ],
+      "state": "ADAPTER_BOUND"
+    },
+    "mem0": {
+      "role": "persistent_agent_memory",
+      "capabilities": [
+        "persistent-agent-memory",
+        "memory-management"
+      ],
+      "state": "ADAPTER_PLANNED"
+    },
+    "letta": {
+      "role": "stateful_memory_agents",
+      "capabilities": [
+        "stateful-agents",
+        "advanced-memory",
+        "learning"
+      ],
+      "state": "ADAPTER_PLANNED"
+    },
+    "langfuse": {
+      "role": "agent_observability_evaluation",
+      "capabilities": [
+        "tracing",
+        "evaluation",
+        "datasets",
+        "LLM-observability"
+      ],
+      "state": "ADAPTER_PLANNED"
+    },
+    "vllm": {
+      "role": "inference_serving_backend",
+      "capabilities": [
+        "high-throughput-inference",
+        "serving"
+      ],
+      "state": "ADAPTER_BOUND"
+    },
+    "sglang": {
+      "role": "high_performance_serving_backend",
+      "capabilities": [
+        "high-performance-serving",
+        "multimodal-serving"
+      ],
+      "state": "ADAPTER_BOUND"
+    },
+    "ray": {
+      "role": "distributed_runtime",
+      "capabilities": [
+        "distributed-compute",
+        "actors",
+        "parallelism",
+        "AI workloads"
+      ],
+      "state": "ADAPTER_PLANNED"
+    },
+    "megatron-lm": {
+      "role": "distributed_training_backend",
+      "capabilities": [
+        "large-scale-transformer-training",
+        "distributed-training"
+      ],
+      "state": "ADAPTER_PLANNED"
     }
   },
   "runtime_policy": {

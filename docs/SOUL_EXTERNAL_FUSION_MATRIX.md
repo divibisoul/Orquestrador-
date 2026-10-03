@@ -198,3 +198,24 @@ The canonical implementation remains N07. Consumers are deliberately separated b
 | SARA (G0) | ARA, ETR, ITR, ERU, governance/memory | SARA can consume N07 orbital/Prefrontal evidence through its explicit adapter | SARA governance/regeneration authority |
 
 No consumer copies TCE, Prefrontal, or another nucleus' agent. Invocation uses the existing Soul Mesh/N07 service boundary and preserves correlation/provenance.
+
+
+## OSS Fusion Wave 1 — 2026-10-02
+
+This wave adds nine complete upstream repositories to the canonical N07 external-capability federation as version-pinned Git submodules. The upstream trees remain intact; SOUL consumes them through adapters and does not replace native N01-N07 or SARA ownership.
+
+| Source | N07 placement | Structural | Runtime |
+|---|---|---|---|
+| affaan-m/ECC | engineering skills / subagents | REAL | PROJECTED |
+| swarmclawai/swarmclaw | bounded swarm runtime | REAL | PROJECTED |
+| mem0ai/mem0 | memory adapter | REAL | PROJECTED |
+| letta-ai/letta | stateful-memory adapter | REAL | PROJECTED |
+| langfuse/langfuse | observability/evaluation sidecar | REAL | PROJECTED |
+| vllm-project/vllm | inference backend | REAL | PROJECTED |
+| sgl-project/sglang | serving backend | REAL | PROJECTED |
+| ray-project/ray | distributed runtime | REAL | PROJECTED |
+| NVIDIA/Megatron-LM | training/research backend | REAL | PROJECTED |
+
+Exact pins and licensing notes are recorded in 'integrations/soul-oss-fusion-wave1.json'. The canonical capability catalog now contains 25 external repository sources in total, making the current composition 34 repositories including the 9 native SOUL components, while the SOUL peer topology remains N01-N07 plus transversal SARA.
+
+Runtime promotion requires an explicit adapter, configuration, dependency isolation where needed, deterministic tests, real smoke/E2E evidence and exact-head CI. No capability is considered verified solely because its source tree is present.

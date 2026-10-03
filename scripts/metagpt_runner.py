@@ -2,7 +2,7 @@ import asyncio,json,os,sys
 def emit(x,c=0): print(json.dumps(x,ensure_ascii=False)); raise SystemExit(c)
 try:r=json.load(sys.stdin)
 except Exception as e:emit({"state":"FAIL","code":"METAGPT_REQUEST_INVALID","detail":str(e)},2)
-goal=str(r.get("goal") or "").strip();root=os.path.abspath(str(r.get("root") or "integrations/soul-upstream/metagpt"));rounds=max(1,min(20,int(r.get("maxRounds") or 3)))
+goal=str(r.get("goal") or "").strip();root=os.path.abspath(str(r.get("root") or "integrations/external/metagpt"));rounds=max(1,min(20,int(r.get("maxRounds") or 3)))
 if not goal:emit({"state":"FAIL","code":"METAGPT_GOAL_REQUIRED"},2)
 if not os.path.isdir(root):emit({"state":"DEGRADED","code":"METAGPT_SOURCE_NOT_AVAILABLE"})
 if not os.environ.get("OPENAI_API_KEY"):emit({"state":"DEGRADED","code":"METAGPT_LLM_CREDENTIALS_NOT_AVAILABLE"})

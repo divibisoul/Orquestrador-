@@ -179,7 +179,7 @@ func RegisterCapabilityUpgradeOperations(e *Engine) error {
 		if err != nil {
 			return capabilityUpgradeFailure(m, err)
 		}
-		raw, err := json.Marshal(map[string]any{"operation": SOULCapabilityUpgradeDescribeOperation, "provider_count": len(plan.FederatedSources), "components": []string{"N01", "N02", "N03", "N04", "N05", "N06", "N07", "SARA", "JEV"}, "rule": "all 16 upstreams remain discoverable; direct affinity controls normal routing"})
+		raw, err := json.Marshal(map[string]any{"operation": SOULCapabilityUpgradeDescribeOperation, "provider_count": len(plan.FederatedSources), "components": []string{"N01", "N02", "N03", "N04", "N05", "N06", "N07", "SARA", "JEV"}, "rule": "all registered upstream capability sources remain discoverable; direct affinity controls normal routing"})
 		if err != nil {
 			return capabilityUpgradeFailure(m, err)
 		}

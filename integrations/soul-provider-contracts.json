@@ -105,7 +105,7 @@
       "verification_state": "PROJECTED",
       "fail_closed": true,
       "directAdapterHosts": [
-        "N07"
+        "N06"
       ]
     },
     {

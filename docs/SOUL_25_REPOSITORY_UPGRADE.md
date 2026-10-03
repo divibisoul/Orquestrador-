@@ -2,9 +2,9 @@
 
 ## What changed
 
-SOUL now treats the 9 native repositories and the 16 attached upstream repositories as one **capability federation of 25 repositories**.
+SOUL now treats the 9 native repositories and the 25 attached upstream capability sources as one **capability federation of 25 repositories**.
 
-The purpose is not to merge 25 codebases into one runtime. The purpose is to let the 9 native SOUL components consume complementary capabilities from the 16 upstream sources through explicit contracts, adapters, the canonical Mesh and evidence gates.
+The purpose is not to merge 25 codebases into one runtime. The purpose is to let the 9 native SOUL components consume complementary capabilities from the 25 upstream sources through explicit contracts, adapters, the canonical Mesh and evidence gates.
 
 ## The 9 native SOUL components
 
@@ -26,9 +26,9 @@ SARA keeps regeneration, governance, provenance, rollback and resilience authori
 
 JEV keeps typed decision and guardrail authority.
 
-## The 16 upstream capability sources
+## The 25 upstream capability sources
 
-Superpowers, SuperAGI, LangGraph, CrewAI, Microsoft Agent Framework, OpenHands, MetaGPT, AgentScope, Letta Code, Browser Use, smolagents, Pydantic AI, LlamaIndex, DSPy, Whisper and Kokoro.
+Superpowers, SuperAGI, LangGraph, CrewAI, Microsoft Agent Framework, OpenHands, MetaGPT, AgentScope, Letta Code, Browser Use, smolagents, Pydantic AI, LlamaIndex, DSPy, Whisper, Kokoro, ECC, SwarmClaw, Mem0, Letta, Langfuse, vLLM, SGLang, Ray and Megatron-LM.
 
 Their original repositories, licenses and maintainers remain authoritative.
 
@@ -60,9 +60,9 @@ N07 exposes:
 - `soul.capability.upgrade.resolve@1.0.0`
 - `GET|POST /v1/capability-upgrade`
 
-The resolver returns all 16 upstream sources and marks direct-affinity sources for a requested native component/capability.
+The resolver returns all registered upstream sources and marks direct-affinity sources for a requested native component/capability.
 
-## Engineering agents
+## Current 34-repository state\n\nThe historical 25-repository name is preserved for continuity; the current composition is 9 native + 25 upstream = 34 repositories.\n\n## Engineering agents
 
 The upgrade fabric is maintained by:
 
@@ -83,7 +83,7 @@ Runtime success is never synthesized when a provider is unavailable.
 
 ## Native-function reinforcement layer
 
-The 16 upstream sources are now mapped against concrete native capability families in `integrations/native-capability-augmentation.json`.
+The 25 upstream sources are now mapped against concrete native capability families in `integrations/native-capability-augmentation.json`.
 
 This creates a reinforcement relationship for the existing 9 components:
 
@@ -91,4 +91,4 @@ This creates a reinforcement relationship for the existing 9 components:
 
 The resolver does not replace the native implementation. It identifies which upstream capability sources can strengthen the native function and which of those sources have an adapter boundary that is actually available.
 
-At the current stage, all 25 repositories are structurally integrated and the augmentation graph is real; external provider runtime execution remains PROJECTED until provider-specific runtime adapters and end-to-end evidence exist.
+At the current stage, all 25 repository sources are structurally integrated and the augmentation graph is real; external provider runtime execution remains PROJECTED until provider-specific runtime adapters and end-to-end evidence exist.

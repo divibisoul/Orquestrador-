@@ -112,16 +112,13 @@
     {
       "id": "metagpt",
       "source": "FoundationAgents/MetaGPT",
-      "primaryOwner": "N07",
+      "primaryOwner": "N06",
       "consumers": [
         "N02",
-        "N06"
+        "N06",
+        "N07"
       ],
-      "affinity": [
-        "role-based-agents",
-        "software-process",
-        "multi-agent-collaboration"
-      ],
+      "affinity": "MetaGPT execution is owned by N06; N07 may request it through canonical federation.",
       "status": "structural-only",
       "mode": "explicit-adapter"
     },
@@ -267,6 +264,177 @@
       ],
       "status": "structural-only",
       "mode": "explicit-adapter"
+    },
+    {
+      "id": "everything-claude-code",
+      "source": "affaan-m/ECC",
+      "primaryOwner": "N07",
+      "consumers": [
+        "N01",
+        "N02",
+        "N04",
+        "N05",
+        "N06",
+        "SARA"
+      ],
+      "affinity": [
+        "skills",
+        "agent-harness",
+        "continuous-learning",
+        "security"
+      ],
+      "status": "adapter-planned",
+      "mode": "dev-skill-pack"
+    },
+    {
+      "id": "swarmclaw",
+      "source": "swarmclawai/swarmclaw",
+      "primaryOwner": "N07",
+      "consumers": [
+        "N01",
+        "N02",
+        "N04",
+        "N05",
+        "N06",
+        "SARA"
+      ],
+      "affinity": [
+        "multi-agent-swarms",
+        "delegation",
+        "memory",
+        "MCP",
+        "schedules"
+      ],
+      "status": "adapter-planned",
+      "mode": "service-adapter"
+    },
+    {
+      "id": "mem0",
+      "source": "mem0ai/mem0",
+      "primaryOwner": "SARA",
+      "consumers": [
+        "N01",
+        "N05",
+        "N06",
+        "N07"
+      ],
+      "affinity": [
+        "persistent-memory",
+        "memory-management"
+      ],
+      "status": "adapter-planned",
+      "mode": "memory-adapter"
+    },
+    {
+      "id": "letta",
+      "source": "letta-ai/letta",
+      "primaryOwner": "N06",
+      "consumers": [
+        "N01",
+        "N05",
+        "N06",
+        "N07",
+        "SARA"
+      ],
+      "affinity": [
+        "stateful-agents",
+        "advanced-memory",
+        "learning"
+      ],
+      "status": "adapter-planned",
+      "mode": "memory-adapter"
+    },
+    {
+      "id": "langfuse",
+      "source": "langfuse/langfuse",
+      "primaryOwner": "N07",
+      "consumers": [
+        "N01",
+        "N02",
+        "N03",
+        "N04",
+        "N05",
+        "N06",
+        "SARA"
+      ],
+      "affinity": [
+        "tracing",
+        "evaluation",
+        "datasets",
+        "observability"
+      ],
+      "status": "adapter-planned",
+      "mode": "observability-adapter"
+    },
+    {
+      "id": "vllm",
+      "source": "vllm-project/vllm",
+      "primaryOwner": "N07",
+      "consumers": [
+        "N02",
+        "N05",
+        "N06"
+      ],
+      "affinity": [
+        "inference-serving",
+        "continuous-batching",
+        "structured-output"
+      ],
+      "status": "adapter-planned",
+      "mode": "http-backend"
+    },
+    {
+      "id": "sglang",
+      "source": "sgl-project/sglang",
+      "primaryOwner": "N07",
+      "consumers": [
+        "N02",
+        "N03",
+        "N05",
+        "N06"
+      ],
+      "affinity": [
+        "high-performance-serving",
+        "multimodal-serving",
+        "agentic-serving"
+      ],
+      "status": "adapter-planned",
+      "mode": "http-backend"
+    },
+    {
+      "id": "ray",
+      "source": "ray-project/ray",
+      "primaryOwner": "N07",
+      "consumers": [
+        "N02",
+        "N04",
+        "N05",
+        "N06"
+      ],
+      "affinity": [
+        "distributed-compute",
+        "actors",
+        "parallelism",
+        "AI-workloads"
+      ],
+      "status": "adapter-planned",
+      "mode": "runtime-adapter"
+    },
+    {
+      "id": "megatron-lm",
+      "source": "NVIDIA/Megatron-LM",
+      "primaryOwner": "N07",
+      "consumers": [
+        "N02",
+        "N05",
+        "N06"
+      ],
+      "affinity": [
+        "distributed-training",
+        "transformer-training"
+      ],
+      "status": "adapter-planned",
+      "mode": "training-adapter"
     }
   ]
 }

@@ -1,7 +1,7 @@
 name: SOUL Integration CI - N07
 on:
   push:
-    branches: [main]
+    branches: [main, feat/soul-oss-fusion-wave1]
   pull_request:
 permissions:
   contents: read
@@ -21,15 +21,25 @@ jobs:
           if test -f .gitmodules; then
             git config -f .gitmodules --get-regexp '^submodule\..*\.path$' | awk '{print $2}' | while read p; do test -e "$p"; done
           fi
-      - name: Validate 16-repository registry
-        if: github.event.repository.name == 'Orquestrador-'
+      - name: Validate 25-source registry
         run: |
           python - <<'PY'
           import json
           d=json.load(open('integrations/external-capabilities.json'))
-          assert len(d['repositories']) == 16
+          assert len(d['repositories']) == 25
           for x in d['repositories']:
               assert x['source'].startswith('https://github.com/')
               assert x['revision'] and x['targets']
-          print('16/16 external repositories: VALID')
+          print('25/25 external capability sources: VALID')
           PY
+      - name: Validate 25-source augmentation graph
+        run: |
+          python - <<'PY'
+          import json
+          d=json.load(open('integrations/native-capability-augmentation.json'))
+          assert len(d['native_components']) == 9
+          assert len(d['providers']) == 25
+          print('9 native components + 25 external providers: VALID')
+          PY
+      - name: Go contract tests
+        run: go test ./orchestrator

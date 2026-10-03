@@ -10,8 +10,8 @@ func TestResolveCapabilityUpgradeExposesAllProviders(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(plan.FederatedSources) != 16 {
-		t.Fatalf("providers=%d want=16", len(plan.FederatedSources))
+	if len(plan.FederatedSources) != 25 {
+		t.Fatalf("providers=%d want=25", len(plan.FederatedSources))
 	}
 	if !plan.RequiresExplicitAdapter || !plan.NoFakeRuntimeSuccess {
 		t.Fatal("activation policy weakened")

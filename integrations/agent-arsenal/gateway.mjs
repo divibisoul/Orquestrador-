@@ -15,7 +15,7 @@ const SOURCES = Object.freeze({
   },
   ecc: {
     repo: "https://github.com/affaan-m/ECC.git",
-    ref: "c05b2d6614f62f6db0047669aa4eefb223d478f9"
+    ref: "ef648e01899ba3e8dc6371642deaaf64b4477775"
   },
   ruflo: {
     repo: "https://github.com/ruvnet/ruflo.git",

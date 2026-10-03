@@ -71,8 +71,8 @@ func loadCapabilityAugmentationManifest() (capabilityAugmentationManifest, error
 			last = err
 			continue
 		}
-		if len(m.NativeComponents) != 9 || len(m.Providers) != 16 {
-			last = errors.New("native augmentation manifest must contain 9 SOUL components and 16 providers")
+		if len(m.NativeComponents) != 9 || len(m.Providers) != 25 {
+			last = errors.New("native augmentation manifest must contain 9 SOUL components and 25 providers")
 			continue
 		}
 		return m, nil
