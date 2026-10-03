@@ -171,6 +171,9 @@ func main() {
 	if err := orchestrator.RegisterCapabilityUpgradeOperations(e); err != nil {
 		log.Fatal(err)
 	}
+	if err := orchestrator.RegisterExternalProviderRuntimeOperations(e); err != nil {
+		log.Fatal(err)
+	}
 	if err := orchestrator.RegisterMultiAgentFacadeOperations(e); err != nil {
 		log.Fatal(err)
 	}
