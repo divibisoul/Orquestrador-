@@ -45,6 +45,7 @@ jobs:
           files="$(gofmt -l supergpu/accelerator.go supergpu/accelerator_test.go supergpu/federation.go orchestrator/supergpu_mesh.go orchestrator/supergpu_mesh_test.go orchestrator/superagi_fabric.go orchestrator/superagi_fabric_test.go)"
           if [ -n "$files" ]; then
             printf '%s\n' "$files"
+            gofmt -d $files
             exit 1
           fi
           echo "Go formatting: PASS"
