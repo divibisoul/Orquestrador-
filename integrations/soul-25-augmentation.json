@@ -4,8 +4,8 @@
   "component_id": "N07",
   "component_repository": "divibisoul/Orquestrador-",
   "native_authority": "preserved",
-  "access_model": "All 16 upstream sources remain catalogued by N07; only providers with direct_affinity=true are direct N07 adapter candidates. Other providers are routed to their native-affinity nuclei through canonical federation.",
-  "external_provider_count": 16,
+  "access_model": "All 25 upstream sources remain catalogued by N07; direct_affinity=true marks a direct N07 adapter candidate. Other providers are routed through their native-affinity nuclei using canonical federation.",
+  "external_provider_count": 25,
   "external_providers": [
     {
       "id": "superpowers",
@@ -238,6 +238,133 @@
       "runtime_state": "PROJECTED",
       "requires_adapter": true,
       "direct_adapter_host": "N03"
+    },
+    {
+      "id": "everything-claude-code",
+      "capabilities": [
+        "skills",
+        "agent-harness",
+        "continuous-learning",
+        "security"
+      ],
+      "direct_affinity": true,
+      "access": "N07 canonical federation",
+      "structural_state": "REAL",
+      "runtime_state": "PROJECTED",
+      "requires_adapter": true,
+      "direct_adapter_host": "N07"
+    },
+    {
+      "id": "swarmclaw",
+      "capabilities": [
+        "multi-agent-swarms",
+        "memory",
+        "MCP",
+        "delegation",
+        "scheduling"
+      ],
+      "direct_affinity": true,
+      "access": "N07 canonical federation",
+      "structural_state": "REAL",
+      "runtime_state": "PROJECTED",
+      "requires_adapter": true,
+      "direct_adapter_host": "N07"
+    },
+    {
+      "id": "mem0",
+      "capabilities": [
+        "persistent-agent-memory",
+        "memory-management"
+      ],
+      "direct_affinity": false,
+      "access": "N07 canonical federation",
+      "structural_state": "REAL",
+      "runtime_state": "PROJECTED",
+      "requires_adapter": true,
+      "direct_adapter_host": "N06"
+    },
+    {
+      "id": "letta",
+      "capabilities": [
+        "stateful-agents",
+        "advanced-memory",
+        "learning"
+      ],
+      "direct_affinity": false,
+      "access": "N07 canonical federation",
+      "structural_state": "REAL",
+      "runtime_state": "PROJECTED",
+      "requires_adapter": true,
+      "direct_adapter_host": "N06"
+    },
+    {
+      "id": "langfuse",
+      "capabilities": [
+        "tracing",
+        "evaluation",
+        "datasets",
+        "LLM-observability"
+      ],
+      "direct_affinity": true,
+      "access": "N07 canonical federation",
+      "structural_state": "REAL",
+      "runtime_state": "PROJECTED",
+      "requires_adapter": true,
+      "direct_adapter_host": "N07"
+    },
+    {
+      "id": "vllm",
+      "capabilities": [
+        "high-throughput-inference",
+        "serving"
+      ],
+      "direct_affinity": true,
+      "access": "N07 canonical federation",
+      "structural_state": "REAL",
+      "runtime_state": "PROJECTED",
+      "requires_adapter": true,
+      "direct_adapter_host": "N07"
+    },
+    {
+      "id": "sglang",
+      "capabilities": [
+        "high-performance-serving",
+        "multimodal-serving"
+      ],
+      "direct_affinity": true,
+      "access": "N07 canonical federation",
+      "structural_state": "REAL",
+      "runtime_state": "PROJECTED",
+      "requires_adapter": true,
+      "direct_adapter_host": "N07"
+    },
+    {
+      "id": "ray",
+      "capabilities": [
+        "distributed-compute",
+        "actors",
+        "parallelism",
+        "AI workloads"
+      ],
+      "direct_affinity": true,
+      "access": "N07 canonical federation",
+      "structural_state": "REAL",
+      "runtime_state": "PROJECTED",
+      "requires_adapter": true,
+      "direct_adapter_host": "N07"
+    },
+    {
+      "id": "megatron-lm",
+      "capabilities": [
+        "large-scale-transformer-training",
+        "distributed-training"
+      ],
+      "direct_affinity": true,
+      "access": "N07 canonical federation",
+      "structural_state": "REAL",
+      "runtime_state": "PROJECTED",
+      "requires_adapter": true,
+      "direct_adapter_host": "N07"
     }
   ],
   "soul_peer_count": 9,
@@ -268,5 +395,6 @@
     ]
   },
   "rule": "External capabilities reinforce native SOUL functions; they do not replace ownership. Runtime success requires real adapter/configuration/evidence.",
-  "direct_affinity_rule": "direct_affinity identifies adapter-host affinity, never native ownership"
+  "direct_affinity_rule": "direct_affinity identifies adapter-host affinity, never native ownership",
+  "total_repository_count": 34
 }
