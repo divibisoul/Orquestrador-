@@ -64,3 +64,47 @@ func TestExternalProviderStatusFailsClosedWhenUnset(t *testing.T) {
 		t.Fatalf("status=%#v", status)
 	}
 }
+
+func TestExternalSwarmClawInvokeUsesA2AAndPollsRealTask(t *testing.T) {
+	calls := 0
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		calls++
+		if r.URL.Path != "/api/a2a" {
+			t.Fatalf("path=%s", r.URL.Path)
+		}
+		if r.Header.Get("Authorization") != "Bearer swarm-token" {
+			t.Fatalf("missing bearer authentication")
+		}
+		var body map[string]any
+		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+			t.Fatal(err)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		if calls == 1 {
+			if body["method"] != "executeTask" {
+				t.Fatalf("method=%v", body["method"])
+			}
+			_, _ = w.Write([]byte(`{"jsonrpc":"2.0","id":"1","result":{"taskId":"task-1","status":"submitted"}}`))
+			return
+		}
+		if body["method"] != "getStatus" {
+			t.Fatalf("method=%v", body["method"])
+		}
+		_, _ = w.Write([]byte(`{"jsonrpc":"2.0","id":"2","result":{"taskId":"task-1","status":"completed","result":"ok"}}`))
+	}))
+	defer srv.Close()
+	t.Setenv("SOUL_SWARMCLAW_URL", srv.URL)
+	t.Setenv("SOUL_SWARMCLAW_TOKEN", "swarm-token")
+
+	cfg := externalProviderRuntimeConfig("swarmclaw")
+	result, err := externalSwarmClawInvoke(context.Background(), cfg, "do work", "agent-1", 2*time.Second)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if calls != 2 {
+		t.Fatalf("calls=%d want=2", calls)
+	}
+	if result["status"] != "completed" {
+		t.Fatalf("result=%#v", result)
+	}
+}
