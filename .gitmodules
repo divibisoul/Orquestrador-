@@ -43,7 +43,34 @@
 [submodule "integrations/external/kokoro"]
   path = integrations/external/kokoro
   url = https://github.com/hexgrad/kokoro.git
-
 [submodule "integrations/external/metagpt"]
   path = integrations/external/metagpt
   url = https://github.com/FoundationAgents/MetaGPT.git
+
+[submodule "integrations/external/everything-claude-code"]
+  path = integrations/external/everything-claude-code
+  url = https://github.com/affaan-m/ECC.git
+[submodule "integrations/external/swarmclaw"]
+  path = integrations/external/swarmclaw
+  url = https://github.com/swarmclawai/swarmclaw.git
+[submodule "integrations/external/mem0"]
+  path = integrations/external/mem0
+  url = https://github.com/mem0ai/mem0.git
+[submodule "integrations/external/letta"]
+  path = integrations/external/letta
+  url = https://github.com/letta-ai/letta.git
+[submodule "integrations/external/langfuse"]
+  path = integrations/external/langfuse
+  url = https://github.com/langfuse/langfuse.git
+[submodule "integrations/external/vllm"]
+  path = integrations/external/vllm
+  url = https://github.com/vllm-project/vllm.git
+[submodule "integrations/external/sglang"]
+  path = integrations/external/sglang
+  url = https://github.com/sgl-project/sglang.git
+[submodule "integrations/external/ray"]
+  path = integrations/external/ray
+  url = https://github.com/ray-project/ray.git
+[submodule "integrations/external/megatron-lm"]
+  path = integrations/external/megatron-lm
+  url = https://github.com/NVIDIA/Megatron-LM.git

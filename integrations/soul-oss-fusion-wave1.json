@@ -1,0 +1,152 @@
+{
+  "schema_version": "1.0.0",
+  "system": "SOUL",
+  "nucleus_owner": "N07",
+  "wave": "OSS-FUSION-WAVE1",
+  "strategy": "version-pinned-git-submodules-plus-capability-adapters",
+  "preservation_rule": "upstream source remains intact; native SOUL ownership remains authoritative",
+  "current_structural_state": "REAL",
+  "runtime_state": "PROJECTED_UNTIL_ADAPTER_AND_E2E_PROOF",
+  "added_sources": [
+    {
+      "id": "everything-claude-code",
+      "repo": "affaan-m/ECC",
+      "ref": "ef648e01899ba3e8dc6371642deaaf64b4477775",
+      "branch": "main",
+      "license": "MIT",
+      "placement": "N07 engineering-agent/skills layer",
+      "capabilities": [
+        "skills",
+        "instincts",
+        "memory-optimization",
+        "continuous-learning",
+        "security-scanning",
+        "research-first-development"
+      ]
+    },
+    {
+      "id": "swarmclaw",
+      "repo": "swarmclawai/swarmclaw",
+      "ref": "ed38ba5329c20e48c03b4a4028f4a76a1a75e2d1",
+      "branch": "main",
+      "license": "MIT",
+      "placement": "N07 bounded swarm-runtime adapter",
+      "capabilities": [
+        "multi-agent-swarms",
+        "memory",
+        "MCP",
+        "delegation",
+        "scheduling"
+      ]
+    },
+    {
+      "id": "mem0",
+      "repo": "mem0ai/mem0",
+      "ref": "abb81c88e1f738a8117d8293530fbc31a5ef8fd9",
+      "branch": "main",
+      "license": "Apache-2.0",
+      "placement": "SARA/N06 memory adapter behind canonical boundary",
+      "capabilities": [
+        "persistent-agent-memory",
+        "memory-management"
+      ]
+    },
+    {
+      "id": "letta",
+      "repo": "letta-ai/letta",
+      "ref": "5bcdd177d70fa2b31a754cfcd801e77b2e1ab16a",
+      "branch": "main",
+      "license": "Apache-2.0",
+      "placement": "N06 stateful-memory adapter",
+      "capabilities": [
+        "stateful-agents",
+        "advanced-memory",
+        "learning"
+      ]
+    },
+    {
+      "id": "langfuse",
+      "repo": "langfuse/langfuse",
+      "ref": "f75c661dbe8c6b85523c81486b39e8403ac2c141",
+      "branch": "main",
+      "license": "MIT-with-ee-exception",
+      "placement": "N07 observability/evaluation sidecar",
+      "capabilities": [
+        "tracing",
+        "evaluation",
+        "datasets",
+        "LLM-observability"
+      ]
+    },
+    {
+      "id": "vllm",
+      "repo": "vllm-project/vllm",
+      "ref": "7dfe3338d5f15dd3ccb233326aa65fde46e427ad",
+      "branch": "main",
+      "license": "Apache-2.0",
+      "placement": "SuperGPU inference backend adapter",
+      "capabilities": [
+        "high-throughput-inference",
+        "serving"
+      ]
+    },
+    {
+      "id": "sglang",
+      "repo": "sgl-project/sglang",
+      "ref": "65f759144d192671af5301568113e38686999871",
+      "branch": "main",
+      "license": "Apache-2.0",
+      "placement": "SuperGPU serving backend adapter",
+      "capabilities": [
+        "high-performance-serving",
+        "multimodal-serving"
+      ]
+    },
+    {
+      "id": "ray",
+      "repo": "ray-project/ray",
+      "ref": "f8a314bf077c9772fee2a8a1073368ca2ef9360b",
+      "branch": "master",
+      "license": "Apache-2.0",
+      "placement": "SuperGPU distributed-runtime adapter",
+      "capabilities": [
+        "distributed-compute",
+        "actors",
+        "parallelism",
+        "AI workloads"
+      ]
+    },
+    {
+      "id": "megatron-lm",
+      "repo": "NVIDIA/Megatron-LM",
+      "ref": "160561d12927b36b1429ac35f86793cb2ece0ec6",
+      "branch": "main",
+      "license": "NVIDIA-permissive",
+      "placement": "training research backend, isolated from production control plane",
+      "capabilities": [
+        "large-scale-transformer-training",
+        "distributed-training"
+      ]
+    }
+  ],
+  "activation_contract": {
+    "discovery": "N07 capability registry",
+    "routing": "N07 canonical CallBestDynamic / Mesh boundary",
+    "correlation": "existing correlationId/X-Request-ID contract",
+    "provenance": "REAL only when execution emits evidence",
+    "failure_mode": "fail-closed",
+    "no_second_ingress": true,
+    "no_new_nucleus": true,
+    "no_sara_duplication": true
+  },
+  "ci_gates": [
+    "submodule-url-integrity",
+    "submodule-pin-integrity",
+    "license-presence-and-notice-review",
+    "capability-registry-schema",
+    "adapter-import-tests",
+    "runtime-smoke",
+    "exact-head-ci",
+    "real-e2e-before-promote-to-VERIFIED"
+  ]
+}

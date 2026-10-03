@@ -1,0 +1,78 @@
+name: SOUL OSS Fusion Integrity - Wave 1
+
+on:
+  pull_request:
+    paths:
+      - ".gitmodules"
+      - "integrations/**"
+      - ".github/workflows/soul-oss-fusion-integrity.yml"
+  push:
+    branches: ["main", "feat/soul-oss-fusion-wave1"]
+    paths:
+      - ".gitmodules"
+      - "integrations/**"
+      - ".github/workflows/soul-oss-fusion-integrity.yml"
+
+jobs:
+  integrity:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout with submodules
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+          fetch-depth: 1
+
+      - name: Verify SOUL external fusion registry
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f integrations/soul-oss-fusion-wave1.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p = Path("integrations/soul-oss-fusion-wave1.json")
+          d = json.loads(p.read_text())
+          assert d["system"] == "SOUL"
+          assert d["nucleus_owner"] == "N07"
+          assert d["runtime_state"] == "PROJECTED_UNTIL_ADAPTER_AND_E2E_PROOF"
+          assert len(d["added_sources"]) == 9
+          print("registry: ok")
+          PY
+
+      - name: Verify submodule paths are populated
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -d integrations/external/everything-claude-code
+          test -d integrations/external/swarmclaw
+          test -d integrations/external/mem0
+          test -d integrations/external/letta
+          test -d integrations/external/langfuse
+          test -d integrations/external/vllm
+          test -d integrations/external/sglang
+          test -d integrations/external/ray
+          test -d integrations/external/megatron-lm
+          git submodule status --recursive
+
+      - name: Verify canonical URLs
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -Fq 'https://github.com/affaan-m/ECC.git' .gitmodules
+          grep -Fq 'https://github.com/swarmclawai/swarmclaw.git' .gitmodules
+          grep -Fq 'https://github.com/mem0ai/mem0.git' .gitmodules
+          grep -Fq 'https://github.com/letta-ai/letta.git' .gitmodules
+          grep -Fq 'https://github.com/langfuse/langfuse.git' .gitmodules
+          grep -Fq 'https://github.com/vllm-project/vllm.git' .gitmodules
+          grep -Fq 'https://github.com/sgl-project/sglang.git' .gitmodules
+          grep -Fq 'https://github.com/ray-project/ray.git' .gitmodules
+          grep -Fq 'https://github.com/NVIDIA/Megatron-LM.git' .gitmodules
+
+      - name: Preserve provenance boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -Fq '"no_second_ingress": true' integrations/soul-oss-fusion-wave1.json
+          grep -Fq '"no_new_nucleus": true' integrations/soul-oss-fusion-wave1.json
+          grep -Fq '"no_sara_duplication": true' integrations/soul-oss-fusion-wave1.json
