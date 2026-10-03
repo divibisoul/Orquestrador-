@@ -68,6 +68,13 @@ jobs:
           assert p["rules"]["noSyntheticAccelerator"] is True
           assert p["truthBoundary"]["generalIntelligenceClaim"] == "NOT_ASSERTED"
           assert set(p["consumers"]) == {"N01","N02","N03","N04","N05","N06","SARA","JEV"}
+          assert len(p["pipeline"][0]["providers"]) == 17
+          assert "browser-use" in p["pipeline"][0]["providers"]
+          assert "letta-code" in p["pipeline"][0]["providers"]
+          assert "pydantic-ai" in p["pipeline"][0]["providers"]
+          assert "llama-index" in p["pipeline"][0]["providers"]
+          assert "whisper" in p["pipeline"][0]["providers"]
+          assert "kokoro" in p["pipeline"][0]["providers"]
           print("SOUL SuperAGI fabric manifest: PASS")
           PY
       - name: Verify fused authority
