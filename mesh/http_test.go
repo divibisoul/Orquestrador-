@@ -204,3 +204,45 @@ func TestHTTPGatewayHonorsContextCancellation(t *testing.T) {
 		t.Fatal("cancelled request must not be reported as a successful request")
 	}
 }
+
+func TestCopyStructuredSuperGPUMetadata(t *testing.T) {
+	metadata := map[string]string{}
+	err := copyStructuredCapabilityMetadata(metadata, "mesh.supergpu.execute@1.0.0", map[string]any{
+		"values": []any{2.0, 3.0},
+		"metadata": map[string]any{
+			"operation": "square",
+			"device": "gpu-0",
+			"require_accelerator": true,
+		},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if metadata["operation"] != "square" || metadata["device"] != "gpu-0" || metadata["require_accelerator"] != "true" {
+		t.Fatalf("unexpected metadata: %#v", metadata)
+	}
+}
+
+func TestCopyStructuredSuperAGIFabricMetadata(t *testing.T) {
+	metadata := map[string]string{}
+	err := copyStructuredCapabilityMetadata(metadata, "superagi.fabric.execute@1.0.0", map[string]any{
+		"agent_provider": "crewai",
+		"goal": "prepare accelerated work",
+		"roles": []any{"planner", "executor"},
+		"compute_values": []any{2.0, 3.0},
+		"metadata": map[string]any{
+			"agent_mode": "multiagent-facade",
+			"compute_operation": "square",
+			"require_accelerator": true,
+		},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if metadata["agent_provider"] != "crewai" || metadata["goal"] != "prepare accelerated work" {
+		t.Fatalf("unexpected fabric metadata: %#v", metadata)
+	}
+	if metadata["compute_values_json"] != "[2,3]" {
+		t.Fatalf("unexpected compute values: %s", metadata["compute_values_json"])
+	}
+}

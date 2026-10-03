@@ -19,6 +19,13 @@
         "langgraph",
         "letta-code",
         "pydantic-ai"
+      ],
+      "mesh_access": [
+        "mesh.supergpu.describe@1.0.0",
+        "mesh.supergpu.execute@1.0.0",
+        "mesh.supergpu.parallel@1.0.0",
+        "superagi.fabric.describe@1.0.0",
+        "superagi.fabric.execute@1.0.0"
       ]
     },
     "N02": {
@@ -33,7 +40,14 @@
         "neural.bnc_v2",
         "neural_forge"
       ],
-      "augmenters": []
+      "augmenters": [],
+      "mesh_access": [
+        "mesh.supergpu.describe@1.0.0",
+        "mesh.supergpu.execute@1.0.0",
+        "mesh.supergpu.parallel@1.0.0",
+        "superagi.fabric.describe@1.0.0",
+        "superagi.fabric.execute@1.0.0"
+      ]
     },
     "N03": {
       "repository": "divibisoul/nexus-aeternum-fusion",
@@ -49,6 +63,13 @@
         "agentscope",
         "whisper",
         "kokoro"
+      ],
+      "mesh_access": [
+        "mesh.supergpu.describe@1.0.0",
+        "mesh.supergpu.execute@1.0.0",
+        "mesh.supergpu.parallel@1.0.0",
+        "superagi.fabric.describe@1.0.0",
+        "superagi.fabric.execute@1.0.0"
       ]
     },
     "N04": {
@@ -64,6 +85,13 @@
       ],
       "augmenters": [
         "browser-use"
+      ],
+      "mesh_access": [
+        "mesh.supergpu.describe@1.0.0",
+        "mesh.supergpu.execute@1.0.0",
+        "mesh.supergpu.parallel@1.0.0",
+        "superagi.fabric.describe@1.0.0",
+        "superagi.fabric.execute@1.0.0"
       ]
     },
     "N05": {
@@ -80,6 +108,13 @@
       ],
       "augmenters": [
         "llama-index"
+      ],
+      "mesh_access": [
+        "mesh.supergpu.describe@1.0.0",
+        "mesh.supergpu.execute@1.0.0",
+        "mesh.supergpu.parallel@1.0.0",
+        "superagi.fabric.describe@1.0.0",
+        "superagi.fabric.execute@1.0.0"
       ]
     },
     "N06": {
@@ -100,6 +135,13 @@
         "openhands",
         "smolagents",
         "dspy"
+      ],
+      "mesh_access": [
+        "mesh.supergpu.describe@1.0.0",
+        "mesh.supergpu.execute@1.0.0",
+        "mesh.supergpu.parallel@1.0.0",
+        "superagi.fabric.describe@1.0.0",
+        "superagi.fabric.execute@1.0.0"
       ]
     },
     "N07": {
@@ -139,7 +181,14 @@
         "RGO",
         "MMD"
       ],
-      "augmenters": []
+      "augmenters": [],
+      "mesh_access": [
+        "mesh.supergpu.describe@1.0.0",
+        "mesh.supergpu.execute@1.0.0",
+        "mesh.supergpu.parallel@1.0.0",
+        "superagi.fabric.describe@1.0.0",
+        "superagi.fabric.execute@1.0.0"
+      ]
     },
     "JEV": {
       "repository": "divibisoul/jev-api",
@@ -148,6 +197,13 @@
       ],
       "augmenters": [
         "pydantic-ai"
+      ],
+      "mesh_access": [
+        "mesh.supergpu.describe@1.0.0",
+        "mesh.supergpu.execute@1.0.0",
+        "mesh.supergpu.parallel@1.0.0",
+        "superagi.fabric.describe@1.0.0",
+        "superagi.fabric.execute@1.0.0"
       ]
     }
   },
@@ -474,6 +530,50 @@
         "SARA",
         "JEV"
       ]
+    },
+    "accelerated.multiagent.fabric": {
+      "native_owner": "N07",
+      "canonical_control_plane": "N07",
+      "transport": "soul-mesh/1",
+      "contractVersion": "1.1.0",
+      "components": [
+        "MultiAgentFacade",
+        "AgentArsenal",
+        "SuperGPU",
+        "Octacore",
+        "Prefrontal",
+        "SARA",
+        "JEV"
+      ],
+      "external_providers": [
+        "superagi",
+        "crewai",
+        "superpowers",
+        "langgraph",
+        "microsoft-agent-framework",
+        "metagpt",
+        "agentscope",
+        "openhands",
+        "smolagents",
+        "dspy",
+        "letta-code",
+        "browser-use",
+        "llama-index",
+        "pydantic-ai",
+        "whisper",
+        "kokoro"
+      ],
+      "mesh_consumers": [
+        "N01",
+        "N02",
+        "N03",
+        "N04",
+        "N05",
+        "N06",
+        "SARA",
+        "JEV"
+      ],
+      "activation_rule": "provider adapter plus real authenticated execution evidence; no provider or CPU fallback is treated as accelerator proof"
     }
   }
 }

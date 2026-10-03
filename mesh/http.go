@@ -1,6 +1,7 @@
 package mesh
 
 import (
+	"strconv"
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/hex"
@@ -299,7 +300,16 @@ func (g *HTTPGateway) Handler(w http.ResponseWriter, r *http.Request) {
 			g.respond(w, http.StatusBadRequest, envelope, "ERROR", map[string]any{"error": err.Error()})
 			return
 		}
-		values = []float64{}
+		if strings.HasPrefix(capability, "mesh.supergpu.execute") {
+			var err error
+			values, err = payloadValues(envelope.NestedPayload())
+			if err != nil {
+				g.respond(w, http.StatusBadRequest, envelope, "ERROR", map[string]any{"error": err.Error()})
+				return
+			}
+		} else {
+			values = []float64{}
+		}
 	} else {
 		var err error
 		values, err = payloadValues(envelope.NestedPayload())
@@ -333,7 +343,10 @@ func (g *HTTPGateway) Handler(w http.ResponseWriter, r *http.Request) {
 	g.respond(w, status, envelope, "TASK_RESULT", payload)
 }
 func structuredMeshCapability(capability string) bool {
-	return strings.HasPrefix(strings.TrimSpace(capability), "cooperation.")
+	capability = strings.TrimSpace(capability)
+	return strings.HasPrefix(capability, "cooperation.") ||
+		strings.HasPrefix(capability, "mesh.supergpu.") ||
+		strings.HasPrefix(capability, "superagi.fabric.")
 }
 
 func copyStructuredCapabilityMetadata(metadata map[string]string, capability string, payload map[string]any) error {
@@ -351,6 +364,14 @@ func copyStructuredCapabilityMetadata(metadata map[string]string, capability str
 		payload = map[string]any{}
 	}
 	switch capability {
+	case "mesh.supergpu.execute@1.0.0", "mesh.supergpu.execute":
+		return copySuperGPUMetadata(metadata, payload, true)
+	case "mesh.supergpu.parallel@1.0.0", "mesh.supergpu.parallel":
+		return copySuperGPUMetadata(metadata, payload, false)
+	case "superagi.fabric.execute@1.0.0", "superagi.fabric.execute":
+		return copySuperAGIFabricMetadata(metadata, payload)
+	case "superagi.fabric.describe@1.0.0", "superagi.fabric.describe":
+		return nil
 	case "cooperation.handshake", "cooperation.handshake@1.0.0":
 		target, ok := payload["target"].(string)
 		if !ok || strings.TrimSpace(target) == "" {
@@ -384,6 +405,78 @@ func copyStructuredCapabilityMetadata(metadata map[string]string, capability str
 		metadata["cooperation_mode"] = "canonical-mesh"
 	default:
 		return errors.New("unsupported structured cooperation capability: " + capability)
+	}
+	return nil
+}
+
+func copySuperGPUMetadata(metadata map[string]string, payload map[string]any, single bool) error {
+	if payload == nil {
+		return errors.New("supergpu payload is required")
+	}
+	if raw, ok := payload["metadata"].(map[string]any); ok {
+		for key, value := range raw {
+			switch v := value.(type) {
+			case string:
+				if strings.TrimSpace(v) != "" {
+					metadata[key] = strings.TrimSpace(v)
+				}
+			case bool:
+				metadata[key] = strconv.FormatBool(v)
+			case float64:
+				metadata[key] = strconv.FormatFloat(v, 'f', -1, 64)
+			}
+		}
+	}
+	if single {
+		if _, ok := payload["values"]; !ok {
+			return errors.New("payload.values is required for supergpu execute")
+		}
+	} else {
+		inputs, ok := payload["inputs"]
+		if !ok {
+			return errors.New("payload.inputs is required for supergpu parallel")
+		}
+		raw, err := json.Marshal(inputs)
+		if err != nil {
+			return fmt.Errorf("supergpu inputs encode: %w", err)
+		}
+		metadata["inputs_json"] = string(raw)
+	}
+	return nil
+}
+
+func copySuperAGIFabricMetadata(metadata map[string]string, payload map[string]any) error {
+	if payload == nil {
+		return errors.New("superagi fabric payload is required")
+	}
+	if raw, ok := payload["metadata"].(map[string]any); ok {
+		for key, value := range raw {
+			if v, ok := value.(string); ok {
+				metadata[key] = strings.TrimSpace(v)
+			} else if b, ok := value.(bool); ok {
+				metadata[key] = strconv.FormatBool(b)
+			}
+		}
+	}
+	if roles, ok := payload["roles"]; ok {
+		raw, err := json.Marshal(roles)
+		if err != nil {
+			return fmt.Errorf("roles encode: %w", err)
+		}
+		metadata["roles"] = string(raw)
+	}
+	if values, ok := payload["compute_values"]; ok {
+		raw, err := json.Marshal(values)
+		if err != nil {
+			return fmt.Errorf("compute values encode: %w", err)
+		}
+		metadata["compute_values_json"] = string(raw)
+	}
+	if provider, ok := payload["agent_provider"].(string); ok {
+		metadata["agent_provider"] = strings.TrimSpace(provider)
+	}
+	if goal, ok := payload["goal"].(string); ok {
+		metadata["goal"] = strings.TrimSpace(goal)
 	}
 	return nil
 }
