@@ -216,6 +216,6 @@ This wave adds nine complete upstream repositories to the canonical N07 external
 | ray-project/ray | distributed runtime | REAL | PROJECTED |
 | NVIDIA/Megatron-LM | training/research backend | REAL | PROJECTED |
 
-Exact pins and licensing notes are recorded in 'integrations/soul-oss-fusion-wave1.json'. The canonical capability catalog now contains 25 external repository sources in total, while the SOUL peer topology remains N01-N07 plus transversal SARA.
+Exact pins and licensing notes are recorded in 'integrations/soul-oss-fusion-wave1.json'. The canonical capability catalog now contains 25 external repository sources in total, making the current composition 34 repositories including the 9 native SOUL components, while the SOUL peer topology remains N01-N07 plus transversal SARA.
 
 Runtime promotion requires an explicit adapter, configuration, dependency isolation where needed, deterministic tests, real smoke/E2E evidence and exact-head CI. No capability is considered verified solely because its source tree is present.
