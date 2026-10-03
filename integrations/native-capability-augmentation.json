@@ -355,7 +355,7 @@
         "delegation",
         "scheduling"
       ],
-      "state": "ADAPTER_PLANNED"
+      "state": "ADAPTER_BOUND"
     },
     "mem0": {
       "role": "persistent_agent_memory",
@@ -390,7 +390,7 @@
         "high-throughput-inference",
         "serving"
       ],
-      "state": "ADAPTER_PLANNED"
+      "state": "ADAPTER_BOUND"
     },
     "sglang": {
       "role": "high_performance_serving_backend",
@@ -398,7 +398,7 @@
         "high-performance-serving",
         "multimodal-serving"
       ],
-      "state": "ADAPTER_PLANNED"
+      "state": "ADAPTER_BOUND"
     },
     "ray": {
       "role": "distributed_runtime",
