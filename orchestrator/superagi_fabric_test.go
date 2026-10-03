@@ -86,3 +86,16 @@ func TestSuperAGIFabricRequiresComputeStage(t *testing.T) {
 		t.Fatalf("unexpected result: %#v err=%v", result, err)
 	}
 }
+func TestSuperAGIFabricAgentArsenalBoundaryFailsClosedWithoutArtifactCoordinates(t *testing.T) {
+	e := newFabricHarness(t)
+	m := protocol.NewMessage(protocol.N01, protocol.N07, "request", SuperAGIFabricExecuteOperation, nil)
+	m.Metadata["agent_mode"] = "agent-arsenal"
+	m.Metadata["agent_provider"] = "superpowers"
+	m.Metadata["goal"] = "verify artifact boundary"
+	m.Metadata["compute_operation"] = "square"
+	m.Metadata["compute_values_json"] = "[2,3]"
+	result, err := e.Submit(context.Background(), m)
+	if err == nil || result.Error != "SUPERAGI_AGENT_ARSENAL_BOUNDARY_REQUIRED" {
+		t.Fatalf("unexpected result: %#v err=%v", result, err)
+	}
+}
