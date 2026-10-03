@@ -210,8 +210,8 @@ func TestCopyStructuredSuperGPUMetadata(t *testing.T) {
 	err := copyStructuredCapabilityMetadata(metadata, "mesh.supergpu.execute@1.0.0", map[string]any{
 		"values": []any{2.0, 3.0},
 		"metadata": map[string]any{
-			"operation": "square",
-			"device": "gpu-0",
+			"operation":           "square",
+			"device":              "gpu-0",
 			"require_accelerator": true,
 		},
 	})
@@ -227,12 +227,12 @@ func TestCopyStructuredSuperAGIFabricMetadata(t *testing.T) {
 	metadata := map[string]string{}
 	err := copyStructuredCapabilityMetadata(metadata, "superagi.fabric.execute@1.0.0", map[string]any{
 		"agent_provider": "crewai",
-		"goal": "prepare accelerated work",
-		"roles": []any{"planner", "executor"},
+		"goal":           "prepare accelerated work",
+		"roles":          []any{"planner", "executor"},
 		"compute_values": []any{2.0, 3.0},
 		"metadata": map[string]any{
-			"agent_mode": "multiagent-facade",
-			"compute_operation": "square",
+			"agent_mode":          "multiagent-facade",
+			"compute_operation":   "square",
 			"require_accelerator": true,
 		},
 	})
