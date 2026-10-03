@@ -104,12 +104,12 @@
         "multi-agent-collaboration",
         "software-process"
       ],
-      "direct_affinity": true,
+      "direct_affinity": false,
       "access": "N07 canonical federation",
       "structural_state": "REAL",
       "runtime_state": "PROJECTED",
       "requires_adapter": true,
-      "direct_adapter_host": "N07"
+      "direct_adapter_host": "N06"
     },
     {
       "id": "agentscope",
