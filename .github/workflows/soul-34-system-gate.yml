@@ -1,0 +1,19 @@
+name: SOUL-34 System Integration Gate
+on:
+  push:
+    branches: [feat/soul-oss-fusion-wave1]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  soul34:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate canonical SOUL-34 contract
+        run: python3 scripts/soul-34-system-gate.py
