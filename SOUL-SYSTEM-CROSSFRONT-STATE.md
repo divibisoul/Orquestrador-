@@ -4,13 +4,13 @@
 
 | Nucleus | Repository | Role | Contract | Mesh | Neural/Federation | Evidence state | Source |
 |---|---|---|---:|---|---|---|---|
-| N01 | divibisoul/aeternum-core-29 | host-reference-gateway | not-detected | present | not detected | OBSERVED | scripts/soul-mesh-server-entry.mjs |
-| N02 | divibisoul/Eternium- | conversation-generation-neural-context | not-detected | present | not detected | OBSERVED | api/soul-mesh.ts |
+| N01 | divibisoul/aeternum-core-29 | host-reference-gateway | 1.0.0 | present | present | OBSERVED | scripts/soul-mesh-server-entry.mjs |
+| N02 | divibisoul/Eternium- | conversation-generation-neural-context | 1.1.0 | present | not detected | OBSERVED | api/soul-mesh.ts |
 | N03 | divibisoul/nexus-aeternum-fusion | perception-voice-multimodal-context | not-detected | present | not detected | OBSERVED | api/soul-mesh.ts |
 | N04 | divibisoul/nextjs-ai-chatbots | tools-documents-artifacts | 1.1.0 | present | not detected | OBSERVED | lib/soul-mesh/SoulMeshProtocol.ts |
-| N05 | divibisoul/nextjs-ai-chatbot | inference-conversation-dispatch-execution | not-detected | not detected | not detected | OBSERVED | app/api/soul-mesh/route.ts |
-| N06 | divibisoul/nextjs-ai-chatbot-2000 | cognition-synthesis-audit-governance | not-detected | present | not detected | OBSERVED | app/api/soul-mesh/route.ts |
-| N07 | divibisoul/Orquestrador- | super-agi-master-orchestration-federation-supergpu-control-plane | not-detected | not detected | not detected | DEGRADED | not-found |
+| N05 | divibisoul/nextjs-ai-chatbot | inference-conversation-dispatch-execution | 1.1.0 | present | not detected | OBSERVED | app/api/soul-mesh/route.ts |
+| N06 | divibisoul/nextjs-ai-chatbot-2000 | cognition-synthesis-audit-governance | 1.1.0 | present | not detected | OBSERVED | app/api/soul-mesh/route.ts |
+| N07 | divibisoul/Orquestrador- | super-agi-master-orchestration-federation-supergpu-control-plane | 1.1.0 | present | present | OBSERVED | go.mod |
 
 ## Governance
 
