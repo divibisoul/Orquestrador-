@@ -56,7 +56,7 @@
         "N02"
       ],
       "manifestAuthority": "SOUL-FUSION-MANIFEST.json",
-      "sourceRef": "bba43a86f8e98de52aeb606a00ac3f51244c862a",
+      "sourceRef": "d5a56a3de0f121054b6923127c3af885df243391",
       "status": "main-live-recovery-and-hortacore-bridge-merged",
       "contractEvidencePaths": [
         "scripts/soul-mesh-server.mjs"
@@ -82,7 +82,7 @@
         "N03"
       ],
       "manifestAuthority": "SOUL-FUSION-MANIFEST.json",
-      "sourceRef": "b8c681e1c2bf000bb614b5b0c13ca8377c857a14",
+      "sourceRef": "1b7a755239766947f4400c4922e5a86639df6a5d",
       "status": "main-live-bncv2-csae-dcrs-reintegrated",
       "contractEvidencePaths": [
         "src/soul-mesh/SoulMeshProtocol.ts"
@@ -109,7 +109,7 @@
         "N04"
       ],
       "manifestAuthority": "SOUL-FUSION-MANIFEST.json",
-      "sourceRef": "7a56c4d07d31e3dacfb0fa8ef3114ab0c253a49c",
+      "sourceRef": "f4a10bf361a1cdf6e1e5de1ff5b1d263275da31c",
       "status": "main-live-composition-contract-reconciled",
       "contractEvidencePaths": [
         "src/mesh/SoulMeshProtocol.ts"
@@ -135,7 +135,7 @@
         "N05"
       ],
       "manifestAuthority": "SOUL-FUSION-MANIFEST.json",
-      "sourceRef": "2bc605a1d2114ac1e39de63e922e937306dde1c4",
+      "sourceRef": "24e37a8e8067cf8b2fab8777fa47ff1dde6af3e1",
       "status": "main-live-tool-capability-alias-reconciled",
       "contractEvidencePaths": [
         "lib/soul-mesh/SoulMeshProtocol.ts"
@@ -162,7 +162,7 @@
         "N06"
       ],
       "manifestAuthority": "SOUL-FUSION-MANIFEST.json",
-      "sourceRef": "3bce0da91dd03bcf2c1e3765687dc357f187388b",
+      "sourceRef": "dbcd1db4a265d1e36957f1edf9e0ca2ec49dc980",
       "status": "main-live-inference-capability-catalog-reconciled",
       "contractEvidencePaths": [
         "lib/soul-mesh/endpoint.ts",
@@ -190,7 +190,7 @@
         "N07"
       ],
       "manifestAuthority": "SOUL-FUSION-MANIFEST.json",
-      "sourceRef": "17c46a0ddd5edfcdb570539d2d250a78799016f2",
+      "sourceRef": "7f8ba03db14007710f6b0c6ea2338826c9d5644b",
       "status": "main-live-composition-targets-reconciled",
       "contractEvidencePaths": [
         "lib/soul-mesh/SoulMeshProtocol.ts"
