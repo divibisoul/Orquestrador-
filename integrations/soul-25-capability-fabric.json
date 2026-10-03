@@ -1285,8 +1285,9 @@
     "superpowers.mesh-clareira",
     "superpowers.octacore"
   ],
-  "rule": "All 16 upstream capability sources are available to all 9 SOUL components through the canonical federation; direct affinity determines normal routing. No upstream provider becomes a second SOUL authority.",
+  "rule": "All 25 upstream capability sources are available to all 9 SOUL components through the canonical federation; direct affinity determines normal routing. No upstream provider becomes a second SOUL authority.",
   "direct_adapter_semantics": "direct-affinity edges mirror external-capabilities.targets; federated-availability edges preserve system-wide discoverability without implying ownership",
   "owner_registry": "integrations/external-capability-ownership.json",
-  "native_family_registry": "integrations/native-capability-augmentation.json"
+  "native_family_registry": "integrations/native-capability-augmentation.json",
+  "external_provider_count": 25
 }
