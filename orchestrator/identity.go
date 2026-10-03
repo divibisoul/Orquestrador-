@@ -32,6 +32,7 @@ func N07Agents() []AgentDescriptor {
 		{ID: "soul.engineer.runtime", Role: "runtime-integration-engineer", Capabilities: []string{"mesh-routing", "tool-binding", "dependency-isolation"}, Tools: []string{"canonical Mesh", "SuperGPU", "sandbox"}, Inputs: []string{"adapter", "target", "configuration"}, Outputs: []string{"runtime-route", "activation-state"}},
 		{ID: "soul.engineer.verification", Role: "verification-engineer", Capabilities: []string{"contract-tests", "smoke-tests", "e2e-verification"}, Tools: []string{"GitHub Actions", "runtime evidence"}, Inputs: []string{"integration", "test-contract"}, Outputs: []string{"evidence-state", "failure-record"}},
 		{ID: "soul.engineer.resilience", Role: "resilience-observability-engineer", Capabilities: []string{"fail-closed", "correlation", "bounded-execution", "observability", "re-audit"}, Tools: []string{"Clareira", "Mesh telemetry", "circuit breaker"}, Inputs: []string{"execution-event", "health", "failure"}, Outputs: []string{"health-state", "trace", "re-audit-trigger"}},
+		{ID: "n07.external-runtime", Role: "external-provider-runtime", Capabilities: []string{"external.provider.status@1.0.0", "external.provider.invoke@1.0.0", "vllm", "sglang", "swarmclaw"}, Tools: []string{"OpenAI-compatible HTTP", "A2A JSON-RPC"}, Inputs: []string{"provider", "model", "prompt", "goal", "correlationId"}, Outputs: []string{"provider-response", "runtime-evidence", "failure-evidence"}},
 	}
 }
 
