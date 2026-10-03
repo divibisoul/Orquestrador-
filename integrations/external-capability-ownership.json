@@ -112,16 +112,13 @@
     {
       "id": "metagpt",
       "source": "FoundationAgents/MetaGPT",
-      "primaryOwner": "N07",
+      "primaryOwner": "N06",
       "consumers": [
         "N02",
-        "N06"
+        "N06",
+        "N07"
       ],
-      "affinity": [
-        "role-based-agents",
-        "software-process",
-        "multi-agent-collaboration"
-      ],
+      "affinity": "MetaGPT execution is owned by N06; N07 may request it through canonical federation.",
       "status": "structural-only",
       "mode": "explicit-adapter"
     },
