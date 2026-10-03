@@ -1,6 +1,7 @@
 package mesh
 
 import (
+	"strconv"
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/hex"
@@ -430,8 +431,16 @@ func copySuperGPUMetadata(metadata map[string]string, payload map[string]any, si
 		if _, ok := payload["values"]; !ok {
 			return errors.New("payload.values is required for supergpu execute")
 		}
-	} else if _, ok := payload["inputs"]; !ok {
-		return errors.New("payload.inputs is required for supergpu parallel")
+	} else {
+		inputs, ok := payload["inputs"]
+		if !ok {
+			return errors.New("payload.inputs is required for supergpu parallel")
+		}
+		raw, err := json.Marshal(inputs)
+		if err != nil {
+			return fmt.Errorf("supergpu inputs encode: %w", err)
+		}
+		metadata["inputs_json"] = string(raw)
 	}
 	return nil
 }
