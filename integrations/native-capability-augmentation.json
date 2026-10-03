@@ -117,7 +117,8 @@
         "swarmclaw",
         "mem0",
         "letta",
-        "langfuse"
+        "langfuse",
+        "metagpt"
       ]
     },
     "N07": {
@@ -137,7 +138,6 @@
         "langgraph",
         "crewai",
         "microsoft-agent-framework",
-        "metagpt",
         "agentscope",
         "everything-claude-code",
         "swarmclaw",
