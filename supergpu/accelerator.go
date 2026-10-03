@@ -16,7 +16,7 @@ func (r *Runtime) SelectAccelerator(preferred string) (Device, error) {
 	if preferred != "" {
 		for _, d := range devices {
 			if d.ID != preferred {
-			continue
+				continue
 			}
 			if d.Backend == "cpu" {
 				return Device{}, errors.New("SUPERGPU_ACCELERATOR_REQUIRED")
