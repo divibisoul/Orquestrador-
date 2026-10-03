@@ -65,7 +65,7 @@ No upstream project can be the authority for more than one SOUL responsibility m
 10. **Correlation:** ingress/N07 creates correlationId when absent; resident agents propagate it and never silently replace it on cross-front calls.
 11. **First adapter:** Whisper -> N03. It minimizes authority clash because N03 already owns audio and Whisper is a provider implementation, not a replacement for the canonical `audio.transcribe` capability.
 12. **CPU/model weights:** CPU-only execution is allowed as DEGRADED when configured but below production performance expectations. Model weights live in a local volume/cache and never in Git.
-13. **Heavy submodules:** fetch only at the nucleus that owns the adapter; N07 keeps the federation catalog. Do not recursively clone all 16 in all nuclei.
+13. **Heavy submodules:** fetch only at the nucleus that owns the adapter; N07 keeps the federation catalog. Do not recursively clone all 25 upstream sources in all nuclei; N07 remains the federation catalog.
 14. **Repo writes:** Resident Agents are read-only toward Git by default; they emit evidence and proposed patch artifacts. CI/human-controlled workflows create PRs. ASSUMPTION.
 15. **HITL:** mandatory for delete/payment/deploy/credential rotation.
 16. **Superpowers telemetry:** disable in SOUL environments when that option is supported by the pinned upstream integration. Do not rely on an undocumented env var without verification.
