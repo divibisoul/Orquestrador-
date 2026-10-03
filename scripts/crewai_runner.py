@@ -6,7 +6,7 @@ goal=str(r.get("goal") or "").strip(); root=os.path.abspath(str(r.get("root") or
 if not goal:emit({"state":"FAIL","code":"CREWAI_GOAL_REQUIRED"},2)
 if not os.path.isdir(root):emit({"state":"DEGRADED","code":"CREWAI_SOURCE_NOT_AVAILABLE"})
 if not os.environ.get("OPENAI_API_KEY"):emit({"state":"DEGRADED","code":"CREWAI_LLM_CREDENTIALS_NOT_AVAILABLE"})
-sys.path.insert(0,root)
+\nfor _p in (root, os.path.join(root, "lib", "crewai", "src")):\n if os.path.isdir(_p) and _p not in sys.path: sys.path.insert(0, _p)
 try:
  from crewai import Agent,Crew,LLM,Process,Task
 except Exception as e:emit({"state":"DEGRADED","code":"CREWAI_PYTHON_IMPORT_FAILED","detail":str(e)})
