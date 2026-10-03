@@ -63,10 +63,10 @@ func RegisterSuperGPUMeshOperations(e *Engine, federation *supergpu.Federation) 
 			Source: "N07.supergpu.mesh", Target: m.Source, Status: "ok",
 			Payload: fResult.Output,
 			Metadata: map[string]string{
-				"device": fResult.Device.ID,
-				"backend": fResult.Device.Backend,
+				"device":      fResult.Device.ID,
+				"backend":     fResult.Device.Backend,
 				"accelerator": strconv.FormatBool(fResult.Device.Backend != "cpu"),
-				"operation": op,
+				"operation":   op,
 			},
 		}, nil
 	}); err != nil {
@@ -107,10 +107,10 @@ func RegisterSuperGPUMeshOperations(e *Engine, federation *supergpu.Federation) 
 			TraceID: m.TraceID, CorrelationID: m.CorrelationID,
 			Source: "N07.supergpu.mesh", Target: m.Source, Status: "ok",
 			Metadata: map[string]string{
-				"device": result.Device.ID,
-				"backend": result.Device.Backend,
+				"device":      result.Device.ID,
+				"backend":     result.Device.Backend,
 				"accelerator": strconv.FormatBool(result.Device.Backend != "cpu"),
-				"operation": op, "workers": strconv.Itoa(workers), "batch_json": string(raw),
+				"operation":   op, "workers": strconv.Itoa(workers), "batch_json": string(raw),
 			},
 		}, nil
 	})
