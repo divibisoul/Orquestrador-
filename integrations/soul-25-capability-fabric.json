@@ -781,16 +781,16 @@
     {
       "from": "N06",
       "to": "metagpt",
-      "mode": "federated-availability",
+      "mode": "direct-affinity",
       "state": "PROJECTED",
-      "reason": "discoverable-through-N07"
+      "reason": "functional-complementation"
     },
     {
       "from": "N07",
       "to": "metagpt",
-      "mode": "direct-affinity",
+      "mode": "federated-availability",
       "state": "PROJECTED",
-      "reason": "functional-complementation"
+      "reason": "discoverable-through-N07"
     },
     {
       "from": "SARA",
