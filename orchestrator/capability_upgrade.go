@@ -85,8 +85,8 @@ func loadExternalProviderManifest() (externalProviderManifest, error) {
 			last = err
 			continue
 		}
-		if len(manifest.Repositories) != 16 {
-			last = errors.New("expected exactly 16 external providers")
+		if len(manifest.Repositories) != 25 {
+			last = errors.New("expected exactly 25 external providers")
 			continue
 		}
 		return manifest, nil
