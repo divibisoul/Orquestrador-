@@ -62,7 +62,7 @@ N07 exposes:
 
 The resolver returns all registered upstream sources and marks direct-affinity sources for a requested native component/capability.
 
-## Engineering agents
+## Current 34-repository state\n\nThe historical 25-repository name is preserved for continuity; the current composition is 9 native + 25 upstream = 34 repositories.\n\n## Engineering agents
 
 The upgrade fabric is maintained by:
 
