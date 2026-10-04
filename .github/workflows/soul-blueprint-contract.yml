@@ -1,0 +1,49 @@
+name: SOUL Blueprint Contract
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "ARCHITECTURE.md"
+      - "INFRASTRUCTURE.md"
+      - "MESH_CONTRACT.md"
+      - "CAPABILITY_REGISTRY.md"
+      - "OBSERVABILITY.md"
+      - "DEPLOYMENT.md"
+      - "LOCAL_DEV.md"
+      - "E2E_TEST_PLAN.md"
+      - "RUNBOOK.md"
+      - "contracts/**"
+      - "config/**"
+      - "infra/local/**"
+      - "scripts/validate-soul-blueprint.mjs"
+      - "scripts/soul-local-up.sh"
+      - ".github/workflows/soul-blueprint-contract.yml"
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Validate blueprint invariants
+        run: node scripts/validate-soul-blueprint.mjs
+      - name: Validate JSON contracts
+        shell: bash
+        run: |
+          set -euo pipefail
+          for f in contracts/soul-mesh/*.schema.json contracts/soul-config.schema.json; do
+            node -e "JSON.parse(require('fs').readFileSync(process.argv[1],'utf8'))" "$f"
+          done
+      - name: Validate Compose
+        run: docker compose -f infra/local/docker-compose.yml config
+      - name: Enforce release-gate source exists
+        run: test -f RELEASE_GATES_V1.md
