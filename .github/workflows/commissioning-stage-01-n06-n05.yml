@@ -52,7 +52,7 @@ jobs:
       - name: Start N06
         working-directory: runtime/n06
         run: |
-          pnpm dev --hostname 127.0.0.1 --port 3001 > /tmp/n06.log 2>&1 &
+          node node_modules/next/dist/bin/next dev --hostname 127.0.0.1 --port 3001 > /tmp/n06.log 2>&1 &
           echo $! > /tmp/n06.pid
 
       - name: Start N05
@@ -60,7 +60,7 @@ jobs:
         env:
           SOUL_MESH_N06_URL: http://127.0.0.1:3001
         run: |
-          pnpm dev --hostname 127.0.0.1 --port 3000 > /tmp/n05.log 2>&1 &
+          node node_modules/next/dist/bin/next dev --hostname 127.0.0.1 --port 3000 > /tmp/n05.log 2>&1 &
           echo $! > /tmp/n05.pid
 
       - name: Wait for N05 and N06 readiness
@@ -144,7 +144,7 @@ jobs:
         working-directory: runtime/n06
         run: |
           set -euo pipefail
-          pnpm dev --hostname 127.0.0.1 --port 3001 > /tmp/n06-recovered.log 2>&1 &
+          node node_modules/next/dist/bin/next dev --hostname 127.0.0.1 --port 3001 > /tmp/n06-recovered.log 2>&1 &
           echo $! > /tmp/n06.pid
           for i in $(seq 1 120); do
             code=$(curl -sS -o /tmp/n06-recovered-ready.json -w '%{http_code}' http://127.0.0.1:3001/api/ready || true)
