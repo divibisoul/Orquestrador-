@@ -96,7 +96,7 @@ jobs:
           SOUL_MESH_N06_URL: http://127.0.0.1:3001
           SOUL_STAGE_CORRELATION_ID: stage01-root-correlation
           SOUL_STAGE_OUTPUT: /tmp/n05-result.json
-        run: node --experimental-strip-types scripts/commission-stage-01.ts
+        run: pnpm exec tsx scripts/commission-stage-01.ts
 
       - name: N06 to N05 authenticated native hop with same correlation
         working-directory: runtime/n06
