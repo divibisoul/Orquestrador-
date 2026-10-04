@@ -28,14 +28,14 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: divibisoul/nextjs-ai-chatbot
-          ref: 93bece3c0baa97c8d566bc17fc5383707d6ee16e
+          ref: 9ff923279616e4db89de50a6e63df2ae31a44b5a
           path: runtime/n05
 
       - name: Checkout N06 commissioning revision
         uses: actions/checkout@v4
         with:
           repository: divibisoul/nextjs-ai-chatbot-2000
-          ref: d78e0a7e2d2eb884eb9b6e840eeba7e575dc5f28
+          ref: f5d4846711095c8605aae94689ee70095c0db1e1
           path: runtime/n06
 
       - name: Enable pnpm
@@ -163,9 +163,9 @@ jobs:
           cat > /tmp/HANDOFF_N06_N05.json <<'EOF'
           {
             "stage": "N06↔N05",
-            "evidenceState": "REAL",
+            "evidenceState": "${{ job.status == 'success' && 'REAL' || 'BLOCKED' }}",
             "correlationId": "stage01-root-correlation",
-            "commissionedCriteria": [
+            "criteriaRequired": [
               "DISCOVERY",
               "CAPABILITY",
               "AUTHENTICATED_DELEGATION",
@@ -176,10 +176,11 @@ jobs:
               "COMPOSITION"
             ],
             "revisions": {
-              "N05": "93bece3c0baa97c8d566bc17fc5383707d6ee16e",
-              "N06": "d78e0a7e2d2eb884eb9b6e840eeba7e575dc5f28"
+              "N05": "9ff923279616e4db89de50a6e63df2ae31a44b5a",
+              "N06": "f5d4846711095c8605aae94689ee70095c0db1e1"
             },
-            "provenance": "GitHub Actions runtime evidence; no synthetic success"
+            "commissioned": "${{ job.status == 'success' }}",
+    "provenance": "GitHub Actions runtime evidence; no synthetic success"
           }
           EOF
           cat /tmp/HANDOFF_N06_N05.json
