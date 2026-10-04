@@ -1,10 +1,10 @@
 name: SOUL Commissioning Stage 1 - N06 N05
 
 on:
-  workflow_dispatch:
   push:
     paths:
       - ".github/workflows/commissioning-stage-01-n06-n05.yml"
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -82,11 +82,13 @@ jobs:
 
       - name: Discovery N05
         run: |
+          set -euo pipefail
           curl -fsS -H "Authorization: Bearer $SOUL_MESH_TOKEN" "$N05_URL/api/soul-mesh" > /tmp/n05-discovery.json
           node -e "const x=require('/tmp/n05-discovery.json'); if(x.nucleus!=='N05'||x.contractVersion!=='1.1.0') process.exit(1); console.log(JSON.stringify({state:'REAL',nucleus:x.nucleus,capabilities:x.capabilities.length}))"
 
       - name: Discovery N06
         run: |
+          set -euo pipefail
           curl -fsS "$N06_URL/api/soul-mesh" > /tmp/n06-discovery.json
           node -e "const x=require('/tmp/n06-discovery.json'); if(x.nucleus!=='N06'||x.contractVersion!=='1.1.0') process.exit(1); if(!x.capabilities.includes('support.context')) process.exit(1); console.log(JSON.stringify({state:'REAL',nucleus:x.nucleus,capabilities:x.capabilities.length}))"
 
@@ -104,16 +106,20 @@ jobs:
           SOUL_MESH_N05_URL: http://127.0.0.1:3000
           SOUL_STAGE_CORRELATION_ID: stage01-root-correlation
         run: |
+          set -euo pipefail
           if [ -f /tmp/n05-result.json ]; then
             export SOUL_STAGE_UPSTREAM_RESULT="$(cat /tmp/n05-result.json)"
           fi
-          node --experimental-strip-types scripts/commission-stage-01.ts
+          pnpm exec tsx scripts/commission-stage-01.ts
 
       - name: Inject N06 failure
         run: |
+          set -euo pipefail
           kill "$(cat /tmp/n06.pid)"
           for i in $(seq 1 30); do
-            if ! kill -0 "$(cat /tmp/n06.pid)" 2>/dev/null; then exit 0; fi
+            if ! kill -0 "$(cat /tmp/n06.pid)" 2>/dev/null; then
+              exit 0
+            fi
             sleep 1
           done
           kill -9 "$(cat /tmp/n06.pid)" 2>/dev/null || true
@@ -124,7 +130,11 @@ jobs:
           SOUL_MESH_N06_URL: http://127.0.0.1:3001
           SOUL_STAGE_CORRELATION_ID: stage01-failure-correlation
         run: |
-          if node --experimental-strip-types scripts/commission-stage-01.ts; then
+          set +e
+          pnpm exec tsx scripts/commission-stage-01.ts
+          code=$?
+          set -e
+          if [ "$code" -eq 0 ]; then
             echo "FAIL: expected downstream N06 failure was not surfaced"
             exit 1
           fi
@@ -133,6 +143,7 @@ jobs:
       - name: Recover N06
         working-directory: runtime/n06
         run: |
+          set -euo pipefail
           pnpm dev --hostname 127.0.0.1 --port 3001 > /tmp/n06-recovered.log 2>&1 &
           echo $! > /tmp/n06.pid
           for i in $(seq 1 120); do
@@ -153,17 +164,18 @@ jobs:
           SOUL_STAGE_CORRELATION_ID: stage01-root-correlation
           SOUL_STAGE_OUTPUT: /tmp/n05-recovered-result.json
         run: |
-          node --experimental-strip-types scripts/commission-stage-01.ts
+          pnpm exec tsx scripts/commission-stage-01.ts
           test -s /tmp/n05-recovered-result.json
           echo "REAL: authenticated delegation recovered after failure"
 
-      - name: Stage 1 handoff artifact
-        if: always()
+      - name: Create successful Stage 1 handoff
+        if: success()
         run: |
           cat > /tmp/HANDOFF_N06_N05.json <<'EOF'
           {
             "stage": "N06↔N05",
-            "evidenceState": "${{ job.status == 'success' && 'REAL' || 'BLOCKED' }}",
+            "evidenceState": "REAL",
+            "commissioned": true,
             "correlationId": "stage01-root-correlation",
             "criteriaRequired": [
               "DISCOVERY",
@@ -173,17 +185,40 @@ jobs:
               "NATIVE_EXECUTION",
               "FAILURE_INJECTION",
               "RECOVERY",
-              "COMPOSITION"
+              "COMPOSITION",
+              "PROVENANCE"
             ],
             "revisions": {
               "N05": "9ff923279616e4db89de50a6e63df2ae31a44b5a",
               "N06": "f5d4846711095c8605aae94689ee70095c0db1e1"
             },
-            "commissioned": "${{ job.status == 'success' }}",
-    "provenance": "GitHub Actions runtime evidence; no synthetic success"
+            "provenance": "GitHub Actions runtime evidence; no synthetic success"
           }
           EOF
-          cat /tmp/HANDOFF_N06_N05.json
+
+      - name: Create blocked Stage 1 handoff
+        if: failure()
+        run: |
+          cat > /tmp/HANDOFF_N06_N05.json <<'EOF'
+          {
+            "stage": "N06↔N05",
+            "evidenceState": "BLOCKED",
+            "commissioned": false,
+            "correlationId": "stage01-root-correlation",
+            "criteriaRequired": [
+              "DISCOVERY",
+              "CAPABILITY",
+              "AUTHENTICATED_DELEGATION",
+              "CORRELATION",
+              "NATIVE_EXECUTION",
+              "FAILURE_INJECTION",
+              "RECOVERY",
+              "COMPOSITION",
+              "PROVENANCE"
+            ],
+            "provenance": "GitHub Actions runtime evidence; blocked execution"
+          }
+          EOF
 
       - name: Upload Stage 1 evidence
         if: always()
