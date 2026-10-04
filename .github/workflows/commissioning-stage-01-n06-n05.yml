@@ -103,7 +103,6 @@ jobs:
         env:
           SOUL_MESH_N05_URL: http://127.0.0.1:3000
           SOUL_STAGE_CORRELATION_ID: stage01-root-correlation
-          SOUL_STAGE_UPSTREAM_RESULT: ${{ steps.n05-hop.outputs.upstream_result }}
         run: |
           if [ -f /tmp/n05-result.json ]; then
             export SOUL_STAGE_UPSTREAM_RESULT="$(cat /tmp/n05-result.json)"
