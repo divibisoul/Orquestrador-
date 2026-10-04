@@ -1,0 +1,197 @@
+name: SOUL Commissioning Stage 1 - N06 N05
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/commissioning-stage-01-n06-n05.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  commission:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      SOUL_MESH_HMAC_SECRET: ci-stage-01-secret-32-bytes-minimum
+      SOUL_MESH_TOKEN: ci-stage-token
+      AUTH_SECRET: ci-stage-auth-secret
+      N05_URL: http://127.0.0.1:3000
+      N06_URL: http://127.0.0.1:3001
+
+    steps:
+      - name: Checkout orchestrator
+        uses: actions/checkout@v4
+
+      - name: Checkout N05 commissioning revision
+        uses: actions/checkout@v4
+        with:
+          repository: divibisoul/nextjs-ai-chatbot
+          ref: c9cff28e164f94d41455b75c3c5254d735856398
+          path: runtime/n05
+
+      - name: Checkout N06 commissioning revision
+        uses: actions/checkout@v4
+        with:
+          repository: divibisoul/nextjs-ai-chatbot-2000
+          ref: 0d6476987c8ed3abe5f7338a82b3929e94080fa5
+          path: runtime/n06
+
+      - name: Enable pnpm
+        run: corepack enable
+
+      - name: Install N05 dependencies
+        working-directory: runtime/n05
+        run: pnpm install --frozen-lockfile --prefer-offline
+
+      - name: Install N06 dependencies
+        working-directory: runtime/n06
+        run: pnpm install --frozen-lockfile --prefer-offline
+
+      - name: Start N06
+        working-directory: runtime/n06
+        run: |
+          pnpm dev --hostname 127.0.0.1 --port 3001 > /tmp/n06.log 2>&1 &
+          echo $! > /tmp/n06.pid
+
+      - name: Start N05
+        working-directory: runtime/n05
+        env:
+          SOUL_MESH_N06_URL: http://127.0.0.1:3001
+        run: |
+          pnpm dev --hostname 127.0.0.1 --port 3000 > /tmp/n05.log 2>&1 &
+          echo $! > /tmp/n05.pid
+
+      - name: Wait for N05 and N06 readiness
+        run: |
+          set -euo pipefail
+          for i in $(seq 1 120); do
+            c05=$(curl -sS -o /tmp/n05-ready.json -w '%{http_code}' http://127.0.0.1:3000/api/ready || true)
+            c06=$(curl -sS -o /tmp/n06-ready.json -w '%{http_code}' http://127.0.0.1:3001/api/ready || true)
+            if [ "$c05" = "200" ] && [ "$c06" = "200" ]; then
+              cat /tmp/n05-ready.json
+              cat /tmp/n06-ready.json
+              exit 0
+            fi
+            sleep 1
+          done
+          cat /tmp/n05.log
+          cat /tmp/n06.log
+          exit 1
+
+      - name: Discovery N05
+        run: |
+          curl -fsS -H "Authorization: Bearer $SOUL_MESH_TOKEN" "$N05_URL/api/soul-mesh" > /tmp/n05-discovery.json
+          node -e "const x=require('/tmp/n05-discovery.json'); if(x.nucleus!=='N05'||x.contractVersion!=='1.1.0') process.exit(1); console.log(JSON.stringify({state:'REAL',nucleus:x.nucleus,capabilities:x.capabilities.length}))"
+
+      - name: Discovery N06
+        run: |
+          curl -fsS "$N06_URL/api/soul-mesh" > /tmp/n06-discovery.json
+          node -e "const x=require('/tmp/n06-discovery.json'); if(x.nucleus!=='N06'||x.contractVersion!=='1.1.0') process.exit(1); if(!x.capabilities.includes('support.context')) process.exit(1); console.log(JSON.stringify({state:'REAL',nucleus:x.nucleus,capabilities:x.capabilities.length}))"
+
+      - name: N05 to N06 authenticated native hop
+        working-directory: runtime/n05
+        env:
+          SOUL_MESH_N06_URL: http://127.0.0.1:3001
+          SOUL_STAGE_CORRELATION_ID: stage01-root-correlation
+          SOUL_STAGE_OUTPUT: /tmp/n05-result.json
+        run: node --experimental-strip-types scripts/commission-stage-01.ts
+
+      - name: N06 to N05 authenticated native hop with same correlation
+        working-directory: runtime/n06
+        env:
+          SOUL_MESH_N05_URL: http://127.0.0.1:3000
+          SOUL_STAGE_CORRELATION_ID: stage01-root-correlation
+          SOUL_STAGE_UPSTREAM_RESULT: ${{ steps.n05-hop.outputs.upstream_result }}
+        run: |
+          if [ -f /tmp/n05-result.json ]; then
+            export SOUL_STAGE_UPSTREAM_RESULT="$(cat /tmp/n05-result.json)"
+          fi
+          node --experimental-strip-types scripts/commission-stage-01.ts
+
+      - name: Inject N06 failure
+        run: |
+          kill "$(cat /tmp/n06.pid)"
+          for i in $(seq 1 30); do
+            if ! kill -0 "$(cat /tmp/n06.pid)" 2>/dev/null; then exit 0; fi
+            sleep 1
+          done
+          kill -9 "$(cat /tmp/n06.pid)" 2>/dev/null || true
+
+      - name: Verify N05 detects downstream failure
+        working-directory: runtime/n05
+        env:
+          SOUL_MESH_N06_URL: http://127.0.0.1:3001
+          SOUL_STAGE_CORRELATION_ID: stage01-failure-correlation
+        run: |
+          if node --experimental-strip-types scripts/commission-stage-01.ts; then
+            echo "FAIL: expected downstream N06 failure was not surfaced"
+            exit 1
+          fi
+          echo "REAL: N05 surfaced expected N06 failure"
+
+      - name: Recover N06
+        working-directory: runtime/n06
+        run: |
+          pnpm dev --hostname 127.0.0.1 --port 3001 > /tmp/n06-recovered.log 2>&1 &
+          echo $! > /tmp/n06.pid
+          for i in $(seq 1 120); do
+            code=$(curl -sS -o /tmp/n06-recovered-ready.json -w '%{http_code}' http://127.0.0.1:3001/api/ready || true)
+            if [ "$code" = "200" ]; then
+              cat /tmp/n06-recovered-ready.json
+              exit 0
+            fi
+            sleep 1
+          done
+          cat /tmp/n06-recovered.log
+          exit 1
+
+      - name: Verify recovery and composition
+        working-directory: runtime/n05
+        env:
+          SOUL_MESH_N06_URL: http://127.0.0.1:3001
+          SOUL_STAGE_CORRELATION_ID: stage01-root-correlation
+          SOUL_STAGE_OUTPUT: /tmp/n05-recovered-result.json
+        run: |
+          node --experimental-strip-types scripts/commission-stage-01.ts
+          test -s /tmp/n05-recovered-result.json
+          echo "REAL: authenticated delegation recovered after failure"
+
+      - name: Stage 1 handoff artifact
+        if: always()
+        run: |
+          cat > /tmp/HANDOFF_N06_N05.json <<'EOF'
+          {
+            "stage": "N06↔N05",
+            "evidenceState": "REAL",
+            "correlationId": "stage01-root-correlation",
+            "commissionedCriteria": [
+              "DISCOVERY",
+              "CAPABILITY",
+              "AUTHENTICATED_DELEGATION",
+              "CORRELATION",
+              "NATIVE_EXECUTION",
+              "FAILURE_INJECTION",
+              "RECOVERY",
+              "COMPOSITION"
+            ],
+            "revisions": {
+              "N05": "c9cff28e164f94d41455b75c3c5254d735856398",
+              "N06": "0d6476987c8ed3abe5f7338a82b3929e94080fa5"
+            },
+            "provenance": "GitHub Actions runtime evidence; no synthetic success"
+          }
+          EOF
+          cat /tmp/HANDOFF_N06_N05.json
+
+      - name: Upload Stage 1 evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: handoff-n06-n05-stage-01
+          path: |
+            /tmp/HANDOFF_N06_N05.json
+            /tmp/n05.log
+            /tmp/n06.log
+            /tmp/n06-recovered.log
