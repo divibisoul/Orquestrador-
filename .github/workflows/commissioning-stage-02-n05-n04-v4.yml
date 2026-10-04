@@ -27,7 +27,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: divibisoul/nextjs-ai-chatbots
-          ref: 0ae0d90d12370cf1dd5751ce4565816ceb648eab
+          ref: 5df5777c669cfa00650cc09c886c1afd73763e47
           path: runtime/n04
 
       - name: Checkout N05 canonical HMAC revision
