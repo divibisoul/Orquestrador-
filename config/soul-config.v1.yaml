@@ -1,0 +1,57 @@
+
+version: "1.0.0"
+mesh:
+  contractVersion: "1.1.0"
+  timeoutMs: 30000
+  maxPayloadBytes: 2097152
+  retries: 2
+  breaker: {failureThreshold: 5, openSeconds: 60}
+  peerUrls:
+    N01: http://soul-n01:8080
+    N02: http://soul-n02:3020
+    N03: http://soul-n03:3030
+    N04: http://soul-n04:3000
+    N05: http://soul-n05:3000
+    N06: http://soul-n06:3000
+    N07: http://soul-n07:8080
+    SARA: http://sara:8090
+services:
+  N01: {id: soul-n01, port: 8080, healthPath: /mesh/health}
+  N02: {id: soul-n02, port: 3020, healthPath: /mesh/health}
+  N03: {id: soul-n03, port: 3030, healthPath: /mesh/health}
+  N04: {id: soul-n04, port: 3000, healthPath: /api/health}
+  N05: {id: soul-n05, port: 3000, healthPath: /api/health}
+  N06: {id: soul-n06, port: 3000, healthPath: /api/health}
+  N07: {id: soul-n07, port: 8080, healthPath: /health}
+  SARA: {id: sara, port: 8090, healthPath: /health}
+resilience:
+  bulkhead: {globalWorkers: 32, perPeer: 8, perCapability: 8}
+  routeCacheSeconds: 30
+  capabilityTtlSeconds: 60
+  agentHeartbeatSeconds: 15
+observability:
+  otlpEndpoint: http://otel-collector:4318
+  prometheus: http://prometheus:9090
+  grafana: http://grafana:3000
+  traceSink: http://tempo:3200
+  logSink: http://loki:3100
+data:
+  postgres: postgres://soul-postgres:5432/soul
+  eventBus: nats://nats:4222
+  objectStore: {provider: storacha, compatibilityProvider: web3storage}
+  sara: {temporalVectorDB: nucleus-owned, decisionTrace: nucleus-owned, provenanceTracker: nucleus-owned}
+featureFlags:
+  meshHmacRequired: true
+  mtlsRequired: true
+  comboEnabled: true
+  superGpuEnabled: true
+  externalProvidersEnabled: true
+  natsEventPlaneEnabled: true
+  failClosed: true
+secrets:
+  SOUL_MESH_SECRET: vault://soul/prod/mesh#SOUL_MESH_SECRET
+  N07_APP_TOKEN: vault://soul/prod/n07#N07_APP_TOKEN
+  SARA_API_TOKEN: vault://soul/prod/sara#SARA_API_TOKEN
+  SUPABASE_SERVICE_ROLE_KEY: vault://soul/prod/supabase#SERVICE_ROLE
+  STORACHA_TOKEN: vault://soul/prod/storage#STORACHA_TOKEN
+  JEV_API_KEY: vault://soul/prod/jev#JEV_API_KEY

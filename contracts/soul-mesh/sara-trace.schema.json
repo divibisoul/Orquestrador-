@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://soul.local/contracts/soul-mesh/sara-trace.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "cycle_id",
+    "correlationId",
+    "phases",
+    "decisionTrace",
+    "temporalVectorRefs",
+    "provenanceRefs",
+    "rollback_performed",
+    "evidenceState"
+  ],
+  "properties": {
+    "cycle_id": {
+      "type": "string"
+    },
+    "correlationId": {
+      "type": "string"
+    },
+    "phases": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "decisionTrace": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "temporalVectorRefs": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "provenanceRefs": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "rollback_performed": {
+      "type": "boolean"
+    },
+    "trace_hash": {
+      "type": "string"
+    },
+    "evidenceState": {
+      "enum": [
+        "REAL",
+        "PROJECTED",
+        "BLOCKED",
+        "UNMEASURABLE"
+      ]
+    }
+  }
+}

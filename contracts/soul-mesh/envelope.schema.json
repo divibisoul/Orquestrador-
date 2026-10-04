@@ -1,0 +1,129 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://soul.local/contracts/soul-mesh/envelope.schema.json",
+  "title": "SOUL Mesh Envelope 1.1.0",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "version",
+    "contractVersion",
+    "messageId",
+    "source",
+    "target",
+    "timestamp",
+    "nonce",
+    "correlationId",
+    "type",
+    "payload"
+  ],
+  "properties": {
+    "version": {
+      "const": "1.0"
+    },
+    "contractVersion": {
+      "const": "1.1.0"
+    },
+    "messageId": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "source": {
+      "enum": [
+        "N01",
+        "N02",
+        "N03",
+        "N04",
+        "N05",
+        "N06",
+        "N07",
+        "SARA"
+      ]
+    },
+    "target": {
+      "enum": [
+        "N01",
+        "N02",
+        "N03",
+        "N04",
+        "N05",
+        "N06",
+        "N07",
+        "SARA",
+        "BROADCAST"
+      ]
+    },
+    "timestamp": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "nonce": {
+      "type": "string",
+      "minLength": 16,
+      "maxLength": 128
+    },
+    "correlationId": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "type": {
+      "enum": [
+        "PING",
+        "HEALTH",
+        "DISCOVERY_REQUEST",
+        "DISCOVERY_RESPONSE",
+        "CAPABILITY_REQUEST",
+        "TASK",
+        "TASK_RESULT",
+        "ERROR",
+        "COMBO_REQUEST",
+        "COMBO_RESULT",
+        "EVENT"
+      ]
+    },
+    "ttl": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 64
+    },
+    "payload": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "capability",
+        "payload"
+      ],
+      "properties": {
+        "capability": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "payload": {},
+        "metadata": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "operation": {
+      "type": "string"
+    },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
+    "hmac": {
+      "type": "string",
+      "pattern": "^[0-9a-fA-F]{64}$"
+    }
+  },
+  "x-soul-max-payload-bytes": 2097152,
+  "x-soul-correlation-rule": "preserve across hops",
+  "x-soul-message-id-rule": "fresh per hop"
+}
