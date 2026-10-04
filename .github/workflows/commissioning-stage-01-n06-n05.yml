@@ -28,14 +28,14 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: divibisoul/nextjs-ai-chatbot
-          ref: c9cff28e164f94d41455b75c3c5254d735856398
+          ref: 48e30119cfd1366cde7f767c12e77872f8a799b1
           path: runtime/n05
 
       - name: Checkout N06 commissioning revision
         uses: actions/checkout@v4
         with:
           repository: divibisoul/nextjs-ai-chatbot-2000
-          ref: 0d6476987c8ed3abe5f7338a82b3929e94080fa5
+          ref: d78e0a7e2d2eb884eb9b6e840eeba7e575dc5f28
           path: runtime/n06
 
       - name: Enable pnpm
@@ -176,8 +176,8 @@ jobs:
               "COMPOSITION"
             ],
             "revisions": {
-              "N05": "c9cff28e164f94d41455b75c3c5254d735856398",
-              "N06": "0d6476987c8ed3abe5f7338a82b3929e94080fa5"
+              "N05": "48e30119cfd1366cde7f767c12e77872f8a799b1",
+              "N06": "d78e0a7e2d2eb884eb9b6e840eeba7e575dc5f28"
             },
             "provenance": "GitHub Actions runtime evidence; no synthetic success"
           }
