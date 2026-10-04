@@ -290,6 +290,23 @@ func main() {
 	mux.Handle("/v1/", unified.Handler())
 	mux.Handle("/api/health/dashboard", health.Handler())
 	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) { writeJSON(w, http.StatusOK, e.Health()) })
+	mux.HandleFunc("/ready", func(w http.ResponseWriter, r *http.Request) {
+		meshSecretReady := strings.TrimSpace(os.Getenv("SOUL_MESH_HMAC_SECRET")) != ""
+		appTokenReady := strings.TrimSpace(os.Getenv("N07_APP_TOKEN")) != ""
+		operationsReady := len(e.Operations()) > 0
+		ready := meshSecretReady && operationsReady
+		if ready {
+			writeJSON(w, http.StatusOK, map[string]any{
+				"ready": true, "nucleus": "N07", "contractVersion": protocol.SoulMeshContractVersion,
+				"checks": map[string]bool{"operationsRegistered": operationsReady, "meshHMACConfigured": meshSecretReady, "appTokenConfigured": appTokenReady},
+			})
+			return
+		}
+		writeJSON(w, http.StatusServiceUnavailable, map[string]any{
+			"ready": false, "nucleus": "N07", "contractVersion": protocol.SoulMeshContractVersion,
+			"checks": map[string]bool{"operationsRegistered": operationsReady, "meshHMACConfigured": meshSecretReady, "appTokenConfigured": appTokenReady},
+		})
+	})
 	mux.HandleFunc("/status", func(w http.ResponseWriter, r *http.Request) {
 		if err := requireAppBearer(r); err != nil {
 			writeJSON(w, http.StatusUnauthorized, map[string]string{"error": err.Error()})
