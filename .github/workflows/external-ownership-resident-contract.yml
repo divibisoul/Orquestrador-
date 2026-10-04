@@ -1,15 +1,6 @@
 name: SOUL External Ownership + Resident Contract CI
 
-on:
-  pull_request:
-    branches: [main]
-    paths:
-      - integrations/external-capabilities.json
-      - integrations/external-capability-ownership.json
-      - integrations/resident-agent-contract.json
-      - scripts/validate-external-capability-ownership.mjs
-      - docs/SOUL_RESIDENT_AGENT_ARCHITECTURE.md
-  workflow_dispatch:
+on: [push, pull_request, workflow_dispatch]
 
 permissions:
   contents: read
@@ -17,10 +8,20 @@ permissions:
 jobs:
   validate:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - run: node scripts/validate-external-capability-ownership.mjs
-      - run: node -e "const c=require('./integrations/resident-agent-contract.json'); if(c.transport.protocol!=='soul-mesh/1'||c.transport.contractVersion!=='1.1.0'||c.interface.describe!=='mesh.resident.describe@1.0.0') process.exit(1); console.log('resident contract: VALID')"
+
+      - name: Validate external ownership
+        run: node scripts/validate-external-capability-ownership.mjs
+
+      - name: Validate resident contract
+        run: >
+          node -e "const c=require('./integrations/resident-agent-contract.json');
+          if(c.transport.protocol!=='soul-mesh/1'||c.transport.contractVersion!=='1.1.0'||c.interface.describe!=='mesh.resident.describe@1.0.0')
+          process.exit(1);
+          console.log('resident contract: VALID')"
