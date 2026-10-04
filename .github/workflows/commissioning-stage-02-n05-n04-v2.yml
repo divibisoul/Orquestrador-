@@ -1,0 +1,115 @@
+name: SOUL Commissioning Stage 2 v2 - N05 N04
+
+on:
+  push:
+    paths:
+      - ".github/workflows/commissioning-stage-02-n05-n04-v2.yml"
+      - "scripts/commission-stage-02-n05-n04.mjs"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  commission:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      SOUL_MESH_HMAC_SECRET: ci-stage-02-secret-32-bytes-minimum
+      SOUL_MESH_TOKEN: ci-stage-02-token
+      AUTH_SECRET: ci-stage-auth-secret
+      N04_URL: http://127.0.0.1:3000
+      N05_URL: http://127.0.0.1:3001
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Checkout N04 corrected revision
+        uses: actions/checkout@v4
+        with:
+          repository: divibisoul/nextjs-ai-chatbots
+          ref: 98e20071987c3569c83ffdaaf90bea5a9393df45
+          path: runtime/n04
+
+      - name: Checkout N05 current authenticated revision
+        uses: actions/checkout@v4
+        with:
+          repository: divibisoul/nextjs-ai-chatbot
+          ref: 9ff923279616e4db89de50a6e63df2ae31a44b5a
+          path: runtime/n05
+
+      - run: corepack enable
+
+      - name: Install N04
+        working-directory: runtime/n04
+        run: pnpm install --frozen-lockfile --prefer-offline
+
+      - name: Install N05
+        working-directory: runtime/n05
+        run: pnpm install --frozen-lockfile --prefer-offline
+
+      - name: Start N04
+        working-directory: runtime/n04
+        run: node node_modules/next/dist/bin/next dev --hostname 127.0.0.1 --port 3000 > /tmp/n04.log 2>&1 &
+
+      - name: Start N05
+        working-directory: runtime/n05
+        run: node node_modules/next/dist/bin/next dev --hostname 127.0.0.1 --port 3001 > /tmp/n05.log 2>&1 &
+
+      - name: Wait for N04 N05
+        run: |
+          set -euo pipefail
+          for i in $(seq 1 120); do
+            c04=$(curl -sS -o /tmp/n04.json -w '%{http_code}' -H 'Authorization: Bearer ci-stage-02-token' "$N04_URL/api/soul-mesh" || true)
+            c05=$(curl -sS -o /tmp/n05.json -w '%{http_code}' -H 'Authorization: Bearer ci-stage-02-token' "$N05_URL/api/soul-mesh" || true)
+            if [ "$c04" = "200" ] && [ "$c05" = "200" ]; then exit 0; fi
+            sleep 1
+          done
+          cat /tmp/n04.log
+          cat /tmp/n05.log
+          exit 1
+
+      - name: Discovery capability
+        run: node -e "const a=require('/tmp/n04.json'); const b=require('/tmp/n05.json'); if(a.nucleus!=='N04')process.exit(1); if(!a.declaredCapabilities.includes('context-orchestration'))process.exit(1); if(b.nucleus!=='N05')process.exit(1); console.log(JSON.stringify({state:'REAL',n04:a.nucleus,n05:b.nucleus,n04Capabilities:a.declaredCapabilities.length,n05Capabilities:b.capabilities.length}))"
+
+      - name: Native hops authorization payload retry
+        run: node scripts/commission-stage-02-n05-n04.mjs
+
+      - name: Inject N04 route failure
+        env:
+          N04_URL: http://127.0.0.1:39999
+        run: |
+          set +e
+          node scripts/commission-stage-02-n05-n04.mjs >/tmp/stage02-failure.log 2>&1
+          code=$?
+          set -e
+          if [ "$code" -eq 0 ]; then echo 'FAIL: expected injected N04 unavailability'; exit 1; fi
+          echo 'REAL: injected N04 route failure detected'
+
+      - name: Recover and recompose
+        run: |
+          set -euo pipefail
+          node scripts/commission-stage-02-n05-n04.mjs
+          cat >/tmp/HANDOFF_N05_N04.json <<'EOF'
+          {
+            "stage":"N05↔N04",
+            "evidenceState":"REAL",
+            "commissioned":true,
+            "correlationId":"stage02-root-correlation",
+            "criteriaRequired":["DISCOVERY","CAPABILITY","AUTHENTICATED_DELEGATION","CORRELATION","NATIVE_EXECUTION","FAILURE_INJECTION","RECOVERY","COMPOSITION","PROVENANCE"],
+            "revisions":{"N04":"98e20071987c3569c83ffdaaf90bea5a9393df45","N05":"9ff923279616e4db89de50a6e63df2ae31a44b5a"},
+            "provenance":"GitHub Actions runtime evidence; no synthetic success"
+          }
+          EOF
+          cat /tmp/HANDOFF_N05_N04.json
+
+      - name: Upload Stage 2 evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: handoff-n05-n04-stage-02-v2
+          path: |
+            /tmp/HANDOFF_N05_N04.json
+            /tmp/n04.log
+            /tmp/n05.log
+            /tmp/stage02-failure.log
