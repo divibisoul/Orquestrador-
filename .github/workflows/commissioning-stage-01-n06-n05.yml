@@ -28,7 +28,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: divibisoul/nextjs-ai-chatbot
-          ref: b1d474abff3a706b6e6cb13ff5f848f177c38ba8
+          ref: 93bece3c0baa97c8d566bc17fc5383707d6ee16e
           path: runtime/n05
 
       - name: Checkout N06 commissioning revision
@@ -176,7 +176,7 @@ jobs:
               "COMPOSITION"
             ],
             "revisions": {
-              "N05": "b1d474abff3a706b6e6cb13ff5f848f177c38ba8",
+              "N05": "93bece3c0baa97c8d566bc17fc5383707d6ee16e",
               "N06": "d78e0a7e2d2eb884eb9b6e840eeba7e575dc5f28"
             },
             "provenance": "GitHub Actions runtime evidence; no synthetic success"
