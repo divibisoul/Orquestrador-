@@ -66,10 +66,32 @@ async function payloadLimit() {
   console.log(JSON.stringify({state:'REAL',test:'payload-limit',expectedStatus:413,actualStatus:response.status}));
 }
 
+async function retrySemantics() {
+  const correlationId = 'stage02-retry-correlation';
+  let transientFailure = false;
+  try {
+    await send(N04_URL, 'N05', 'N04', 'context-orchestration', { attempt: 1, idempotencyKey: 'stage02-retry-1' }, correlationId, { bearer: false, timeoutMs: 1 });
+  } catch {
+    transientFailure = true;
+  }
+  const retry = await send(N04_URL, 'N05', 'N04', 'context-orchestration', { attempt: 2, idempotencyKey: 'stage02-retry-1' }, correlationId, { bearer: false });
+  if (!retry.response.ok) throw new Error('RETRY_FINAL_ATTEMPT_HTTP_' + retry.response.status);
+  verifyResponse(retry.message, retry.body);
+  if (retry.body.kind !== 'response') throw new Error('RETRY_FINAL_ATTEMPT_NOT_RESPONSE');
+  console.log(JSON.stringify({
+    state: 'REAL',
+    test: 'idempotent-retry',
+    transientFailureObserved: transientFailure,
+    correlationId,
+    retryMessageId: retry.body.id
+  }));
+}
+
 async function main() {
   await expectNative();
   await authzDenial();
   await payloadLimit();
+  await retrySemantics();
   console.log(JSON.stringify({state:'REAL',stage:'N05<->N04',composition:'PASS',provenance:{source:'runtime-evidence',correlationId:'stage02-root-correlation'}}));
 }
 
