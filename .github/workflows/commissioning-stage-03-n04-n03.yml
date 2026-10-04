@@ -1,0 +1,127 @@
+name: SOUL Commissioning Stage 3 - N04 N03
+
+on:
+  push:
+    paths:
+      - ".github/workflows/commissioning-stage-03-n04-n03.yml"
+      - "scripts/commission-stage-03-n04-n03.mjs"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  commission:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      SOUL_MESH_HMAC_SECRET: ci-stage-03-secret-32-bytes-minimum
+      SOUL_MESH_TOKEN: ci-stage-03-token
+      N03_URL: http://127.0.0.1:3002
+      N04_URL: http://127.0.0.1:3000
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Checkout N03 canonical listener
+        uses: actions/checkout@v4
+        with:
+          repository: divibisoul/nexus-aeternum-fusion
+          ref: 1b2f97daa0beef4886be067ed822b3455dd6ccca
+          path: runtime/n03
+
+      - name: Checkout N04 federation revision
+        uses: actions/checkout@v4
+        with:
+          repository: divibisoul/nextjs-ai-chatbots
+          ref: 5df5777c669cfa00650cc09c886c1afd73763e47
+          path: runtime/n04
+
+      - name: Enable package runtimes
+        run: corepack enable
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install N03
+        working-directory: runtime/n03
+        run: bun install --frozen-lockfile
+
+      - name: Install N04
+        working-directory: runtime/n04
+        run: pnpm install --frozen-lockfile --prefer-offline
+
+      - name: Start N03
+        working-directory: runtime/n03
+        run: bun run start > /tmp/n03.log 2>&1 &
+
+      - name: Start N04
+        working-directory: runtime/n04
+        run: node node_modules/next/dist/bin/next dev --hostname 127.0.0.1 --port 3000 > /tmp/n04.log 2>&1 &
+
+      - name: Wait for N03 N04 readiness
+        run: |
+          set -euo pipefail
+          for i in $(seq 1 120); do
+            c03=$(curl -sS -o /tmp/n03-ready.json -w '%{http_code}' http://127.0.0.1:3002/ready || true)
+            c04=$(curl -sS -o /tmp/n04-ready.json -w '%{http_code}' http://127.0.0.1:3000/api/ready || true)
+            if [ "$c03" = "200" ] && [ "$c04" = "200" ]; then
+              cat /tmp/n03-ready.json
+              cat /tmp/n04-ready.json
+              exit 0
+            fi
+            sleep 1
+          done
+          cat /tmp/n03.log
+          cat /tmp/n04.log
+          exit 1
+
+      - name: Discovery
+        run: |
+          set -euo pipefail
+          curl -fsS -H 'Authorization: Bearer ci-stage-03-token' http://127.0.0.1:3002/mesh/discovery > /tmp/n03-discovery.json
+          curl -fsS -H 'Authorization: Bearer ci-stage-03-token' http://127.0.0.1:3000/api/soul-mesh > /tmp/n04-discovery.json
+          node -e "const a=require('/tmp/n03-discovery.json'); const b=require('/tmp/n04-discovery.json'); if(a.nucleus!=='N03'||b.nucleus!=='N04')process.exit(1); console.log(JSON.stringify({state:'REAL',n03:a.nucleus,n04:b.nucleus,audioCapabilities:(a.capabilities||[]).filter(x=>String(x.id).startsWith('audio.')).length}))"
+
+      - name: Native pair execution
+        run: node scripts/commission-stage-03-n04-n03.mjs
+
+      - name: Inject N03 route failure
+        env:
+          N03_URL: http://127.0.0.1:39998
+        run: |
+          set +e
+          node scripts/commission-stage-03-n04-n03.mjs >/tmp/stage03-failure.log 2>&1
+          code=$?
+          set -e
+          if [ "$code" -eq 0 ]; then echo 'FAIL: expected N03 unavailability'; exit 1; fi
+          echo 'REAL: injected N03 route failure detected'
+
+      - name: Recover and recompose
+        run: |
+          set -euo pipefail
+          node scripts/commission-stage-03-n04-n03.mjs
+          cat >/tmp/HANDOFF_N04_N03.json <<'EOF'
+          {
+            "stage":"N04↔N03",
+            "evidenceState":"REAL",
+            "commissioned":true,
+            "correlationId":"stage03-root-correlation",
+            "criteriaRequired":["DISCOVERY","CAPABILITY","AUTHENTICATED_DELEGATION","CORRELATION","NATIVE_EXECUTION","FAILURE_INJECTION","RECOVERY","COMPOSITION","PROVENANCE"],
+            "revisions":{"N03":"1b2f97daa0beef4886be067ed822b3455dd6ccca","N04":"5df5777c669cfa00650cc09c886c1afd73763e47"},
+            "provenance":"GitHub Actions runtime evidence; no synthetic success"
+          }
+          EOF
+          cat /tmp/HANDOFF_N04_N03.json
+
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: handoff-n04-n03-stage-03
+          path: |
+            /tmp/HANDOFF_N04_N03.json
+            /tmp/n03.log
+            /tmp/n04.log
+            /tmp/stage03-failure.log
