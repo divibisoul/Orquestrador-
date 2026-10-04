@@ -54,6 +54,9 @@ jobs:
 
       - name: Start N03
         working-directory: runtime/n03
+        env:
+          SOUL_MESH_HOST: 127.0.0.1
+          SOUL_MESH_PORT: 3002
         run: bun run start > /tmp/n03.log 2>&1 &
 
       - name: Start N04
