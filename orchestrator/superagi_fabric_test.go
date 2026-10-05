@@ -43,7 +43,6 @@ func newFabricHarness(t *testing.T) *Engine {
 	return e
 }
 
-
 func newSuperAGIFabricAgentStubHarness(t *testing.T) *Engine {
 	t.Helper()
 	n, err := neural.New(8, .05)
@@ -160,7 +159,9 @@ func TestSuperAGIFabricSkipsOptionalComputeStage(t *testing.T) {
 	m.Metadata["agent_provider"] = "stub"
 	m.Metadata["goal"] = "agent-only task"
 	result, err := e.Submit(context.Background(), m)
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	if result.Metadata["agent_stage"] != "PASS" || result.Metadata["compute_stage"] != "SKIPPED" || result.Metadata["compute_requested"] != "false" {
 		t.Fatalf("unexpected result: %#v", result)
 	}
