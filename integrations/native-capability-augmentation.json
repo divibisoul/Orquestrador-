@@ -229,7 +229,7 @@
         "multimodal",
         "telemetry"
       ],
-      "state": "CATALOG_BOUND"
+      "state": "ADAPTER_BOUND"
     },
     "langgraph": {
       "role": "stateful_workflow_engine",
@@ -238,7 +238,7 @@
         "durable-workflows",
         "orchestration"
       ],
-      "state": "CATALOG_BOUND"
+      "state": "ADAPTER_BOUND"
     },
     "crewai": {
       "role": "multi_agent_coordination",
@@ -247,7 +247,7 @@
         "flows",
         "role-specialization"
       ],
-      "state": "CATALOG_BOUND"
+      "state": "ADAPTER_BOUND"
     },
     "microsoft-agent-framework": {
       "role": "interoperable_agents",
@@ -257,7 +257,7 @@
         "MCP",
         "A2A"
       ],
-      "state": "CATALOG_BOUND"
+      "state": "ADAPTER_BOUND"
     },
     "openhands": {
       "role": "software_engineering_agents",
@@ -266,7 +266,7 @@
         "tool-use",
         "execution"
       ],
-      "state": "CATALOG_BOUND"
+      "state": "ADAPTER_BOUND"
     },
     "metagpt": {
       "role": "software_process_agents",
@@ -275,7 +275,7 @@
         "multi-agent-collaboration",
         "software-process"
       ],
-      "state": "CATALOG_BOUND"
+      "state": "ADAPTER_BOUND"
     },
     "agentscope": {
       "role": "agent_and_tool_runtime",
@@ -288,7 +288,7 @@
         "A2A",
         "voice"
       ],
-      "state": "CATALOG_BOUND"
+      "state": "ADAPTER_BOUND"
     },
     "letta-code": {
       "role": "persistent_agent_memory",
@@ -297,7 +297,7 @@
         "persistent-memory",
         "identity"
       ],
-      "state": "CATALOG_BOUND"
+      "state": "ADAPTER_BOUND"
     },
     "browser-use": {
       "role": "browser_automation",
@@ -305,7 +305,7 @@
         "browser-agents",
         "web-automation"
       ],
-      "state": "CATALOG_BOUND"
+      "state": "ADAPTER_BOUND"
     },
     "smolagents": {
       "role": "code_tool_agents",
@@ -315,7 +315,7 @@
         "MCP",
         "multimodal"
       ],
-      "state": "CATALOG_BOUND"
+      "state": "ADAPTER_BOUND"
     },
     "pydantic-ai": {
       "role": "typed_agent_contracts",
@@ -325,7 +325,7 @@
         "subagents",
         "durable-execution"
       ],
-      "state": "CATALOG_BOUND"
+      "state": "ADAPTER_BOUND"
     },
     "llama-index": {
       "role": "retrieval_and_rag",
@@ -335,7 +335,7 @@
         "retrieval",
         "agent-workflows"
       ],
-      "state": "CATALOG_BOUND"
+      "state": "ADAPTER_BOUND"
     },
     "dspy": {
       "role": "reasoning_and_optimization",
@@ -344,21 +344,21 @@
         "optimization",
         "reasoning-pipelines"
       ],
-      "state": "CATALOG_BOUND"
+      "state": "ADAPTER_BOUND"
     },
     "whisper": {
       "role": "speech_recognition",
       "capabilities": [
         "speech-to-text"
       ],
-      "state": "CATALOG_BOUND"
+      "state": "ADAPTER_BOUND"
     },
     "kokoro": {
       "role": "speech_synthesis",
       "capabilities": [
         "text-to-speech"
       ],
-      "state": "CATALOG_BOUND"
+      "state": "ADAPTER_BOUND"
     }
   },
   "runtime_policy": {
