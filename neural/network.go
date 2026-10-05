@@ -57,6 +57,217 @@ func New(size int, learningRate float64) (*Network, error) {
 	}
 	return &Network{size: size, edges: make(map[int][]Edge), bias: make([]float64, size), learningRate: learningRate, config: Config{Layers: []Layer{{Activation: "tanh"}}, Optimizer: "adam", Regularization: 1e-6, GradientClip: 1.0, Heads: 1, BatchCache: 128}, adamM: make([]float64, size), adamV: make([]float64, size), edgeM: make(map[string]float64), edgeV: make(map[string]float64), cache: make(map[string][]float64)}, nil
 }
+func validateConfig(config Config) error {
+	if len(config.Layers) == 0 {
+		return errors.New("at least one neural layer is required")
+	}
+	if config.Optimizer != "sgd" && config.Optimizer != "rmsprop" && config.Optimizer != "adam" {
+		return errors.New("optimizer must be one of sgd, rmsprop, adam")
+	}
+	if config.Regularization < 0 || math.IsNaN(config.Regularization) || math.IsInf(config.Regularization, 0) {
+		return errors.New("regularization must be finite and non-negative")
+	}
+	if config.GradientClip < 0 || math.IsNaN(config.GradientClip) || math.IsInf(config.GradientClip, 0) {
+		return errors.New("gradient clip must be finite and non-negative")
+	}
+	if config.Heads < 1 {
+		return errors.New("attention heads must be positive")
+	}
+	if config.BatchCache < 1 {
+		return errors.New("batch cache capacity must be positive")
+	}
+	for _, layer := range config.Layers {
+		switch layer.Activation {
+		case "relu", "sigmoid", "linear", "tanh", "":
+		default:
+			return errors.New("unsupported activation: " + layer.Activation)
+		}
+		if layer.DropoutRate < 0 || layer.DropoutRate >= 1 || math.IsNaN(layer.DropoutRate) || math.IsInf(layer.DropoutRate, 0) {
+			return errors.New("dropout rate must be finite and in [0,1)")
+		}
+	}
+	return nil
+}
+
+
+func (n *Network) Configure(config Config) error {
+	if n == nil {
+		return errors.New("network unavailable")
+	}
+	if err := validateConfig(config); err != nil {
+		return err
+	}
+	n.mu.Lock()
+	defer n.mu.Unlock()
+	if n.config.Optimizer != "" && n.config.Optimizer != config.Optimizer {
+		n.adamM = make([]float64, n.size)
+		n.adamV = make([]float64, n.size)
+		n.edgeM = make(map[string]float64)
+		n.edgeV = make(map[string]float64)
+	}
+	config.Layers = append([]Layer(nil), config.Layers...)
+	n.config = config
+	n.cache = make(map[string][]float64)
+	return nil
+}
+
+
+func (n *Network) forwardTrace(ctx context.Context, inputs []float64) ([][]float64, [][]float64, error) {
+	if ctx == nil {
+		return nil, nil, errors.New("context is nil")
+	}
+	if len(inputs) != n.size {
+		return nil, nil, errors.New("input size mismatch")
+	}
+	for _, v := range inputs {
+		if math.IsNaN(v) || math.IsInf(v, 0) {
+			return nil, nil, errors.New("input contains non-finite value")
+		}
+	}
+
+	n.mu.RLock()
+	bias := append([]float64(nil), n.bias...)
+	edges := make(map[int][]Edge, len(n.edges))
+	for from, es := range n.edges {
+		edges[from] = append([]Edge(nil), es...)
+	}
+	cfg := n.config
+	n.mu.RUnlock()
+
+	states := make([][]float64, len(cfg.Layers)+1)
+	preActivations := make([][]float64, len(cfg.Layers))
+	states[0] = append([]float64(nil), inputs...)
+
+	for pass, layer := range cfg.Layers {
+		select {
+		case <-ctx.Done():
+			return nil, nil, ctx.Err()
+		default:
+		}
+		z := append([]float64(nil), bias...)
+		for i, value := range states[pass] {
+			z[i] += value
+		}
+		for from, es := range edges {
+			for _, e := range es {
+				z[e.To] += states[pass][from] * e.Weight
+			}
+		}
+		next := make([]float64, n.size)
+		for i := range z {
+			next[i] = activateValue(z[i], layer.Activation)
+		}
+		preActivations[pass] = z
+		states[pass+1] = next
+	}
+	return states, preActivations, nil
+}
+
+
+func (n *Network) forwardTraceTraining(ctx context.Context, inputs []float64) ([][]float64, [][]float64, [][]float64, error) {
+	if ctx == nil {
+		return nil, nil, nil, errors.New("context is nil")
+	}
+	if len(inputs) != n.size {
+		return nil, nil, nil, errors.New("input size mismatch")
+	}
+	if err := finiteVector(inputs); err != nil {
+		return nil, nil, nil, errors.New("training input contains non-finite value")
+	}
+
+	n.mu.RLock()
+	bias := append([]float64(nil), n.bias...)
+	edges := make(map[int][]Edge, len(n.edges))
+	for from, es := range n.edges {
+		edges[from] = append([]Edge(nil), es...)
+	}
+	cfg := n.config
+	rng := n.rng
+	n.mu.RUnlock()
+
+	states := make([][]float64, len(cfg.Layers)+1)
+	preActivations := make([][]float64, len(cfg.Layers))
+	dropoutMasks := make([][]float64, len(cfg.Layers))
+	states[0] = append([]float64(nil), inputs...)
+
+	for pass, layer := range cfg.Layers {
+		select {
+		case <-ctx.Done():
+			return nil, nil, nil, ctx.Err()
+		default:
+		}
+		z := append([]float64(nil), bias...)
+		for i, value := range states[pass] {
+			z[i] += value
+		}
+		for from, es := range edges {
+			for _, e := range es {
+				z[e.To] += states[pass][from] * e.Weight
+			}
+		}
+
+		next := make([]float64, n.size)
+		mask := make([]float64, n.size)
+		keepScale := 1.0
+		if layer.DropoutRate > 0 {
+			keepScale = 1 / (1 - layer.DropoutRate)
+		}
+		for i := range z {
+			activated := activateValue(z[i], layer.Activation)
+			if layer.DropoutRate > 0 {
+				if rng.Float64() < layer.DropoutRate {
+					mask[i] = 0
+					next[i] = 0
+					continue
+				}
+				mask[i] = keepScale
+				next[i] = activated * keepScale
+			} else {
+				mask[i] = 1
+				next[i] = activated
+			}
+		}
+		preActivations[pass] = z
+		dropoutMasks[pass] = mask
+		states[pass+1] = next
+	}
+	return states, preActivations, dropoutMasks, nil
+}
+
+
+func finiteVector(values []float64) error {
+	for _, value := range values {
+		if math.IsNaN(value) || math.IsInf(value, 0) {
+			return errors.New("vector contains non-finite value")
+		}
+	}
+	return nil
+}
+
+
+func mseLoss(pred, target []float64) (float64, error) {
+	if len(pred) == 0 || len(pred) != len(target) {
+		return 0, errors.New("loss vectors must match and be non-empty")
+	}
+	sum := 0.0
+	for i := range pred {
+		delta := pred[i] - target[i]
+		sum += .5 * delta * delta
+	}
+	return sum / float64(len(pred)), nil
+}
+
+
+func dropoutConfigured(layers []Layer) bool {
+	for _, layer := range layers {
+		if layer.DropoutRate > 0 {
+			return true
+		}
+	}
+	return false
+}
+
+
 func (n *Network) AddEdge(from, to int, weight float64) error {
 	n.mu.Lock()
 	defer n.mu.Unlock()
