@@ -130,12 +130,12 @@ func RegisterSuperAGIFabricOperations(e *Engine) error {
 				TraceID: m.TraceID, CorrelationID: m.CorrelationID,
 				Source: "N07.superagi", Target: m.Source, Status: "ok",
 				Metadata: map[string]string{
-					"agent_stage":         "PASS",
-					"compute_stage":       "SKIPPED",
-					"compute_requested":   "false",
-					"accelerator":         "false",
-					"provider":            provider,
-					"agent_result_json":   agentResult.Metadata["result_json"],
+					"agent_stage":       "PASS",
+					"compute_stage":     "SKIPPED",
+					"compute_requested": "false",
+					"accelerator":       "false",
+					"provider":          provider,
+					"agent_result_json": agentResult.Metadata["result_json"],
 				},
 			}, nil
 		}
