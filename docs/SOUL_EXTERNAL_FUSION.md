@@ -31,3 +31,14 @@ Operações comuns:
 - external.<provider>.execute@1.0.0
 
 Nenhum núcleo nativo é substituído e o histórico Git é preservado.
+
+
+## Ativação por ambiente
+
+- AgentScope: \`SOUL_EXTERNAL_EXECUTE_AGENTSCOPE=true\` + \`OPENAI_API_KEY\`.
+- Browser Use: \`SOUL_EXTERNAL_EXECUTE_BROWSER_USE=true\` + \`BROWSER_USE_API_KEY\` ou \`OPENAI_API_KEY\`.
+- SmolAgents: \`SOUL_EXTERNAL_EXECUTE_SMOLAGENTS=true\` + \`OPENAI_API_KEY\`.
+- Microsoft Agent Framework: \`SOUL_EXTERNAL_EXECUTE_MICROSOFT_AGENT_FRAMEWORK=true\` + \`OPENAI_API_KEY\`.
+- SuperAGI: \`SOUL_EXTERNAL_EXECUTE_SUPERAGI=true\` + \`SOUL_EXTERNAL_SUPERAGI_URL\`, \`SOUL_EXTERNAL_SUPERAGI_AGENT_ID\`, \`SOUL_EXTERNAL_SUPERAGI_API_KEY\`.
+- OpenHands: \`SOUL_EXTERNAL_EXECUTE_OPENHANDS=true\` + \`SOUL_EXTERNAL_OPENHANDS_URL\`, \`SOUL_EXTERNAL_OPENHANDS_CONVERSATION_ID\`, \`SOUL_EXTERNAL_OPENHANDS_SESSION_KEY\`.
+- Letta Code: \`SOUL_EXTERNAL_EXECUTE_LETTA_CODE=true\` + binário \`letta\` e a autenticação/configuração do próprio Letta.
