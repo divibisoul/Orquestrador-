@@ -18,7 +18,8 @@ def load():
 
 def root(v):
     p=pathlib.Path(str(v.get("root") or "")).resolve()
-    if not p.exists(): emit({"state":"BLOCKED","code":"EXTERNAL_SOURCE_NOT_PRESENT","root":str(p)},2)
+    if not p.exists() and str(v.get("mode") or "").strip().lower() != "probe":
+        emit({"state":"BLOCKED","code":"EXTERNAL_SOURCE_NOT_PRESENT","root":str(p)},2)
     return p
 
 def package_available(p):
