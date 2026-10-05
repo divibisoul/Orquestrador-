@@ -9,7 +9,7 @@
     {"id":"superagi","owner":"N07","kind":"python","root":"integrations/external/superagi","operations":["agent.describe","agent.execute"],"package":"superagi"},
     {"id":"langgraph","owner":"N07","kind":"python","root":"integrations/external/langgraph","operations":["workflow.invoke"],"package":"langgraph"},
     {"id":"crewai","owner":"N07","kind":"python","root":"integrations/external/crewai","operations":["team.execute"],"package":"crewai"},
-    {"id":"microsoft-agent-framework","owner":"N07","kind":"python","root":"integrations/external/microsoft-agent-framework","operations":["agent.describe","workflow.describe"],"package":"agent_framework"},
+    {"id":"microsoft-agent-framework","owner":"N07","kind":"python","root":"integrations/external/microsoft-agent-framework","operations":["agent.describe","workflow.describe","agent.execute"],"package":"agent_framework"},
     {"id":"openhands","owner":"N06","kind":"python","root":"integrations/external/openhands","operations":["agent.describe","agent.execute"],"package":"openhands"},
     {"id":"metagpt","owner":"N07","kind":"python","root":"integrations/external/metagpt","operations":["team.execute"],"package":"metagpt"},
     {"id":"agentscope","owner":"N03","kind":"python","root":"integrations/external/agentscope","operations":["agent.describe","agent.execute"],"package":"agentscope"},
