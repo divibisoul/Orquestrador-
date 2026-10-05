@@ -1,6 +1,52 @@
 package orchestrator
-import ("context";"os";"strings";"testing";"github.com/divibisoul/Orquestrador-/neural";"github.com/divibisoul/Orquestrador-/prefrontal";"github.com/divibisoul/Orquestrador-/supergpu")
-func newExternalTestEngine(t *testing.T)(*Engine,ExternalAdapterRegistry){t.Helper();n,_:=neural.New(4,.05);c,_:=prefrontal.New(.1,8);g:=supergpu.New(nil);e,err:=New(n,c,g);if err!=nil{t.Fatal(err)};r,err:=NewExternalAdapterRegistry();if err!=nil{t.Fatal(err)};if err:=RegisterExternalAdapterOperations(e,r);err!=nil{t.Fatal(err)};return e,r}
-func TestExternalAdapterManifestHasSixteenProviders(t *testing.T){_,r:=newExternalTestEngine(t);if len(r.byID)!=16{t.Fatalf("providers=%d",len(r.byID))}}
-func TestExternalAdapterExecutionFailsClosedByDefault(t *testing.T){e,_:=newExternalTestEngine(t);old:=os.Getenv("SOUL_EXTERNAL_EXECUTE_LANGGRAPH");t.Cleanup(func(){_ = os.Setenv("SOUL_EXTERNAL_EXECUTE_LANGGRAPH",old)});_ = os.Unsetenv("SOUL_EXTERNAL_EXECUTE_LANGGRAPH");_,err:=e.Execute(context.Background(),"external.langgraph.execute@1.0.0",nil,map[string]string{"external_operation":"workflow.invoke","input":"x"});if err==nil||!strings.Contains(err.Error(),"EXTERNAL_ADAPTER_DISABLED"){t.Fatalf("unexpected error: %v",err)}}
-func TestExternalAdapterProbeRegistered(t *testing.T){e,_:=newExternalTestEngine(t);if _,err:=e.Execute(context.Background(),"external.langgraph.probe@1.0.0",nil,nil);err!=nil{t.Fatalf("probe failed: %v",err)}}
+
+import (
+	"context"
+	"github.com/divibisoul/Orquestrador-/neural"
+	"github.com/divibisoul/Orquestrador-/prefrontal"
+	"github.com/divibisoul/Orquestrador-/supergpu"
+	"os"
+	"strings"
+	"testing"
+)
+
+func newExternalTestEngine(t *testing.T) (*Engine, ExternalAdapterRegistry) {
+	t.Helper()
+	n, _ := neural.New(4, .05)
+	c, _ := prefrontal.New(.1, 8)
+	g := supergpu.New(nil)
+	e, err := New(n, c, g)
+	if err != nil {
+		t.Fatal(err)
+	}
+	r, err := NewExternalAdapterRegistry()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := RegisterExternalAdapterOperations(e, r); err != nil {
+		t.Fatal(err)
+	}
+	return e, r
+}
+func TestExternalAdapterManifestHasSixteenProviders(t *testing.T) {
+	_, r := newExternalTestEngine(t)
+	if len(r.byID) != 16 {
+		t.Fatalf("providers=%d", len(r.byID))
+	}
+}
+func TestExternalAdapterExecutionFailsClosedByDefault(t *testing.T) {
+	e, _ := newExternalTestEngine(t)
+	old := os.Getenv("SOUL_EXTERNAL_EXECUTE_LANGGRAPH")
+	t.Cleanup(func() { _ = os.Setenv("SOUL_EXTERNAL_EXECUTE_LANGGRAPH", old) })
+	_ = os.Unsetenv("SOUL_EXTERNAL_EXECUTE_LANGGRAPH")
+	_, err := e.Execute(context.Background(), "external.langgraph.execute@1.0.0", nil, map[string]string{"external_operation": "workflow.invoke", "input": "x"})
+	if err == nil || !strings.Contains(err.Error(), "EXTERNAL_ADAPTER_DISABLED") {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+func TestExternalAdapterProbeRegistered(t *testing.T) {
+	e, _ := newExternalTestEngine(t)
+	if _, err := e.Execute(context.Background(), "external.langgraph.probe@1.0.0", nil, nil); err != nil {
+		t.Fatalf("probe failed: %v", err)
+	}
+}
