@@ -280,6 +280,13 @@ func main() {
 	if err := octacore.RegisterOperations(e, octacoreProcessor); err != nil {
 		log.Fatal(err)
 	}
+	octacoreFusion, err := octacore.NewFusion(e, peerClient, g)
+	if err != nil {
+		log.Fatal(err)
+	}
+	if err := octacoreFusion.Register(); err != nil {
+		log.Fatal(err)
+	}
 
 	unified := backend.NewUnified(e, cfg)
 	openAICompat := api.NewOpenAICompatHandler(peerClient)
