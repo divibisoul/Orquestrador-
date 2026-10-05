@@ -66,6 +66,7 @@ func newSuperAGIFabricAgentStubHarness(t *testing.T) *Engine {
 	if err := RegisterSuperAGIFabricOperations(e); err != nil { t.Fatal(err) }
 	return e
 }
+
 func TestSuperAGIFabricDescribeDeclaresCompositionWithoutAGIOverclaim(t *testing.T) {
 	e := newFabricHarness(t)
 	m := protocol.NewMessage(protocol.N01, protocol.N07, "request", SuperAGIFabricDescribeOperation, nil)
