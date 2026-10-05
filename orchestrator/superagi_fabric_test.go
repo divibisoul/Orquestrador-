@@ -169,14 +169,16 @@ func TestSuperAGIFabricSkipsOptionalComputeStage(t *testing.T) {
 
 func TestSuperAGIFabricAllowsCPUComputeWhenAcceleratorNotRequested(t *testing.T) {
 	e := newSuperAGIFabricAgentStubHarness(t)
-	m := protocol.NewMessage(protocol.N01, protocol.N07, "request", SuperAGIFabricExecuteOperation, []float64{2,3})
+	m := protocol.NewMessage(protocol.N01, protocol.N07, "request", SuperAGIFabricExecuteOperation, []float64{2, 3})
 	m.CorrelationID = "corr-superagi-cpu"
 	m.Metadata["agent_provider"] = "stub"
 	m.Metadata["goal"] = "deterministic CPU compute"
 	m.Metadata["compute_operation"] = "square"
 	m.Metadata["compute_values_json"] = "[2,3]"
 	result, err := e.Submit(context.Background(), m)
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	if result.Metadata["compute_stage"] != "PASS" || result.Metadata["accelerator"] != "false" || result.Metadata["backend"] != "cpu" {
 		t.Fatalf("unexpected result: %#v", result)
 	}
