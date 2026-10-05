@@ -27,7 +27,7 @@
         "skills",
         "coding-agent-workflow"
       ],
-      "status": "structural-only",
+      "status": "adapter-planned",
       "mode": "dev-skill-pack"
     },
     {
@@ -45,7 +45,7 @@
         "multimodal",
         "telemetry"
       ],
-      "status": "structural-only",
+      "status": "adapter-planned",
       "mode": "explicit-adapter"
     },
     {
@@ -60,7 +60,7 @@
         "stateful-workflows",
         "durable-orchestration"
       ],
-      "status": "structural-only",
+      "status": "adapter-planned",
       "mode": "explicit-adapter"
     },
     {
@@ -74,7 +74,7 @@
       "affinity": [
         "team-role-execution"
       ],
-      "status": "structural-only",
+      "status": "adapter-planned",
       "mode": "explicit-adapter"
     },
     {
@@ -91,7 +91,7 @@
         "MCP",
         "A2A"
       ],
-      "status": "structural-only",
+      "status": "adapter-planned",
       "mode": "explicit-adapter"
     },
     {
@@ -106,7 +106,7 @@
         "tool-use",
         "bounded-execution"
       ],
-      "status": "structural-only",
+      "status": "adapter-planned",
       "mode": "explicit-adapter"
     },
     {
@@ -122,7 +122,7 @@
         "software-process",
         "multi-agent-collaboration"
       ],
-      "status": "structural-only",
+      "status": "adapter-planned",
       "mode": "explicit-adapter"
     },
     {
@@ -139,7 +139,7 @@
         "multimodal",
         "agent-team-boundary"
       ],
-      "status": "structural-only",
+      "status": "adapter-planned",
       "mode": "explicit-adapter"
     },
     {
@@ -156,7 +156,7 @@
         "identity",
         "stateful-agent"
       ],
-      "status": "structural-only",
+      "status": "adapter-planned",
       "mode": "explicit-adapter"
     },
     {
@@ -171,7 +171,7 @@
         "browser-automation",
         "web-retrieval"
       ],
-      "status": "structural-only",
+      "status": "adapter-planned",
       "mode": "explicit-adapter"
     },
     {
@@ -188,7 +188,7 @@
         "MCP",
         "multimodal"
       ],
-      "status": "structural-only",
+      "status": "adapter-planned",
       "mode": "explicit-adapter"
     },
     {
@@ -205,7 +205,7 @@
         "tools",
         "subagents"
       ],
-      "status": "structural-only",
+      "status": "adapter-planned",
       "mode": "explicit-adapter"
     },
     {
@@ -222,7 +222,7 @@
         "retrieval",
         "agent-workflows"
       ],
-      "status": "structural-only",
+      "status": "adapter-planned",
       "mode": "explicit-adapter"
     },
     {
@@ -239,7 +239,7 @@
         "optimization",
         "reasoning-pipelines"
       ],
-      "status": "structural-only",
+      "status": "adapter-planned",
       "mode": "explicit-adapter"
     },
     {
@@ -265,7 +265,7 @@
       "affinity": [
         "text-to-speech"
       ],
-      "status": "structural-only",
+      "status": "adapter-planned",
       "mode": "explicit-adapter"
     }
   ]

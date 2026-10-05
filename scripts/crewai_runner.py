@@ -2,7 +2,7 @@ import json, os, sys
 def emit(x,c=0): print(json.dumps(x,ensure_ascii=False)); raise SystemExit(c)
 try:r=json.load(sys.stdin)
 except Exception as e:emit({"state":"FAIL","code":"CREWAI_REQUEST_INVALID","detail":str(e)},2)
-goal=str(r.get("goal") or "").strip(); root=os.path.abspath(str(r.get("root") or "integrations/soul-upstream/crewai")); roles=r.get("roles") or ["Planner","Researcher"]
+goal=str(r.get("goal") or "").strip(); root=os.path.abspath(str(r.get("root") or "integrations/external/crewai")); roles=r.get("roles") or ["Planner","Researcher"]
 if not goal:emit({"state":"FAIL","code":"CREWAI_GOAL_REQUIRED"},2)
 if not os.path.isdir(root):emit({"state":"DEGRADED","code":"CREWAI_SOURCE_NOT_AVAILABLE"})
 if not os.environ.get("OPENAI_API_KEY"):emit({"state":"DEGRADED","code":"CREWAI_LLM_CREDENTIALS_NOT_AVAILABLE"})

@@ -49,11 +49,11 @@ func providerEvidence(provider string) MultiAgentProviderEvidence {
 	switch provider {
 	case "", "crewai":
 		provider = "crewai"
-		root = getEnv("SOUL_N07_CREWAI_ROOT", "integrations/soul-upstream/crewai")
+		root = getEnv("SOUL_N07_CREWAI_ROOT", "integrations/external/crewai")
 		rev = crewaiRevision
 		en = "SOUL_N07_CREWAI_ENABLED"
 	case "metagpt":
-		root = getEnv("SOUL_N07_METAGPT_ROOT", "integrations/soul-upstream/metagpt")
+		root = getEnv("SOUL_N07_METAGPT_ROOT", "integrations/external/metagpt")
 		rev = metagptRevision
 		en = "SOUL_N07_METAGPT_ENABLED"
 	default:

@@ -29,7 +29,7 @@
         "N07"
       ],
       "activation_boundary": "capability-adapter",
-      "adapter_state": "CATALOGED",
+      "adapter_state": "ADAPTER_BOUND",
       "verification_state": "PROJECTED",
       "fail_closed": true,
       "directAdapterHosts": [
@@ -44,7 +44,7 @@
         "N01"
       ],
       "activation_boundary": "workflow-adapter",
-      "adapter_state": "CATALOGED",
+      "adapter_state": "ADAPTER_BOUND",
       "verification_state": "PROJECTED",
       "fail_closed": true,
       "directAdapterHosts": [
@@ -59,7 +59,7 @@
         "N07"
       ],
       "activation_boundary": "team-role-adapter",
-      "adapter_state": "CATALOGED",
+      "adapter_state": "ADAPTER_BOUND",
       "verification_state": "PROJECTED",
       "fail_closed": true,
       "directAdapterHosts": [
@@ -73,7 +73,7 @@
         "N07"
       ],
       "activation_boundary": "mcp-a2a-adapter",
-      "adapter_state": "CATALOGED",
+      "adapter_state": "ADAPTER_BOUND",
       "verification_state": "PROJECTED",
       "fail_closed": true,
       "directAdapterHosts": [
@@ -87,7 +87,7 @@
         "N06"
       ],
       "activation_boundary": "sandboxed-execution-adapter",
-      "adapter_state": "CATALOGED",
+      "adapter_state": "ADAPTER_BOUND",
       "verification_state": "PROJECTED",
       "fail_closed": true,
       "directAdapterHosts": [
@@ -101,7 +101,7 @@
         "N07"
       ],
       "activation_boundary": "role-process-adapter",
-      "adapter_state": "CATALOGED",
+      "adapter_state": "ADAPTER_BOUND",
       "verification_state": "PROJECTED",
       "fail_closed": true,
       "directAdapterHosts": [
@@ -116,7 +116,7 @@
         "N07"
       ],
       "activation_boundary": "agent-tool-adapter",
-      "adapter_state": "CATALOGED",
+      "adapter_state": "ADAPTER_BOUND",
       "verification_state": "PROJECTED",
       "fail_closed": true,
       "directAdapterHosts": [
@@ -131,7 +131,7 @@
         "N01"
       ],
       "activation_boundary": "persistent-agent-adapter",
-      "adapter_state": "CATALOGED",
+      "adapter_state": "ADAPTER_BOUND",
       "verification_state": "PROJECTED",
       "fail_closed": true,
       "directAdapterHosts": [
@@ -145,7 +145,7 @@
         "N04"
       ],
       "activation_boundary": "browser-sandbox-adapter",
-      "adapter_state": "CATALOGED",
+      "adapter_state": "ADAPTER_BOUND",
       "verification_state": "PROJECTED",
       "fail_closed": true,
       "directAdapterHosts": [
@@ -159,7 +159,7 @@
         "N06"
       ],
       "activation_boundary": "tool-code-agent-adapter",
-      "adapter_state": "CATALOGED",
+      "adapter_state": "ADAPTER_BOUND",
       "verification_state": "PROJECTED",
       "fail_closed": true,
       "directAdapterHosts": [
@@ -174,7 +174,7 @@
         "JEV"
       ],
       "activation_boundary": "typed-contract-adapter",
-      "adapter_state": "CATALOGED",
+      "adapter_state": "ADAPTER_BOUND",
       "verification_state": "PROJECTED",
       "fail_closed": true,
       "directAdapterHosts": [
@@ -189,7 +189,7 @@
         "N05"
       ],
       "activation_boundary": "retrieval-adapter",
-      "adapter_state": "CATALOGED",
+      "adapter_state": "ADAPTER_BOUND",
       "verification_state": "PROJECTED",
       "fail_closed": true,
       "directAdapterHosts": [
@@ -203,7 +203,7 @@
         "N06"
       ],
       "activation_boundary": "reasoning-optimization-adapter",
-      "adapter_state": "CATALOGED",
+      "adapter_state": "ADAPTER_BOUND",
       "verification_state": "PROJECTED",
       "fail_closed": true,
       "directAdapterHosts": [
@@ -217,7 +217,7 @@
         "N03"
       ],
       "activation_boundary": "speech-to-text-adapter",
-      "adapter_state": "CATALOGED",
+      "adapter_state": "ADAPTER_BOUND",
       "verification_state": "PROJECTED",
       "fail_closed": true,
       "directAdapterHosts": [
@@ -231,7 +231,7 @@
         "N03"
       ],
       "activation_boundary": "text-to-speech-adapter",
-      "adapter_state": "CATALOGED",
+      "adapter_state": "ADAPTER_BOUND",
       "verification_state": "PROJECTED",
       "fail_closed": true,
       "directAdapterHosts": [

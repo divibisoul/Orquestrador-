@@ -34,9 +34,9 @@ func TestSOULIntegrationContracts(t *testing.T) {
 			t.Fatalf("incomplete provider contract: %+v", p)
 		}
 		switch p.State {
-		case "CATALOGED":
+		case "CATALOGED", "ADAPTER_BOUND":
 			if p.Verification == "REAL" {
-				t.Fatalf("cataloged provider cannot claim REAL verification: %+v", p)
+				t.Fatalf("provider adapter boundary cannot claim REAL verification without runtime evidence: %+v", p)
 			}
 		case "IMPLEMENTED_AT_N07":
 			if !contains(p.Hosts, "N07") {
