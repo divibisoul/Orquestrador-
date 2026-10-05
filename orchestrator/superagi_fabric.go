@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"strconv"
 	"strings"
 
 	"github.com/divibisoul/Orquestrador-/protocol"
@@ -44,8 +45,9 @@ func (f *SuperAGIFabric) Describe() map[string]any {
 			"SARA",
 			"JEV",
 		},
-		"executionRule": "agent-stage -> optional accelerator-stage -> result-validation",
+		"executionRule": "agent-stage -> optional compute-stage -> result-validation; accelerator requirement is explicit",
 		"failClosed":    true,
+		"computePolicy": "optional; CPU is valid unless require_accelerator=true",
 	}
 }
 
@@ -80,10 +82,12 @@ func RegisterSuperAGIFabricOperations(e *Engine) error {
 		goal := strings.TrimSpace(m.Metadata["goal"])
 		computeOperation := strings.TrimSpace(m.Metadata["compute_operation"])
 		valuesRaw := strings.TrimSpace(m.Metadata["compute_values_json"])
+		requireAccelerator := strings.EqualFold(strings.TrimSpace(m.Metadata["require_accelerator"]), "true")
+		computeRequested := computeOperation != "" || valuesRaw != "" || requireAccelerator
 		if provider == "" || goal == "" {
 			return superAGIFabricFail(m, "SUPERAGI_AGENT_STAGE_REQUIRED")
 		}
-		if computeOperation == "" || valuesRaw == "" {
+		if computeRequested && (computeOperation == "" || valuesRaw == "") {
 			return superAGIFabricFail(m, "SUPERAGI_COMPUTE_STAGE_REQUIRED")
 		}
 
@@ -121,6 +125,21 @@ func RegisterSuperAGIFabricOperations(e *Engine) error {
 			return superAGIFabricFail(m, "SUPERAGI_AGENT_STAGE_FAILED:"+agentResult.Error)
 		}
 
+		if !computeRequested {
+			return protocol.Result{
+				TraceID: m.TraceID, CorrelationID: m.CorrelationID,
+				Source: "N07.superagi", Target: m.Source, Status: "ok",
+				Metadata: map[string]string{
+					"agent_stage":         "PASS",
+					"compute_stage":       "SKIPPED",
+					"compute_requested":   "false",
+					"accelerator":         "false",
+					"provider":            provider,
+					"agent_result_json":   agentResult.Metadata["result_json"],
+				},
+			}, nil
+		}
+
 		var values []float64
 		if err := json.Unmarshal([]byte(valuesRaw), &values); err != nil || len(values) == 0 {
 			return superAGIFabricFail(m, "SUPERAGI_COMPUTE_VALUES_INVALID")
@@ -129,23 +148,25 @@ func RegisterSuperAGIFabricOperations(e *Engine) error {
 		computeMessage.Metadata = map[string]string{
 			"operation":           computeOperation,
 			"device":              m.Metadata["device"],
-			"require_accelerator": m.Metadata["require_accelerator"],
+			"require_accelerator": strconv.FormatBool(requireAccelerator),
 		}
 		computeResult, computeErr := fexecute(ctx, e, computeMessage)
 		if computeErr != nil {
-			return superAGIFabricFail(m, "SUPERAGI_ACCELERATOR_STAGE_FAILED:"+computeResult.Error)
+			return superAGIFabricFail(m, "SUPERAGI_COMPUTE_STAGE_FAILED:"+computeResult.Error)
 		}
 		return protocol.Result{
 			TraceID: m.TraceID, CorrelationID: m.CorrelationID,
 			Source: "N07.superagi", Target: m.Source, Status: "ok",
 			Payload: computeResult.Payload,
 			Metadata: map[string]string{
-				"agent_stage":   "PASS",
-				"compute_stage": "PASS",
-				"device":        computeResult.Metadata["device"],
-				"backend":       computeResult.Metadata["backend"],
-				"accelerator":   computeResult.Metadata["accelerator"],
-				"provider":      provider,
+				"agent_stage":       "PASS",
+				"compute_stage":     "PASS",
+				"compute_requested": "true",
+				"device":            computeResult.Metadata["device"],
+				"backend":           computeResult.Metadata["backend"],
+				"accelerator":       computeResult.Metadata["accelerator"],
+				"provider":          provider,
+				"agent_result_json": agentResult.Metadata["result_json"],
 			},
 		}, nil
 	})
