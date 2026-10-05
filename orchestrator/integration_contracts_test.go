@@ -13,9 +13,9 @@ func TestSOULIntegrationContracts(t *testing.T) {
 	}
 	var providers struct {
 		Providers []struct {
-			ID         string `json:"id"`
-			Intent     string `json:"intent"`
-			Boundary   string `json:"activation_boundary"`
+			ID           string   `json:"id"`
+			Intent       string   `json:"intent"`
+			Boundary     string   `json:"activation_boundary"`
 			State        string   `json:"adapter_state"`
 			Verification string   `json:"verification_state"`
 			Hosts        []string `json:"directAdapterHosts"`
@@ -66,7 +66,6 @@ func TestSOULIntegrationContracts(t *testing.T) {
 		t.Fatalf("components=%d want=9", len(components.Components))
 	}
 }
-
 
 func contains(values []string, target string) bool {
 	for _, value := range values {
