@@ -127,7 +127,7 @@ func (f *Fusion) execute(ctx context.Context, m protocol.Message) (protocol.Resu
 	}
 	operation := strings.TrimSpace(m.Metadata["operation"])
 	if operation == "" {
-		operation = "identity"
+		return f.fail(m, "SUPERGPU_OPERATION_REQUIRED", errors.New("operation is required"))
 	}
 
 	gpu, err := f.engine.Execute(ctx, "supergpu.execute@1.0.0", m.Payload, map[string]string{
