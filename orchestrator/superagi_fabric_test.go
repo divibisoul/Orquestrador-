@@ -47,23 +47,37 @@ func newFabricHarness(t *testing.T) *Engine {
 func newSuperAGIFabricAgentStubHarness(t *testing.T) *Engine {
 	t.Helper()
 	n, err := neural.New(8, .05)
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	c, err := prefrontal.New(.10, 32)
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	g := supergpu.New(nil)
 	g.Discover()
 	e, err := New(n, c, g)
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	if err := e.Register(MultiAgentExecuteOperation, func(ctx context.Context, m protocol.Message) (protocol.Result, error) {
 		return protocol.Result{
 			TraceID: m.TraceID, CorrelationID: m.CorrelationID, Source: "N07.multiagent", Target: m.Source, Status: "ok",
 			Metadata: map[string]string{"result_json": `{"state":"PASS","provider":"stub"}`},
 		}, nil
-	}); err != nil { t.Fatal(err) }
+	}); err != nil {
+		t.Fatal(err)
+	}
 	f, err := supergpu.NewFederation(g)
-	if err != nil { t.Fatal(err) }
-	if err := RegisterSuperGPUMeshOperations(e, f); err != nil { t.Fatal(err) }
-	if err := RegisterSuperAGIFabricOperations(e); err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := RegisterSuperGPUMeshOperations(e, f); err != nil {
+		t.Fatal(err)
+	}
+	if err := RegisterSuperAGIFabricOperations(e); err != nil {
+		t.Fatal(err)
+	}
 	return e
 }
 
