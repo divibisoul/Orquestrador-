@@ -99,13 +99,28 @@ func TestSuperAGIFabricFailClosedWithoutAgentProvider(t *testing.T) {
 	}
 }
 
-func TestSuperAGIFabricRequiresComputeStage(t *testing.T) {
-	e := newFabricHarness(t)
+func TestSuperAGIFabricRejectsIncompleteRequestedCompute(t *testing.T) {
+	e := newSuperAGIFabricAgentStubHarness(t)
 	m := protocol.NewMessage(protocol.N01, protocol.N07, "request", SuperAGIFabricExecuteOperation, nil)
-	m.Metadata["agent_provider"] = "crewai"
+	m.Metadata["agent_provider"] = "stub"
 	m.Metadata["goal"] = "test"
+	m.Metadata["compute_operation"] = "square"
 	result, err := e.Submit(context.Background(), m)
 	if err == nil || result.Error != "SUPERAGI_COMPUTE_STAGE_REQUIRED" {
+		t.Fatalf("unexpected result: %#v err=%v", result, err)
+	}
+}
+
+func TestSuperAGIFabricKeepsAcceleratorRequirementExplicit(t *testing.T) {
+	e := newSuperAGIFabricAgentStubHarness(t)
+	m := protocol.NewMessage(protocol.N01, protocol.N07, "request", SuperAGIFabricExecuteOperation, []float64{2, 3})
+	m.Metadata["agent_provider"] = "stub"
+	m.Metadata["goal"] = "real accelerator required"
+	m.Metadata["compute_operation"] = "square"
+	m.Metadata["compute_values_json"] = "[2,3]"
+	m.Metadata["require_accelerator"] = "true"
+	result, err := e.Submit(context.Background(), m)
+	if err == nil || result.Error != "SUPERAGI_COMPUTE_STAGE_FAILED:SUPERGPU_ACCELERATOR_UNAVAILABLE" {
 		t.Fatalf("unexpected result: %#v err=%v", result, err)
 	}
 }
