@@ -245,6 +245,21 @@ func (c *Cortex) Recall(limit int) []Decision {
 	copy(out, c.decisions[len(c.decisions)-limit:])
 	return out
 }
+func boundedPositive(v float64) float64 {
+	if v < 0 || math.IsNaN(v) || math.IsInf(v, 0) {
+		return 0
+	}
+	return v / (1 + v)
+}
+
+
+func (c *Cortex) HistorySize() int {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	return len(c.decisionHistory)
+}
+
+
 func (c *Cortex) Health() map[string]any {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
