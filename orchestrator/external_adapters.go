@@ -55,6 +55,11 @@ type ExternalCapabilityRegistry struct {
 	Repositories []ExternalCapabilityRevision `json:"repositories"`
 }
 
+type ExternalRuntimeAttestation struct {
+	SchemaVersion string            `json:"schema_version"`
+	Repositories  map[string]string `json:"repositories"`
+}
+
 type ExternalAdapterRegistry struct {
 	manifest     ExternalAdapterManifest
 	byID         map[string]ExternalAdapterSpec
@@ -155,28 +160,58 @@ func (r ExternalAdapterRegistry) validateMaterializedPin(ctx context.Context, p 
 	}
 	gitCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
-	treeCmd := exec.CommandContext(gitCtx, "git", "-C", rootDir, "ls-tree", "HEAD", "--", filepath.ToSlash(rel))
-	treeOut, err := treeCmd.Output()
-	if err != nil {
-		if gitCtx.Err() != nil {
-			return fmt.Errorf("EXTERNAL_GITLINK_CHECK_TIMEOUT:%s", p.ID)
+	gitDir := filepath.Join(rootDir, ".git")
+	if _, statErr := os.Stat(gitDir); statErr == nil {
+		treeCmd := exec.CommandContext(gitCtx, "git", "-C", rootDir, "ls-tree", "HEAD", "--", filepath.ToSlash(rel))
+		treeOut, err := treeCmd.Output()
+		if err != nil {
+			if gitCtx.Err() != nil {
+				return fmt.Errorf("EXTERNAL_GITLINK_CHECK_TIMEOUT:%s", p.ID)
+			}
+			return fmt.Errorf("EXTERNAL_GITLINK_CHECK_FAILED:%s", p.ID)
 		}
-		return fmt.Errorf("EXTERNAL_GITLINK_CHECK_FAILED:%s", p.ID)
-	}
-	fields := strings.Fields(string(treeOut))
-	if len(fields) < 3 || fields[0] != "160000" || fields[1] != "commit" || fields[2] != revision {
-		return fmt.Errorf("EXTERNAL_GITLINK_REVISION_MISMATCH:%s:expected=%s", p.ID, revision)
-	}
-	headCmd := exec.CommandContext(gitCtx, "git", "-C", root, "rev-parse", "HEAD")
-	headOut, err := headCmd.Output()
-	if err != nil {
-		if gitCtx.Err() != nil {
-			return fmt.Errorf("EXTERNAL_SUBMODULE_HEAD_CHECK_TIMEOUT:%s", p.ID)
+		fields := strings.Fields(string(treeOut))
+		if len(fields) < 3 || fields[0] != "160000" || fields[1] != "commit" || fields[2] != revision {
+			return fmt.Errorf("EXTERNAL_GITLINK_REVISION_MISMATCH:%s:expected=%s", p.ID, revision)
 		}
-		return fmt.Errorf("EXTERNAL_SUBMODULE_NOT_MATERIALIZED:%s", p.ID)
+		headCmd := exec.CommandContext(gitCtx, "git", "-C", root, "rev-parse", "HEAD")
+		headOut, err := headCmd.Output()
+		if err != nil {
+			if gitCtx.Err() != nil {
+				return fmt.Errorf("EXTERNAL_SUBMODULE_HEAD_CHECK_TIMEOUT:%s", p.ID)
+			}
+			return fmt.Errorf("EXTERNAL_SUBMODULE_NOT_MATERIALIZED:%s", p.ID)
+		}
+		if strings.TrimSpace(string(headOut)) != revision {
+			return fmt.Errorf("EXTERNAL_SUBMODULE_HEAD_MISMATCH:%s:expected=%s:actual=%s", p.ID, revision, strings.TrimSpace(string(headOut)))
+		}
+		if diffCmd := exec.CommandContext(gitCtx, "git", "-C", root, "diff", "--quiet"); diffCmd.Run() != nil {
+			return fmt.Errorf("EXTERNAL_SUBMODULE_WORKTREE_DIRTY:%s", p.ID)
+		}
+		if cachedCmd := exec.CommandContext(gitCtx, "git", "-C", root, "diff", "--cached", "--quiet"); cachedCmd.Run() != nil {
+			return fmt.Errorf("EXTERNAL_SUBMODULE_INDEX_DIRTY:%s", p.ID)
+		}
+		return nil
 	}
-	if strings.TrimSpace(string(headOut)) != revision {
-		return fmt.Errorf("EXTERNAL_SUBMODULE_HEAD_MISMATCH:%s:expected=%s:actual=%s", p.ID, revision, strings.TrimSpace(string(headOut)))
+	attestationPath := strings.TrimSpace(os.Getenv("SOUL_EXTERNAL_RUNTIME_ATTESTATION"))
+	if attestationPath == "" {
+		attestationPath = filepath.Join(rootDir, "config", "soul-external-runtime-attestation.json")
+	} else if !filepath.IsAbs(attestationPath) {
+		attestationPath = filepath.Join(rootDir, attestationPath)
+	}
+	raw, err := os.ReadFile(attestationPath)
+	if err != nil {
+		return fmt.Errorf("EXTERNAL_RUNTIME_ATTESTATION_UNAVAILABLE:%s", p.ID)
+	}
+	var attestation ExternalRuntimeAttestation
+	if err := json.Unmarshal(raw, &attestation); err != nil {
+		return fmt.Errorf("EXTERNAL_RUNTIME_ATTESTATION_INVALID:%s", p.ID)
+	}
+	if attestation.Repositories[p.ID] != revision {
+		return fmt.Errorf("EXTERNAL_RUNTIME_ATTESTATION_REVISION_MISMATCH:%s:expected=%s", p.ID, revision)
+	}
+	if _, err := os.Stat(root); err != nil {
+		return fmt.Errorf("EXTERNAL_SUBMODULE_SOURCE_NOT_PRESENT:%s", p.ID)
 	}
 	return nil
 }
