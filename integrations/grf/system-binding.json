@@ -216,5 +216,10 @@
     "L7",
     "feedback:L7→L0"
   ],
-  "no_root_component": true
+  "no_root_component": true,
+  "regenerative_modules_manifest": "integrations/grf/regenerative-and-organs.json",
+  "organs_manifest": "integrations/grf/regenerative-and-organs.json",
+  "source_authority": "divibisoul/SARA",
+  "organ_count": 8,
+  "regenerative_module_count": 6
 }
