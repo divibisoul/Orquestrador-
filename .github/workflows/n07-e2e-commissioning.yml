@@ -73,7 +73,8 @@ jobs:
             echo 'REAL_RGO_HORTA_E2E: BLOCKED_ENV — N01 HortaCore endpoint/secret are not configured; no online persistence claim is made.'
             exit 0
           fi
-          go test -tags integration ./mesh -run '^TestN07PersistsRGOStageToRealN01HortaCore        run: docker build -t soul-n07-commissioning:current .
+          go test -tags integration ./mesh -run '^TestN07PersistsRGOStageToRealN01HortaCore
+        run: docker build -t soul-n07-commissioning:current .
 
       - name: Start current N07 runtime
         env:
@@ -178,6 +179,7 @@ jobs:
           docker logs n07-real-staging || true
           docker stop n07-real-staging || true
  -count=1 -v
+      - name: Build current N07 image for deterministic local smoke
         run: docker build -t soul-n07-commissioning:current .
 
       - name: Start current N07 runtime
