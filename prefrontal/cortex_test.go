@@ -74,4 +74,10 @@ func TestCortexTelemetryCountersBecomeEvidence(t *testing.T) {
 	if rate, _ := health["inhibition_rate"].(float64); rate <= 0 || rate >= 1 {
 		t.Fatalf("inhibition rate must use inhibition checks, got %v from %#v", rate, health)
 	}
+	if avg, _ := health["avg_decision_ms"].(float64); avg <= 0 {
+		t.Fatalf("expected evaluation latency evidence in avg_decision_ms: %#v", health)
+	}
+	if avg, _ := health["avg_commit_ms"].(float64); avg <= 0 {
+		t.Fatalf("expected commit latency evidence in avg_commit_ms: %#v", health)
+	}
 }
