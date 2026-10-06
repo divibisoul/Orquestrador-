@@ -115,3 +115,12 @@ func TestExternalAdapterTransportAuthorityCannotBeOverridden(t *testing.T) {
 		}
 	}
 }
+
+func TestExternalComplementaryDescribeContractsAreRegistered(t *testing.T) {
+	e,_:=newExternalTestEngine(t)
+	for _,id:=range []string{"autogenesis","octos","hora-graph-core","mycelium","prime-agent","cuda-oxide"} {
+		if _,err:=e.Execute(context.Background(),"external."+id+".describe@1.0.0",nil,nil);err!=nil {
+			t.Fatalf("complementary describe failed for %s: %v",id,err)
+		}
+	}
+}
