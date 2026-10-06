@@ -259,6 +259,52 @@ func activateValue(v float64, a string) float64 {
 		return math.Tanh(v)
 	}
 }
+func (n *Network) forwardTrace(ctx context.Context, inputs []float64) ([][]float64, [][]float64, error) {
+	if ctx == nil {
+		return nil, nil, errors.New("context is nil")
+	}
+	if len(inputs) != n.size {
+		return nil, nil, errors.New("input size mismatch")
+	}
+	if err := finiteVector(inputs); err != nil {
+		return nil, nil, errors.New("input contains non-finite value")
+	}
+	n.mu.RLock()
+	bias := append([]float64(nil), n.bias...)
+	edges := make(map[int][]Edge, len(n.edges))
+	for from, es := range n.edges {
+		edges[from] = append([]Edge(nil), es...)
+	}
+	cfg := n.config
+	n.mu.RUnlock()
+	states := make([][]float64, len(cfg.Layers)+1)
+	preActivations := make([][]float64, len(cfg.Layers))
+	states[0] = append([]float64(nil), inputs...)
+	for pass, layer := range cfg.Layers {
+		select {
+		case <-ctx.Done():
+			return nil, nil, ctx.Err()
+		default:
+		}
+		z := append([]float64(nil), bias...)
+		for i, value := range states[pass] {
+			z[i] += value
+		}
+		for from, es := range edges {
+			for _, edge := range es {
+				z[edge.To] += states[pass][from] * edge.Weight
+			}
+		}
+		next := make([]float64, n.size)
+		for i := range z {
+			next[i] = activateValue(z[i], layer.Activation)
+		}
+		preActivations[pass] = z
+		states[pass+1] = next
+	}
+	return states, preActivations, nil
+}
+
 func (n *Network) Forward(ctx context.Context, inputs []float64) ([]float64, error) {
 	if ctx == nil {
 		return nil, errors.New("context is nil")
@@ -540,6 +586,23 @@ func (n *Network) Learn(inputs, target []float64) error {
 	n.cache = make(map[string][]float64)
 	return nil
 }
+func (n *Network) updateParameter(value, grad float64, m, v *float64, _ string, step uint64) float64 {
+	switch n.config.Optimizer {
+	case "sgd":
+		return value - n.learningRate*grad
+	case "rmsprop":
+		*v = 0.9*(*v) + 0.1*grad*grad
+		return value - n.learningRate*grad/(math.Sqrt(*v)+1e-8)
+	default:
+		*m = 0.9*(*m) + 0.1*grad
+		*v = 0.999*(*v) + 0.001*grad*grad
+		t := float64(step)
+		mh := *m / (1 - math.Pow(0.9, t))
+		vh := *v / (1 - math.Pow(0.999, t))
+		return value - n.learningRate*mh/(math.Sqrt(vh)+1e-8)
+	}
+}
+
 func activationDerivative(x, y float64, a string) float64 {
 	switch a {
 	case "relu":
