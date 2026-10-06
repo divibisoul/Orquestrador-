@@ -8,7 +8,6 @@ import (
 	"testing"
 
 	"github.com/divibisoul/Orquestrador-/grf"
-	"github.com/divibisoul/Orquestrador-/mesh"
 	"github.com/divibisoul/Orquestrador-/supergpu"
 )
 
@@ -51,10 +50,6 @@ func TestGRCEExecutorRuntimeCompletesWithHTTPBoundaryFixture(t *testing.T) {
 		SARAServiceURL:   server.URL,
 		SARAServiceToken: "test-token",
 	})
-	peers, err := mesh.NewPeerClient(nil)
-	if err != nil {
-		t.Fatal(err)
-	}
 	compute := supergpu.New(nil)
 	compute.Discover()
 
