@@ -18,7 +18,14 @@ for (const provider of registry.repositories) {
   const id = provider.id;
   const path = `integrations/external/${id}`;
   const cfg = configured.get(path);
-  if (!cfg) errors.push(`GITMODULE_MISSING:${id}`);
+  if (!cfg) {
+    errors.push(`GITMODULE_MISSING:${id}`);
+  } else {
+    const normalizeURL = (value) => value.replace(/\\.git$/, "").replace(/\/$/, "");
+    if (normalizeURL(cfg.url || "") !== normalizeURL(provider.source || "")) {
+      errors.push(`GITMODULE_SOURCE_MISMATCH:${id}:expected=${provider.source}:actual=${cfg.url || "MISSING"}`);
+    }
+  }
   const treeLine = run(["ls-tree", "HEAD", path]);
   const parts = treeLine.split(/\s+/);
   if (parts[0] !== "160000" || parts[1] !== "commit" || parts[2] !== provider.revision) {
