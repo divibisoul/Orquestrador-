@@ -6,7 +6,11 @@ REPO_ROOT=pathlib.Path(__file__).resolve().parents[1]
 PACKAGES={"superagi":"superagi","langgraph":"langgraph","crewai":"crewai","microsoft-agent-framework":"agent_framework","openhands":"openhands","metagpt":"metagpt","agentscope":"agentscope","browser-use":"browser_use","smolagents":"smolagents","pydantic-ai":"pydantic_ai","llama-index":"llama_index","dspy":"dspy","whisper":"whisper","kokoro":"kokoro"}
 
 def emit(v,c=0):
-    print(json.dumps(v,ensure_ascii=False)[:MAX_OUTPUT])
+    raw=json.dumps(v,ensure_ascii=False)
+    if len(raw)>MAX_OUTPUT:
+        print(json.dumps({"state":"BLOCKED","code":"EXTERNAL_ADAPTER_OUTPUT_TOO_LARGE"},ensure_ascii=False))
+        raise SystemExit(2)
+    print(raw)
     raise SystemExit(c)
 
 def load():
@@ -45,6 +49,32 @@ def root(v):
 def package_available(p):
     name=PACKAGES.get(p)
     return name is not None and importlib.util.find_spec(name) is not None
+
+def external_io_root():
+    configured=str(os.environ.get("SOUL_EXTERNAL_IO_ROOT") or "").strip()
+    if configured:
+        p=pathlib.Path(configured).resolve()
+    else:
+        p=(REPO_ROOT/"artifacts/external-io").resolve()
+    p.mkdir(parents=True,exist_ok=True)
+    try: p.relative_to(REPO_ROOT)
+    except ValueError:
+        if configured:
+            return p
+    return p
+
+def external_io_path(raw, default_name):
+    root=external_io_root()
+    value=str(raw or default_name).strip()
+    p=pathlib.Path(value)
+    if not p.is_absolute():
+        p=root/p
+    p=p.resolve()
+    try:
+        p.relative_to(root)
+    except ValueError:
+        emit({"state":"BLOCKED","code":"EXTERNAL_IO_PATH_ESCAPE","root":str(root),"path":str(p)},2)
+    return p
 
 def read_skill(rt,v):
     rel=str(v.get("path") or "README.md").strip()
@@ -133,7 +163,11 @@ def execute_microsoft_agent_framework(v,rt):
 
 def execute_openhands(v,rt):
     import urllib.request
-    base=str(v.get("base_url") or os.environ.get("SOUL_EXTERNAL_OPENHANDS_URL") or "").strip().rstrip("/")
+    configured_base=str(os.environ.get("SOUL_EXTERNAL_OPENHANDS_URL") or "").strip().rstrip("/")
+    requested_base=str(v.get("base_url") or "").strip().rstrip("/")
+    if requested_base and requested_base!=configured_base:
+        emit({"state":"BLOCKED","code":"OPENHANDS_BASE_URL_OVERRIDE_FORBIDDEN"},2)
+    base=configured_base
     conversation=str(v.get("conversation_id") or os.environ.get("SOUL_EXTERNAL_OPENHANDS_CONVERSATION_ID") or "").strip()
     prompt=str(v.get("prompt") or v.get("input") or "").strip()
     if not base or not conversation or not prompt:
@@ -181,7 +215,7 @@ def execute(v,rt):
     if provider=="metagpt" and op=="team.execute":
         run_script("metagpt_runner.py",{"goal":v.get("goal") or v.get("prompt"),"maxRounds":v.get("maxRounds") or 3})
     if provider=="whisper" and op=="speech.transcribe":
-        audio=pathlib.Path(str(v.get("audio_path") or "")).resolve()
+        audio=external_io_path(v.get("audio_path"), "input.wav")
         if not audio.is_file(): emit({"state":"BLOCKED","code":"WHISPER_AUDIO_NOT_FOUND"},2)
         try:
             import whisper
@@ -229,7 +263,11 @@ def execute(v,rt):
     if provider=="letta-code" and op=="memory.execute":
         execute_letta(v,rt)
     if provider=="superagi" and op=="agent.execute":
-        base=str(v.get("base_url") or os.environ.get("SOUL_EXTERNAL_SUPERAGI_URL") or "").strip().rstrip("/")
+        configured_base=str(os.environ.get("SOUL_EXTERNAL_SUPERAGI_URL") or "").strip().rstrip("/")
+        requested_base=str(v.get("base_url") or "").strip().rstrip("/")
+        if requested_base and requested_base!=configured_base:
+            emit({"state":"BLOCKED","code":"SUPERAGI_BASE_URL_OVERRIDE_FORBIDDEN"},2)
+        base=configured_base
         agent_id=str(v.get("agent_id") or os.environ.get("SOUL_EXTERNAL_SUPERAGI_AGENT_ID") or "").strip()
         api_key=str(os.environ.get("SOUL_EXTERNAL_SUPERAGI_API_KEY") or "").strip()
         if not base or not agent_id or not api_key:
@@ -246,7 +284,7 @@ def execute(v,rt):
     if provider=="kokoro" and op=="speech.synthesize":
         text=str(v.get("text") or "").strip()
         if not text: emit({"state":"BLOCKED","code":"KOKORO_TEXT_REQUIRED"},2)
-        out=pathlib.Path(str(v.get("output_path") or "artifacts/kokoro-output.wav")).resolve()
+        out=external_io_path(v.get("output_path"), "kokoro-output.wav")
         try:
             from kokoro import KPipeline
             import numpy as np, soundfile as sf
