@@ -23,7 +23,12 @@ jobs:
           go-version: "1.25"
           cache: true
       - name: gofmt
-        run: test -z "$(gofmt -l grf grce)"
+        shell: bash
+        run: |
+          set -euo pipefail
+          files="$(gofmt -l grf grce)"
+          printf "GOFMT_UNFORMATTED_FILES<<EOF\n%s\nEOF\n" "$files"
+          test -z "$files"
       - name: focused tests
         run: go test ./grf ./grce
       - name: package build
