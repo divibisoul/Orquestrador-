@@ -1,7 +1,6 @@
 package grce
 
 import (
-	"errors"
 	"testing"
 
 	"github.com/divibisoul/Orquestrador-/grf"
@@ -15,10 +14,8 @@ func TestGRCERejectsIncompleteProvenance(t *testing.T) {
 		SequenceIndex:1,
 		Stage:"DETECT",
 	}},grf.State{ParentHash:"parent"})
-	if err==nil || !errors.Is(err, errors.New("GRCE_PROVENANCE_INCOMPLETE")) {
-		if err==nil || err.Error()!="GRCE_PROVENANCE_INCOMPLETE" {
-			t.Fatalf("unexpected error: %v",err)
-		}
+	if err==nil || err.Error()!="GRCE_PROVENANCE_INCOMPLETE" {
+		t.Fatalf("unexpected error: %v",err)
 	}
 }
 
