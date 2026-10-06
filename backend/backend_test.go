@@ -125,12 +125,12 @@ func TestSupabaseValidation(t *testing.T) {
 
 func TestDecodeJSONRejectsTrailingValues(t *testing.T) {
 	var value map[string]any
-	request := httptest.NewRequest(http.MethodPost, "/v1/execute", strings.NewReader("{"ok":true} {"unexpected":true}"))
+	request := httptest.NewRequest(http.MethodPost, "/v1/execute", strings.NewReader(`{"ok":true} {"unexpected":true}`))
 	if err := decodeJSON(request, 1024, &value); err == nil {
 		t.Fatal("expected trailing JSON value to be rejected")
 	}
 
-	request = httptest.NewRequest(http.MethodPost, "/v1/execute", strings.NewReader("  {"ok":true}  "))
+	request = httptest.NewRequest(http.MethodPost, "/v1/execute", strings.NewReader(`  {"ok":true}  `))
 	value = nil
 	if err := decodeJSON(request, 1024, &value); err != nil {
 		t.Fatalf("valid single JSON value was rejected: %v", err)
