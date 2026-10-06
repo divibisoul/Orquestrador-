@@ -1,0 +1,4 @@
+[materialize-grf]
+[materialize-grce]
+
+Controlled SOUL-28 submodule materialization trigger.
