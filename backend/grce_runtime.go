@@ -10,6 +10,7 @@ import (
 
 	"github.com/divibisoul/Orquestrador-/grce"
 	"github.com/divibisoul/Orquestrador-/grf"
+	"github.com/divibisoul/Orquestrador-/protocol"
 	"github.com/divibisoul/Orquestrador-/supergpu"
 )
 
@@ -26,7 +27,7 @@ type GRCEExecutorRuntime struct {
 	Feedback GRCEFeedback
 }
 
-func NewGRCEExecutorRuntime(sara *backend.SARAProxy, compute *supergpu.Runtime, peers any, feedback GRCEFeedback) (*grce.Executor, error) {
+func NewGRCEExecutorRuntime(sara *SARAProxy, compute *supergpu.Runtime, peers any, feedback GRCEFeedback) (*grce.Executor, error) {
 	if sara == nil || !sara.Configured() {
 		return nil, errors.New("GRCE requires configured SARA authoritative boundary")
 	}
@@ -458,7 +459,7 @@ func (r *GRCEExecutorRuntime) feedback(kind string) grce.FeedbackFunc {
 	}
 }
 
-func NewGRCEVagoFeedback(gateway *backend.NervoVagoGateway, target, kind string) func(context.Context, grf.State, []grf.Provenance, []grf.Evidence, []grf.Capability, grf.Context) error {
+func NewGRCEVagoFeedback(gateway *NervoVagoGateway, target, kind string) func(context.Context, grf.State, []grf.Provenance, []grf.Evidence, []grf.Capability, grf.Context) error {
 	return func(ctx context.Context, state grf.State, prov []grf.Provenance, evidence []grf.Evidence, caps []grf.Capability, c grf.Context) error {
 		if gateway == nil {
 			return errors.New("GRCE_NERVO_VAGO_GATEWAY_UNAVAILABLE")
@@ -481,7 +482,7 @@ func NewGRCEVagoFeedback(gateway *backend.NervoVagoGateway, target, kind string)
 		}
 		messageID := protocol.NewTraceID()
 		traceID := protocol.NewTraceID()
-		_, err = gateway.Publish(ctx, backend.NervoVagoEnvelope{
+		_, err = gateway.Publish(ctx, NervoVagoEnvelope{
 			VagusVersion:  "1.0",
 			MessageID:     messageID,
 			CorrelationID: c.CorrelationID,
@@ -491,7 +492,7 @@ func NewGRCEVagoFeedback(gateway *backend.NervoVagoGateway, target, kind string)
 			TTL:           5000,
 			Type:          "nervo.grce.feedback." + kind,
 			Payload:       payload,
-			Provenance: backend.NervoVagoProvenance{
+			Provenance: NervoVagoProvenance{
 				TraceID:       traceID,
 				CorrelationID: c.CorrelationID,
 				MessageID:     messageID,
