@@ -13,8 +13,13 @@ for (const block of gitmodules.split(/^\[submodule "/m).slice(1)) {
 }
 
 const errors = [];
-if (registry.repositories.length !== 16) errors.push(`REGISTRY_COUNT:${registry.repositories.length}`);
-for (const provider of registry.repositories) {
+const primary = registry.repositories ?? [];
+const complementary = registry.complementary_repositories ?? [];
+const sources = [...primary, ...complementary];
+if (primary.length !== 16) errors.push(`PRIMARY_REGISTRY_COUNT:${primary.length}`);
+if (complementary.length !== 6) errors.push(`COMPLEMENTARY_REGISTRY_COUNT:${complementary.length}`);
+if (sources.length !== 22) errors.push(`TOTAL_REGISTRY_COUNT:${sources.length}`);
+for (const provider of sources) {
   const id = provider.id;
   const path = `integrations/external/${id}`;
   const cfg = configured.get(path);
@@ -50,4 +55,4 @@ if (errors.length) {
   console.error(JSON.stringify({ ok:false, errors }, null, 2));
   process.exit(2);
 }
-console.log(JSON.stringify({ ok:true, upstreams:16, state:"MATERIALIZED_AND_EXACT", rule:"gitlink SHA == registry revision == checked-out submodule HEAD" }, null, 2));
+console.log(JSON.stringify({ ok:true, primary_upstreams:16, complementary_sources:6, total_sources:22, state:"MATERIALIZED_AND_EXACT", rule:"gitlink SHA == registry revision == checked-out submodule HEAD" }, null, 2));
