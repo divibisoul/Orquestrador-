@@ -5,6 +5,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/divibisoul/Orquestrador-/backend"
 	"github.com/divibisoul/Orquestrador-/neural"
 	"github.com/divibisoul/Orquestrador-/orchestrator"
 	"github.com/divibisoul/Orquestrador-/prefrontal"
@@ -88,5 +89,44 @@ func TestN02AdapterMappingsAreExplicitAndFailClosed(t *testing.T) {
 		if err == nil || !strings.HasPrefix(err.Error(), "AETERNUM_PEER_REQUIRED:N02:") {
 			t.Fatalf("%s should fail closed without a configured Mesh peer, got %v", moduleID, err)
 		}
+	}
+}
+
+
+func TestHortaCoreHealthDoesNotReportReadyWhenAdapterMeshIsAbsent(t *testing.T) {
+	t.Helper()
+	n, err := neural.New(4, 0.05)
+	if err != nil {
+		t.Fatal(err)
+	}
+	c, err := prefrontal.New(0.1, 8)
+	if err != nil {
+		t.Fatal(err)
+	}
+	g := supergpu.New(nil)
+	g.Discover()
+	e, err := orchestrator.New(n, c, g)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	sara := backend.NewSARAProxy(backend.Config{
+		SARAServiceURL:   "http://sara.local",
+		SARAServiceToken: "configured-for-health-test",
+	})
+	h, err := NewHortaCore(e, sara)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	health := h.Health()
+	if health["status"] != "DEGRADED" {
+		t.Fatalf("HortaCore must not report READY without Mesh when adapter modules exist: %#v", health)
+	}
+	if health["adapter_modules"] != 21 {
+		t.Fatalf("unexpected adapter module count: %#v", health["adapter_modules"])
+	}
+	if health["peer_client_attached"] != false {
+		t.Fatalf("peer attachment state was fabricated: %#v", health["peer_client_attached"])
 	}
 }
