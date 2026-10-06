@@ -206,3 +206,21 @@ func TestRequestRejectionsDoNotOpenExecutionBreaker(t *testing.T) {
 	}
 	_ = e.Shutdown(context.Background())
 }
+
+func TestSemanticVersionHandlesVeryLargeCoreIdentifiers(t *testing.T) {
+	large := "12345678901234567890123456789012345678901234567890"
+	greater := "12345678901234567890123456789012345678901234567891"
+	if !semverGreater(greater+".0.0", large+".0.0") {
+		t.Fatalf("large major comparison failed")
+	}
+	if semverGreater(large+".0.0", greater+".0.0") {
+		t.Fatalf("large major comparison is not antisymmetric")
+	}
+	if !semverGreater("1."+greater+".0", "1."+large+".0") {
+		t.Fatalf("large minor comparison failed")
+	}
+	if !semverGreater("1.0."+greater, "1.0."+large) {
+		t.Fatalf("large patch comparison failed")
+	}
+}
+
