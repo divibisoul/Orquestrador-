@@ -35,14 +35,22 @@ type GRFSaraBridge interface {
 }
 
 func RegisterGRFGRCEOperations(e *Engine) error {
-	return registerGRFGRCEOperations(e, nil)
+	return registerGRFGRCEOperationsWithExecutor(e, nil, nil)
 }
 
 func RegisterGRFGRCEOperationsWithSARA(e *Engine, bridge GRFSaraBridge) error {
-	return registerGRFGRCEOperations(e, bridge)
+	return registerGRFGRCEOperationsWithExecutor(e, bridge, nil)
+}
+
+func RegisterGRFGRCEOperationsWithExecutor(e *Engine, bridge GRFSaraBridge, executor *grce.Executor) error {
+	return registerGRFGRCEOperationsWithExecutor(e, bridge, executor)
 }
 
 func registerGRFGRCEOperations(e *Engine, saraBridge GRFSaraBridge) error {
+	return registerGRFGRCEOperationsWithExecutor(e, saraBridge, nil)
+}
+
+func registerGRFGRCEOperationsWithExecutor(e *Engine, saraBridge GRFSaraBridge, executor *grce.Executor) error {
 	if e == nil {
 		return errors.New("orchestrator engine is required")
 	}
@@ -235,21 +243,65 @@ func registerGRFGRCEOperations(e *Engine, saraBridge GRFSaraBridge) error {
 	}
 
 	if err := e.Register(GRCECycleOperation, func(ctx context.Context, m protocol.Message) (protocol.Result, error) {
-		if _, err := requireGRFContext(m); err != nil {
+		grfContext, err := requireGRFContext(m)
+		if err != nil {
 			return grfOperationFailure(m, err)
 		}
-		_ = ctx
-		bindings := grceBindingInventory(e)
-		raw, _ := json.Marshal(bindings)
+		if executor == nil {
+			raw, _ := json.Marshal(grceBindingInventory(e))
+			return protocol.Result{
+				TraceID: m.TraceID, CorrelationID: m.CorrelationID,
+				Source: "N07.GRCE", Target: m.Source, Status: "blocked",
+				Error: "GRCE_RUNTIME_HOOKS_NOT_BOUND",
+				Metadata: map[string]string{
+					"epistemic_state": string(grf.BLOCKED),
+					"bindings_json": string(raw),
+				},
+			}, errors.New("GRCE_RUNTIME_HOOKS_NOT_BOUND")
+		}
+		inputRaw := strings.TrimSpace(m.Metadata["grf_input_json"])
+		payload := map[string]any{}
+		if inputRaw != "" {
+			if err := json.Unmarshal([]byte(inputRaw), &payload); err != nil {
+				return grfOperationFailure(m, errors.New("GRCE_INPUT_JSON_INVALID"))
+			}
+		} else {
+			textInput := strings.TrimSpace(m.Metadata["grf_input_text"])
+			if textInput == "" {
+				return grfOperationFailure(m, errors.New("GRCE_INPUT_REQUIRED"))
+			}
+			payload["text"] = textInput
+		}
+		state := grf.State{
+			ID: strings.TrimSpace(m.Metadata["state_id"]),
+			EpistemicState: grf.PRESERVED,
+			Payload: payload,
+		}
+		if state.ID == "" {
+			state.ID = "grce-input:" + m.TraceID
+		}
+		result, err := executor.Run(ctx, state, grfContext)
+		raw, marshalErr := json.Marshal(result)
+		if marshalErr != nil {
+			return grfOperationFailure(m, marshalErr)
+		}
+		status := "degraded"
+		if err == nil {
+			status = "ok"
+		}
 		return protocol.Result{
 			TraceID: m.TraceID, CorrelationID: m.CorrelationID,
-			Source: "N07.GRCE", Target: m.Source, Status: "blocked",
-			Error: "GRCE_RUNTIME_HOOKS_NOT_BOUND",
+			Source: "N07.GRCE", Target: m.Source, Status: status,
 			Metadata: map[string]string{
-				"epistemic_state": string(grf.BLOCKED),
-				"bindings_json": string(raw),
+				"epistemic_state": string(result.EpistemicState),
+				"execution_mode": "GRCE_EXECUTOR",
+				"grce_result_json": string(raw),
 			},
-		}, errors.New("GRCE_RUNTIME_HOOKS_NOT_BOUND")
+			Error: func() string {
+				if err != nil { return err.Error() }
+				return ""
+			}(),
+		}, err
 	}); err != nil {
 		return err
 	}
