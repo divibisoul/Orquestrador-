@@ -59,7 +59,8 @@
       "id": "L7",
       "name": "Execução",
       "owner": "N07/GRCE",
-      "state": "ACTIVE"
+      "state": "PROJECTED",
+      "reason": "GRCE installed in N07; runtime cycle awaits hook binding"
     }
   ],
   "natives": [
@@ -185,5 +186,12 @@
   ],
   "adjacency_policy": "GRF never bypasses canonical Mesh; HortaCore carries state and VagusBus carries signal",
   "no_second_mesh": true,
-  "no_shadow_authority": true
+  "no_shadow_authority": true,
+  "source_fabric": {
+    "primary_upstreams": 16,
+    "complementary_sources": 6,
+    "total_external_sources": 22
+  },
+  "grce_state": "PROJECTED",
+  "grce_block_reason": "distinct real ERU/MMD/ARA/ETR/ITR/RGO hooks are not yet bound"
 }
