@@ -47,3 +47,21 @@
 [submodule "integrations/external/metagpt"]
   path = integrations/external/metagpt
   url = https://github.com/FoundationAgents/MetaGPT.git
+[submodule "integrations/external/grf/octos"]
+	path = integrations/external/grf/octos
+	url = https://github.com/lispking/octos.git
+[submodule "integrations/external/grf/hora-graph-core"]
+	path = integrations/external/grf/hora-graph-core
+	url = https://github.com/Vivien83/hora-graph-core.git
+[submodule "integrations/external/grf/mycelium"]
+	path = integrations/external/grf/mycelium
+	url = https://github.com/mycelium-io/mycelium.git
+[submodule "integrations/external/grf/prime-agent"]
+	path = integrations/external/grf/prime-agent
+	url = https://github.com/PrimeIntellect-ai/prime-agent.git
+[submodule "integrations/external/grf/cuda-oxide"]
+	path = integrations/external/grf/cuda-oxide
+	url = https://github.com/SuperInstance/cuda-oxide.git
+[submodule "integrations/external/grf/openmind-conductor"]
+	path = integrations/external/grf/openmind-conductor
+	url = https://github.com/SuperInstance/openmind-conductor.git
