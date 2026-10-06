@@ -75,9 +75,9 @@ jobs:
         env:
           SARA_SERVICE_URL: http://127.0.0.1:8090
           SARA_SERVICE_TOKEN: grce-real-e2e-token
-          SOUL_GRCE_BIJUX_COMMAND: 'cargo run -q --manifest-path integrations/external/bijux-core/Cargo.toml -p bijux-dag-cli -- commands --lane stable'
+          SOUL_GRCE_BIJUX_COMMAND: 'set -e; tmp=$RUNNER_TEMP/bijux-grce; rm -rf "$tmp"; cargo run -q --manifest-path integrations/external/bijux-core/Cargo.toml -p bijux-dag-cli -- init --dir "$tmp" >/dev/null; cargo run -q --manifest-path integrations/external/bijux-core/Cargo.toml -p bijux-dag-cli -- validate "$tmp/dag.json" --strict'
           SOUL_GRCE_OURO_LOOP_COMMAND: 'python integrations/external/ouro-loop/prepare.py scan .'
-          SOUL_GRCE_RECURIS_COMMAND: 'cd integrations/external/recuris && uv run recuris --help'
+          SOUL_GRCE_RECURIS_COMMAND: 'cd integrations/external/recuris && uv sync --all-extras >/dev/null 2>&1 && uv run recuris metaagent integrity'
         run: |
           set -euo pipefail
           go test -tags integration ./grce -count=1 -v | tee "$RUNNER_TEMP/grce-e2e.log"
