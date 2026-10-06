@@ -4,7 +4,7 @@
   "canonical_repository": "divibisoul/Orquestrador-",
   "canonical_control_plane": "N07",
   "native_system_count": 9,
-  "external_system_count": 16,
+  "external_system_count": 22,
   "evidence_rule": "A registry entry or gitlink alone is structural evidence. Runtime availability requires initialized submodule plus exact SHA verification and provider-specific adapter evidence.",
   "repositories": [
     {
@@ -290,5 +290,88 @@
       "llama-index",
       "dspy"
     ]
-  }
+  },
+  "primary_external_system_count": 16,
+  "complementary_external_system_count": 6,
+  "blocked_candidate_count": 4,
+  "complementary_repositories": [
+    {
+      "id": "autogenesis",
+      "source": "https://github.com/DVampire/Autogenesis",
+      "path": "integrations/external/autogenesis",
+      "revision": "5b070d5cd497e951a188a01409138e8b530eaf4a",
+      "state": "PROJECTED",
+      "role": "framework complementar / auto-evolução"
+    },
+    {
+      "id": "octos",
+      "source": "https://github.com/lispking/octos",
+      "path": "integrations/external/octos",
+      "revision": "26a916be14dee49bcc48fbc048947d018c7de6ba",
+      "state": "PROJECTED",
+      "role": "reforço Octacore / swarm / agentic OS"
+    },
+    {
+      "id": "hora-graph-core",
+      "source": "https://github.com/Vivien83/hora-graph-core",
+      "path": "integrations/external/hora-graph-core",
+      "revision": "334f4f82d1c7525d29130ced9e6199e3633c0f61",
+      "state": "PROJECTED",
+      "role": "reforço HortaCore / grafo de memória"
+    },
+    {
+      "id": "mycelium",
+      "source": "https://github.com/mycelium-io/mycelium",
+      "path": "integrations/external/mycelium",
+      "revision": "26156b5e9f169e74c73848908ad5e3bad76cd6fa",
+      "state": "PROJECTED",
+      "role": "reforço Clareira / workspace multiagente"
+    },
+    {
+      "id": "prime-agent",
+      "source": "https://github.com/PrimeIntellect-ai/prime-agent",
+      "path": "integrations/external/prime-agent",
+      "revision": "672085e883c25a8a5f10c77ad8e5d3fb38dd6584",
+      "state": "PROJECTED",
+      "role": "reforço Neocórtex/Clareira / RLM"
+    },
+    {
+      "id": "cuda-oxide",
+      "source": "https://github.com/SuperInstance/cuda-oxide",
+      "path": "integrations/external/cuda-oxide",
+      "revision": "1ad9bfc5241322ceeccb3f9182f2a188a648bd08",
+      "state": "PROJECTED",
+      "role": "reforço SuperGPU / compiler/runtime CUDA"
+    }
+  ],
+  "blocked_candidates": [
+    {
+      "id": "cognifold",
+      "source": "https://github.com/OpenNerve/CogniFold",
+      "requested_role": "Neocortex",
+      "state": "BLOCKED",
+      "reason": "GitHub 404 during source verification on 2026-10-06"
+    },
+    {
+      "id": "belel-protocol",
+      "source": "https://github.com/TTOPM/belel-protocol",
+      "requested_role": "Nervo Vago",
+      "state": "BLOCKED",
+      "reason": "GitHub 404 during source verification on 2026-10-06"
+    },
+    {
+      "id": "opensinn-bus",
+      "source": "https://github.com/OpenSIN-AI/OpenSIN-Neural-Bus",
+      "requested_role": "VagusBus",
+      "state": "BLOCKED",
+      "reason": "GitHub 404 during source verification on 2026-10-06"
+    },
+    {
+      "id": "functional-graph-agi",
+      "source": "https://github.com/kexi-bq/functional-graph-agi",
+      "requested_role": "SuperGPU AGI",
+      "state": "BLOCKED",
+      "reason": "GitHub 404 during source verification on 2026-10-06"
+    }
+  ]
 }
