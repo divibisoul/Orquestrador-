@@ -72,3 +72,40 @@
   path = integrations/external/cuda-oxide
   url = https://github.com/SuperInstance/cuda-oxide.git
   branch = main
+
+
+[submodule "integrations/external/bijux-dag-runtime"]
+  path = integrations/external/bijux-dag-runtime
+  url = https://github.com/bijux/bijux-core.git
+
+[submodule "integrations/external/ouro-loop"]
+  path = integrations/external/ouro-loop
+  url = https://github.com/VictorVVedtion/ouro-loop.git
+
+[submodule "integrations/external/recurs"]
+  path = integrations/external/recurs
+  url = https://github.com/Gen-Verse/Recuris.git
+
+[submodule "integrations/external/fedml"]
+  path = integrations/external/fedml
+  url = https://github.com/FedML-AI/FedML.git
+
+[submodule "integrations/external/hivemind"]
+  path = integrations/external/hivemind
+  url = https://github.com/learning-at-home/hivemind.git
+
+[submodule "integrations/external/temporal"]
+  path = integrations/external/temporal
+  url = https://github.com/temporalio/temporal.git
+
+[submodule "integrations/external/cognitive-workspace"]
+  path = integrations/external/cognitive-workspace
+  url = https://github.com/tao-hpu/cognitive-workspace.git
+
+[submodule "integrations/external/ravana"]
+  path = integrations/external/ravana
+  url = https://github.com/OpenSource-Syndicate/RAVANA.git
+
+[submodule "integrations/external/ray"]
+  path = integrations/external/ray
+  url = https://github.com/ray-project/ray.git
