@@ -92,10 +92,12 @@
       "id": "NervoVago",
       "owner": "SARA",
       "role": "unified logical nervous-system component",
-      "state": "PROJECTED",
+      "state": "REAL",
       "alias_of": "nervo-vago",
       "previous_role": "transversal moral supervisory signal",
-      "note": "NervoVago and VagusBus are one logical component; the external OpenSIN source remains BLOCKED and is not a prerequisite for the preserved local implementations"
+      "note": "NervoVago and VagusBus are one logical component; the external OpenSIN source remains BLOCKED and is not a prerequisite for the preserved local implementations",
+      "evidence_scope": "local_SARA_N01",
+      "federated_state": "PROJECTED"
     }
   ],
   "separation": {
@@ -124,6 +126,7 @@
     "canonical_capability_protocol": "soul-mesh/1",
     "no_second_vagus": true,
     "no_second_mesh": true,
-    "contract_manifest": "integrations/grf/nervo-vago-unified-contract.json"
+    "contract_manifest": "integrations/grf/nervo-vago-unified-contract.json",
+    "durable_state": "PROJECTED"
   }
 }
