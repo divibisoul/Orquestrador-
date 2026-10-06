@@ -44,3 +44,25 @@ func TestExecutiveControlFunctions(t *testing.T) {
 		t.Fatal("monitor unhealthy")
 	}
 }
+
+func TestWorkingMemoryRetentionIsDeterministicOnTimestampTies(t *testing.T) {
+	c, err := New(.1, 2)
+	if err != nil {
+		t.Fatal(err)
+	}
+	candidates := []Candidate{
+		{ID: "b", Utility: .8, Cost: .1, Risk: .1},
+		{ID: "a", Utility: .8, Cost: .1, Risk: .1},
+		{ID: "c", Utility: .8, Cost: .1, Risk: .1},
+	}
+	if err := c.UpdateWorkingMemory(candidates); err != nil {
+		t.Fatal(err)
+	}
+	kept := c.WorkingMemory(0)
+	if len(kept) != 2 {
+		t.Fatalf("expected two retained candidates, got %d", len(kept))
+	}
+	if kept[0].ID != "b" || kept[1].ID != "c" {
+		t.Fatalf("retention is not deterministic under tied timestamps: %+v", kept)
+	}
+}

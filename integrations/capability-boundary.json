@@ -6,7 +6,7 @@
   },
   "reason": "functional-complementation-and-system-integration",
   "canonical_control_plane": "N07",
-  "upstream_capability_source_count": 16,
+  "upstream_capability_source_count": 22,
   "soul_component_count": 9,
   "integration": {
     "agent_engineering": [
@@ -26,7 +26,24 @@
     "execution": "N07 Engine + SuperGPU + Octacore",
     "observation": "Clareira + correlated evidence",
     "structural_state": "REAL",
-    "runtime_state": "PROJECTED"
+    "runtime_state": "PROJECTED",
+    "grf": {
+      "framework": "GRF",
+      "executor": "GRCE",
+      "layers": "L0-L7",
+      "control_plane": "N07",
+      "state": "PROJECTED",
+      "cycleOperation": "grce.cycle.execute@2.0.0",
+      "reason": "runtime hooks remain to be bound to distinct real ERU/MMD/ARA/ETR/ITR/RGO implementations"
+    },
+    "grf_feedback": {
+      "HortaCore": "state",
+      "VagusBus": "signal",
+      "Mesh": "distribution"
+    }
   },
-  "rule": "N07 coordinates; it does not absorb upstream ownership or create shadow authorities."
+  "rule": "N07 coordinates; it does not absorb upstream ownership or create shadow authorities.",
+  "rule_grf": "GRF is transversal protocol; no second Mesh and no shadow authority",
+  "primary_upstream_count": 16,
+  "complementary_upstream_count": 6
 }

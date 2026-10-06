@@ -145,7 +145,7 @@ func (s *Server) execute(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusBadRequest, result)
 		return
 	}
-	_ = s.Store.RecordRun(r.Context(), map[string]any{
+	persistenceErr := s.Store.RecordRun(r.Context(), map[string]any{
 		"trace_id":       result.TraceID,
 		"correlation_id": result.CorrelationID,
 		"source":         result.Source,
@@ -156,6 +156,14 @@ func (s *Server) execute(w http.ResponseWriter, r *http.Request) {
 		"error":          result.Error,
 		"metadata":       metadata,
 	})
+	if result.Metadata == nil { result.Metadata = map[string]string{} }
+	result.Metadata["persistence_target"] = "supabase"
+	if persistenceErr != nil {
+		result.Metadata["persistence_state"] = "BLOCKED"
+		result.Metadata["persistence_error"] = persistenceErr.Error()
+	} else {
+		result.Metadata["persistence_state"] = "RECORDED"
+	}
 	writeJSON(w, http.StatusOK, result)
 }
 
@@ -224,6 +232,20 @@ func operationForTool(tool string) string {
 		return "supergpu.parallel@1.0.0"
 	case "sara.cycle", "sara.audit", "sara.regenerate", "sara.state", "sara.capabilities", "sara.trace":
 		return strings.ToLower(strings.TrimSpace(tool)) + "@1.0.0"
+	case "grf.describe":
+		return "grf.describe@2.0.0"
+	case "grf.participant.describe":
+		return "grf.participant.describe@2.0.0"
+	case "grf.participant.ingest":
+		return "grf.participant.ingest@2.0.0"
+	case "grce.describe":
+		return "grce.describe@2.0.0"
+	case "grce.bindings.describe":
+		return "grce.bindings.describe@2.0.0"
+	case "grce.cycle.execute":
+		return "grce.cycle.execute@2.0.0"
+	case "grce.sara.authoritative.execute":
+		return "grce.sara.authoritative.execute@2.0.0"
 	default:
 		return tool
 	}
@@ -323,6 +345,39 @@ func mapIntent(tool string, input map[string]any) ([]float64, map[string]string,
 			return nil, nil, errors.New("SARA trace intent requires cycle_id string")
 		}
 		metadata["sara_cycle_id"] = strings.TrimSpace(cycleID)
+		return []float64{0}, metadata, nil
+	case "grf.describe", "grf.participant.describe", "grce.describe", "grce.bindings.describe", "grce.cycle.execute", "grce.sara.authoritative.execute":
+		if input == nil {
+			return nil, nil, errors.New("GRF/GRCE intent input is required")
+		}
+		seq, ok := input["sequence_index"].(float64)
+		if !ok || seq < 1 {
+			return nil, nil, errors.New("GRF/GRCE intent requires positive sequence_index")
+		}
+		metadata["grf_sequence_index"] = strconv.FormatUint(uint64(seq), 10)
+		return []float64{0}, metadata, nil
+	case "grf.participant.ingest":
+		if input == nil {
+			return nil, nil, errors.New("GRF participant ingest input is required")
+		}
+		id, ok := input["participant_id"].(string)
+		if !ok || strings.TrimSpace(id) == "" {
+			return nil, nil, errors.New("GRF participant ingest requires participant_id")
+		}
+		seq, ok := input["sequence_index"].(float64)
+		if !ok || seq < 1 {
+			return nil, nil, errors.New("GRF participant ingest requires positive sequence_index")
+		}
+		raw, err := json.Marshal(input["state"])
+		if err != nil {
+			return nil, nil, errors.New("GRF participant state cannot be serialized")
+		}
+		metadata["participant_id"] = strings.TrimSpace(id)
+		metadata["grf_sequence_index"] = strconv.FormatUint(uint64(seq), 10)
+		metadata["grf_input_json"] = string(raw)
+		if sid, ok := input["state_id"].(string); ok && strings.TrimSpace(sid) != "" {
+			metadata["state_id"] = strings.TrimSpace(sid)
+		}
 		return []float64{0}, metadata, nil
 	default:
 		return nil, nil, fmt.Errorf("unsupported tool: %s", tool)
@@ -431,8 +486,10 @@ func (s *Server) upload(w http.ResponseWriter, r *http.Request) {
 			writeJSON(w, http.StatusBadGateway, map[string]any{"error": err.Error()})
 			return
 		}
-		_ = s.Store.RecordArtifact(r.Context(), map[string]any{"cid": cid, "filename": header.Filename, "size_bytes": size})
-		writeJSON(w, http.StatusOK, map[string]any{"cid": cid, "filename": header.Filename, "size": size, "gateway": s.Storage.ObjectURL(cid)})
+		persistenceErr := s.Store.RecordArtifact(r.Context(), map[string]any{"cid": cid, "filename": header.Filename, "size_bytes": size})
+		response := map[string]any{"cid": cid, "filename": header.Filename, "size": size, "gateway": s.Storage.ObjectURL(cid), "persistence": map[string]any{"target": "supabase"}}
+		if persistenceErr != nil { response["persistence"].(map[string]any)["state"] = "BLOCKED"; response["persistence"].(map[string]any)["error"] = persistenceErr.Error() } else { response["persistence"].(map[string]any)["state"] = "RECORDED" }
+		writeJSON(w, http.StatusOK, response)
 		return
 	}
 	limited := io.LimitReader(r.Body, s.Config.MaxUploadBytes+1)
@@ -441,11 +498,14 @@ func (s *Server) upload(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusBadGateway, map[string]any{"error": err.Error()})
 		return
 	}
-	_ = s.Store.RecordArtifact(r.Context(), map[string]any{"cid": cid, "filename": r.Header.Get("X-Filename"), "size_bytes": size})
-	writeJSON(w, http.StatusOK, map[string]any{"cid": cid, "size": size, "gateway": s.Storage.ObjectURL(cid)})
+	persistenceErr := s.Store.RecordArtifact(r.Context(), map[string]any{"cid": cid, "filename": r.Header.Get("X-Filename"), "size_bytes": size})
+	response := map[string]any{"cid": cid, "size": size, "gateway": s.Storage.ObjectURL(cid), "persistence": map[string]any{"target": "supabase"}}
+	if persistenceErr != nil { response["persistence"].(map[string]any)["state"] = "BLOCKED"; response["persistence"].(map[string]any)["error"] = persistenceErr.Error() } else { response["persistence"].(map[string]any)["state"] = "RECORDED" }
+	writeJSON(w, http.StatusOK, response)
 }
 
 func (s *Server) storageStatus(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet { writeJSON(w, http.StatusMethodNotAllowed, map[string]any{"error": "GET required"}); return }
 	cid := strings.TrimPrefix(r.URL.Path, "/v1/storage/status/")
 	if cid == "" {
 		writeJSON(w, http.StatusBadRequest, map[string]any{"error": "cid is required"})
@@ -460,6 +520,7 @@ func (s *Server) storageStatus(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) storageObject(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet { writeJSON(w, http.StatusMethodNotAllowed, map[string]any{"error": "GET required"}); return }
 	cid := strings.TrimPrefix(r.URL.Path, "/v1/storage/object/")
 	if cid == "" {
 		writeJSON(w, http.StatusBadRequest, map[string]any{"error": "cid is required"})
@@ -474,7 +535,17 @@ func decodeJSON(r *http.Request, limit int64, out any) error {
 	}
 	defer r.Body.Close()
 	decoder := json.NewDecoder(http.MaxBytesReader(nil, r.Body, limit))
-	return decoder.Decode(out)
+	if err := decoder.Decode(out); err != nil {
+		return err
+	}
+	var extra any
+	if err := decoder.Decode(&extra); err != io.EOF {
+		if err == nil {
+			return errors.New("request body must contain a single JSON value")
+		}
+		return err
+	}
+	return nil
 }
 
 func writeJSON(w http.ResponseWriter, status int, body any) {

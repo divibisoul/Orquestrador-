@@ -31,6 +31,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Materialize top-level SOUL submodules without unsafe recursion
+        run: node scripts/materialize-top-level-submodules.mjs
+
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
@@ -63,6 +66,17 @@ jobs:
           fi
           go test -tags integration ./mesh -run '^TestN07FederatesToRealN04N05N06NativeCapabilities$' -count=1 -v
 
+      - name: N07 to N01 real RGO HortaCore E2E when configured
+        env:
+          SOUL_MESH_HMAC_SECRET: ${{ secrets.SOUL_MESH_HMAC_SECRET }}
+          SOUL_MESH_N01_URL: ${{ secrets.SOUL_MESH_N01_URL }}
+        run: |
+          set -euo pipefail
+          if [ -z "$SOUL_MESH_HMAC_SECRET" ] || [ -z "$SOUL_MESH_N01_URL" ]; then
+            echo 'REAL_RGO_HORTA_E2E: BLOCKED_ENV — N01 HortaCore endpoint/secret are not configured; no online persistence claim is made.'
+            exit 0
+          fi
+          go test -tags integration ./mesh -run TestN07PersistsRGOStageToRealN01HortaCore -count=1 -v
       - name: Build current N07 image for deterministic local smoke
         run: docker build -t soul-n07-commissioning:current .
 

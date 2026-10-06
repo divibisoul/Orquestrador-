@@ -54,7 +54,12 @@ func (c *Cortex) UpdateWorkingMemory(candidates []Candidate) error {
 		for _, entry := range c.workingMemory {
 			entries = append(entries, entry)
 		}
-		sort.SliceStable(entries, func(i, j int) bool { return entries[i].UpdatedAt.Before(entries[j].UpdatedAt) })
+		sort.SliceStable(entries, func(i, j int) bool {
+			if entries[i].UpdatedAt.Equal(entries[j].UpdatedAt) {
+				return entries[i].Candidate.ID < entries[j].Candidate.ID
+			}
+			return entries[i].UpdatedAt.Before(entries[j].UpdatedAt)
+		})
 		for len(c.workingMemory) > c.capacity && len(entries) > 0 {
 			oldest := entries[0]
 			entries = entries[1:]
@@ -79,7 +84,12 @@ func (c *Cortex) WorkingMemory(limit int) []Candidate {
 	for _, entry := range c.workingMemory {
 		entries = append(entries, entry)
 	}
-	sort.SliceStable(entries, func(i, j int) bool { return entries[i].UpdatedAt.After(entries[j].UpdatedAt) })
+	sort.SliceStable(entries, func(i, j int) bool {
+		if entries[i].UpdatedAt.Equal(entries[j].UpdatedAt) {
+			return entries[i].Candidate.ID < entries[j].Candidate.ID
+		}
+		return entries[i].UpdatedAt.After(entries[j].UpdatedAt)
+	})
 	if limit <= 0 || limit > len(entries) {
 		limit = len(entries)
 	}

@@ -99,3 +99,87 @@ func TestBatchParallelHonorsCancellation(t *testing.T) {
 		t.Fatal("expected cancellation error")
 	}
 }
+
+func TestRuntimePreservesSameOwnerAcceleratorLeaseCount(t *testing.T) {
+	r := New(acceleratorLeaseBackend{})
+	device := Device{ID: "accelerator-0", Vendor: "test", Name: "lease-probe", Available: true, Backend: "accelerator"}
+	r.mu.Lock()
+	r.devices = []Device{device}
+	r.mu.Unlock()
+
+	if err := r.Reserve(device.ID, "owner-a"); err != nil {
+		t.Fatal(err)
+	}
+	if err := r.Reserve(device.ID, "owner-a"); err != nil {
+		t.Fatal(err)
+	}
+	r.mu.RLock()
+	leaseCount := r.reserved[device.ID].LeaseCount
+	r.mu.RUnlock()
+	if leaseCount != 2 {
+		t.Fatalf("expected two active leases for same owner, got %d", leaseCount)
+	}
+
+	if err := r.Release(device.ID, "owner-a"); err != nil {
+		t.Fatal(err)
+	}
+	if err := r.Reserve(device.ID, "owner-b"); err == nil {
+		t.Fatal("accelerator became falsely available after only one same-owner release")
+	}
+
+	r.mu.RLock()
+	leaseCount = r.reserved[device.ID].LeaseCount
+	r.mu.RUnlock()
+	if leaseCount != 1 {
+		t.Fatalf("expected one remaining lease after first release, got %d", leaseCount)
+	}
+
+	if err := r.Release(device.ID, "owner-a"); err != nil {
+		t.Fatal(err)
+	}
+	if err := r.Reserve(device.ID, "owner-b"); err != nil {
+		t.Fatalf("accelerator should be available after final release: %v", err)
+	}
+}
+
+func TestRuntimeShutdownWaitsForConcurrentExecution(t *testing.T) {
+	backend := &shutdownBlockingBackend{
+		started: make(chan struct{}),
+		release: make(chan struct{}),
+	}
+	r := New(backend)
+	device := Device{ID: "cpu-shutdown-test", Vendor: "test", Name: "shutdown", Available: true, Backend: "cpu"}
+
+	done := make(chan error, 1)
+	go func() {
+		_, err := r.Execute(context.Background(), device, "identity", []float64{1})
+		done <- err
+	}()
+	select {
+	case <-backend.started:
+	case <-time.After(time.Second):
+		t.Fatal("execution did not start")
+	}
+
+	shutdownDone := make(chan error, 1)
+	go func() {
+		shutdownDone <- r.Shutdown()
+	}()
+
+	select {
+	case err := <-shutdownDone:
+		t.Fatalf("shutdown returned before execution released: %v", err)
+	case <-time.After(20 * time.Millisecond):
+	}
+
+	close(backend.release)
+	if err := <-done; err != nil {
+		t.Fatalf("execution failed: %v", err)
+	}
+	if err := <-shutdownDone; err != nil {
+		t.Fatalf("shutdown failed: %v", err)
+	}
+	if got := r.Health()["status"]; got != "closed" {
+		t.Fatalf("runtime did not remain closed: %#v", got)
+	}
+}

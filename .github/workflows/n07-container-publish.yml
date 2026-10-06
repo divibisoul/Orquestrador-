@@ -21,6 +21,10 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          submodules: false
+      - name: Materialize top-level SOUL submodules without unsafe recursion
+        run: node scripts/materialize-top-level-submodules.mjs
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
       - name: Log in to GHCR

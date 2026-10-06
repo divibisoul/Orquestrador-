@@ -264,6 +264,18 @@ func (p *PeerClient) Call(ctx context.Context, nucleus, capability string, paylo
 	return p.CallWithCorrelation(ctx, nucleus, capability, payload, protocol.NewTraceID())
 }
 
+// Configured reports whether a real authenticated route to the requested
+// remote nucleus is available. A constructed PeerClient alone is not evidence.
+func (p *PeerClient) Configured(nucleus string) bool {
+	if p == nil { return false }
+	nucleus = strings.TrimSpace(nucleus)
+	if nucleus == "" { return false }
+	p.mu.RLock()
+	defer p.mu.RUnlock()
+	peer, ok := p.peers[nucleus]
+	return ok && strings.TrimSpace(peer.URL) != "" && strings.TrimSpace(p.secret) != ""
+}
+
 func (p *PeerClient) CallWithCorrelation(ctx context.Context, nucleus, capability string, payload map[string]any, correlation string) (map[string]any, error) {
 	if ctx == nil {
 		return nil, errors.New("context is nil")
@@ -440,6 +452,12 @@ func (p *PeerClient) call(ctx context.Context, nucleus, capability string, paylo
 			}
 			return nil, decodeErr
 		}
+		// Authenticate every decoded response before trusting its HTTP status.
+		if err := verifyResponseHMAC(result, p.secret); err != nil {
+			lastErr = err
+			p.recordFailure(nucleus, latency, err.Error())
+			return nil, lastErr
+		}
 		if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 			lastErr = fmt.Errorf("peer request failed: %s", resp.Status)
 			p.recordFailure(nucleus, latency, lastErr.Error())
@@ -470,11 +488,6 @@ func (p *PeerClient) call(ctx context.Context, nucleus, capability string, paylo
 			lastErr = errors.New("mesh response kind mismatch")
 			p.recordFailure(nucleus, latency, lastErr.Error())
 			return nil, lastErr
-		}
-		if err := verifyResponseHMAC(result, p.secret); err != nil {
-			lastErr = err
-			p.recordFailure(nucleus, latency, err.Error())
-			return nil, err
 		}
 		p.recordSuccess(nucleus, latency)
 		return result, nil

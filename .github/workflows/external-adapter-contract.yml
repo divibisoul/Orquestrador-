@@ -13,6 +13,13 @@ on:
       - scripts/crewai_runner.py
       - scripts/metagpt_runner.py
       - cmd/nexus/main.go
+      - grf/**
+      - grce/**
+      - integrations/grf/**
+      - integrations/soul-29-capability-fabric.json
+      - scripts/validate-soul-29-grf.mjs
+      - .gitmodules
+      - Dockerfile
   push:
     branches: [main]
     paths:
@@ -33,6 +40,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: false
+
+      - name: Materialize SOUL top-level submodules without recursion
+        run: node scripts/materialize-top-level-submodules.mjs
       - uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
@@ -41,6 +53,10 @@ jobs:
           node-version: 22
       - name: Validate provider-to-adapter graph
         run: node scripts/validate-external-adapters.mjs
+      - name: Validate Soul-29 GRF contract
+        run: node scripts/validate-soul-29-grf.mjs
+      - name: Validate exact materialized submodule pins
+        run: node scripts/validate-soul-external-submodules.mjs
       - name: Validate Python adapters syntax
         run: python -m py_compile scripts/external-capability-adapter.py scripts/crewai_runner.py scripts/metagpt_runner.py
       - name: Test external adapter registration
