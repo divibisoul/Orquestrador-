@@ -37,3 +37,35 @@ func TestCortexRuntime(t *testing.T) {
 		t.Fatal("cortex unhealthy")
 	}
 }
+
+func TestCortexTelemetryCountersBecomeEvidence(t *testing.T) {
+	c, err := New(0.1, 4)
+	if err != nil {
+		t.Fatal(err)
+	}
+	candidate := Candidate{ID: "telemetry", Utility: .8, Cost: .1, Risk: .1}
+
+	if _, err = c.Evaluate([]Candidate{candidate}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err = c.Select([]Candidate{candidate}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err = c.Commit(candidate, "telemetry-test"); err != nil {
+		t.Fatal(err)
+	}
+
+	health := c.Health()
+	if health["decision_count"] != uint64(2) {
+		t.Fatalf("expected two evaluation decisions, got %#v", health["decision_count"])
+	}
+	if health["inhibition_checks"] != uint64(2) {
+		t.Fatalf("expected two inhibition checks, got %#v", health["inhibition_checks"])
+	}
+	if health["commits"] != uint64(1) {
+		t.Fatalf("expected one commit, got %#v", health["commits"])
+	}
+	if health["evaluation_nanos"].(uint64) == 0 || health["commit_nanos"].(uint64) == 0 {
+		t.Fatalf("expected non-zero timing evidence: %#v", health)
+	}
+}
