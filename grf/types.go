@@ -31,15 +31,13 @@ type State struct {
 
 func (s State) Hash() string {
 	h := sha256.New()
+	h.Write([]byte(s.Epistemic))
+	h.Write([]byte{0})
 	h.Write(s.Payload)
 	h.Write([]byte{0})
 	h.Write([]byte(s.ParentHash))
 	h.Write([]byte{0})
 	h.Write([]byte(s.InputHash))
-	h.Write([]byte{0})
-	h.Write([]byte(s.OutputHash))
-	h.Write([]byte{0})
-	h.Write([]byte(s.Epistemic))
 	return hex.EncodeToString(h.Sum(nil))
 }
 
@@ -114,17 +112,17 @@ type Failure struct {
 }
 
 type Characterization struct {
-	FailureID   string
-	Properties  []string
+	FailureID    string
+	Properties   []string
 	RequiredDual string
-	Epistemic   EpistemicState
+	Epistemic    EpistemicState
 }
 
 type Opposition struct {
-	FailureID       string
-	Property        string
-	RequiredBy      string
-	Epistemic       EpistemicState
+	FailureID string
+	Property  string
+	RequiredBy string
+	Epistemic EpistemicState
 }
 
 type Analysis struct {
@@ -135,23 +133,23 @@ type Analysis struct {
 }
 
 type Integration struct {
-	FailureID   string
-	Payload     []byte
-	Provenance  Provenance
-	Epistemic   EpistemicState
+	FailureID  string
+	Payload    []byte
+	Provenance Provenance
+	Epistemic  EpistemicState
 }
 
 type Transformation struct {
-	FailureID   string
-	State       State
-	Provenance  Provenance
-	Epistemic   EpistemicState
+	FailureID  string
+	State      State
+	Provenance Provenance
+	Epistemic  EpistemicState
 }
 
 type ParticipantResult struct {
-	Output      State
-	Provenance  Provenance
-	Evidence    Evidence
+	Output     State
+	Provenance Provenance
+	Evidence   Evidence
 }
 
 type Invariant struct {
