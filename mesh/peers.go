@@ -381,11 +381,11 @@ func (p *PeerClient) call(ctx context.Context, nucleus, capability string, paylo
 	}
 
 	var lastErr error
+	messageID := protocol.NewTraceID()
 	for attempt := 1; attempt <= p.maxRetry; attempt++ {
 		if err := ctx.Err(); err != nil {
 			return nil, err
 		}
-		messageID := protocol.NewTraceID()
 		nonce := protocol.NewTraceID()
 		wirePayload := payload
 		if wirePayload == nil {
