@@ -2,9 +2,12 @@ package mesh
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
@@ -154,4 +157,68 @@ func TestPeerClientObserveRouteDoesNotRewriteOutcome(t *testing.T) {
 	if len(o.outcomes) != 1 || o.outcomes[0] != "N01:core.health:corr-test:true" {
 		t.Fatalf("unexpected observed outcome: %#v", o.outcomes)
 	}
+}
+
+func TestPeerClientReusesMessageIDAcrossRetries(t *testing.T) {
+	secret := "n07-retry-secret-0123456789abcdef"
+	correlation := "corr-retry-identity"
+	transport := &retryIdentityTransport{secret: secret}
+	p := &PeerClient{
+		peers: map[string]PeerInfo{
+			protocol.N01: {Nucleus: protocol.N01, URL: "http://n01", Circuit: CircuitClosed},
+		},
+		client:   &http.Client{Transport: transport, Timeout: time.Second},
+		secret:   secret,
+		maxRetry: 3,
+	}
+	result, err := p.CallWithCorrelation(context.Background(), protocol.N01, "mesh.ping", map[string]any{"probe": true}, correlation)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result["correlationId"] != correlation {
+		t.Fatalf("correlation changed across retry cycle: %#v", result)
+	}
+	if len(transport.ids) != 3 {
+		t.Fatalf("expected three attempts, got %d", len(transport.ids))
+	}
+	for _, id := range transport.ids {
+		if id == "" || id != transport.ids[0] {
+			t.Fatalf("message id changed across retries: %#v", transport.ids)
+		}
+	}
+}
+
+type retryIdentityTransport struct {
+	secret  string
+	attempt int
+	ids     []string
+}
+
+func (t *retryIdentityTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	body, err := io.ReadAll(req.Body)
+	if err != nil { return nil, err }
+	var wire map[string]any
+	if err := json.Unmarshal(body, &wire); err != nil { return nil, err }
+	id, _ := wire["id"].(string)
+	correlation, _ := wire["correlationId"].(string)
+	t.ids = append(t.ids, id)
+	t.attempt++
+	if t.attempt < 3 {
+		return &http.Response{StatusCode: 500, Status: "500 Internal Server Error", Header: make(http.Header), Body: io.NopCloser(strings.NewReader("{}")), Request: req}, nil
+	}
+	env := protocol.MeshEnvelope{
+		Version: protocol.SoulMeshVersion, ContractVersion: protocol.SoulMeshContractVersion, MessageID: protocol.NewTraceID(),
+		Source: protocol.N01, Target: protocol.N07, Timestamp: time.Now().UnixMilli(), Nonce: protocol.NewTraceID(),
+		CorrelationID: correlation, Type: "TASK_RESULT", Payload: map[string]any{"ok": true},
+	}
+	if err := protocol.SignHMAC(&env, t.secret); err != nil { return nil, err }
+	response := map[string]any{
+		"protocol": "soul-mesh/1", "contractVersion": protocol.SoulMeshContractVersion, "id": env.MessageID,
+		"correlationId": env.CorrelationID, "source": env.Source, "target": env.Target, "kind": "response",
+		"capability": "mesh.ping", "payload": map[string]any{"ok": true}, "timestamp": env.Timestamp,
+		"nonce": env.Nonce, "hmac": env.HMAC,
+	}
+	raw, err := json.Marshal(response)
+	if err != nil { return nil, err }
+	return &http.Response{StatusCode: 200, Status: "200 OK", Header: http.Header{"Content-Type": []string{"application/json"}}, Body: io.NopCloser(strings.NewReader(string(raw))), Request: req}, nil
 }
