@@ -216,6 +216,19 @@ func (r ExternalAdapterRegistry) validateMaterializedPin(ctx context.Context, p 
 	return nil
 }
 
+func buildExternalAdapterRequest(provider, mode, operation, root string, metadata map[string]string) map[string]any {
+	req := map[string]any{"metadata": metadata}
+	for k, v := range metadata {
+		req[k] = v
+	}
+	// These fields are transport authority, never caller-controlled metadata.
+	req["provider"] = provider
+	req["mode"] = mode
+	req["operation"] = operation
+	req["root"] = root
+	return req
+}
+
 func (r ExternalAdapterRegistry) run(ctx context.Context, provider, mode, operation string, metadata map[string]string) (map[string]any, error) {
 	p, ok := r.byID[strings.ToLower(strings.TrimSpace(provider))]
 	if !ok {
@@ -247,15 +260,7 @@ func (r ExternalAdapterRegistry) run(ctx context.Context, provider, mode, operat
 	if _, err := os.Stat(runner); err != nil {
 		return nil, errors.New("EXTERNAL_ADAPTER_RUNNER_NOT_FOUND")
 	}
-	req := map[string]any{"metadata": metadata}
-	for k, v := range metadata {
-		req[k] = v
-	}
-	// These fields are transport authority, never caller-controlled metadata.
-	req["provider"] = provider
-	req["mode"] = mode
-	req["operation"] = operation
-	req["root"] = root
+	req := buildExternalAdapterRequest(provider, mode, operation, root, metadata)
 	data, err := json.Marshal(req)
 	if err != nil {
 		return nil, err
