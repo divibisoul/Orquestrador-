@@ -3,7 +3,7 @@ import importlib.util, json, os, pathlib, subprocess, sys, time
 MAX_INPUT=131072
 MAX_OUTPUT=262144
 REPO_ROOT=pathlib.Path(__file__).resolve().parents[1]
-PACKAGES={"superagi":"superagi","langgraph":"langgraph","crewai":"crewai","microsoft-agent-framework":"agent_framework","openhands":"openhands","metagpt":"metagpt","agentscope":"agentscope","browser-use":"browser_use","smolagents":"smolagents","pydantic-ai":"pydantic_ai","llama-index":"llama_index","dspy":"dspy","whisper":"whisper","kokoro":"kokoro"}
+PACKAGES={"fedml":"fedml","hivemind":"hivemind","ray":"ray","superagi":"superagi","langgraph":"langgraph","crewai":"crewai","microsoft-agent-framework":"agent_framework","openhands":"openhands","metagpt":"metagpt","agentscope":"agentscope","browser-use":"browser_use","smolagents":"smolagents","pydantic-ai":"pydantic_ai","llama-index":"llama_index","dspy":"dspy","whisper":"whisper","kokoro":"kokoro"}
 
 def emit(v,c=0):
     raw=json.dumps(v,ensure_ascii=False)
@@ -28,7 +28,8 @@ def root(v):
         adapters=json.loads(configured.read_text(encoding="utf-8"))
     except Exception as e:
         emit({"state":"BLOCKED","code":"EXTERNAL_ADAPTER_REGISTRY_UNREADABLE","detail":str(e)},2)
-    entry=next((p for p in adapters.get("providers",[]) if p.get("id")==provider),None)
+    providers=[*adapters.get("providers",[]), *adapters.get("expansion_providers",[])]
+    entry=next((p for p in providers if p.get("id")==provider),None)
     if not entry:
         emit({"state":"BLOCKED","code":"EXTERNAL_PROVIDER_NOT_REGISTERED","provider":provider},2)
     expected=(REPO_ROOT/str(entry["root"])).resolve()
@@ -324,6 +325,18 @@ def execute(v,rt):
             out.parent.mkdir(parents=True,exist_ok=True); sf.write(str(out),np.concatenate(chunks),24000)
             emit({"state":"PASS","provider":provider,"operation":op,"output_path":str(out)})
         except Exception as e: emit({"state":"BLOCKED","code":"KOKORO_EXECUTION_BLOCKED","detail":str(e)},2)
+    if provider in {"fedml","hivemind","temporal","cognitive-workspace","ravana","ray"} and op not in {
+        "federated.describe","swarm.describe","workflow.describe","workspace.describe","agent.describe","cluster.describe"
+    }:
+        emit({
+            "state":"BLOCKED",
+            "code":"SOUL_V2_EXPANSION_RUNTIME_NOT_BOUND",
+            "provider":provider,
+            "operation":op,
+            "reason":"native adapter and observed runtime are required before execution promotion",
+            "epistemic_state":"PROJECTED"
+        },2)
+
     if op.endswith(".describe"):
         emit({
             "state":"REAL" if rt.exists() else "BLOCKED",
