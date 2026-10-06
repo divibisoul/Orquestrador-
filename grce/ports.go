@@ -18,7 +18,7 @@ type Neocortex interface {
 	Characterize(context.Context, grf.Evidence, grf.Context) ([]grf.Characterization, error)
 	Dualize(context.Context, []grf.Characterization, grf.Context) ([]grf.Opposition, error)
 	Form(context.Context, []grf.Transformation, grf.Context) (grf.State, error)
-	Learn(context.Context, []grceResultView, grf.Context) error
+	Learn(context.Context, []ResultView, grf.Context) error
 }
 
 type EthicalGate interface {
