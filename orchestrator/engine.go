@@ -108,6 +108,20 @@ func parseSemver(value string) (semverValue, bool) {
 	v := semverValue{major: parseInt(parts[0]), minor: parseInt(parts[1]), patch: parseInt(parts[2])}
 	if pre != "" {
 		v.pre = strings.Split(pre, ".")
+		for _, identifier := range v.pre {
+			if len(identifier) > 1 && identifier[0] == '0' {
+				allNumeric := true
+				for _, ch := range identifier {
+					if ch < '0' || ch > '9' {
+						allNumeric = false
+						break
+					}
+				}
+				if allNumeric {
+					return semverValue{}, false
+				}
+			}
+		}
 	}
 	return v, true
 }
