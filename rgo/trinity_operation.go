@@ -71,9 +71,9 @@ func RegisterTrinityOperation(e *orchestrator.Engine, source TrinitySource, hort
 
 		finalStatus, _ := out["final_status"].(string)
 		trinityValidated := finalStatus == "VALIDATED"
-		stages, _ := out["stages"].([]any)
+		stages, stagesOK := out["stages"].([]any)
 		hortaResults := make([]any, 0, len(stages))
-		hortaOK := horta != nil
+		hortaOK := horta != nil && stagesOK && len(stages) > 0
 		for _, rawStage := range stages {
 			stage, ok := rawStage.(map[string]any)
 			if !ok {
@@ -107,7 +107,14 @@ func RegisterTrinityOperation(e *orchestrator.Engine, source TrinitySource, hort
 			out["integration_status"] = "VALIDATED_WITH_HORTA"
 		}
 
-		rawOut, _ := json.Marshal(out)
+		rawOut, marshalErr := json.Marshal(out)
+		if marshalErr != nil {
+			return protocol.Result{
+				TraceID: message.TraceID, CorrelationID: message.CorrelationID,
+				Source: "N07.rgo.trinity", Target: message.Source,
+				Status: "error", Error: "RGO_TRINITY_RESULT_SERIALIZATION_FAILED: " + marshalErr.Error(),
+			}, marshalErr
+		}
 		status := "ok"
 		if !trinityValidated || !hortaOK {
 			status = "blocked"
