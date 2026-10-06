@@ -5,7 +5,7 @@
     "soul_components": 9,
     "upstream_providers": 16,
     "total_nodes": 28,
-    "edges": 159
+    "edges": 156
   },
   "authority": "Each SOUL component retains native authority. N07 is the federation/control plane.",
   "activation": [
@@ -1334,13 +1334,6 @@
       "reason": "GRCE experiential memory complement"
     },
     {
-      "from": "N07",
-      "to": "bijux-dag-runtime",
-      "mode": "direct-affinity",
-      "state": "PROJECTED",
-      "reason": "GRCE execution-kernel complement"
-    },
-    {
       "from": "bijux-dag-runtime",
       "to": "N07",
       "mode": "return-contract",
@@ -1362,13 +1355,6 @@
       "reason": "retained run evidence remains under native state ownership"
     },
     {
-      "from": "N07",
-      "to": "ouro-loop",
-      "mode": "direct-affinity",
-      "state": "PROJECTED",
-      "reason": "GRCE remediation complement"
-    },
-    {
       "from": "ouro-loop",
       "to": "N07",
       "mode": "return-contract",
@@ -1388,13 +1374,6 @@
       "mode": "agent-remediation",
       "state": "PROJECTED",
       "reason": "bounded repair support for cognitive execution"
-    },
-    {
-      "from": "N07",
-      "to": "recurs",
-      "mode": "direct-affinity",
-      "state": "PROJECTED",
-      "reason": "GRCE experiential memory complement"
     },
     {
       "from": "recurs",
