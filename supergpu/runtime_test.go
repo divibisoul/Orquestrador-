@@ -99,3 +99,54 @@ func TestBatchParallelHonorsCancellation(t *testing.T) {
 		t.Fatal("expected cancellation error")
 	}
 }
+
+type acceleratorLeaseBackend struct{}
+
+func (acceleratorLeaseBackend) Supports(Device) bool         { return true }
+func (acceleratorLeaseBackend) Capabilities(Device) []string { return []string{"accelerator"} }
+func (acceleratorLeaseBackend) ConcurrentSafe() bool          { return true }
+func (acceleratorLeaseBackend) Execute(context.Context, Device, string, []float64) ([]float64, error) {
+	return []float64{1}, nil
+}
+
+func TestRuntimePreservesSameOwnerAcceleratorLeaseCount(t *testing.T) {
+	r := New(acceleratorLeaseBackend{})
+	device := Device{ID: "accelerator-0", Vendor: "test", Name: "lease-probe", Available: true, Backend: "accelerator"}
+	r.mu.Lock()
+	r.devices = []Device{device}
+	r.mu.Unlock()
+
+	if err := r.Reserve(device.ID, "owner-a"); err != nil {
+		t.Fatal(err)
+	}
+	if err := r.Reserve(device.ID, "owner-a"); err != nil {
+		t.Fatal(err)
+	}
+	r.mu.RLock()
+	leaseCount := r.reserved[device.ID].LeaseCount
+	r.mu.RUnlock()
+	if leaseCount != 2 {
+		t.Fatalf("expected two active leases for same owner, got %d", leaseCount)
+	}
+
+	if err := r.Release(device.ID, "owner-a"); err != nil {
+		t.Fatal(err)
+	}
+	if err := r.Reserve(device.ID, "owner-b"); err == nil {
+		t.Fatal("accelerator became falsely available after only one same-owner release")
+	}
+
+	r.mu.RLock()
+	leaseCount = r.reserved[device.ID].LeaseCount
+	r.mu.RUnlock()
+	if leaseCount != 1 {
+		t.Fatalf("expected one remaining lease after first release, got %d", leaseCount)
+	}
+
+	if err := r.Release(device.ID, "owner-a"); err != nil {
+		t.Fatal(err)
+	}
+	if err := r.Reserve(device.ID, "owner-b"); err != nil {
+		t.Fatalf("accelerator should be available after final release: %v", err)
+	}
+}
