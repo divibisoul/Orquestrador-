@@ -204,4 +204,19 @@ jobs:
         run: |
           set -euo pipefail
           docker image inspect n07-orquestrador:ci >/dev/null
-          test "$(docker run --rm --entrypoint /bin/sh n07-orquestrador:ci -c 'test -x /app/n07 && test -x /usr/local/bin/guppy && echo ok')" = ok
+          test "$(docker run --rm --entrypoint /bin/sh n07-orquestrador:ci -c 'test -x /app/n07 && test -x /usr/local/bin/guppy && test -x /usr/bin/python3 && test -s /app/config/soul-external-runtime-attestation.json && echo ok')" = ok
+
+      - name: Production external federation smoke
+        run: |
+          set -euo pipefail
+          docker run -d --rm --name n07-external-smoke -p 18082:8080 -e N07_APP_TOKEN=ci n07-orquestrador:ci
+          trap 'docker rm -f n07-external-smoke >/dev/null 2>&1 || true' EXIT
+          for i in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:18082/health >/dev/null; then break; fi
+            sleep 1
+          done
+          curl -fsS             -H 'Authorization: Bearer ci'             -H 'Content-Type: application/json'             -X POST http://127.0.0.1:18082/execute             -d '{"operation":"external.federation.describe@1.0.0","metadata":{}}'             | tee /tmp/external-federation.json
+          grep -q '"provider_count":16' /tmp/external-federation.json
+          curl -fsS             -H 'Authorization: Bearer ci'             -H 'Content-Type: application/json'             -X POST http://127.0.0.1:18082/execute             -d '{"operation":"external.langgraph.probe@1.0.0","metadata":{}}'             | tee /tmp/langgraph-probe.json
+          grep -q '"state":"PASS"' /tmp/langgraph-probe.json
+          grep -q '"source_present":true' /tmp/langgraph-probe.json
