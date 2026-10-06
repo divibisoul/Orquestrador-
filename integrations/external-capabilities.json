@@ -356,5 +356,50 @@
       "state": "BLOCKED",
       "reason": "GitHub returned 404 during source verification on 2026-10-06"
     }
-  ]
+  ],
+  "candidate_sources": {
+    "multi-agent-engine": {
+      "source": "https://github.com/NickSpyker/multi-agent-engine",
+      "revision": "ed540b868fecd8d222cfcee1963589ad18c157f6",
+      "role": "Octacore parallel CPU/GPU reinforcement",
+      "state": "PROJECTED",
+      "integration_state": "NOT_MATERIALIZED_NO_NATIVE_ADAPTER_YET"
+    },
+    "cognitive-workspace": {
+      "source": "https://github.com/tao-hpu/cognitive-workspace",
+      "revision": "6740fc3b69a842ccc49663ac6c371600d0d9fc2e",
+      "role": "Clareira workspace reinforcement",
+      "state": "PROJECTED",
+      "integration_state": "NOT_MATERIALIZED_NO_NATIVE_ADAPTER_YET"
+    },
+    "ravana": {
+      "source": "https://github.com/OpenSource-Syndicate/RAVANA",
+      "revision": "c5d5095b2f918657b9261a6b958e2f4f013305cb",
+      "role": "Clareira autonomous-agent reinforcement",
+      "state": "PROJECTED",
+      "integration_state": "NOT_MATERIALIZED_NO_NATIVE_ADAPTER_YET"
+    },
+    "swarms-evals": {
+      "source": "https://github.com/The-Swarm-Corporation/swarms-evals",
+      "revision": "37901fe84f4064925a1807299ea0958ba770580c",
+      "role": "SuperGPU evaluation/proof reinforcement",
+      "state": "PROJECTED",
+      "integration_state": "NOT_MATERIALIZED_NO_NATIVE_ADAPTER_YET",
+      "boundary": "evaluation suite; not declared a hardware runtime"
+    },
+    "claude-brain": {
+      "source": "https://github.com/gammon-bio/claude-brain",
+      "revision": "20c1eb3791a81516d09b2ef91a1f3c656d133901",
+      "role": "HortaCore biological-memory research reinforcement",
+      "state": "PROJECTED",
+      "integration_state": "NOT_MATERIALIZED_NO_NATIVE_ADAPTER_YET",
+      "boundary": "prototype/playground; not declared production memory authority"
+    }
+  },
+  "candidate_policy": {
+    "excluded_from_primary_provider_count": true,
+    "excluded_from_complementary_provider_count": true,
+    "requires_native_adapter_before_materialization": true,
+    "requires_execution_evidence_before_REAL": true
+  }
 }
