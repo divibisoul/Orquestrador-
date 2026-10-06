@@ -346,7 +346,8 @@ func structuredMeshCapability(capability string) bool {
 	capability = strings.TrimSpace(capability)
 	return strings.HasPrefix(capability, "cooperation.") ||
 		strings.HasPrefix(capability, "mesh.supergpu.") ||
-		strings.HasPrefix(capability, "superagi.fabric.")
+		strings.HasPrefix(capability, "superagi.fabric.") ||
+		strings.HasPrefix(capability, "grce.")
 }
 
 func copyStructuredCapabilityMetadata(metadata map[string]string, capability string, payload map[string]any) error {
@@ -364,6 +365,16 @@ func copyStructuredCapabilityMetadata(metadata map[string]string, capability str
 		payload = map[string]any{}
 	}
 	switch capability {
+	case "grce.cycle.execute@1.0.0", "grce.cycle.execute":
+		if payload == nil {
+			return errors.New("grce payload is required")
+		}
+		input, ok := payload["input"].(string)
+		if !ok || strings.TrimSpace(input) == "" {
+			return errors.New("grce payload.input is required")
+		}
+		metadata["grce_input"] = strings.TrimSpace(input)
+		return nil
 	case "mesh.supergpu.execute@1.0.0", "mesh.supergpu.execute":
 		return copySuperGPUMetadata(metadata, payload, true)
 	case "mesh.supergpu.parallel@1.0.0", "mesh.supergpu.parallel":
