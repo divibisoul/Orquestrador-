@@ -270,17 +270,47 @@ def execute(v,rt):
         base=configured_base
         agent_id=str(v.get("agent_id") or os.environ.get("SOUL_EXTERNAL_SUPERAGI_AGENT_ID") or "").strip()
         api_key=str(os.environ.get("SOUL_EXTERNAL_SUPERAGI_API_KEY") or "").strip()
+        goal=str(v.get("goal") or v.get("prompt") or "").strip()
+        instruction=str(v.get("instruction") or "").strip()
         if not base or not agent_id or not api_key:
             emit({"state":"BLOCKED","code":"SUPERAGI_BASE_URL_AGENT_ID_AND_API_KEY_REQUIRED"},2)
+        if not goal and not instruction:
+            emit({"state":"BLOCKED","code":"SUPERAGI_GOAL_OR_INSTRUCTION_REQUIRED"},2)
         import urllib.request
+        headers={"Content-Type":"application/json","X-API-Key":api_key}
         try:
-            payload={"goal":str(v.get("goal") or v.get("prompt") or "")}
-            req=urllib.request.Request(f"{base}/agents/api/{agent_id}/run",data=json.dumps(payload).encode(),headers={"Content-Type":"application/json","Authorization":f"Bearer {api_key}"})
-            with urllib.request.urlopen(req,timeout=min(120,int(v.get("timeout_seconds") or 60))) as resp:
+            payload={}
+            if goal: payload["goal"]=[goal]
+            if instruction: payload["instruction"]=[instruction]
+            req=urllib.request.Request(f"{base}/v1/agent/{agent_id}/run",data=json.dumps(payload).encode(),headers=headers)
+            with urllib.request.urlopen(req,timeout=30) as resp:
                 result=json.loads(resp.read(MAX_OUTPUT))
-            emit({"state":"PASS","provider":"superagi","operation":"agent.execute","result":result})
-        except Exception as e:
-            emit({"state":"BLOCKED","code":"SUPERAGI_EXECUTION_BLOCKED","detail":str(e)},2)
+            run_id=result.get("run_id")
+            if run_id is None:
+                emit({"state":"BLOCKED","code":"SUPERAGI_RUN_ID_MISSING","result":result},2)
+            deadline=time.monotonic()+min(120,int(v.get("timeout_seconds") or 60))
+            last_status="RUNNING"
+            while time.monotonic()<deadline:
+                status_req=urllib.request.Request(
+                    f"{base}/v1/agent/{agent_id}/run-status",
+                    data=json.dumps({"run_ids":[int(run_id)],"run_status_filter":None}).encode(),
+                    headers=headers,
+                )
+                with urllib.request.urlopen(status_req,timeout=15) as resp:
+                    status_result=json.loads(resp.read(MAX_OUTPUT))
+                if isinstance(status_result,list) and status_result:
+                    last_status=str(status_result[0].get("status") or "")
+                elif isinstance(status_result,dict):
+                    last_status=str(status_result.get("status") or "")
+                if last_status.upper()=="COMPLETED":
+                    emit({"state":"PASS","provider":provider,"operation":"agent.execute","run_id":int(run_id),"completion_proven":True,"status":last_status})
+                if last_status.upper() in {"TERMINATED","PAUSED","WAITING_FOR_PERMISSION","WAIT_STEP","ITERATION_LIMIT_EXCEEDED"}:
+                    emit({"state":"BLOCKED","code":"SUPERAGI_EXECUTION_NOT_COMPLETED","run_id":int(run_id),"status":last_status},2)
+                time.sleep(1)
+            emit({"state":"BLOCKED","code":"SUPERAGI_EXECUTION_TIMEOUT","run_id":int(run_id),"status":last_status},2)
+        except Exception as ex:
+            emit({"state":"BLOCKED","code":"SUPERAGI_EXECUTION_BLOCKED","detail":str(ex)},2)
+
     if provider=="kokoro" and op=="speech.synthesize":
         text=str(v.get("text") or "").strip()
         if not text: emit({"state":"BLOCKED","code":"KOKORO_TEXT_REQUIRED"},2)
