@@ -16,7 +16,7 @@ const (
 	MultiAgentDescribeOperation = "multiagent.crews.describe@1.0.0"
 	MultiAgentExecuteOperation  = "multiagent.crews.execute@1.0.0"
 )
-const crewaiRevision = "8078f9130c35a47be95d4a55bf1d73b3fd44fc88"
+const crewaiRevision = "1133f16cab274b9863b36fdacca7766b30e549fd"
 const metagptRevision = "11cdf466d042aece04fc6cfd13b28e1a70341b1f"
 
 type MultiAgentFacadeRequest struct {
