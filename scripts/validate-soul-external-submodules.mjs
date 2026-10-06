@@ -79,4 +79,9 @@ for (const provider of grceSources) {
   try { run(["-C", path, "diff", "--cached", "--quiet"]); } catch { errors.push(`SUBMODULE_INDEX_DIRTY:${id}`); }
 }
 
+if (errors.length) {
+  console.error(JSON.stringify({ ok:false, errors }, null, 2));
+  process.exit(2);
+}
+
 console.log(JSON.stringify({ ok:true, primary_upstreams:16, complementary_sources:6, grce_complements:3, total_external_gitlinks:25, state:"MATERIALIZED_AND_EXACT", rule:"gitlink SHA == registry revision == checked-out submodule HEAD" }, null, 2));
