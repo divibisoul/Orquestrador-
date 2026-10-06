@@ -58,11 +58,6 @@ func providerEvidence(provider string) MultiAgentProviderEvidence {
 		return MultiAgentProviderEvidence{State: "FAIL", Code: "MULTIAGENT_PROVIDER_NOT_REGISTERED", Provider: provider, Python: py}
 	}
 	root := spec.Root
-	if provider == "crewai" {
-		root = getEnv("SOUL_N07_CREWAI_ROOT", root)
-	} else {
-		root = getEnv("SOUL_N07_METAGPT_ROOT", root)
-	}
 	if !filepath.IsAbs(root) {
 		root = filepath.Join(repositoryRoot(), root)
 	}
