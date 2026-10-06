@@ -18,6 +18,30 @@ type HortaStageSink interface {
 	CallWithCorrelation(context.Context, string, string, map[string]any, string) (map[string]any, error)
 }
 
+// recordHortaStageFailure preserves the failed stage and its provenance so a
+// transport/persistence failure becomes recoverable evidence instead of loss.
+func recordHortaStageFailure(stage map[string]any, status string, sinkErr error) map[string]any {
+	out := map[string]any{
+		"status": status,
+		"stage":  stage,
+	}
+	if sinkErr != nil {
+		out["error"] = sinkErr.Error()
+	}
+	for _, key := range []string{
+		"cycle_id",
+		"finding_id",
+		"output_hash",
+		"eru_snapshot_hash",
+		"rgo_evidence_chain_hash",
+	} {
+		if value, ok := stage[key]; ok {
+			out[key] = value
+		}
+	}
+	return out
+}
+
 // RegisterTrinityOperation composes SARA's RGO/Trinity runtime with the existing
 // N07 peer transport to N01 HortaCore. N07 remains the routing authority.
 func RegisterTrinityOperation(e *orchestrator.Engine, source TrinitySource, horta HortaStageSink) error {
@@ -50,9 +74,6 @@ func RegisterTrinityOperation(e *orchestrator.Engine, source TrinitySource, hort
 		stages, _ := out["stages"].([]any)
 		hortaResults := make([]any, 0, len(stages))
 		hortaOK := horta != nil
-		if horta == nil {
-			hortaOK = false
-		}
 		for _, rawStage := range stages {
 			stage, ok := rawStage.(map[string]any)
 			if !ok {
@@ -60,14 +81,17 @@ func RegisterTrinityOperation(e *orchestrator.Engine, source TrinitySource, hort
 				hortaResults = append(hortaResults, map[string]any{"status": "invalid_stage"})
 				continue
 			}
-			if !hortaOK {
-				hortaResults = append(hortaResults, map[string]any{"status": "BLOCKED_HORTA_SINK"})
+			// Rule of Gold transformation: isolate the failure to its stage,
+			// preserve its evidence, and continue the remaining stages.
+			if horta == nil {
+				hortaOK = false
+				hortaResults = append(hortaResults, recordHortaStageFailure(stage, "BLOCKED_HORTA_SINK", nil))
 				continue
 			}
 			result, sinkErr := horta.CallWithCorrelation(ctx, "N01", "rgo.hortacore.store", stage, message.CorrelationID)
 			if sinkErr != nil {
 				hortaOK = false
-				hortaResults = append(hortaResults, map[string]any{"status": "BLOCKED_HORTA", "error": sinkErr.Error()})
+				hortaResults = append(hortaResults, recordHortaStageFailure(stage, "BLOCKED_HORTA", sinkErr))
 				continue
 			}
 			hortaResults = append(hortaResults, result)
