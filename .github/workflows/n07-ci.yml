@@ -113,6 +113,14 @@ jobs:
         with:
           node-version: '22.x'
 
+      - name: Forbid recursive upstream submodule checkout
+        run: |
+          set -euo pipefail
+          if grep -R -nE 'submodules:[[:space:]]*recursive' .github/workflows; then
+            echo 'Recursive upstream submodule traversal is forbidden; materialize only registered top-level federation sources.'
+            exit 1
+          fi
+
       - name: Architectural integrity
         run: node scripts/soul-architectural-integrity.mjs
 
