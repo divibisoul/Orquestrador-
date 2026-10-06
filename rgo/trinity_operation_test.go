@@ -182,3 +182,23 @@ func TestRegisterTrinityOperationIsolatesHortaFailureAndContinuesStages(t *testi
 		t.Fatalf("third stage was not allowed to recover after first-stage failure: %#v", third)
 	}
 }
+
+type emptyStagesTrinitySource struct{}
+
+func (emptyStagesTrinitySource) RGOTrinity(_ context.Context, _ map[string]any, _ string) (map[string]any, error) {
+	return map[string]any{"final_status": "VALIDATED"}, nil
+}
+
+func TestRegisterTrinityOperationBlocksValidatedResultWithoutStages(t *testing.T) {
+	e := newTestEngine(t)
+	sink := &fakeHortaSink{}
+	if err := RegisterTrinityOperation(e, emptyStagesTrinitySource{}, sink); err != nil {
+		t.Fatal(err)
+	}
+	result, err := e.Execute(context.Background(), "rgo.trinity.process@1.0.0", []float64{0}, map[string]string{
+		"rgo_envelope_json": `{"schema_version":"1.0.0"}`,
+	})
+	if err == nil || result.Status != "blocked" {
+		t.Fatalf("expected missing-stage result to be blocked: %#v err=%v", result, err)
+	}
+}
