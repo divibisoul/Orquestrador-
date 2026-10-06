@@ -46,6 +46,10 @@ func TestGRCECycleFailsClosedUntilRealHooksAreBound(t *testing.T) {
 	if err == nil || !strings.Contains(err.Error(), "GRCE_RUNTIME_HOOKS_NOT_BOUND") {
 		t.Fatalf("expected explicit blocked state, got %v", err)
 	}
+	_, err = e.Execute(context.Background(), GRCECycleOperation, nil, map[string]string{"trace_id":"t2","correlation_id":"c2","grf_sequence_index":"1x"})
+	if err == nil || !strings.Contains(err.Error(), "GRF_SEQUENCE_INDEX_INVALID") {
+		t.Fatalf("expected strict sequence rejection, got %v", err)
+	}
 }
 
 func TestGRFInvariantSetContainsI1ThroughI18(t *testing.T) {
