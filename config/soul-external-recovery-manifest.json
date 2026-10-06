@@ -240,6 +240,12 @@
   "hardening_findings": [
     {
       "date": "2026-10-06",
+      "finding": "SuperAGI adapter used a stale route/auth contract and treated asynchronous run creation as completed execution",
+      "transformation": "aligned the adapter with /v1/agent/{agent_id}/run, X-API-Key, list-shaped goal/instruction payloads, and /run-status polling until COMPLETED",
+      "evidence_state": "REAL"
+    },
+    {
+      "date": "2026-10-06",
       "finding": "caller metadata could overwrite transport authority fields in the adapter request",
       "transformation": "provider, mode, operation and root are now written after metadata merge and cannot be overridden by caller metadata",
       "evidence_state": "REAL"
