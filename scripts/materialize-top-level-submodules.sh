@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-// Materialize only the SOUL top-level gitlinks.
-// The exact gitlink SHA is authoritative; avoid shallow-fetch assumptions that may
-// fail when the pinned revision is not the upstream default-branch tip.
+ # Materialize only the SOUL top-level gitlinks.
+ # The exact gitlink SHA is authoritative; avoid shallow-fetch assumptions that may
+ # fail when the pinned revision is not the upstream default-branch tip.
 # Nested repositories remain governed by their own manifests; malformed nested
 # metadata is preserved as BLOCKED rather than silently discarded or promoted.
 if [[ ! -f .gitmodules ]]; then
