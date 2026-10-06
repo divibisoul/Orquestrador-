@@ -27,7 +27,7 @@ func TestGRFAndGRCEOperationsRegistered(t *testing.T) {
 	e := newGRFTestEngine(t)
 	for _, op := range []string{
 		GRFDescribeOperation, GRCEDescribeOperation, GRCEBindingsOperation,
-		GRCECycleOperation, GRFParticipantDescribeOperation, GRFParticipantIngestOperation,
+		GRCECycleOperation, GRCEAuthoritativeSaraOperation, GRFParticipantDescribeOperation, GRFParticipantIngestOperation,
 	} {
 		if !containsOperation(e.Operations(), op) {
 			t.Fatalf("missing operation %s", op)
@@ -62,5 +62,15 @@ func TestGRFParticipantIngestPreservesEpistemicState(t *testing.T) {
 	})
 	if err != nil {
 		t.Fatalf("participant ingest failed: %v", err)
+	}
+}
+
+func TestGRCEAuthoritativeSARAPathFailsClosedWhenBridgeAbsent(t *testing.T) {
+	e := newGRFTestEngine(t)
+	_, err := e.Execute(context.Background(), GRCEAuthoritativeSaraOperation, nil, map[string]string{
+		"trace_id":"t","correlation_id":"c","grf_sequence_index":"1","grf_input_text":"preserve",
+	})
+	if err == nil || !strings.Contains(err.Error(), "GRCE_SARA_BRIDGE_UNCONFIGURED") {
+		t.Fatalf("expected SARA bridge gate, got %v", err)
 	}
 }
