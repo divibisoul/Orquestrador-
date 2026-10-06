@@ -1,0 +1,189 @@
+{
+  "schema_version": "2.0.0",
+  "framework": "GRF",
+  "executor": "GRCE",
+  "control_plane": "N07",
+  "canonical_mesh": "soul-mesh/1",
+  "layer_contracts": [
+    {
+      "id": "L0",
+      "name": "Substrato",
+      "owner": "SOUL Mesh",
+      "participants": [
+        "N01",
+        "N02",
+        "N03",
+        "N04",
+        "N05",
+        "N06",
+        "N07"
+      ]
+    },
+    {
+      "id": "L1",
+      "name": "Memória",
+      "owner": "SARA/ERU",
+      "state": "PROJECTED"
+    },
+    {
+      "id": "L2",
+      "name": "Mediação",
+      "owner": "SARA/N07 MMD boundary",
+      "state": "PROJECTED"
+    },
+    {
+      "id": "L3",
+      "name": "Regeneração",
+      "owner": "SARA/ARA",
+      "state": "PROJECTED"
+    },
+    {
+      "id": "L4",
+      "name": "Ética",
+      "owner": "SARA/ETR/JEV",
+      "state": "PROJECTED"
+    },
+    {
+      "id": "L5",
+      "name": "Inovação",
+      "owner": "SARA/ITR/N06",
+      "state": "PROJECTED"
+    },
+    {
+      "id": "L6",
+      "name": "Governança",
+      "owner": "SARA/RGO/N07",
+      "state": "PROJECTED"
+    },
+    {
+      "id": "L7",
+      "name": "Execução",
+      "owner": "N07/GRCE",
+      "state": "ACTIVE"
+    }
+  ],
+  "natives": [
+    {
+      "id": "N01",
+      "repository": "divibisoul/aeternum-core-29",
+      "adjacent": [
+        "N02"
+      ],
+      "role": "coordenação/estado/identidade/memória"
+    },
+    {
+      "id": "N02",
+      "repository": "divibisoul/Eternium-",
+      "adjacent": [
+        "N01",
+        "N03"
+      ],
+      "role": "multiagente/execução colaborativa"
+    },
+    {
+      "id": "N03",
+      "repository": "divibisoul/nexus-aeternum-fusion",
+      "adjacent": [
+        "N02",
+        "N04"
+      ],
+      "role": "percepção/voz"
+    },
+    {
+      "id": "N04",
+      "repository": "divibisoul/nextjs-ai-chatbots",
+      "adjacent": [
+        "N03",
+        "N05"
+      ],
+      "role": "interface/ferramentas/documentos"
+    },
+    {
+      "id": "N05",
+      "repository": "divibisoul/nextjs-ai-chatbot",
+      "adjacent": [
+        "N04",
+        "N06"
+      ],
+      "role": "chat/conhecimento/recuperação"
+    },
+    {
+      "id": "N06",
+      "repository": "divibisoul/nextjs-ai-chatbot-2000",
+      "adjacent": [
+        "N05",
+        "N07"
+      ],
+      "role": "cognição/raciocínio/agentes"
+    },
+    {
+      "id": "N07",
+      "repository": "divibisoul/Orquestrador-",
+      "adjacent": [
+        "N06"
+      ],
+      "role": "orquestração/federação/control plane"
+    },
+    {
+      "id": "SARA",
+      "repository": "divibisoul/SARA",
+      "adjacent": [
+        "transversal"
+      ],
+      "role": "ERU/MMD/ARA/ETR/ITR/RGO"
+    },
+    {
+      "id": "JEV",
+      "repository": "divibisoul/jev-api",
+      "adjacent": [
+        "transversal"
+      ],
+      "role": "decisões tipadas/guardrails"
+    }
+  ],
+  "organs": [
+    {
+      "id": "prefrontal-neocortex",
+      "owner": "N06",
+      "route": "prefrontal.orbital.evaluate@1.0.0"
+    },
+    {
+      "id": "orbitador",
+      "owner": "N07",
+      "route": "transcendental.estimate@1.0.0"
+    },
+    {
+      "id": "SuperGPU",
+      "owner": "N07",
+      "route": "mesh.supergpu.execute@1.0.0"
+    },
+    {
+      "id": "Octacore",
+      "owner": "N07",
+      "route": "octacore.submit@1.0.0"
+    },
+    {
+      "id": "HortaCore",
+      "owner": "N01",
+      "route": "rgo.hortacore.store"
+    },
+    {
+      "id": "VagusBus",
+      "owner": "N02/SARA",
+      "route": "sara.trace@1.0.0"
+    },
+    {
+      "id": "Clareira",
+      "owner": "N01/N04",
+      "route": "clareira.ingest"
+    },
+    {
+      "id": "NervoVago",
+      "owner": "SARA",
+      "route": "BLOCKED:belel-protocol"
+    }
+  ],
+  "adjacency_policy": "GRF never bypasses canonical Mesh; HortaCore carries state and VagusBus carries signal",
+  "no_second_mesh": true,
+  "no_shadow_authority": true
+}
