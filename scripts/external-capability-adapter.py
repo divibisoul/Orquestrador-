@@ -324,8 +324,15 @@ def execute(v,rt):
             out.parent.mkdir(parents=True,exist_ok=True); sf.write(str(out),np.concatenate(chunks),24000)
             emit({"state":"PASS","provider":provider,"operation":op,"output_path":str(out)})
         except Exception as e: emit({"state":"BLOCKED","code":"KOKORO_EXECUTION_BLOCKED","detail":str(e)},2)
-    if op in {"agent.describe","workflow.describe","browser.describe"}:
-        emit({"state":"PASS","provider":provider,"operation":op,"source_present":rt.exists(),"package_available":package_available(provider)})
+    if op.endswith(".describe"):
+        emit({
+            "state":"REAL" if rt.exists() else "BLOCKED",
+            "provider":provider,
+            "operation":op,
+            "source_present":rt.exists(),
+            "package_available":package_available(provider),
+            "execution_proven":False,
+        })
     emit({"state":"BLOCKED","code":"EXTERNAL_ADAPTER_OPERATION_NOT_AVAILABLE","provider":provider,"operation":op},2)
 
 v=load()
