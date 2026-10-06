@@ -579,6 +579,34 @@ func verifyResponseHMAC(result map[string]any, secret string) error {
 	return protocol.VerifyHMAC(env, secret, time.Now())
 }
 
+// RegisterPeer adds or refreshes a discovered peer in the same canonical Mesh peer table.
+func (p *PeerClient) RegisterPeer(nucleus, endpoint string, capabilities []string) error {
+	if p == nil {
+		return errors.New("peer client is nil")
+	}
+	nucleus = strings.TrimSpace(nucleus)
+	endpoint = strings.TrimRight(strings.TrimSpace(endpoint), "/")
+	if nucleus == "" || nucleus == protocol.N07 {
+		return errors.New("invalid peer nucleus")
+	}
+	if endpoint == "" {
+		return errors.New("peer endpoint is required")
+	}
+	if !strings.HasPrefix(endpoint, "http://") && !strings.HasPrefix(endpoint, "https://") {
+		return errors.New("peer endpoint must use http(s)")
+	}
+	p.mu.Lock()
+	p.peers[nucleus] = PeerInfo{
+		Nucleus: nucleus,
+		URL: endpoint,
+		Healthy: true,
+		Circuit: CircuitClosed,
+	}
+	p.mu.Unlock()
+	p.invalidateDiscovery(nucleus)
+	return nil
+}
+
 func (p *PeerClient) ConfiguredPeers() []PeerInfo {
 	p.mu.RLock()
 	defer p.mu.RUnlock()
