@@ -101,7 +101,9 @@ jobs:
           SOUL_MESH_N01_HOST: 127.0.0.1
           SOUL_MESH_N01_PORT: '18081'
           SOUL_MESH_N07_URL: http://127.0.0.1:18080
+          SOUL_MESH_HMAC_SECRET: n01-n07-shared-staging-secret-2026
           SOUL_MESH_SECRET: n01-n07-shared-staging-secret-2026
+          SOUL_MESH_N01_ENDPOINT: http://127.0.0.1:18081
         run: |
           set -euo pipefail
           nohup npm run mesh:n01 > "$RUNNER_TEMP/n01.log" 2>&1 &
@@ -117,6 +119,39 @@ jobs:
           set -euo pipefail
           curl -fsS http://127.0.0.1:18081/mesh/discovery | tee "$RUNNER_TEMP/n01-discovery.json"
           jq -e '.peers[] | select(.id == "N07" and .url == "http://127.0.0.1:18080")' "$RUNNER_TEMP/n01-discovery.json"
+
+      - name: Verify N01 registration in N07
+        working-directory: n01
+        run: |
+          set -euo pipefail
+          node <<'NODE' > "$RUNNER_TEMP/n01-registration-check.json"
+          const message = {
+            protocol: 'soul-mesh/1',
+            contractVersion: '1.1.0',
+            id: crypto.randomUUID(),
+            correlationId: 'phase1-n01-n07-registration-check',
+            source: 'N01',
+            target: 'N07',
+            kind: 'request',
+            capability: 'mesh.describe',
+            payload: {},
+            timestamp: Date.now(),
+            meta: { transport: 'HTTP', runtime: 'N01-staging' }
+          };
+          const response = await fetch('http://127.0.0.1:18081/api/soul-mesh/n07', {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify(message)
+          });
+          const body = await response.json();
+          if (!response.ok) {
+            console.error(JSON.stringify(body));
+            process.exit(1);
+          }
+          console.log(JSON.stringify(body));
+          NODE
+          cat "$RUNNER_TEMP/n01-registration-check.json"
+          jq -e '.payload.registeredPeers[] | select(.nucleus == "N01" and .endpoint == "http://127.0.0.1:18081")' "$RUNNER_TEMP/n01-registration-check.json"
 
       - name: Delegate real GRCE from N01 to N07
         working-directory: n01
@@ -167,4 +202,5 @@ jobs:
             ${{ runner.temp }}/n01-health.json
             ${{ runner.temp }}/n01-discovery.json
             ${{ runner.temp }}/n01-delegation.json
+            ${{ runner.temp }}/n01-registration-check.json
           if-no-files-found: warn
