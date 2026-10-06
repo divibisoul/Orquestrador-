@@ -3,9 +3,12 @@
   "component": {
     "id": "nervo-vago",
     "name": "Nervo Vago",
-    "state": "PROJECTED",
+    "state": "REAL",
     "architectural_role": "single_logical_nervous_system",
-    "principle": "one logical component, multiple preserved transport implementations"
+    "principle": "one logical component, multiple preserved transport implementations",
+    "evidence_scope": "local_SARA_N01",
+    "federated_state": "PROJECTED",
+    "state_note": "Local unified component is executable through the preserved SARA.VagusNerveBus and N01 facade; only durable JetStream/federated proof remains projected, while OpenSIN external augmentation remains BLOCKED."
   },
   "authority": {
     "owner": "N07",
@@ -101,27 +104,27 @@
     {
       "id": "N07",
       "mode": "control/event-signal",
-      "state": "PROJECTED"
+      "state": "REAL"
     },
     {
       "id": "SARA",
       "mode": "event-signal/governance",
-      "state": "PROJECTED"
+      "state": "REAL"
     },
     {
       "id": "SuperGPU",
       "mode": "event-signal",
-      "state": "PROJECTED"
+      "state": "REAL"
     },
     {
       "id": "Octacore",
       "mode": "event-signal",
-      "state": "PROJECTED"
+      "state": "REAL"
     },
     {
       "id": "HortaCore",
       "mode": "event-signal",
-      "state": "PROJECTED"
+      "state": "REAL"
     },
     {
       "id": "Clareira",
@@ -199,7 +202,7 @@
     "implementation": "backend.NervoVagoGateway",
     "policy_gate": "SARA/ETR via sara.audit@1.0.0",
     "delivery": "SARA /v1/vagus -> shared VagusNerveBus",
-    "state": "PROJECTED_WITH_REAL_SARA_PATH",
+    "state": "REAL_LOCAL_PROJECTED_FEDERATED",
     "fail_closed": true
   },
   "candidate_policy": {
