@@ -21,10 +21,10 @@ const (
 )
 
 type Context struct {
-	TraceID string
-	CorrelationID string
-	SequenceIndex uint64
-	Values map[string]any
+	TraceID string `json:"trace_id"`
+	CorrelationID string `json:"correlation_id"`
+	SequenceIndex uint64 `json:"sequence_index"`
+	Values map[string]any `json:"values,omitempty"`
 }
 
 func (c Context) Validate() error {
@@ -35,32 +35,32 @@ func (c Context) Validate() error {
 }
 
 type Provenance struct {
-	ParentHash string
-	InputHash string
-	OutputHash string
+	ParentHash string `json:"parent_hash"`
+	InputHash string `json:"input_hash"`
+	OutputHash string `json:"output_hash"`
 	SequenceIndex uint64
-	Stage string
-	CausalFailureID string
+	Stage string `json:"stage"`
+	CausalFailureID string `json:"causal_failure_id,omitempty"`
 }
 
 type Evidence struct {
-	ID string
-	FailureID string
-	State EpistemicState
-	Hash string
+	ID string `json:"id"`
+	FailureID string `json:"failure_id"`
+	State EpistemicState `json:"state"`
+	Hash string `json:"hash"`
 	InputHash string
 	OutputHash string
 	SequenceIndex uint64
-	Payload map[string]any
+	Payload map[string]any `json:"payload,omitempty"`
 }
 
 type Failure struct {
 	ID string
-	Source string
-	Description string
-	RequiredOpposition string
-	PropertyNecessary string
-	PropertyDeclared bool
+	Source string `json:"source"`
+	Description string `json:"description"`
+	RequiredOpposition string `json:"required_opposition,omitempty"`
+	PropertyNecessary string `json:"property_necessary,omitempty"`
+	PropertyDeclared bool `json:"property_declared"`
 	State EpistemicState
 }
 
@@ -74,7 +74,7 @@ type Characterization struct {
 type Opposition struct {
 	FailureID string
 	Description string
-	NecessaryProperty string
+	NecessaryProperty string `json:"necessary_property"`
 	PropertyDeclared bool
 	State EpistemicState
 }
@@ -95,7 +95,7 @@ func (a Artifact) Size() (int, error) {
 
 type State struct {
 	ID string
-	EpistemicState EpistemicState
+	EpistemicState EpistemicState `json:"epistemic_state"`
 	Payload map[string]any
 	ParentHash string
 }
