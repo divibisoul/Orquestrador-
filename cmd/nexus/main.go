@@ -217,6 +217,10 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	nervoVagoGateway, err := backend.NewNervoVagoGateway(saraProxy)
+	if err != nil {
+		log.Fatal(err)
+	}
 	g.SetExecutionReporter(supergpu.ReporterFunc(func(ctx context.Context, event supergpu.ExecutionEvent) error {
 		correlationID := event.CorrelationID
 		if strings.TrimSpace(correlationID) == "" {
@@ -224,27 +228,52 @@ func main() {
 		}
 		reportCtx := supergpu.WithCorrelationID(ctx, correlationID)
 		clareiraErr := clareiraReporter.Report(reportCtx, event)
-		if !saraProxy.Configured() {
-			return clareiraErr
+
+		payload := map[string]any{
+			"operation":   event.Operation,
+			"phase":       event.Phase,
+			"device_id":   event.DeviceID,
+			"backend":     event.Backend,
+			"input_size":  event.InputSize,
+			"output_size": event.OutputSize,
+			"error":       event.Error,
 		}
-		_, vagusErr := saraProxy.PublishVagus(ctx, map[string]any{
-			"vagus_version":  "1.0",
-			"message_id":     protocol.NewTraceID(),
+		inputHash, hashErr := backend.HashNervoVagoValue(payload)
+		if hashErr != nil {
+			if clareiraErr != nil {
+				return fmt.Errorf("clareira=%v; nervo-vago-hash=%v", clareiraErr, hashErr)
+			}
+			return hashErr
+		}
+		parentHash, hashErr := backend.HashNervoVagoValue(map[string]any{
 			"correlation_id": correlationID,
 			"source":         "N07.SuperGPU",
-			"target":         "VagusNerveBus",
-			"priority":       100,
-			"ttl":            5000,
-			"type":           "supergpu." + event.Phase,
-			"payload": map[string]any{
-				"operation":   event.Operation,
-				"device_id":   event.DeviceID,
-				"backend":     event.Backend,
-				"input_size":  event.InputSize,
-				"output_size": event.OutputSize,
-				"error":       event.Error,
+		})
+		if hashErr != nil {
+			if clareiraErr != nil {
+				return fmt.Errorf("clareira=%v; nervo-vago-parent-hash=%v", clareiraErr, hashErr)
+			}
+			return hashErr
+		}
+		_, vagusErr := nervoVagoGateway.Publish(ctx, backend.NervoVagoEnvelope{
+			VagusVersion:  "1.0",
+			MessageID:     protocol.NewTraceID(),
+			CorrelationID: correlationID,
+			Source:        "N07.SuperGPU",
+			Target:        "SARA",
+			Priority:      100,
+			TTL:           5000,
+			Type:          "supergpu." + event.Phase,
+			Payload:       payload,
+			Provenance: backend.NervoVagoProvenance{
+				TraceID:       correlationID,
+				CorrelationID: correlationID,
+				MessageID:     "",
+				SequenceIndex: 1,
+				ParentHash:    parentHash,
+				InputHash:     inputHash,
 			},
-		}, correlationID)
+		})
 		if clareiraErr != nil && vagusErr != nil {
 			return fmt.Errorf("clareira=%v; vagus=%v", clareiraErr, vagusErr)
 		}
