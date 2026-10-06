@@ -244,5 +244,92 @@
       ],
       "package": null
     }
-  ]
+  ],
+  "expansion_providers": [
+    {
+      "id": "fedml",
+      "owner": "N07",
+      "kind": "python",
+      "root": "integrations/external/fedml",
+      "operations": [
+        "federated.describe",
+        "federated.train"
+      ],
+      "package": "fedml",
+      "state": "PROJECTED",
+      "runtime_requirement": "at least two real training nodes"
+    },
+    {
+      "id": "hivemind",
+      "owner": "N06",
+      "kind": "python",
+      "root": "integrations/external/hivemind",
+      "operations": [
+        "swarm.describe",
+        "swarm.join",
+        "swarm.train"
+      ],
+      "package": "hivemind",
+      "state": "PROJECTED",
+      "runtime_requirement": "real peer swarm and compatible training workload"
+    },
+    {
+      "id": "temporal",
+      "owner": "N07",
+      "kind": "server",
+      "root": "integrations/external/temporal",
+      "operations": [
+        "workflow.describe",
+        "workflow.start",
+        "workflow.signal",
+        "workflow.query"
+      ],
+      "package": null,
+      "state": "PROJECTED",
+      "runtime_requirement": "reachable Temporal service/worker"
+    },
+    {
+      "id": "cognitive-workspace",
+      "owner": "N01",
+      "kind": "python",
+      "root": "integrations/external/cognitive-workspace",
+      "operations": [
+        "workspace.describe",
+        "workspace.execute"
+      ],
+      "package": null,
+      "state": "PROJECTED",
+      "runtime_requirement": "verified runtime API and concurrent agents"
+    },
+    {
+      "id": "ravana",
+      "owner": "N06",
+      "kind": "python",
+      "root": "integrations/external/ravana",
+      "operations": [
+        "agent.describe",
+        "agent.execute"
+      ],
+      "package": null,
+      "state": "PROJECTED",
+      "runtime_requirement": "verified runtime API and model backend"
+    },
+    {
+      "id": "ray",
+      "owner": "N07",
+      "kind": "python",
+      "root": "integrations/external/ray",
+      "operations": [
+        "cluster.describe",
+        "task.execute",
+        "actor.execute"
+      ],
+      "package": "ray",
+      "state": "PROJECTED",
+      "runtime_requirement": "real Ray runtime/cluster"
+    }
+  ],
+  "notes": {
+    "soul_v2_expansion_policy": "Expansion providers are additive and remain outside the primary/complementary provider counts until a native adapter and observed runtime execution are proven."
+  }
 }
