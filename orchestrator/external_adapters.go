@@ -352,13 +352,17 @@ func RegisterExternalAdapterOperations(e *Engine, r ExternalAdapterRegistry) err
 	for id := range r.byID {
 		provider := id
 		spec := r.byID[provider]
+		registeredDescribe := false
 		for _, registeredOperation := range spec.Operations {
-			if !strings.HasSuffix(registeredOperation, ".describe") {
+			if registeredDescribe || !strings.HasSuffix(registeredOperation, ".describe") {
 				continue
 			}
+			registeredDescribe = true
 			describeOperation := "external." + provider + ".describe@1.0.0"
+			describeProvider := provider
+			describeSourceOperation := registeredOperation
 			if err := e.Register(describeOperation, func(ctx context.Context, m protocol.Message) (protocol.Result, error) {
-				result, err := r.run(ctx, provider, "describe", registeredOperation, m.Metadata)
+				result, err := r.run(ctx, describeProvider, "describe", describeSourceOperation, m.Metadata)
 				if err != nil {
 					return externalAdapterFailure(m, err.Error())
 				}
