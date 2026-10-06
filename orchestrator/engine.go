@@ -77,7 +77,7 @@ type Engine struct {
 var semverRx = regexp.MustCompile(`^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(?:-([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?(?:\+([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?$`)
 
 type semverValue struct {
-	major, minor, patch int
+	major, minor, patch string
 	pre                 []string
 }
 
@@ -97,14 +97,14 @@ func parseSemver(value string) (semverValue, bool) {
 		version = version[:dash]
 	}
 	parts := strings.Split(version, ".")
-	parseInt := func(raw string) int {
-		out := 0
-		for _, ch := range raw {
-			out = out*10 + int(ch-'0')
+	normalizeNumeric := func(raw string) string {
+		normalized := strings.TrimLeft(raw, "0")
+		if normalized == "" {
+			return "0"
 		}
-		return out
+		return normalized
 	}
-	v := semverValue{major: parseInt(parts[0]), minor: parseInt(parts[1]), patch: parseInt(parts[2])}
+	v := semverValue{major: normalizeNumeric(parts[0]), minor: normalizeNumeric(parts[1]), patch: normalizeNumeric(parts[2])}
 	if pre != "" {
 		v.pre = strings.Split(pre, ".")
 		for _, identifier := range v.pre {
@@ -185,14 +185,11 @@ func semverGreater(a, b string) bool {
 	if !okA || !okB {
 		return a > b
 	}
-	if aa.major != bb.major {
-		return aa.major > bb.major
-	}
-	if aa.minor != bb.minor {
-		return aa.minor > bb.minor
-	}
-	if aa.patch != bb.patch {
-		return aa.patch > bb.patch
+	for _, pair := range [][2]string{{aa.major, bb.major}, {aa.minor, bb.minor}, {aa.patch, bb.patch}} {
+		if pair[0] == pair[1] {
+			continue
+		}
+		return numericIdentifierGreater(pair[0], pair[1])
 	}
 	if len(aa.pre) == 0 || len(bb.pre) == 0 {
 		return len(aa.pre) == 0 && len(bb.pre) > 0
