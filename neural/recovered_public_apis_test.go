@@ -1,4 +1,4 @@
-package n07_test
+package neural_test
 
 import (
   "context"
