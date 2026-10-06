@@ -88,7 +88,7 @@
       "targets": [
         "N06"
       ],
-      "latest_observed_at": "2026-10-06T04:53:31Z",
+      "latest_observed_at": "2026-10-06T05:28:07Z",
       "drift_from_pinned": false,
       "state": "CURRENT_PIN",
       "previous_pinned_revision": "8136a1d59f330edc99b977a69c1432a56c7010cc",
