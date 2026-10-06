@@ -90,6 +90,9 @@ func (e *Executor) Execute(ctx context.Context, input, correlationID string) Cyc
 	}
 
 	result.FinalOutputHash = parentHash
+	if reporter, ok := e.participant.(ProviderEvidenceReporter); ok {
+		result.Providers = reporter.ProviderEvidence()
+	}
 	result.State = StateReal
 	for _, stage := range result.Stages {
 		if stage.State != StateReal {
