@@ -371,6 +371,59 @@
       ],
       "status": "adapter-planned",
       "mode": "complementary"
+    },
+    {
+      "id": "bijux-dag-runtime",
+      "source": "bijux/bijux-core",
+      "primaryOwner": "N07",
+      "consumers": [
+        "N07",
+        "SARA"
+      ],
+      "affinity": [
+        "validated-DAG-execution",
+        "replay",
+        "run-provenance",
+        "artifact-integrity"
+      ],
+      "status": "adapter-planned",
+      "mode": "grce-complement"
+    },
+    {
+      "id": "ouro-loop",
+      "source": "VictorVVedtion/ouro-loop",
+      "primaryOwner": "N07",
+      "consumers": [
+        "N07",
+        "SARA",
+        "N06"
+      ],
+      "affinity": [
+        "runtime-guardrails",
+        "verify-remediate-loop",
+        "danger-zone-boundaries",
+        "self-fix"
+      ],
+      "status": "adapter-planned",
+      "mode": "grce-complement"
+    },
+    {
+      "id": "recurs",
+      "source": "Gen-Verse/Recuris",
+      "primaryOwner": "N07",
+      "consumers": [
+        "N06",
+        "N07",
+        "N01"
+      ],
+      "affinity": [
+        "experiential-memory",
+        "failure-localization",
+        "memory-evolution",
+        "long-horizon-learning"
+      ],
+      "status": "adapter-planned",
+      "mode": "grce-complement"
     }
   ]
 }
