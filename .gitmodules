@@ -65,3 +65,15 @@
 [submodule "integrations/external/grf/openmind-conductor"]
 	path = integrations/external/grf/openmind-conductor
 	url = https://github.com/SuperInstance/openmind-conductor.git
+
+[submodule "integrations/external/bijux-dag-runtime"]
+	path = integrations/external/bijux-dag-runtime
+	url = https://github.com/bijux/bijux-core.git
+
+[submodule "integrations/external/ouro-loop"]
+	path = integrations/external/ouro-loop
+	url = https://github.com/VictorVVedtion/ouro-loop.git
+
+[submodule "integrations/external/recurs"]
+	path = integrations/external/recurs
+	url = https://github.com/Gen-Verse/Recuris.git
