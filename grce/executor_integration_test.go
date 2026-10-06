@@ -25,7 +25,11 @@ func TestGRCEAgainstRealSARA(t *testing.T) {
 		t.Fatal("SARA proxy did not accept the real service configuration")
 	}
 
-	cycle := New(NewSARAParticipant(proxy)).Execute(context.Background(),
+	participant := NewCompositeParticipant(
+		NewSARAParticipant(proxy),
+		ConfiguredExternalParticipants()...,
+	)
+	cycle := New(participant).Execute(context.Background(),
 		"preserve evidence and transform the detected divergence without deleting history",
 		"grce-real-sara")
 	if cycle.State != StateReal {
@@ -36,5 +40,13 @@ func TestGRCEAgainstRealSARA(t *testing.T) {
 	}
 	if len(cycle.Stages) != 6 {
 		t.Fatalf("expected six real hooks, got %d", len(cycle.Stages))
+	}
+	if len(cycle.Providers) != 3 {
+		t.Fatalf("expected three external provider evidences, got %d", len(cycle.Providers))
+	}
+	for _, provider := range cycle.Providers {
+		if provider.State != StateReal {
+			t.Fatalf("provider %s did not execute as REAL: %+v", provider.Provider, provider)
+		}
 	}
 }
