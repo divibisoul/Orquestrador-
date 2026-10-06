@@ -285,6 +285,12 @@
       "finding": "GRF/GRCE was structurally installed but not exposed to the canonical N07 transport path",
       "transformation": "GRF/GRCE operations and participant ingress are registered in N07 Engine/backend/Mesh topology with explicit readiness state",
       "evidence_state": "REAL"
+    },
+    {
+      "date": "2026-10-06",
+      "finding": "CI checkout was recursively traversing an upstream-internal Autogenesis gitlink datasets/hle without corresponding .gitmodules metadata",
+      "transformation": "top-level federation checkout is now non-recursive; CI/local bootstrap materializes only registered first-level sources. The Autogenesis HLE nested gitlink is preserved as PROJECTED/BLOCKED evidence and receives only CI-local URL metadata when needed.",
+      "evidence_state": "REAL"
     }
   ],
   "update_policy": {
@@ -397,5 +403,17 @@
     "runtime_state": "PROJECTED",
     "block_reason": "distinct real ERU/MMD/ARA/ETR/ITR/RGO hooks are not yet bound and proven end-to-end",
     "invariants": "I1-I18"
-  }
+  },
+  "nested_dependencies": [
+    {
+      "parent_provider": "autogenesis",
+      "path": "integrations/external/autogenesis/datasets/hle",
+      "nested_revision": "5a81a4c7271a2a2a312b9a690f0c2fde837e4c29",
+      "declared_upstream_metadata": ".gitmodules absent at pinned Autogenesis commit",
+      "resolved_source": "https://huggingface.co/datasets/cais/hle",
+      "source_state": "PROJECTED/BLOCKED",
+      "reason": "source exists but is gated; nested dependency is not part of the canonical 22-provider federation root set",
+      "preservation_rule": "preserve nested gitlink and evidence; never silently promote nested execution"
+    }
+  ]
 }
