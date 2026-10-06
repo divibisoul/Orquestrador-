@@ -70,6 +70,29 @@ func (g *FederatedGateway) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		g.base.Handler(w, r)
 		return
 	}
+	if capability == "mesh.register" || capability == "mesh.register@1.0.0" {
+		payload := envelope.NestedPayload()
+		nucleus, _ := payload["nucleus"].(string)
+		endpoint, _ := payload["endpoint"].(string)
+		var capabilities []string
+		if raw, ok := payload["capabilities"].([]any); ok {
+			for _, item := range raw {
+				if value, ok := item.(string); ok && strings.TrimSpace(value) != "" {
+					capabilities = append(capabilities, strings.TrimSpace(value))
+				}
+			}
+		}
+		if err := g.peers.RegisterPeer(nucleus, endpoint, capabilities); err != nil {
+			g.base.respond(w, http.StatusBadRequest, envelope, "ERROR", map[string]any{"error": err.Error()})
+			return
+		}
+		g.base.respond(w, http.StatusOK, envelope, "TASK_RESULT", map[string]any{
+			"ok": true, "registered": strings.TrimSpace(nucleus),
+			"endpoint": strings.TrimRight(strings.TrimSpace(endpoint), "/"),
+			"capabilities": capabilities, "contractVersion": envelope.ContractVersion,
+		})
+		return
+	}
 	if capability == "mesh.ping" || capability == "mesh.describe" || capability == "core.health" {
 		r.Body = ioNopCloser(bytes.NewReader(body))
 		g.base.Handler(w, r)
