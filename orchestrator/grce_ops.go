@@ -91,7 +91,7 @@ func registerGRFGRCEOperationsWithExecutor(e *Engine, saraBridge GRFSaraBridge, 
 		ids := grf.InvariantIDs(invariants)
 		bindings := grceBindingInventory(e)
 		hookReady := executor != nil
-		reason := "GRCE runtime executor is connected to the SARA/SuperGPU/Nervo Vago boundaries"
+		reason := "GRCE runtime executor is connected to the declared SARA/SuperGPU/Nervo Vago boundaries; execution evidence is still required"
 		if !hookReady {
 			reason = "GRCE executor is not bound; operation remains fail-closed"
 		}
@@ -101,10 +101,7 @@ func registerGRFGRCEOperationsWithExecutor(e *Engine, saraBridge GRFSaraBridge, 
 			"version": "2.0",
 			"invariants": ids,
 			"hook_ready": hookReady,
-			"epistemic_state": func() string {
-				if hookReady { return string(grf.REAL) }
-				return string(grf.PROJECTED)
-			}(),
+			"epistemic_state": string(grf.PROJECTED),
 			"reason": reason,
 			"bindings": bindings,
 		}
