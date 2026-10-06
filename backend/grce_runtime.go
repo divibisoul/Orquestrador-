@@ -429,7 +429,37 @@ func (r *GRCEExecutorRuntime) validateRGO(ctx context.Context, state grf.State, 
 		return false, fmt.Errorf("GRCE_RGO_TRINITY_FAILED:%w", err)
 	}
 	status, _ := result["final_status"].(string)
-	return strings.EqualFold(status, "VALIDATED"), nil
+	if !strings.EqualFold(status, "VALIDATED") {
+		return false, nil
+	}
+	stages, ok := result["stages"].([]any)
+	if !ok || len(stages) < 3 {
+		return false, errors.New("GRCE_RGO_TRINITY_STAGE_EVIDENCE_MISSING")
+	}
+	seen := map[string]bool{}
+	for _, raw := range stages {
+		stage, ok := raw.(map[string]any)
+		if !ok {
+			continue
+		}
+		name, _ := stage["stage"].(string)
+		upper := strings.ToUpper(name)
+		if strings.HasPrefix(upper, "TRINITY::") {
+			seen["TRINITY"] = true
+		}
+		if upper == "ERU" {
+			seen["ERU"] = true
+		}
+		if upper == "MMD" {
+			seen["MMD"] = true
+		}
+	}
+	for _, key := range []string{"TRINITY", "ERU", "MMD"} {
+		if !seen[key] {
+			return false, fmt.Errorf("GRCE_RGO_TRINITY_%s_EVIDENCE_MISSING", key)
+		}
+	}
+	return true, nil
 }
 
 func (r *GRCEExecutorRuntime) rollback(ctx context.Context, state grf.State, prov []grf.Provenance, evidence []grf.Evidence, c grf.Context) error {
