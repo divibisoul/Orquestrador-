@@ -11,6 +11,7 @@ const soul29=JSON.parse(await readFile('integrations/soul-29-capability-fabric.j
 const contracts=JSON.parse(await readFile('integrations/grf/soul-29-participant-contracts.json','utf8'));
 const binding=JSON.parse(await readFile('integrations/grf/system-binding.json','utf8'));
 const invariantCatalog=JSON.parse(await readFile('integrations/grf/invariants.json','utf8'));
+const nervoVago=JSON.parse(await readFile('integrations/grf/nervo-vago-unified-contract.json','utf8'));
 
 const parentHash=createHash('sha256').update(raw25).digest('hex');
 if(soul29.parent_hash!==`sha256:${parentHash}`) throw new Error(`SOUL29_PARENT_HASH_MISMATCH:expected=sha256:${parentHash}:actual=${soul29.parent_hash}`);
@@ -38,6 +39,12 @@ const invariantIds=['I1','I2','I3','I4','I5','I6','I7','I8','I9','I10','I11','I1
 if(invariantCatalog.count!==18 || JSON.stringify(invariantCatalog.invariants.map(x=>x.id))!==JSON.stringify(invariantIds)) throw new Error('GRF_INVARIANT_CATALOG_INVALID');
 const bindingLayers=new Set((binding.layer_contracts||[]).map(x=>x.id));
 for(const id of ['L0','L1','L2','L3','L4','L5','L6','L7']) if(!bindingLayers.has(id)) throw new Error(`GRF_LAYER_MISSING:${id}`);
+if(!binding.unified_nervo_vago || binding.unified_nervo_vago.id!=='nervo-vago') throw new Error('NERVOVAGO_UNIFIED_BINDING_MISSING');
+if(binding.unified_nervo_vago.no_second_vagus!==true || binding.unified_nervo_vago.no_second_mesh!==true) throw new Error('NERVOVAGO_UNIFICATION_POLICY_INVALID');
+if(!nervoVago.component || nervoVago.component.id!=='nervo-vago') throw new Error('NERVOVAGO_CONTRACT_ID_INVALID');
+if(nervoVago.authority?.no_second_vagus!==true || nervoVago.authority?.no_second_mesh!==true) throw new Error('NERVOVAGO_CONTRACT_POLICY_INVALID');
+if(nervoVago.canonical_contract?.event_protocol!=='soul.vagus.event.v1') throw new Error('NERVOVAGO_EVENT_PROTOCOL_INVALID');
+if(nervoVago.etr_gate?.required_before_delivery!==true) throw new Error('NERVOVAGO_ETR_GATE_INVALID');
 const participants=contracts.contracts.map(x=>x.id).sort();
 const expected=['autogenesis','belel-protocol','cognifold','cuda-oxide','functional-graph-agi','hora-graph-core','mycelium','octos','prime-agent','opensinn-bus'].sort();
 if(JSON.stringify(participants)!==JSON.stringify(expected)) throw new Error('GRF_PARTICIPANT_SET_INVALID');
