@@ -446,6 +446,63 @@ func main() {
 		}
 		writeJSON(w, http.StatusOK, result)
 	})
+	mux.HandleFunc("/mesh/discovery", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			writeJSON(w, http.StatusMethodNotAllowed, map[string]any{"error": "GET required"})
+			return
+		}
+		writeJSON(w, http.StatusOK, map[string]any{
+			"nucleus": "N07",
+			"protocol": "soul-mesh/1",
+			"contractVersion": protocol.SoulMeshContractVersion,
+			"capabilities": e.Operations(),
+			"peers": peerClient.ConfiguredPeers(),
+			"transports": []string{"LOOPBACK_HTTP", "HTTP"},
+		})
+	})
+	mux.HandleFunc("/mesh/health", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			writeJSON(w, http.StatusMethodNotAllowed, map[string]any{"error": "GET required"})
+			return
+		}
+		writeJSON(w, http.StatusOK, map[string]any{
+			"ok": true,
+			"nucleus": "N07",
+			"protocol": "soul-mesh/1",
+			"contractVersion": protocol.SoulMeshContractVersion,
+			"peers": peerClient.ConfiguredPeers(),
+		})
+	})
+	mux.HandleFunc("/mesh/register", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			writeJSON(w, http.StatusMethodNotAllowed, map[string]any{"error": "POST required"})
+			return
+		}
+		var body map[string]any
+		if err := decodeJSON(r, cfg.MaxRequestBytes, &body); err != nil {
+			writeJSON(w, http.StatusBadRequest, map[string]any{"error": err.Error()})
+			return
+		}
+		nucleus, _ := body["nucleus"].(string)
+		endpoint, _ := body["endpoint"].(string)
+		var capabilities []string
+		if raw, ok := body["capabilities"].([]any); ok {
+			for _, item := range raw {
+				if value, ok := item.(string); ok {
+					capabilities = append(capabilities, strings.TrimSpace(value))
+				}
+			}
+		}
+		if err := peerClient.RegisterPeer(nucleus, endpoint, capabilities); err != nil {
+			writeJSON(w, http.StatusBadRequest, map[string]any{"error": err.Error()})
+			return
+		}
+		writeJSON(w, http.StatusOK, map[string]any{
+			"ok": true, "nucleus": "N07", "registered": strings.TrimSpace(nucleus),
+			"endpoint": strings.TrimRight(strings.TrimSpace(endpoint), "/"),
+			"capabilities": capabilities, "contractVersion": protocol.SoulMeshContractVersion,
+		})
+	})
 	mux.Handle("/api/soul-mesh", mesh.NewEnhancedFederatedHTTPGateway(e))
 	mux.HandleFunc("/execute", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
