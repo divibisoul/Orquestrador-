@@ -8,7 +8,6 @@ import (
 	"math"
 	"regexp"
 	"sort"
-	"strconv"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -153,6 +152,33 @@ func splitOperation(operation string) (string, string, error) {
 // semverGreater follows Semantic Versioning precedence: release versions
 // outrank pre-releases, numeric identifiers compare numerically, and build
 // metadata does not affect precedence.
+func isNumericIdentifier(value string) bool {
+	if value == "" {
+		return false
+	}
+	for _, ch := range value {
+		if ch < '0' || ch > '9' {
+			return false
+		}
+	}
+	return true
+}
+
+func numericIdentifierGreater(a, b string) bool {
+	a = strings.TrimLeft(a, "0")
+	b = strings.TrimLeft(b, "0")
+	if a == "" {
+		a = "0"
+	}
+	if b == "" {
+		b = "0"
+	}
+	if len(a) != len(b) {
+		return len(a) > len(b)
+	}
+	return a > b
+}
+
 func semverGreater(a, b string) bool {
 	aa, okA := parseSemver(a)
 	bb, okB := parseSemver(b)
@@ -176,16 +202,16 @@ func semverGreater(a, b string) bool {
 		if x == y {
 			continue
 		}
-		nx, errX := strconv.Atoi(x)
-		ny, errY := strconv.Atoi(y)
-		if errX == nil && errY == nil {
-			return nx > ny
+		xNumeric := isNumericIdentifier(x)
+		yNumeric := isNumericIdentifier(y)
+		if xNumeric && yNumeric {
+			return numericIdentifierGreater(x, y)
 		}
-		if errX == nil {
-			return true
-		}
-		if errY == nil {
+		if xNumeric {
 			return false
+		}
+		if yNumeric {
+			return true
 		}
 		return x > y
 	}
