@@ -33,6 +33,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive
       - uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
@@ -41,6 +43,8 @@ jobs:
           node-version: 22
       - name: Validate provider-to-adapter graph
         run: node scripts/validate-external-adapters.mjs
+      - name: Validate exact materialized submodule pins
+        run: node scripts/validate-soul-external-submodules.mjs
       - name: Validate Python adapters syntax
         run: python -m py_compile scripts/external-capability-adapter.py scripts/crewai_runner.py scripts/metagpt_runner.py
       - name: Test external adapter registration
