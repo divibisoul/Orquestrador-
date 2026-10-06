@@ -23,21 +23,20 @@ type GRCEFeedback struct {
 type GRCEExecutorRuntime struct {
 	SARA     *SARAProxy
 	Compute  *supergpu.Runtime
-	Peers    any
 	Feedback GRCEFeedback
 }
 
-func NewGRCEExecutorRuntime(sara *SARAProxy, compute *supergpu.Runtime, peers any, feedback GRCEFeedback) (*grce.Executor, error) {
+func NewGRCEExecutorRuntime(sara *SARAProxy, compute *supergpu.Runtime, feedback GRCEFeedback) (*grce.Executor, error) {
 	if sara == nil || !sara.Configured() {
 		return nil, errors.New("GRCE requires configured SARA authoritative boundary")
 	}
 	if compute == nil {
 		return nil, errors.New("GRCE requires existing SuperGPU runtime")
 	}
-	if peers == nil {
-		return nil, errors.New("GRCE requires existing canonical Mesh peer client")
+	if feedback.Horta == nil || feedback.Vagus == nil || feedback.Mesh == nil {
+		return nil, errors.New("GRCE requires Horta, Vagus, and Mesh feedback sinks")
 	}
-	r := &GRCEExecutorRuntime{SARA: sara, Compute: compute, Peers: peers, Feedback: feedback}
+	r := &GRCEExecutorRuntime{SARA: sara, Compute: compute, Feedback: feedback}
 	hooks := grce.Hooks{
 		Snapshot:            r.snapshot,
 		DetectGPU:           r.detect,
