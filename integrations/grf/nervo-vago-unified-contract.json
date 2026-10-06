@@ -1,0 +1,132 @@
+{
+  "schema_version": "soul.nervo-vago.unified.v1",
+  "component": {
+    "id": "nervo-vago",
+    "name": "Nervo Vago",
+    "state": "PROJECTED",
+    "architectural_role": "single_logical_nervous_system",
+    "principle": "one logical component, multiple preserved transport implementations"
+  },
+  "authority": {
+    "owner": "N07",
+    "policy_authority": "SARA/ETR",
+    "native_component_authority_preserved": true,
+    "no_second_mesh": true,
+    "no_second_vagus": true
+  },
+  "preserved_implementations": [
+    {
+      "id": "n01.nervoVago.facade",
+      "repository": "divibisoul/aeternum-core-29",
+      "state": "REAL",
+      "role": "local facade over N01 real EventBus",
+      "rule": "preserve existing EventBus and facade; no replacement"
+    },
+    {
+      "id": "sara.VagusNerveBus",
+      "repository": "divibisoul/SARA",
+      "state": "REAL",
+      "role": "shared in-process event bus and provenance-visible signal path",
+      "rule": "preserve existing shared instance; no parallel replacement"
+    },
+    {
+      "id": "n07.nats-jetstream",
+      "repository": "existing SOUL infrastructure",
+      "state": "PROJECTED",
+      "role": "durable asynchronous transport/replay layer",
+      "rule": "transport only; never becomes a second request Mesh"
+    }
+  ],
+  "canonical_contract": {
+    "event_protocol": "soul.vagus.event.v1",
+    "delivery_path": "producer -> Nervo Vago -> ETR gate -> transport -> consumer",
+    "cross_component_events": "Nervo Vago",
+    "durable_events": "Nervo Vago via NATS JetStream adapter",
+    "request_response_capabilities": "canonical soul-mesh/1 remains authoritative",
+    "state_store": "HortaCore/SARA-owned state systems remain authoritative",
+    "parallel_compute": "Octacore/SuperGPU remain compute organs; Nervo Vago carries control/event signals"
+  },
+  "etr_gate": {
+    "required_before_delivery": true,
+    "authority": "SARA/ETR",
+    "unproven_delivery_state": "BLOCKED",
+    "no_implicit_bypass": true
+  },
+  "provenance": {
+    "required_fields": [
+      "trace_id",
+      "correlation_id",
+      "message_id",
+      "sequence_index",
+      "parent_hash",
+      "input_hash",
+      "output_hash"
+    ],
+    "preserve_failures": true,
+    "replay_requires_idempotency_key": "message_id + correlation_id"
+  },
+  "organ_bindings": [
+    {"id": "N01", "mode": "event-signal", "state": "PROJECTED"},
+    {"id": "N02", "mode": "event-signal", "state": "PROJECTED"},
+    {"id": "N03", "mode": "event-signal", "state": "PROJECTED"},
+    {"id": "N04", "mode": "event-signal", "state": "PROJECTED"},
+    {"id": "N05", "mode": "event-signal", "state": "PROJECTED"},
+    {"id": "N06", "mode": "event-signal", "state": "PROJECTED"},
+    {"id": "N07", "mode": "control/event-signal", "state": "PROJECTED"},
+    {"id": "SARA", "mode": "event-signal/governance", "state": "PROJECTED"},
+    {"id": "SuperGPU", "mode": "event-signal", "state": "PROJECTED"},
+    {"id": "Octacore", "mode": "event-signal", "state": "PROJECTED"},
+    {"id": "HortaCore", "mode": "event-signal", "state": "PROJECTED"},
+    {"id": "Clareira", "mode": "event-signal", "state": "PROJECTED"}
+  ],
+  "candidate_repositories": {
+    "opensin-neural-bus": {
+      "source": "https://github.com/OpenSIN-AI/OpenSIN-Neural-Bus",
+      "state": "BLOCKED",
+      "reason": "repository returned 404 during verification on 2026-10-06; no substitute is claimed"
+    },
+    "multi-agent-engine": {
+      "source": "https://github.com/NickSpyker/multi-agent-engine",
+      "state": "PROJECTED",
+      "role": "Octacore parallel CPU/GPU reinforcement"
+    },
+    "hora-graph-core": {
+      "source": "https://github.com/Vivien83/hora-graph-core",
+      "state": "PROJECTED",
+      "role": "HortaCore graph/memory reinforcement",
+      "existing_pin": "334f4f82d1c7525d29130ced9e6199e3633c0f61"
+    },
+    "cognitive-workspace": {
+      "source": "https://github.com/tao-hpu/cognitive-workspace",
+      "state": "PROJECTED",
+      "role": "Clareira global workspace reinforcement",
+      "evidence_note": "upstream describes itself as a proof of concept and includes a simulation mode"
+    },
+    "ravana": {
+      "source": "https://github.com/OpenSource-Syndicate/RAVANA",
+      "state": "PROJECTED",
+      "role": "Clareira autonomous-agent reinforcement"
+    },
+    "swarms-evals": {
+      "source": "https://github.com/The-Swarm-Corporation/swarms-evals",
+      "state": "PROJECTED",
+      "role": "SuperGPU evaluation/proof layer",
+      "evidence_note": "upstream is an evaluation suite, not a SuperGPU hardware runtime"
+    },
+    "claude-brain": {
+      "source": "https://github.com/gammon-bio/claude-brain",
+      "state": "PROJECTED",
+      "role": "experimental biological-memory research candidate",
+      "evidence_note": "upstream describes itself as a working prototype/playground, not production software"
+    }
+  },
+  "integration_gates": [
+    "REAL E2E event publish/subscribe across at least N07 -> SARA -> N01",
+    "ETR rejection proof before delivery",
+    "JetStream durable replay proof",
+    "idempotent replay proof using message_id + correlation_id",
+    "trace/provenance hash-chain proof",
+    "no direct cross-component event path bypassing Nervo Vago",
+    "parallel-front compatibility proof against PRs #125, #126, #127 and #128"
+  ]
+}
