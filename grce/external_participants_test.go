@@ -31,9 +31,12 @@ func TestExternalResponseContractRequiresPinnedIdentityAndEvidence(t *testing.T)
 	ctx := grf.Context{CycleID: "cycle-contract"}
 	e := grf.Evidence{ID: "evidence-1", FailureID: "failure-1", ContextHash: ctx.Hash(), Source: BijuxDAGRuntimeID, Detail: "observed"}
 	e.Hash = hashExternalEvidence(e)
+	out := input.Clone()
+	out.Payload = []byte("input")
+	out.Epistemic = grf.EpistemicProjected
 	resp := externalResponse{
 		StateB64:   "aW5wdXQ=",
-		Provenance: grf.Provenance{ParentHash: input.Hash(), InputHash: input.Hash(), OutputHash: "output", SequenceIndex: 1, Chain: []string{"external"}},
+		Provenance: grf.Provenance{ParentHash: input.Hash(), InputHash: input.Hash(), OutputHash: out.Hash(), SequenceIndex: 1, Chain: []string{"external"}},
 		Evidence:   e,
 		Status:     grf.EpistemicProjected,
 		Source:     p.Config.Source,
