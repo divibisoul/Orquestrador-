@@ -1413,7 +1413,7 @@
   "owner_registry": "integrations/external-capability-ownership.json",
   "native_family_registry": "integrations/native-capability-augmentation.json",
   "parent_graph": "SOUL-25-capability-fabric",
-  "parent_hash": "sha256:f2726bcf8de66c41ff677ba095aa965876fd28a96a84596166ff45a144d59041",
+  "parent_hash": "sha256:c89a8ea7914f1bfbd3345a1dd40b2991287c180a45e54e916e30670495d8e975",
   "parent_hash_history": [
     {
       "value": "sha256:15f70a247216327f51f064c115a9d23a8f27ac122def19604a0b7f832d1b1313",
@@ -1443,5 +1443,12 @@
       },
       "activation_state": "PROJECTED"
     }
+  },
+  "current_soul25_source_hash": "sha256:f2726bcf8de66c41ff677ba095aa965876fd28a96a84596166ff45a144d59041",
+  "parent_hash_role": "preserved_soul25_bytes",
+  "parent_hash_reconciliation": {
+    "previous": "sha256:f2726bcf8de66c41ff677ba095aa965876fd28a96a84596166ff45a144d59041",
+    "current": "sha256:c89a8ea7914f1bfbd3345a1dd40b2991287c180a45e54e916e30670495d8e975",
+    "reason": "CI proves preserved bytes hash c89; current canonical source hash is f272"
   }
 }
