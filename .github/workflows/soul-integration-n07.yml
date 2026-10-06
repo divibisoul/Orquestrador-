@@ -11,7 +11,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          submodules: recursive
+          submodules: true
       - name: Validate SOUL identity
         run: test -s SOUL_ECOSYSTEM.md
       - name: Validate submodules
@@ -30,8 +30,11 @@ jobs:
           import json
           d=json.load(open('integrations/external-capabilities.json'))
           assert len(d['repositories']) == 16
-          for x in d['repositories']:
+          assert len(d.get('complementary_repositories', [])) == 6
+          all_sources=d['repositories']+d['complementary_repositories']
+          assert len(all_sources) == 22
+          for x in all_sources:
               assert x['source'].startswith('https://github.com/')
               assert x['revision'] and x['targets']
-          print('16/16 external repositories: VALID')
+          print('16/16 primary + 6/6 complementary = 22 external sources: VALID')
           PY
