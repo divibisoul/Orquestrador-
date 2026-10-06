@@ -25,6 +25,8 @@ jobs:
     steps:
       - name: Checkout N07
         uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
       - name: Checkout N01
         uses: actions/checkout@v4
@@ -120,7 +122,7 @@ jobs:
           curl -fsS http://127.0.0.1:18081/mesh/discovery | tee "$RUNNER_TEMP/n01-discovery.json"
           jq -e '.peers[] | select(.id == "N07" and .url == "http://127.0.0.1:18080")' "$RUNNER_TEMP/n01-discovery.json"
 
-      - name: Verify N01 registration in N07
+      - name: Verify N01 automatic registration in N07
         working-directory: n01
         run: |
           set -euo pipefail
@@ -163,72 +165,9 @@ jobs:
 
       - name: Delegate real GRCE from N01 to N07
         working-directory: n01
-        env:
-          NODE_OPTIONS: ''
         run: |
           set -euo pipefail
           node <<'NODE' > "$RUNNER_TEMP/n01-delegation.json"
-          const message = {
-            protocol: 'soul-mesh/1',
-            contractVersion: '1.1.0',
-            id: crypto.randomUUID(),
-            correlationId: 'phase1-n01-n07-grce-real-e2e',
-            source: 'N01',
-            target: 'N07',
-            kind: 'request',
-            capability: 'grce.cycle.execute@1.0.0',
-            payload: { input: 'real federation preservation audit' },
-            timestamp: Date.now(),
-            meta: { transport: 'HTTP', runtime: 'N01-staging' }
-          };
-          const response = await fetch('http://127.0.0.1:18081/api/soul-mesh/n07', {
-            method: 'POST',
-            headers: { 'content-type': 'application/json' },
-            body: JSON.stringify(message)
-          });
-          const body = await response.json();
-          if (!response.ok) {
-            console.error(JSON.stringify(body));
-            process.exit(1);
-          }
-          console.log(JSON.stringify(body));
-          NODE
-          cat "$RUNNER_TEMP/n01-delegation.json"
-          jq -e '.source == "N07" and .target == "N01" and .correlationId == "phase1-n01-n07-grce-real-e2e" and .payload.metadata.grce_state == "REAL" and .payload.metadata.grce_stages == "6"' "$RUNNER_TEMP/n01-delegation.json"
-      - name: Delegate real GRCE from N01 to N07
-        working-directory: n01
-        env:
-          NODE_OPTIONS: ''
-        run: |
-          set -euo pipefail
-          node <<'NODE' > "$RUNNER_TEMP/n01-delegation.json"
-          const message = {
-            protocol: 'soul-mesh/1',
-            contractVersion: '1.1.0',
-            id: crypto.randomUUID(),
-            correlationId: 'phase1-n01-n07-grce-real-e2e',
-            source: 'N01',
-            target: 'N07',
-            kind: 'request',
-            capability: 'grce.cycle.execute@1.0.0',
-            payload: { input: 'real federation preservation audit' },
-            timestamp: Date.now(),
-            meta: { transport: 'HTTP', runtime: 'N01-staging' }
-          };
-          const response = await fetch('http://127.0.0.1:18081/api/soul-mesh/n07', {
-            method: 'POST',
-            headers: { 'content-type': 'application/json' },
-            body: JSON.stringify(message)
-          });
-          const body = await response.json();
-          if (!response.ok) {
-            console.error(JSON.stringify(body));
-            process.exit(1);
-          }
-          console.log(JSON.stringify(body));
-          NODE
-          cat "$RUNNER_TEMP/n01-delegation.json"
-          jq -e '.source == "N07" and .target == "N01" and .correlationId == "phase1-n01-n07-grce-real-e2e" and .payload.metadata.grce_state == "REAL" and .payload.metadata.grce_stages == "6"' "$RUNNER_TEMP/n01-delegation.json"
           const message = {
             protocol: 'soul-mesh/1',
             contractVersion: '1.1.0',
@@ -270,6 +209,6 @@ jobs:
             ${{ runner.temp }}/n01.log
             ${{ runner.temp }}/n01-health.json
             ${{ runner.temp }}/n01-discovery.json
-            ${{ runner.temp }}/n01-delegation.json
             ${{ runner.temp }}/n01-registration-check.json
+            ${{ runner.temp }}/n01-delegation.json
           if-no-files-found: warn
