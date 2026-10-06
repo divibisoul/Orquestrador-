@@ -4,20 +4,18 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"github.com/divibisoul/Orquestrador-/protocol"
 	"os"
-	"os/exec"
+	"strconv"
 	"path/filepath"
 	"strings"
-	"time"
 )
 
 const (
 	MultiAgentDescribeOperation = "multiagent.crews.describe@1.0.0"
 	MultiAgentExecuteOperation  = "multiagent.crews.execute@1.0.0"
 )
-const crewaiRevision = "1133f16cab274b9863b36fdacca7766b30e549fd"
-const metagptRevision = "11cdf466d042aece04fc6cfd13b28e1a70341b1f"
 
 type MultiAgentFacadeRequest struct {
 	Provider  string   `json:"provider,omitempty"`
@@ -45,22 +43,36 @@ func evBool(v string) bool {
 func providerEvidence(provider string) MultiAgentProviderEvidence {
 	provider = strings.ToLower(strings.TrimSpace(provider))
 	py := getEnv("SOUL_N07_MULTIAGENT_PYTHON", "python3")
-	var root, rev, en string
-	switch provider {
-	case "", "crewai":
+	if provider == "" {
 		provider = "crewai"
-		root = getEnv("SOUL_N07_CREWAI_ROOT", "integrations/external/crewai")
-		rev = crewaiRevision
-		en = "SOUL_N07_CREWAI_ENABLED"
-	case "metagpt":
-		root = getEnv("SOUL_N07_METAGPT_ROOT", "integrations/external/metagpt")
-		rev = metagptRevision
-		en = "SOUL_N07_METAGPT_ENABLED"
-	default:
+	}
+	if provider != "crewai" && provider != "metagpt" {
 		return MultiAgentProviderEvidence{State: "FAIL", Code: "MULTIAGENT_PROVIDER_UNSUPPORTED", Provider: provider, Python: py}
 	}
-	enabled := evBool(os.Getenv(en))
+	registry, err := NewExternalAdapterRegistry()
+	if err != nil {
+		return MultiAgentProviderEvidence{State: "FAIL", Code: "MULTIAGENT_EXTERNAL_REGISTRY_UNAVAILABLE", Provider: provider, Python: py}
+	}
+	spec, ok := registry.byID[provider]
+	if !ok {
+		return MultiAgentProviderEvidence{State: "FAIL", Code: "MULTIAGENT_PROVIDER_NOT_REGISTERED", Provider: provider, Python: py}
+	}
+	root := spec.Root
+	if provider == "crewai" {
+		root = getEnv("SOUL_N07_CREWAI_ROOT", root)
+	} else {
+		root = getEnv("SOUL_N07_METAGPT_ROOT", root)
+	}
+	if !filepath.IsAbs(root) {
+		root = filepath.Join(repositoryRoot(), root)
+	}
 	root = filepath.Clean(root)
+	rev := registry.revisions[provider]
+	en := "SOUL_N07_CREWAI_ENABLED"
+	if provider == "metagpt" {
+		en = "SOUL_N07_METAGPT_ENABLED"
+	}
+	enabled := evBool(os.Getenv(en))
 	source := fileExists(root) || fileExists(filepath.Join(root, "README.md"))
 	creds := strings.TrimSpace(os.Getenv("OPENAI_API_KEY")) != ""
 	out := MultiAgentProviderEvidence{State: "DEGRADED", Provider: provider, Revision: rev, Root: root, Python: py, Enabled: enabled, SourcePresent: source, CredentialsPresent: creds, Primary: false}
@@ -109,8 +121,9 @@ func RegisterMultiAgentFacadeOperations(e *Engine) error {
 		if p == "" {
 			p = "crewai"
 		}
-		if p == "metagpt" {
-			return multiAgentFail(m, "MULTIAGENT_NATIVE_OWNER_N06")
+		registry, regErr := NewExternalAdapterRegistry()
+		if regErr != nil {
+			return multiAgentFail(m, "MULTIAGENT_EXTERNAL_REGISTRY_UNAVAILABLE")
 		}
 		ev := providerEvidence(p)
 		if ev.State == "FAIL" || !ev.Enabled || !ev.SourcePresent || !ev.CredentialsPresent {
@@ -126,28 +139,13 @@ func RegisterMultiAgentFacadeOperations(e *Engine) error {
 		if rounds > 20 {
 			rounds = 20
 		}
-		b, _ := json.Marshal(map[string]any{"goal": q.Goal, "roles": q.Roles, "maxRounds": rounds})
-		script := "scripts/crewai_runner.py"
-		if p == "metagpt" {
-			script = "scripts/metagpt_runner.py"
+		rolesJSON, _ := json.Marshal(q.Roles)
+		metadata := map[string]string{"goal": q.Goal, "roles": string(rolesJSON), "maxRounds": strconv.Itoa(rounds)}
+		result, runErr := registry.run(ctx, p, "execute", "team.execute", metadata)
+		if runErr != nil {
+			return multiAgentFail(m, runErr.Error())
 		}
-		cctx, cancel := context.WithTimeout(ctx, 3*time.Minute)
-		defer cancel()
-		cmd := exec.CommandContext(cctx, getEnv("SOUL_N07_MULTIAGENT_PYTHON", "python3"), script)
-		cmd.Stdin = strings.NewReader(string(b))
-		out, err := cmd.Output()
-		if err != nil {
-			code := "MULTIAGENT_PROCESS_FAILED"
-			if errors.Is(cctx.Err(), context.DeadlineExceeded) {
-				code = "MULTIAGENT_TIMEOUT"
-			}
-			return multiAgentFail(m, code)
-		}
-		var result map[string]any
-		if err := json.Unmarshal(out, &result); err != nil {
-			return multiAgentFail(m, "MULTIAGENT_INVALID_RUNNER_OUTPUT")
-		}
-		if result["state"] != "PASS" {
+		if !strings.EqualFold(fmt.Sprint(result["state"]), "PASS") {
 			code, _ := result["code"].(string)
 			if code == "" {
 				code = "MULTIAGENT_PROVIDER_NOT_PASS"
