@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"os"
 	"os/exec"
 	"strings"
@@ -45,6 +46,8 @@ type externalResponse struct {
 	Provenance grf.Provenance
 	Evidence   grf.Evidence
 	Status     grf.EpistemicState
+	Source     string
+	Revision   string
 }
 
 func NewExternalParticipants() map[string]*ExternalParticipant {
@@ -70,30 +73,14 @@ func (p *ExternalParticipant) Ingest(input grf.State, c grf.Context) (grf.Partic
 	}
 	command := strings.TrimSpace(os.Getenv(p.Config.CommandEnv))
 	if command == "" {
-		e := grf.Evidence{
-			ID:          "external-" + p.Config.ID + "-blocked",
-			FailureID:   p.Config.ID + ":runtime-unconfigured",
-			ContextHash: c.Hash(),
-			Source:      p.Config.ID,
-			Detail:      "external runtime command is not configured; preserving input and remaining PROJECTED",
-		}
-		e.Hash = hashExternalEvidence(e)
-		p.LastEvidence = e
-		p.LastStatus = grf.EpistemicProjected
-		p.LastProv = grf.Provenance{
-			ParentHash: input.Hash(), InputHash: input.Hash(), OutputHash: input.Hash(),
-			SequenceIndex: input.SequenceIndex + 1, Chain: []string{p.Config.ID, "PROJECTED", "BLOCKED_ENV"},
-		}
-		out := input.Clone()
-		out.Epistemic = grf.EpistemicProjected
-		return grf.ParticipantResult{Output: out, Provenance: p.LastProv, Evidence: e}, errors.New("EXTERNAL_RUNTIME_BLOCKED:" + p.Config.ID)
+		return p.failClosed(input, c, "runtime-unconfigured", "external runtime command is not configured")
 	}
 
 	args := splitArgs(os.Getenv(p.Config.ArgsEnv))
 	req := externalRequest{Operation: "grce.ingest", State: base64.StdEncoding.EncodeToString(input.Payload), Context: c}
 	payload, err := json.Marshal(req)
 	if err != nil {
-		return grf.ParticipantResult{}, err
+		return p.failClosed(input, c, "request-marshal", "could not encode external request", err)
 	}
 
 	execCtx, cancel := context.WithTimeout(context.Background(), 90*time.Second)
@@ -102,46 +89,108 @@ func (p *ExternalParticipant) Ingest(input grf.State, c grf.Context) (grf.Partic
 	cmd.Stdin = strings.NewReader(string(payload))
 	raw, err := cmd.Output()
 	if err != nil {
-		return grf.ParticipantResult{}, err
+		return p.failClosed(input, c, "runtime-exec", "external runtime command failed", err)
 	}
 
 	var resp externalResponse
 	if err := json.Unmarshal(raw, &resp); err != nil {
-		return grf.ParticipantResult{}, err
+		return p.failClosed(input, c, "response-json", "external runtime returned invalid JSON", err)
 	}
+	if err := p.validateResponse(input, c, resp); err != nil {
+		return p.failClosed(input, c, "response-contract", err.Error(), err)
+	}
+
 	decoded, err := base64.StdEncoding.DecodeString(resp.StateB64)
 	if err != nil {
-		return grf.ParticipantResult{}, err
+		return p.failClosed(input, c, "response-state", "external response state is not valid base64", err)
 	}
 
 	out := input.Clone()
 	out.Payload = decoded
 	out.Epistemic = resp.Status
-	if out.Epistemic == "" {
-		out.Epistemic = grf.EpistemicProjected
-	}
-	if resp.Provenance.ParentHash == "" {
-		resp.Provenance.ParentHash = input.Hash()
-	}
-	if resp.Provenance.InputHash == "" {
-		resp.Provenance.InputHash = input.Hash()
-	}
-	if resp.Provenance.OutputHash == "" {
-		resp.Provenance.OutputHash = out.Hash()
-	}
-	if resp.Provenance.SequenceIndex == 0 {
-		resp.Provenance.SequenceIndex = input.SequenceIndex + 1
-	}
-	if resp.Evidence.ID == "" {
-		resp.Evidence.ID = p.Config.ID + "-external-evidence"
+	if out.Hash() != resp.Provenance.OutputHash {
+		return p.failClosed(input, c, "response-state-hash", "external response output hash does not match decoded state")
 	}
 	p.LastEvidence = resp.Evidence
 	p.LastStatus = resp.Status
-	if p.LastStatus == "" {
-		p.LastStatus = grf.EpistemicProjected
-	}
 	p.LastProv = resp.Provenance
 	return grf.ParticipantResult{Output: out, Provenance: resp.Provenance, Evidence: resp.Evidence}, nil
+}
+
+func (p *ExternalParticipant) failClosed(input grf.State, c grf.Context, reason, detail string, cause ...error) (grf.ParticipantResult, error) {
+	if detail == "" {
+		detail = reason
+	}
+	if len(cause) > 0 && cause[0] != nil {
+		detail = detail + ": " + cause[0].Error()
+	}
+	e := grf.Evidence{
+		ID:          "external-" + p.Config.ID + "-" + reason,
+		FailureID:   p.Config.ID + ":" + reason,
+		ContextHash: c.Hash(),
+		Source:      p.Config.ID,
+		Detail:      detail,
+	}
+	e.Hash = hashExternalEvidence(e)
+	out := input.Clone()
+	out.Epistemic = grf.EpistemicProjected
+	prov := grf.Provenance{
+		ParentHash:    input.Hash(),
+		InputHash:     input.Hash(),
+		OutputHash:    out.Hash(),
+		SequenceIndex: input.SequenceIndex + 1,
+		Chain:         []string{p.Config.ID, "PROJECTED", "BLOCKED_ENV", reason},
+	}
+	p.LastEvidence = e
+	p.LastStatus = grf.EpistemicProjected
+	p.LastProv = prov
+	return grf.ParticipantResult{Output: out, Provenance: prov, Evidence: e}, fmt.Errorf("EXTERNAL_RUNTIME_BLOCKED:%s:%s", p.Config.ID, reason)
+}
+
+func (p *ExternalParticipant) validateResponse(input grf.State, c grf.Context, resp externalResponse) error {
+	if resp.Source != p.Config.Source {
+		return fmt.Errorf("EXTERNAL_SOURCE_MISMATCH:%s", resp.Source)
+	}
+	if resp.Revision != p.Config.Revision {
+		return fmt.Errorf("EXTERNAL_REVISION_MISMATCH:%s", resp.Revision)
+	}
+	if !validEpistemicState(resp.Status) {
+		return fmt.Errorf("EXTERNAL_EPISTEMIC_INVALID:%s", resp.Status)
+	}
+	if resp.StateB64 == "" {
+		return errors.New("EXTERNAL_STATE_EMPTY")
+	}
+	if resp.Evidence.ID == "" {
+		return errors.New("EXTERNAL_EVIDENCE_ID_EMPTY")
+	}
+	if resp.Evidence.ContextHash != c.Hash() {
+		return errors.New("EXTERNAL_EVIDENCE_CONTEXT_MISMATCH")
+	}
+	if resp.Evidence.Source != p.Config.ID {
+		return errors.New("EXTERNAL_EVIDENCE_SOURCE_MISMATCH")
+	}
+	if resp.Evidence.Hash == "" || resp.Evidence.Hash != hashExternalEvidence(resp.Evidence) {
+		return errors.New("EXTERNAL_EVIDENCE_HASH_MISMATCH")
+	}
+	if resp.Provenance.ParentHash != input.Hash() || resp.Provenance.InputHash != input.Hash() {
+		return errors.New("EXTERNAL_PROVENANCE_INPUT_MISMATCH")
+	}
+	if resp.Provenance.OutputHash == "" || resp.Provenance.SequenceIndex != input.SequenceIndex+1 {
+		return errors.New("EXTERNAL_PROVENANCE_OUTPUT_INCOMPLETE")
+	}
+	if len(resp.Provenance.Chain) == 0 {
+		return errors.New("EXTERNAL_PROVENANCE_CHAIN_EMPTY")
+	}
+	return nil
+}
+
+func validEpistemicState(s grf.EpistemicState) bool {
+	switch s {
+	case grf.EpistemicReal, grf.EpistemicProjected, grf.EpistemicBlocked, grf.EpistemicUnresolved, grf.EpistemicPreserved, grf.EpistemicActive, grf.EpistemicIdle:
+		return true
+	default:
+		return false
+	}
 }
 
 func (p *ExternalParticipant) EpistemicState() grf.EpistemicState {
