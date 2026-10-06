@@ -115,6 +115,9 @@ func main() {
 	if err := orchestrator.RegisterLearningOperations(e, learningMachine, n); err != nil {
 		log.Fatal(err)
 	}
+	if err := orchestrator.RegisterExternalLearningOperations(e); err != nil {
+		log.Fatal(err)
+	}
 	if err := orchestrator.RegisterSuperGPUOperations(e); err != nil {
 		log.Fatal(err)
 	}
