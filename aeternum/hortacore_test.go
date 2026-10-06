@@ -123,7 +123,7 @@ func TestHortaCoreHealthDoesNotReportReadyWhenAdapterMeshIsAbsent(t *testing.T) 
 	if health["status"] != "DEGRADED" {
 		t.Fatalf("HortaCore must not report READY without Mesh when adapter modules exist: %#v", health)
 	}
-	if health["adapter_modules"] != 21 {
+	if health["adapter_modules"] != 23 {
 		t.Fatalf("unexpected adapter module count: %#v", health["adapter_modules"])
 	}
 	if health["peer_client_attached"] != false {
