@@ -48,6 +48,11 @@ if(nervoVago.etr_gate?.required_before_delivery!==true) throw new Error('NERVOVA
 const participants=contracts.contracts.map(x=>x.id).sort();
 const expected=['autogenesis','belel-protocol','cognifold','cuda-oxide','functional-graph-agi','hora-graph-core','mycelium','octos','prime-agent','opensinn-bus'].sort();
 if(JSON.stringify(participants)!==JSON.stringify(expected)) throw new Error('GRF_PARTICIPANT_SET_INVALID');
+if(!binding.operations?.includes('nervo-vago.event@1.0.0') || !binding.operations?.includes('nervo-vago.describe@1.0.0')) {
+  throw new Error('NERVOVAGO_OPERATIONS_MISSING');
+}
+if(nervoVago.execution_boundary?.implementation!=='backend.NervoVagoGateway') throw new Error('NERVOVAGO_EXECUTION_BOUNDARY_INVALID');
+if(nervoVago.execution_boundary?.policy_gate!=='SARA/ETR via sara.audit@1.0.0') throw new Error('NERVOVAGO_POLICY_GATE_INVALID');
 console.log(JSON.stringify({
   ok:true,
   soul25_nodes:soul25.nodes.length,
