@@ -219,12 +219,12 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	grceExecutor, err := orchestrator.NewGRCEExecutorRuntime(
+	grceExecutor, err := backend.NewGRCEExecutorRuntime(
 		saraProxy,
 		g,
 		peerClient,
-		orchestrator.GRCEFeedback{
-			Horta: orchestrator.NewGRCEVagoFeedback(nervoVagoGateway, "AETERNUM_HORTACORE", "horta"),
+		backend.GRCEFeedback{
+			Horta: backend.NewGRCEVagoFeedback(nervoVagoGateway, "AETERNUM_HORTACORE", "horta"),
 			Vagus: orchestrator.NewGRCEVagoFeedback(nervoVagoGateway, "SARA", "vagus"),
 			Mesh:  orchestrator.NewGRCEVagoFeedback(nervoVagoGateway, "SOUL_MESH", "mesh"),
 		},
