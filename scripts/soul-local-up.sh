@@ -12,7 +12,7 @@ docker compose version >/dev/null || { echo "BLOCKED: docker compose is required
 mkdir -p "$REPO_ROOT"
 
 while read -r nucleus repo sha; do
-  if [[ -z "$nucleus" || "$nucleus" == #* ]]; then continue; fi
+  if [[ -z "$nucleus" || "$nucleus" == \#* ]]; then continue; fi
   dir="$REPO_ROOT/$(basename "$repo")"
   if [[ ! -d "$dir/.git" ]]; then git clone "https://github.com/$repo.git" "$dir"; fi
   git -C "$dir" fetch --all --tags --prune
