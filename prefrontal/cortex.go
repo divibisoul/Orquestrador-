@@ -114,8 +114,11 @@ func (c *Cortex) Evaluate(candidates []Candidate) (Candidate, error) {
 			best, bestScore, found = v, s, true
 		}
 	}
+	evaluationDuration := uint64(time.Since(start).Nanoseconds())
 	c.mu.Lock()
-	c.decisionNanos += uint64(time.Since(start).Nanoseconds())
+	c.decisionNanos += evaluationDuration
+	c.evaluationNanos += evaluationDuration
+	c.decisionCount++
 	c.mu.Unlock()
 	if !found {
 		return Candidate{}, errors.New("no valid candidates")
@@ -186,6 +189,7 @@ func (c *Cortex) Prioritize(candidates []Candidate) ([]Candidate, error) {
 func (c *Cortex) Inhibit(candidate Candidate) bool {
 	blocked := valid(candidate) != nil || candidate.Risk > candidate.Utility || candidate.Risk >= 1
 	c.mu.Lock()
+	c.inhibitionChecks++
 	if blocked {
 		c.inhibited++
 	}
@@ -232,7 +236,8 @@ func (c *Cortex) Commit(candidate Candidate, reason string) (Decision, error) {
 		c.decisions = c.decisions[len(c.decisions)-c.capacity:]
 	}
 	c.lastDecision = time.Now().UTC()
-	c.decisionNanos += uint64(time.Since(start).Nanoseconds())
+	c.commitNanos += uint64(time.Since(start).Nanoseconds())
+	c.commits++
 	return d, nil
 }
 func (c *Cortex) Recall(limit int) []Decision {
@@ -252,7 +257,7 @@ func (c *Cortex) Health() map[string]any {
 	if c.evaluated > 0 {
 		avg = float64(c.decisionNanos) / float64(c.evaluated) / 1e6
 	}
-	return map[string]any{"status": "ready", "threshold": c.threshold, "capacity": c.capacity, "decisions": len(c.decisions), "evaluated": c.evaluated, "inhibited": c.inhibited, "inhibition_rate": func() float64 {
+	return map[string]any{"status": "ready", "threshold": c.threshold, "capacity": c.capacity, "decisions": len(c.decisions), "evaluated": c.evaluated, "inhibited": c.inhibited, "inhibition_checks": c.inhibitionChecks, "commits": c.commits, "decision_count": c.decisionCount, "evaluation_nanos": c.evaluationNanos, "commit_nanos": c.commitNanos, "inhibition_rate": func() float64 {
 		if c.evaluated == 0 {
 			return 0
 		}
