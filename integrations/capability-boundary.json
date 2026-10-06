@@ -6,7 +6,7 @@
   },
   "reason": "functional-complementation-and-system-integration",
   "canonical_control_plane": "N07",
-  "upstream_capability_source_count": 16,
+  "upstream_capability_source_count": 22,
   "soul_component_count": 9,
   "integration": {
     "agent_engineering": [
@@ -43,5 +43,7 @@
     }
   },
   "rule": "N07 coordinates; it does not absorb upstream ownership or create shadow authorities.",
-  "rule_grf": "GRF is transversal protocol; no second Mesh and no shadow authority"
+  "rule_grf": "GRF is transversal protocol; no second Mesh and no shadow authority",
+  "primary_upstream_count": 16,
+  "complementary_upstream_count": 6
 }
