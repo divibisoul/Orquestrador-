@@ -42,7 +42,7 @@ func TestGRCECycleFailsClosedUntilRealHooksAreBound(t *testing.T) {
 	if err == nil || !strings.Contains(err.Error(), "GRF_TRACE_ID_REQUIRED") {
 		t.Fatalf("expected context gate, got %v", err)
 	}
-	msg, err := e.Execute(context.Background(), GRCECycleOperation, nil, map[string]string{"trace_id":"t","correlation_id":"c","grf_sequence_index":"1"})
+	_, err = e.Execute(context.Background(), GRCECycleOperation, nil, map[string]string{"trace_id":"t","correlation_id":"c","grf_sequence_index":"1"})
 	if err == nil || !strings.Contains(err.Error(), "GRCE_RUNTIME_HOOKS_NOT_BOUND") {
 		t.Fatalf("expected explicit blocked state, got %v", err)
 	}
