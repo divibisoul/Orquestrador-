@@ -289,9 +289,11 @@
     {
       "id": "nervo-vago",
       "type": "CHANNEL_COMPLEMENT",
-      "repository": "https://github.com/TTOPM/belel-protocol",
-      "role": "supervisory signal channel; source currently unavailable",
-      "state": "BLOCKED"
+      "repository": "https://github.com/OpenSIN-AI/OpenSIN-Neural-Bus",
+      "role": "supervisory signal channel; OpenSIN source currently unavailable",
+      "state": "BLOCKED",
+      "previous_repository": "https://github.com/TTOPM/belel-protocol",
+      "reason": "OpenSIN-AI/OpenSIN-Neural-Bus returned 404 during verification on 2026-10-06"
     }
   ],
   "edges": [
