@@ -401,5 +401,118 @@
     "excluded_from_complementary_provider_count": true,
     "requires_native_adapter_before_materialization": true,
     "requires_execution_evidence_before_REAL": true
-  }
+  },
+  "expansion_repositories": [
+    {
+      "id": "fedml",
+      "source": "https://github.com/FedML-AI/FedML",
+      "revision": "03e11dfee69a458a9820ec4e05b531a5f935eb2b",
+      "targets": [
+        "N07",
+        "N01"
+      ],
+      "role": "federated learning",
+      "state": "PROJECTED",
+      "integration_state": "MATERIALIZED_PIN_CONTRACT_PENDING_RUNTIME"
+    },
+    {
+      "id": "hivemind",
+      "source": "https://github.com/learning-at-home/hivemind",
+      "revision": "4bd43b77895019b20d18d81d0d0c1a5ab9a10847",
+      "targets": [
+        "N07",
+        "N06"
+      ],
+      "role": "decentralized peer learning",
+      "state": "PROJECTED",
+      "integration_state": "MATERIALIZED_PIN_CONTRACT_PENDING_RUNTIME"
+    },
+    {
+      "id": "temporal",
+      "source": "https://github.com/temporalio/temporal",
+      "revision": "d955aa6b97a9b618b7f0bcfd5232964505d42120",
+      "targets": [
+        "N07",
+        "SARA"
+      ],
+      "role": "durable workflow execution",
+      "state": "PROJECTED",
+      "integration_state": "MATERIALIZED_PIN_CONTRACT_PENDING_RUNTIME"
+    },
+    {
+      "id": "hora-graph-core",
+      "source": "https://github.com/Vivien83/hora-graph-core",
+      "revision": "334f4f82d1c7525d29130ced9e6199e3633c0f61",
+      "targets": [
+        "N01",
+        "N07"
+      ],
+      "role": "HortaCore graph-memory reinforcement",
+      "state": "PROJECTED",
+      "integration_state": "REUSED_EXISTING_PIN_NO_DUPLICATE_SUBMODULE"
+    },
+    {
+      "id": "cognitive-workspace",
+      "source": "https://github.com/tao-hpu/cognitive-workspace",
+      "revision": "6740fc3b69a842ccc49663ac6c371600d0d9fc2e",
+      "targets": [
+        "N01",
+        "N02",
+        "N07"
+      ],
+      "role": "Clareira global workspace reinforcement",
+      "state": "PROJECTED",
+      "integration_state": "MATERIALIZED_PIN_CONTRACT_PENDING_RUNTIME"
+    },
+    {
+      "id": "ravana",
+      "source": "https://github.com/OpenSource-Syndicate/RAVANA",
+      "revision": "c5d5095b2f918657b9261a6b958e2f4f013305cb",
+      "targets": [
+        "N01",
+        "N06",
+        "N07"
+      ],
+      "role": "proactive autonomous-agent reinforcement",
+      "state": "PROJECTED",
+      "integration_state": "MATERIALIZED_PIN_CONTRACT_PENDING_RUNTIME"
+    },
+    {
+      "id": "ray",
+      "source": "https://github.com/ray-project/ray",
+      "revision": "9b6495fc965c3a231417854bb8cfe8a8fdf0d305",
+      "targets": [
+        "N07"
+      ],
+      "role": "distributed compute runtime",
+      "state": "PROJECTED",
+      "integration_state": "MATERIALIZED_PIN_CONTRACT_PENDING_RUNTIME"
+    }
+  ],
+  "grce_complements": [
+    {
+      "id": "bijux-dag-runtime",
+      "source": "https://github.com/bijux/bijux-core",
+      "revision": "f0f5f56b49f380196918c4c6910b725b2b30ab7d",
+      "target": "N07",
+      "stage": "0-12",
+      "state": "PROJECTED"
+    },
+    {
+      "id": "ouro-loop",
+      "source": "https://github.com/VictorVVedtion/ouro-loop",
+      "revision": "52f97e22dc2a72a45ffa025d452ea02c58cb6b94",
+      "target": "N07",
+      "stage": "7,9",
+      "state": "PROJECTED"
+    },
+    {
+      "id": "recurs",
+      "source": "https://github.com/Gen-Verse/Recuris",
+      "revision": "7d3745ab787b1206ccd981cb1511100476097266",
+      "target": "N07",
+      "stage": "3,11",
+      "state": "PROJECTED"
+    }
+  ]
 }
