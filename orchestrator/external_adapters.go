@@ -346,6 +346,22 @@ func RegisterExternalAdapterOperations(e *Engine, r ExternalAdapterRegistry) err
 	}
 	for id := range r.byID {
 		provider := id
+		spec := r.byID[provider]
+		for _, registeredOperation := range spec.Operations {
+			if !strings.HasSuffix(registeredOperation, ".describe") {
+				continue
+			}
+			describeOperation := "external." + provider + ".describe@1.0.0"
+			if err := e.Register(describeOperation, func(ctx context.Context, m protocol.Message) (protocol.Result, error) {
+				result, err := r.run(ctx, provider, "describe", registeredOperation, m.Metadata)
+				if err != nil {
+					return externalAdapterFailure(m, err.Error())
+				}
+				return externalAdapterResult(m, result), nil
+			}); err != nil {
+				return err
+			}
+		}
 		if err := e.Register("external."+provider+".probe@1.0.0", func(ctx context.Context, m protocol.Message) (protocol.Result, error) {
 			result, err := r.run(ctx, provider, "probe", "probe", m.Metadata)
 			if err != nil {
@@ -400,7 +416,7 @@ func externalAdapterResult(m protocol.Message, result map[string]any) protocol.R
 	state, _ := result["state"].(string)
 	status := "error"
 	switch strings.ToUpper(strings.TrimSpace(state)) {
-	case "PASS":
+	case "PASS", "REAL", "ACTIVE":
 		status = "ok"
 	case "DEGRADED", "PROJECTED", "UNMEASURABLE":
 		status = "degraded"
