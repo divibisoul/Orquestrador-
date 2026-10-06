@@ -138,7 +138,10 @@
     "multi-agent-engine": {
       "source": "https://github.com/NickSpyker/multi-agent-engine",
       "state": "PROJECTED",
-      "role": "Octacore parallel CPU/GPU reinforcement"
+      "role": "Octacore parallel CPU/GPU reinforcement",
+      "verified_revision": "ed540b868fecd8d222cfcee1963589ad18c157f6",
+      "verification_date": "2026-10-06",
+      "integration_state": "NOT_MATERIALIZED_NO_NATIVE_ADAPTER_YET"
     },
     "hora-graph-core": {
       "source": "https://github.com/Vivien83/hora-graph-core",
@@ -150,24 +153,36 @@
       "source": "https://github.com/tao-hpu/cognitive-workspace",
       "state": "PROJECTED",
       "role": "Clareira global workspace reinforcement",
-      "evidence_note": "upstream describes itself as a proof of concept and includes a simulation mode"
+      "evidence_note": "upstream describes itself as a proof of concept and includes a simulation mode",
+      "verified_revision": "6740fc3b69a842ccc49663ac6c371600d0d9fc2e",
+      "verification_date": "2026-10-06",
+      "integration_state": "NOT_MATERIALIZED_NO_NATIVE_ADAPTER_YET"
     },
     "ravana": {
       "source": "https://github.com/OpenSource-Syndicate/RAVANA",
       "state": "PROJECTED",
-      "role": "Clareira autonomous-agent reinforcement"
+      "role": "Clareira autonomous-agent reinforcement",
+      "verified_revision": "c5d5095b2f918657b9261a6b958e2f4f013305cb",
+      "verification_date": "2026-10-06",
+      "integration_state": "NOT_MATERIALIZED_NO_NATIVE_ADAPTER_YET"
     },
     "swarms-evals": {
       "source": "https://github.com/The-Swarm-Corporation/swarms-evals",
       "state": "PROJECTED",
       "role": "SuperGPU evaluation/proof layer",
-      "evidence_note": "upstream is an evaluation suite, not a SuperGPU hardware runtime"
+      "evidence_note": "upstream is an evaluation suite, not a SuperGPU hardware runtime",
+      "verified_revision": "37901fe84f4064925a1807299ea0958ba770580c",
+      "verification_date": "2026-10-06",
+      "integration_state": "NOT_MATERIALIZED_NO_NATIVE_ADAPTER_YET"
     },
     "claude-brain": {
       "source": "https://github.com/gammon-bio/claude-brain",
       "state": "PROJECTED",
       "role": "experimental biological-memory research candidate",
-      "evidence_note": "upstream describes itself as a working prototype/playground, not production software"
+      "evidence_note": "upstream describes itself as a working prototype/playground, not production software",
+      "verified_revision": "20c1eb3791a81516d09b2ef91a1f3c656d133901",
+      "verification_date": "2026-10-06",
+      "integration_state": "NOT_MATERIALIZED_NO_NATIVE_ADAPTER_YET"
     }
   },
   "integration_gates": [
@@ -186,5 +201,11 @@
     "delivery": "SARA /v1/vagus -> shared VagusNerveBus",
     "state": "PROJECTED_WITH_REAL_SARA_PATH",
     "fail_closed": true
+  },
+  "candidate_policy": {
+    "external_source_revision_must_be_pinned": true,
+    "materialization_requires_native_adapter_contract": true,
+    "candidate_sources_are_excluded_from_provider_count": true,
+    "no_candidate_promotes_to_REAL_without_observed_execution": true
   }
 }
