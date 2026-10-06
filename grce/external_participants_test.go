@@ -51,3 +51,23 @@ func TestExternalResponseContractRequiresPinnedIdentityAndEvidence(t *testing.T)
 		t.Fatalf("expected pinned source rejection, got %v", err)
 	}
 }
+
+func TestExternalRuntimeFailurePreservesEvidence(t *testing.T) {
+	p := NewExternalParticipants()[BijuxDAGRuntimeID]
+	input := grf.State{Payload: []byte("preserve"), Epistemic: grf.EpistemicActive}
+	ctx := grf.Context{CycleID: "cycle-runtime-failure"}
+	t.Setenv(p.Config.CommandEnv, "/definitely/not/a/real/soul-runtime")
+	res, err := p.Ingest(input, ctx)
+	if err == nil || !strings.Contains(err.Error(), "EXTERNAL_RUNTIME_BLOCKED:"+BijuxDAGRuntimeID+":runtime-exec") {
+		t.Fatalf("expected runtime-exec blocked error, got %v", err)
+	}
+	if string(res.Output.Payload) != "preserve" || res.Output.Epistemic != grf.EpistemicProjected {
+		t.Fatal("runtime failure did not preserve input as PROJECTED")
+	}
+	if res.Evidence.Hash == "" || res.Evidence.ContextHash != ctx.Hash() {
+		t.Fatal("runtime failure evidence was not preserved")
+	}
+	if res.Provenance.ParentHash != input.Hash() || res.Provenance.OutputHash != res.Output.Hash() {
+		t.Fatal("runtime failure provenance was not preserved")
+	}
+}
