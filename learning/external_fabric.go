@@ -141,10 +141,12 @@ func (f *ExternalFabric) observe(ctx context.Context, provider, capability, corr
 		Source:        "N07",
 		Target:        provider,
 		Capability:    capability,
+		EventType:     EventFeedback,
 		Outcome:       outcome,
 		Reward:        reward,
 		Confidence:    1,
 		Provenance:    "external-learning-fabric",
+		Timestamp:     time.Now().UTC(),
 		Metadata: map[string]string{
 			"provider": provider,
 			"transport_boundary": "SARA.NervoVago",
