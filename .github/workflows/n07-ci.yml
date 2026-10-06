@@ -40,6 +40,7 @@ on:
       - 'scripts/validate-soul-external-submodules.mjs'
       - 'scripts/validate-external-adapters.mjs'
       - 'scripts/validate-external-capability-ownership.mjs'
+      - 'scripts/validate-soul-29-grf.mjs'
       - 'grf/**'
       - 'grce/**'
       - 'integrations/grf/**'
@@ -114,6 +115,9 @@ jobs:
 
       - name: Architectural integrity
         run: node scripts/soul-architectural-integrity.mjs
+
+      - name: Validate Soul-29 and GRF invariants
+        run: node scripts/validate-soul-29-grf.mjs
 
       - name: Live source integrity
         run: node scripts/soul-live-source-audit.mjs
