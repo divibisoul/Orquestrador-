@@ -256,7 +256,7 @@ func (r *GRCEExecutorRuntime) analyzeGPU(ctx context.Context, oppositions []grf.
 			"failure_id":             item.FailureID,
 			"device_id":              device.ID,
 			"normalized_vector_size": len(values),
-		}, item.FailureID, c.SequenceIndex+50+uint64(index))
+		}, item.FailureID, c.SequenceIndex+500+uint64(index))
 		if err != nil {
 			return nil, err
 		}
@@ -276,7 +276,7 @@ func (r *GRCEExecutorRuntime) analyzeCPU(ctx context.Context, oppositions []grf.
 		artifact, err := makeArtifact("ANALYZE_CPU", grf.State{ID: item.FailureID, Payload: map[string]any{"description": item.Description}}, c, map[string]any{
 			"failure_id":     item.FailureID,
 			"description_hash": encoded,
-		}, item.FailureID, c.SequenceIndex+60+uint64(index))
+		}, item.FailureID, c.SequenceIndex+1000+uint64(index))
 		if err != nil {
 			return nil, err
 		}
@@ -298,14 +298,14 @@ func (r *GRCEExecutorRuntime) mediate(ctx context.Context, artifacts []grf.Artif
 }
 
 func makeArtifactsSingle(stage string, state grf.State, c grf.Context, payload map[string]any, failureID string) ([]grf.Artifact, error) {
-	sequence := c.SequenceIndex + 70
+	sequence := c.SequenceIndex + 2000
 	switch stage {
 	case "ARA":
-		sequence = c.SequenceIndex + 71
+		sequence = c.SequenceIndex + 2001
 	case "ETR":
-		sequence = c.SequenceIndex + 72
+		sequence = c.SequenceIndex + 2002
 	case "ITR":
-		sequence = c.SequenceIndex + 73
+		sequence = c.SequenceIndex + 2003
 	}
 	artifact, err := makeArtifact(stage, state, c, payload, failureID, sequence)
 	if err != nil {
@@ -493,7 +493,7 @@ func NewGRCEVagoFeedback(gateway *NervoVagoGateway, target, kind string) func(co
 				TraceID:       traceID,
 				CorrelationID: c.CorrelationID,
 				MessageID:     messageID,
-				SequenceIndex: c.SequenceIndex + uint64(len(prov)) + 100,
+				SequenceIndex: c.SequenceIndex + 4000 + uint64(len(prov)),
 				ParentHash:    parentHash,
 				InputHash:     inputHash,
 			},
@@ -524,7 +524,7 @@ func (r *GRCEExecutorRuntime) extractCapabilities(ctx context.Context, state grf
 			ParentHash:       mustStateHash(state),
 			InputHash:        mustStateHash(state),
 			OutputHash:       hash,
-			SequenceIndex:    c.SequenceIndex + 90,
+			SequenceIndex:    c.SequenceIndex + 3000,
 			Stage:            "EXTRACT",
 			CausalFailureID:  failureID,
 		},
