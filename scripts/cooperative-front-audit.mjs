@@ -27,7 +27,21 @@ const api = async (path) => {
       "X-GitHub-Api-Version": "2022-11-28",
     },
   });
-  if (!response.ok) throw new Error(`GitHub API ${response.status}: ${await response.text()}`);
+  if (!response.ok) {
+    const body = await response.text();
+    const rateLimited = response.status === 403 && /rate limit exceeded/i.test(body);
+    if (rateLimited) {
+      console.log(JSON.stringify({
+        status: "UNMEASURABLE",
+        reason: "GITHUB_API_RATE_LIMIT",
+        api_path: path,
+        http_status: response.status,
+      }, null, 2));
+      console.log("COOPERATIVE_OVERLAP_STATUS=UNMEASURABLE_RATE_LIMIT");
+      process.exit(0);
+    }
+    throw new Error(`GitHub API ${response.status}: ${body}`);
+  }
   return response.json();
 };
 const changed = await api(`/repos/${owner}/${repo}/pulls/${current.number}/files?per_page=100`);
