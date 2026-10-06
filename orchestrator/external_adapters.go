@@ -157,6 +157,10 @@ func (r ExternalAdapterRegistry) validateMaterializedPin(ctx context.Context, p 
 		root = filepath.Join(rootDir, root)
 	}
 	root = filepath.Clean(root)
+	canonical := filepath.Clean(filepath.Join(rootDir, "integrations", "external", p.ID))
+	if root != canonical {
+		return fmt.Errorf("EXTERNAL_PROVIDER_ROOT_NON_CANONICAL:%s", p.ID)
+	}
 	rel, err := filepath.Rel(rootDir, root)
 	if err != nil || strings.HasPrefix(rel, ".."+string(os.PathSeparator)) || rel == ".." {
 		return fmt.Errorf("EXTERNAL_PROVIDER_ROOT_INVALID:%s", p.ID)
