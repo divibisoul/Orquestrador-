@@ -151,7 +151,12 @@ func main() {
 	}
 	var grceParticipant grce.Participant
 	if saraProxy.Configured() {
-		grceParticipant = grce.NewSARAParticipant(saraProxy)
+		grceParticipant = grce.NewCompositeParticipant(
+			grce.NewSARAParticipant(saraProxy),
+			grce.ConfiguredExternalParticipants()...,
+		)
+	} else {
+		grceParticipant = grce.NewCompositeParticipant(nil, grce.ConfiguredExternalParticipants()...)
 	}
 	if err := grce.Register(e, grceParticipant); err != nil {
 		log.Fatal(err)
