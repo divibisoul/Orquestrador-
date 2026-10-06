@@ -306,6 +306,13 @@ func (s *Scheduler) executePlan(ctx context.Context, jobs []Job) []Result {
 	}
 
 	for len(pending) > 0 {
+		if err := ctx.Err(); err != nil {
+			for i, job := range pending {
+				results[i] = failed(job, "EXECUTION_CANCELLED", err, 0, 0)
+			}
+			break
+		}
+
 		ready := make([]int, 0, len(pending))
 		for i, job := range pending {
 			if barrierReady(i, job, pending) {
@@ -313,6 +320,12 @@ func (s *Scheduler) executePlan(ctx context.Context, jobs []Job) []Result {
 			}
 		}
 		if len(ready) == 0 {
+			if err := ctx.Err(); err != nil {
+				for i, job := range pending {
+					results[i] = failed(job, "EXECUTION_CANCELLED", err, 0, 0)
+				}
+				break
+			}
 			for i, job := range pending {
 				results[i] = failed(job, "BARRIER_DEADLOCK", errors.New("no executable frontier remains"), 0, 0)
 			}
