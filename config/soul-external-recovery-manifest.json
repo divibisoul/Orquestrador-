@@ -83,16 +83,16 @@
       "id": "openhands",
       "source": "https://github.com/OpenHands/OpenHands",
       "path": "integrations/external/openhands",
-      "pinned_revision": "8136a1d59f330edc99b977a69c1432a56c7010cc",
-      "latest_upstream_head": "8136a1d59f330edc99b977a69c1432a56c7010cc",
+      "pinned_revision": "81e83760a196ba6374ad2c3d38d577262c79ca2d",
+      "latest_upstream_head": "81e83760a196ba6374ad2c3d38d577262c79ca2d",
       "targets": [
         "N06"
       ],
       "latest_observed_at": "2026-10-06T04:53:31Z",
       "drift_from_pinned": false,
       "state": "CURRENT_PIN",
-      "previous_pinned_revision": "2414d6ee5e31bede2e78211f72b58e9949575a75",
-      "promotion_reason": "upstream HEAD observed on 2026-10-06; promoted only as a pinned revision pending adapter/E2E verification"
+      "previous_pinned_revision": "8136a1d59f330edc99b977a69c1432a56c7010cc",
+      "promotion_reason": "upstream HEAD re-observed on 2026-10-06; promoted as an exact pinned revision after confirming ask_agent endpoint presence at the new commit; provider E2E remains gated"
     },
     {
       "id": "metagpt",
@@ -276,7 +276,8 @@
       "browser-use",
       "pydantic-ai",
       "llama-index",
-      "dspy"
+      "dspy",
+      "openhands"
     ]
   }
 }
