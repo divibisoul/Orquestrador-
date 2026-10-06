@@ -1,9 +1,18 @@
-# Immutable local-dev revision pins observed during the 2026-10-03 architecture audit.
-N01 divibisoul/aeternum-core-29 d5a56a3de0f121054b6923127c3af885df243391
-N02 divibisoul/Eternium- 1b7a755239766947f4400c4922e5a86639df6a5d
-N03 divibisoul/nexus-aeternum-fusion f4a10bf361a1cdf6e1e5de1ff5b1d263275da31c
-N04 divibisoul/nextjs-ai-chatbots 24e37a8e8067cf8b2fab8777fa47ff1dde6af3e1
-N05 divibisoul/nextjs-ai-chatbot dbcd1db4a265d1e36957f1edf9e0ca2ec49dc980
-N06 divibisoul/nextjs-ai-chatbot-2000 7f8ba03db14007710f6b0c6ea2338826c9d5644b
+# Current mainline revision pins reconciled on 2026-10-06. Previous 2026-10-03 pins are preserved below as comments.
+# PRESERVED N01 divibisoul/aeternum-core-29 bba43a86f8e98de52aeb606a00ac3f51244c862a
+N01 divibisoul/aeternum-core-29 d5932bbe9e91127d497e86acd32bbb305e0c14d6
+# PRESERVED N02 divibisoul/Eternium- b8c681e1c2bf000bb614b5b0c13ca8377c857a14
+N02 divibisoul/Eternium- b10dc048429e7ea19ac0c0834e3ff3cc1ae2af7d
+# PRESERVED N03 divibisoul/nexus-aeternum-fusion 7a56c4d07d31e3dacfb0fa8ef3114ab0c253a49c
+N03 divibisoul/nexus-aeternum-fusion a8068ce15977a9624d9f2e11b7a4731c5bca0f9f
+# PRESERVED N04 divibisoul/nextjs-ai-chatbots 2bc605a1d2114ac1e39de63e922e937306dde1c4
+N04 divibisoul/nextjs-ai-chatbots f640b959d628176488b73bd2a44fa1a85ca84be4
+# PRESERVED N05 divibisoul/nextjs-ai-chatbot 3bce0da91dd03bcf2c1e3765687dc357f187388b
+N05 divibisoul/nextjs-ai-chatbot 87e4a5363bfd85aae4f666a6806301fdb5026172
+# PRESERVED N06 divibisoul/nextjs-ai-chatbot-2000 17c46a0ddd5edfcdb570539d2d250a78799016f2
+N06 divibisoul/nextjs-ai-chatbot-2000 0b2ba53922046e772883a8de5bf9ecc41fa3eacb
+# PRESERVED SARA divibisoul/SARA 2da3c965aab4abdf745c0ef545d4d2ca61fd5ad2
+SARA divibisoul/SARA 53a7760cc3db7f77456e415ef14b3638d52df816
 N07 divibisoul/Orquestrador- ca53834a357249e0bb3c29bea49d9e07541da95f
-SARA divibisoul/SARA 2da3c965aab4abdf745c0ef545d4d2ca61fd5ad2
+JEV divibisoul/jev-api 0143980833a4351f9e73d7141555b62ed1e798e0
+# The N07 ref is self-identity here; JEV was verified current during this reconciliation.
