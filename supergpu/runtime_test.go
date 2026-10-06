@@ -99,3 +99,66 @@ func TestBatchParallelHonorsCancellation(t *testing.T) {
 		t.Fatal("expected cancellation error")
 	}
 }
+
+type shutdownBlockingBackend struct {
+	started chan struct{}
+	release chan struct{}
+}
+
+func (b *shutdownBlockingBackend) ConcurrentSafe() bool { return true }
+
+func (b *shutdownBlockingBackend) Execute(ctx context.Context, _ Device, _ string, input []float64) ([]float64, error) {
+	select {
+	case <-b.started:
+	default:
+		close(b.started)
+	}
+	select {
+	case <-b.release:
+		return append([]float64(nil), input...), nil
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	}
+}
+
+func TestRuntimeShutdownWaitsForConcurrentExecution(t *testing.T) {
+	backend := &shutdownBlockingBackend{
+		started: make(chan struct{}),
+		release: make(chan struct{}),
+	}
+	r := New(backend)
+	device := Device{ID: "cpu-shutdown-test", Vendor: "test", Name: "shutdown", Available: true, Backend: "cpu"}
+
+	done := make(chan error, 1)
+	go func() {
+		_, err := r.Execute(context.Background(), device, "identity", []float64{1})
+		done <- err
+	}()
+	select {
+	case <-backend.started:
+	case <-time.After(time.Second):
+		t.Fatal("execution did not start")
+	}
+
+	shutdownDone := make(chan error, 1)
+	go func() {
+		shutdownDone <- r.Shutdown(context.Background())
+	}()
+
+	select {
+	case err := <-shutdownDone:
+		t.Fatalf("shutdown returned before execution released: %v", err)
+	case <-time.After(20 * time.Millisecond):
+	}
+
+	close(backend.release)
+	if err := <-done; err != nil {
+		t.Fatalf("execution failed: %v", err)
+	}
+	if err := <-shutdownDone; err != nil {
+		t.Fatalf("shutdown failed: %v", err)
+	}
+	if got := r.Health()["status"]; got != "closed" {
+		t.Fatalf("runtime did not remain closed: %#v", got)
+	}
+}
