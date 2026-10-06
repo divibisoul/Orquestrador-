@@ -5,7 +5,6 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
-	"errors"
 	"strings"
 
 	"github.com/divibisoul/Orquestrador-/protocol"
@@ -115,4 +114,3 @@ func hashAny(value any) string {
 	return hex.EncodeToString(sum[:])
 }
 
-var _ = errors.New
