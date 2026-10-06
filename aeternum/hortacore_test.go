@@ -129,4 +129,10 @@ func TestHortaCoreHealthDoesNotReportReadyWhenAdapterMeshIsAbsent(t *testing.T) 
 	if health["peer_client_attached"] != false {
 		t.Fatalf("peer attachment state was fabricated: %#v", health["peer_client_attached"])
 	}
+	if health["executable_adapter_modules"] != 3 {
+		t.Fatalf("unexpected executable adapter count: %#v", health["executable_adapter_modules"])
+	}
+	if health["peer_client_configured"] != false || health["adapter_execution_available"] != false {
+		t.Fatalf("adapter execution was falsely reported available: %#v", health)
+	}
 }
