@@ -142,7 +142,7 @@ func TestRuntimeShutdownWaitsForConcurrentExecution(t *testing.T) {
 
 	shutdownDone := make(chan error, 1)
 	go func() {
-		shutdownDone <- r.Shutdown(context.Background())
+		shutdownDone <- r.Shutdown()
 	}()
 
 	select {
