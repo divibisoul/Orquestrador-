@@ -46,9 +46,9 @@ Esses quatro permanecem registrados. Nenhuma implementação substituta foi inve
 
 ## Estado operacional
 
-O GRCE está instalado e exposto, mas o ciclo completo permanece `PROJECTED/BLOCKED` enquanto os hooks reais e distintos de ERU, MMD, ARA, ETR, ITR e RGO não estiverem conectados e comprovados por E2E.
+O GRCE está instalado e agora possui um executor com hooks conectados às fronteiras reais de SARA/ERU-ARA-ETR, SuperGPU e RGO, além do canal Nervo Vago unificado para feedback. O código do executor não reproduz internamente as autoridades ARA/ETR/ITR/ERU; ele orquestra e registra as evidências dessas autoridades.
 
-Isso é intencional: instalação estrutural não é convertida artificialmente em execução REAL.
+A classificação sistêmica permanece `PROJECTED` até que o E2E do GitHub execute C1→C7→C1 e produza evidência observável. Não há promoção artificial para `REAL` apenas pela existência do código.
 
 ## Prova exigida antes de ACTIVE
 
