@@ -2,6 +2,7 @@
 import importlib.util, json, os, pathlib, subprocess, sys
 MAX_INPUT=131072
 MAX_OUTPUT=262144
+REPO_ROOT=pathlib.Path(__file__).resolve().parents[1]
 PACKAGES={"superagi":"superagi","langgraph":"langgraph","crewai":"crewai","microsoft-agent-framework":"agent_framework","openhands":"openhands","metagpt":"metagpt","agentscope":"agentscope","browser-use":"browser_use","smolagents":"smolagents","pydantic-ai":"pydantic_ai","llama-index":"llama_index","dspy":"dspy","whisper":"whisper","kokoro":"kokoro"}
 
 def emit(v,c=0):
@@ -17,7 +18,26 @@ def load():
     return v
 
 def root(v):
-    p=pathlib.Path(str(v.get("root") or "")).resolve()
+    provider=str(v.get("provider") or "").strip().lower()
+    configured=pathlib.Path("integrations/external-adapters.json")
+    try:
+        adapters=json.loads(configured.read_text(encoding="utf-8"))
+    except Exception as e:
+        emit({"state":"BLOCKED","code":"EXTERNAL_ADAPTER_REGISTRY_UNREADABLE","detail":str(e)},2)
+    entry=next((p for p in adapters.get("providers",[]) if p.get("id")==provider),None)
+    if not entry:
+        emit({"state":"BLOCKED","code":"EXTERNAL_PROVIDER_NOT_REGISTERED","provider":provider},2)
+    expected=(REPO_ROOT/str(entry["root"])).resolve()
+    requested=pathlib.Path(str(v.get("root") or entry["root"]))
+    if not requested.is_absolute():
+        requested=REPO_ROOT/requested
+    p=requested.resolve()
+    try:
+        p.relative_to(REPO_ROOT)
+    except ValueError:
+        emit({"state":"BLOCKED","code":"EXTERNAL_ROOT_ESCAPE","provider":provider,"root":str(p)},2)
+    if p != expected:
+        emit({"state":"BLOCKED","code":"EXTERNAL_ROOT_NOT_CANONICAL","provider":provider,"expected":str(expected),"requested":str(p)},2)
     if not p.exists() and str(v.get("mode") or "").strip().lower() != "probe":
         emit({"state":"BLOCKED","code":"EXTERNAL_SOURCE_NOT_PRESENT","root":str(p)},2)
     return p
