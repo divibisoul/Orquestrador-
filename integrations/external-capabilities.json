@@ -6,7 +6,8 @@
     "preserve_external_repositories": true,
     "no_fake_runtime_success": true,
     "pin_external_revisions": true,
-    "runtime_activation_requires_explicit_adapter": true
+    "runtime_activation_requires_explicit_adapter": true,
+    "graph_node_rule": "Hivemind is retained as a pinned implementation dependency under the learning fabric, not counted as a separate SOUL-29 provider node."
   },
   "repositories": [
     {
@@ -227,6 +228,81 @@
       "capabilities": [
         "text-to-speech"
       ]
+    },
+    {
+      "id": "bijux-core",
+      "source": "https://github.com/bijux/bijux-core",
+      "revision": "f0f5f56b49f380196918c4c6910b725b2b30ab7d",
+      "targets": [
+        "N07"
+      ],
+      "capabilities": [
+        "deterministic-execution",
+        "provenance",
+        "evidence-ledger"
+      ],
+      "integration_stage": "GRCE.characterize"
+    },
+    {
+      "id": "ouro-loop",
+      "source": "https://github.com/VictorVVedtion/ouro-loop",
+      "revision": "52f97e22dc2a72a45ffa025d452ea02c58cb6b94",
+      "targets": [
+        "N07"
+      ],
+      "capabilities": [
+        "self-healing",
+        "autonomous-remediation",
+        "validation-loop"
+      ],
+      "integration_stage": "GRCE.validate"
+    },
+    {
+      "id": "recuris",
+      "source": "https://github.com/Gen-Verse/Recuris",
+      "revision": "7d3745ab787b1206ccd981cb1511100476097266",
+      "targets": [
+        "N07"
+      ],
+      "capabilities": [
+        "experiential-memory",
+        "failure-localization",
+        "recursive-validation"
+      ],
+      "integration_stage": "GRCE.trace"
+    },
+    {
+      "id": "fedml",
+      "source": "https://github.com/FedML-AI/FedML",
+      "revision": "03e11dfee69a458a9820ec4e05b531a5f935eb2b",
+      "targets": [
+        "N01",
+        "N07"
+      ],
+      "capabilities": [
+        "federated-learning",
+        "distributed-training",
+        "model-coordination"
+      ],
+      "integration_stage": "learning.federated"
+    },
+    {
+      "id": "hivemind",
+      "source": "https://github.com/learning-at-home/hivemind",
+      "revision": "4bd43b77895019b20d18d81d0d0c1a5ab9a10847",
+      "targets": [
+        "N07"
+      ],
+      "capabilities": [
+        "decentralized-learning",
+        "peer-to-peer-training"
+      ],
+      "role": "implementation-dependency",
+      "graph_node": false,
+      "used_by": [
+        "fedml"
+      ],
+      "integration_stage": "learning.decentralized"
     }
   ]
 }
