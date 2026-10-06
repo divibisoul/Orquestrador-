@@ -29,6 +29,9 @@ func Register(e *orchestrator.Engine, participant Participant) error {
 		}
 
 		cycle := executor.Execute(ctx, input, message.CorrelationID)
+		if reporter, ok := participant.(ProviderEvidenceReporter); ok {
+			cycle.Providers = reporter.ProviderEvidence()
+		}
 		raw, err := json.Marshal(cycle)
 		if err != nil {
 			return protocol.Result{}, err
