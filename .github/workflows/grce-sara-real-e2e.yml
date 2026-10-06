@@ -1,0 +1,83 @@
+name: GRCE real SARA E2E
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'grce/**'
+      - 'backend/sara_proxy.go'
+      - '.github/workflows/grce-sara-real-e2e.yml'
+  push:
+    paths:
+      - 'grce/**'
+      - 'backend/sara_proxy.go'
+      - '.github/workflows/grce-sara-real-e2e.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  real-sara:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout N07
+        uses: actions/checkout@v4
+
+      - name: Checkout real SARA runtime
+        uses: actions/checkout@v4
+        with:
+          repository: divibisoul/SARA
+          ref: main
+          path: sara-runtime
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install real SARA
+        run: python -m pip install -e ./sara-runtime
+
+      - name: Start real SARA service
+        env:
+          SARA_API_TOKEN: grce-real-e2e-token
+          SARA_HOST: 127.0.0.1
+          SARA_PORT: '8090'
+        run: |
+          set -euo pipefail
+          nohup python -m sara.service.main > "$RUNNER_TEMP/sara.log" 2>&1 &
+          echo $! > "$RUNNER_TEMP/sara.pid"
+          for i in $(seq 1 60); do
+            if curl -fsS http://127.0.0.1:8090/health > "$RUNNER_TEMP/sara-health.json"; then
+              cat "$RUNNER_TEMP/sara-health.json"
+              break
+            fi
+            sleep 1
+          done
+          test -s "$RUNNER_TEMP/sara-health.json"
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.25.x'
+          cache: true
+
+      - name: Execute GRCE against real SARA
+        env:
+          SARA_SERVICE_URL: http://127.0.0.1:8090
+          SARA_SERVICE_TOKEN: grce-real-e2e-token
+        run: |
+          set -euo pipefail
+          go test -tags integration ./grce -count=1 -v | tee "$RUNNER_TEMP/grce-e2e.log"
+
+      - name: Upload real runtime evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: grce-real-sara-evidence
+          path: |
+            ${{ runner.temp }}/sara.log
+            ${{ runner.temp }}/sara-health.json
+            ${{ runner.temp }}/grce-e2e.log
+          if-no-files-found: warn
