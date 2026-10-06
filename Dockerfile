@@ -25,7 +25,7 @@ RUN set -eu; \
       echo; \
       echo '  }'; \
       echo '}'; \
-      test "$count" -eq 16; \
+      test "$count" -eq 22; \
     } > config/soul-external-runtime-attestation.json
 RUN CGO_ENABLED=0 go build -trimpath -ldflags='-s -w' -o /out/n07 ./cmd/nexus
 RUN GOBIN=/out go install github.com/storacha/guppy@v0.7.0
