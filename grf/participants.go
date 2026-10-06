@@ -76,7 +76,9 @@ func (p *BoundaryParticipant) FailuresAbsorbed() []Failure {
 	return []Failure{{ID:"participant-boundary:"+p.desc.ID,Source:p.desc.Source,Description:"absence or non-proof of external runtime execution is preserved at the GRF boundary",State:state}}
 }
 func (p *BoundaryParticipant) Provenance() []Provenance {
-	prov, _ := SealProvenance("", map[string]any{"source":p.desc.Source}, map[string]any{"state":p.desc.State},1,"PARTICIPANT_REGISTRATION","")
+	seed := map[string]any{"id":p.desc.ID,"source":p.desc.Source,"role":p.desc.Role}
+	parent, _ := HashJSON(seed)
+	prov, _ := SealProvenance(parent, seed, map[string]any{"state":p.desc.State},1,"PARTICIPANT_REGISTRATION","participant-source")
 	return []Provenance{prov}
 }
 
