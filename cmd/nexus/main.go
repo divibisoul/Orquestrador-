@@ -148,6 +148,9 @@ func main() {
 			log.Fatal(err)
 		}
 	}
+	if err := backend.RegisterNervoVagoOperations(e, saraProxy); err != nil {
+		log.Fatal(err)
+	}
 	if err := rgo.RegisterOperation(e, saraProxy); err != nil {
 		log.Fatal(err)
 	}
