@@ -424,7 +424,7 @@ func (r *GRCEExecutorRuntime) validateRGO(ctx context.Context, state grf.State, 
 			"sequence_index": c.SequenceIndex,
 		},
 	}
-	result, err := r.SARA.RGOTrinity(ctx, finding, c.CorrelationID, c.CorrelationID)
+	result, err := r.SARA.RGOTrinityWithCycle(ctx, finding, c.CorrelationID, c.CorrelationID)
 	if err != nil {
 		return false, fmt.Errorf("GRCE_RGO_TRINITY_FAILED:%w", err)
 	}
