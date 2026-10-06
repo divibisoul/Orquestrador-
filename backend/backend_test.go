@@ -165,7 +165,7 @@ func TestServerExposesArtifactPersistenceFailure(t *testing.T) {
 	if !ok || persistence["state"] != "BLOCKED" {
 		t.Fatalf("artifact persistence failure was hidden: %#v", response)
 	}
-	if errText, _ := persistence["error"].(string); !strings.Contains(errText, "500") {
+	if errText, _ := persistence["error"].(string); !strings.Contains(errText, "persistence unavailable") {
 		t.Fatalf("persistence error evidence missing: %#v", persistence)
 	}
 }
