@@ -47,8 +47,6 @@ jobs:
               git -C "$path" checkout --detach "$sha"
               git add "$path"
             fi
-
-            git config -f .gitmodules submodule."$path".branch main || true
             git add .gitmodules "$path"
             echo "$name=$sha"
           }
