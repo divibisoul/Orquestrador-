@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/divibisoul/Orquestrador-/neural"
 	"github.com/divibisoul/Orquestrador-/prefrontal"
+	"github.com/divibisoul/Orquestrador-/protocol"
 	"github.com/divibisoul/Orquestrador-/supergpu"
 	"os"
 	"strings"
@@ -48,5 +49,30 @@ func TestExternalAdapterProbeRegistered(t *testing.T) {
 	e, _ := newExternalTestEngine(t)
 	if _, err := e.Execute(context.Background(), "external.langgraph.probe@1.0.0", nil, nil); err != nil {
 		t.Fatalf("probe failed: %v", err)
+	}
+}
+
+func TestExternalAdapterAllSixteenProvidersProbe(t *testing.T) {
+	e, r := newExternalTestEngine(t)
+	for id := range r.byID {
+		operation := "external." + id + ".probe@1.0.0"
+		if _, err := e.Execute(context.Background(), operation, nil, nil); err != nil {
+			t.Fatalf("provider %s probe failed: %v", id, err)
+		}
+	}
+}
+
+func TestExternalAdapterDegradedExecutionFailsClosed(t *testing.T) {
+	m := protocol.Message{CorrelationID: "corr-degraded"}
+	result, err := externalAdapterExecutionResult(m, map[string]any{
+		"state": "DEGRADED",
+		"provider": "langgraph",
+		"code": "TEST_DEGRADED",
+	})
+	if err == nil || !strings.Contains(err.Error(), "TEST_DEGRADED") {
+		t.Fatalf("degraded execution unexpectedly succeeded: result=%#v err=%v", result, err)
+	}
+	if result.Status != "error" || result.Error != "TEST_DEGRADED" {
+		t.Fatalf("degraded execution was not fail-closed: %#v", result)
 	}
 }
