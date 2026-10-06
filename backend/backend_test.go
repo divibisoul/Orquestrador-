@@ -121,3 +121,21 @@ func TestSupabaseValidation(t *testing.T) {
 		t.Fatal("expected unconfigured store to fail")
 	}
 }
+
+
+func TestDecodeJSONRejectsTrailingValues(t *testing.T) {
+	var value map[string]any
+	request := httptest.NewRequest(http.MethodPost, "/v1/execute", strings.NewReader("{"ok":true} {"unexpected":true}"))
+	if err := decodeJSON(request, 1024, &value); err == nil {
+		t.Fatal("expected trailing JSON value to be rejected")
+	}
+
+	request = httptest.NewRequest(http.MethodPost, "/v1/execute", strings.NewReader("  {"ok":true}  "))
+	value = nil
+	if err := decodeJSON(request, 1024, &value); err != nil {
+		t.Fatalf("valid single JSON value was rejected: %v", err)
+	}
+	if value["ok"] != true {
+		t.Fatalf("decoded JSON value changed: %#v", value)
+	}
+}
