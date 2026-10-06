@@ -114,3 +114,50 @@ func TestVersionedRouting(t *testing.T) {
 	}
 	_ = e.Shutdown(context.Background())
 }
+
+func TestSemanticVersionRoutingHonorsPreReleasePrecedence(t *testing.T) {
+	cases := []struct {
+		higher string
+		lower  string
+	}{
+		{"1.0.0", "1.0.0-beta"},
+		{"1.0.0-beta", "1.0.0-alpha"},
+		{"1.0.0-alpha.10", "1.0.0-alpha.2"},
+		{"1.0.0-alpha.2", "1.0.0-alpha.1"},
+		{"2.0.0-rc.1", "2.0.0-beta.99"},
+	}
+	for _, tc := range cases {
+		if !semverGreater(tc.higher, tc.lower) {
+			t.Fatalf("expected %s > %s", tc.higher, tc.lower)
+		}
+		if semverGreater(tc.lower, tc.higher) {
+			t.Fatalf("comparison is not antisymmetric for %s and %s", tc.higher, tc.lower)
+		}
+	}
+
+	if semverGreater("1.0.0+build.2", "1.0.0+build.1") || semverGreater("1.0.0+build.1", "1.0.0+build.2") {
+		t.Fatal("build metadata must not affect SemVer precedence")
+	}
+}
+
+func TestSplitOperationAcceptsBuildMetadataAndRejectsMalformedSemVer(t *testing.T) {
+	name, version, err := splitOperation("model.route@1.2.3+linux.amd64")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if name != "model.route" || version != "1.2.3+linux.amd64" {
+		t.Fatalf("unexpected parsed operation: %q %q", name, version)
+	}
+
+	for _, operation := range []string{
+		"model.route@01.2.3",
+		"model.route@1.02.3",
+		"model.route@1.2.03",
+		"model.route@1.2.3-01",
+		"model.route@1.2.3-",
+	} {
+		if _, _, err := splitOperation(operation); err == nil {
+			t.Fatalf("expected malformed SemVer rejection: %s", operation)
+		}
+	}
+}
