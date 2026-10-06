@@ -119,10 +119,10 @@ type Characterization struct {
 }
 
 type Opposition struct {
-	FailureID string
-	Property  string
+	FailureID  string
+	Property   string
 	RequiredBy string
-	Epistemic EpistemicState
+	Epistemic  EpistemicState
 }
 
 type Analysis struct {

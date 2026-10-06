@@ -13,22 +13,22 @@ import (
 )
 
 type Dependencies struct {
-	ERU        ERU
-	GPUDetect  FailureDetector
-	CPUDetect  FailureDetector
+	ERU           ERU
+	GPUDetect     FailureDetector
+	CPUDetect     FailureDetector
 	DetectorMerge FailureMerger
-	Neocortex  Neocortex
-	ETR        EthicalGate
-	GPUAnalyze Analyzer
-	CPUAnalyze Analyzer
+	Neocortex     Neocortex
+	ETR           EthicalGate
+	GPUAnalyze    Analyzer
+	CPUAnalyze    Analyzer
 	AnalysisMerge AnalysisMerger
-	MMD        Mediator
-	ARA        Regenerator
-	ITR        Innovator
-	RGO        Auditor
-	Horta      StateStore
-	Vagus      SignalEmitter
-	Mesh       MeshDistributor
+	MMD           Mediator
+	ARA           Regenerator
+	ITR           Innovator
+	RGO           Auditor
+	Horta         StateStore
+	Vagus         SignalEmitter
+	Mesh          MeshDistributor
 }
 
 type Result struct {
@@ -216,10 +216,10 @@ func GoldenRuleCycle(ctx context.Context, d Dependencies, state grf.State, c grf
 	for _, t := range transformations {
 		id := t.FailureID + ":capability"
 		newCaps = append(newCaps, grf.Capability{
-			ID: id,
+			ID:          id,
 			Description: "Capability derived from an observed failure through GRF/GRCE.",
-			Genealogy: []string{t.FailureID},
-			Epistemic: grf.EpistemicActive,
+			Genealogy:   []string{t.FailureID},
+			Epistemic:   grf.EpistemicActive,
 		})
 	}
 
@@ -232,7 +232,7 @@ func GoldenRuleCycle(ctx context.Context, d Dependencies, state grf.State, c grf
 	if err := d.Mesh.Distribute(ctx, candidate, c); err != nil {
 		return Result{State: candidate, Provenance: provenance, Evidence: evidence, Capabilities: newCaps, Status: grf.EpistemicActive}, err
 	}
-	if err := d.Neocortex.Learn(ctx, []ResultView{{Status:"ACTIVE",State:candidate}}, c); err != nil {
+	if err := d.Neocortex.Learn(ctx, []ResultView{{Status: "ACTIVE", State: candidate}}, c); err != nil {
 		return Result{State: candidate, Provenance: provenance, Evidence: evidence, Capabilities: newCaps, Status: grf.EpistemicActive}, err
 	}
 	if err := d.ERU.Remember(ctx, candidate, provenance, evidence, newCaps); err != nil {
@@ -247,14 +247,18 @@ func parallelDetect(ctx context.Context, gpu, cpu FailureDetector, state grf.Sta
 	var gpuOut, cpuOut []grf.Failure
 	var gpuErr, cpuErr error
 	wg.Add(2)
-	go func(){ defer wg.Done(); gpuOut, gpuErr = gpu.Detect(ctx,state,c) }()
-	go func(){ defer wg.Done(); cpuOut, cpuErr = cpu.Detect(ctx,state,c) }()
+	go func() { defer wg.Done(); gpuOut, gpuErr = gpu.Detect(ctx, state, c) }()
+	go func() { defer wg.Done(); cpuOut, cpuErr = cpu.Detect(ctx, state, c) }()
 	wg.Wait()
-	if gpuErr != nil { return nil,nil,gpuErr }
-	if cpuErr != nil { return nil,nil,cpuErr }
-	sort.SliceStable(gpuOut, func(i,j int)bool{return gpuOut[i].ID<gpuOut[j].ID})
-	sort.SliceStable(cpuOut, func(i,j int)bool{return cpuOut[i].ID<cpuOut[j].ID})
-	return gpuOut,cpuOut,nil
+	if gpuErr != nil {
+		return nil, nil, gpuErr
+	}
+	if cpuErr != nil {
+		return nil, nil, cpuErr
+	}
+	sort.SliceStable(gpuOut, func(i, j int) bool { return gpuOut[i].ID < gpuOut[j].ID })
+	sort.SliceStable(cpuOut, func(i, j int) bool { return cpuOut[i].ID < cpuOut[j].ID })
+	return gpuOut, cpuOut, nil
 }
 
 func parallelAnalyze(ctx context.Context, gpu, cpu Analyzer, oppositions []grf.Opposition, c grf.Context) ([]grf.Analysis, []grf.Analysis, error) {
@@ -262,17 +266,21 @@ func parallelAnalyze(ctx context.Context, gpu, cpu Analyzer, oppositions []grf.O
 	var gpuOut, cpuOut []grf.Analysis
 	var gpuErr, cpuErr error
 	wg.Add(2)
-	go func(){ defer wg.Done(); gpuOut, gpuErr = gpu.Analyze(ctx,oppositions,c) }()
-	go func(){ defer wg.Done(); cpuOut, cpuErr = cpu.Analyze(ctx,oppositions,c) }()
+	go func() { defer wg.Done(); gpuOut, gpuErr = gpu.Analyze(ctx, oppositions, c) }()
+	go func() { defer wg.Done(); cpuOut, cpuErr = cpu.Analyze(ctx, oppositions, c) }()
 	wg.Wait()
-	if gpuErr != nil { return nil,nil,gpuErr }
-	if cpuErr != nil { return nil,nil,cpuErr }
-	sort.SliceStable(gpuOut, func(i,j int)bool{return gpuOut[i].FailureID<gpuOut[j].FailureID})
-	sort.SliceStable(cpuOut, func(i,j int)bool{return cpuOut[i].FailureID<cpuOut[j].FailureID})
-	return gpuOut,cpuOut,nil
+	if gpuErr != nil {
+		return nil, nil, gpuErr
+	}
+	if cpuErr != nil {
+		return nil, nil, cpuErr
+	}
+	sort.SliceStable(gpuOut, func(i, j int) bool { return gpuOut[i].FailureID < gpuOut[j].FailureID })
+	sort.SliceStable(cpuOut, func(i, j int) bool { return cpuOut[i].FailureID < cpuOut[j].FailureID })
+	return gpuOut, cpuOut, nil
 }
 
 func hashEvidence(e grf.Evidence) string {
-	h := sha256.Sum256([]byte(e.ID+"|"+e.FailureID+"|"+e.ContextHash+"|"+e.Source+"|"+e.Detail))
+	h := sha256.Sum256([]byte(e.ID + "|" + e.FailureID + "|" + e.ContextHash + "|" + e.Source + "|" + e.Detail))
 	return hex.EncodeToString(h[:])
 }
