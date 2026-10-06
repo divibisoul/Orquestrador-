@@ -191,7 +191,7 @@ func main() {
 	if err := orchestrator.RegisterExternalAdapterOperations(e, externalRegistry); err != nil {
 		log.Fatal(err)
 	}
-	if err := orchestrator.RegisterGRFGRCEOperations(e); err != nil {
+	if err := orchestrator.RegisterGRFGRCEOperationsWithSARA(e, saraProxy); err != nil {
 		log.Fatal(err)
 	}
 	agentArsenalProxy := agentarsenal.NewFromEnv()
