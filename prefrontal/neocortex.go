@@ -84,6 +84,11 @@ func (n *Neocortex) EvaluateSignal(id string, signal []float64, risk, cost, urge
 	if len(signal) == 0 {
 		return Candidate{}, errors.New("neural signal is empty")
 	}
+	for _, value := range signal {
+		if math.IsNaN(value) || math.IsInf(value, 0) {
+			return Candidate{}, errors.New("neural signal contains non-finite value")
+		}
+	}
 	utility := 0.0
 	for _, value := range signal {
 		if value < 0 {
