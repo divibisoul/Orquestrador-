@@ -101,8 +101,5 @@ func RegisterRegistrationOperation(e *orchestrator.Engine, registry *Registratio
 			},
 		}, nil
 	}
-	if err := e.Register("mesh.register", handler); err != nil {
-		return err
-	}
 	return e.Register("mesh.register@1.0.0", handler)
 }
