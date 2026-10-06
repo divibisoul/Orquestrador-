@@ -1,0 +1,42 @@
+name: P0 Readiness Runtime - N07
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  readiness:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+      - name: Start N07
+        env:
+          N07_HTTP_ADDR: :8080
+          SOUL_MESH_HMAC_SECRET: ci-readiness-secret-32-bytes-minimum
+          N07_APP_TOKEN: ci-readiness-token
+        run: |
+          go run ./cmd/nexus > /tmp/n07.log 2>&1 &
+          echo $! > /tmp/n07.pid
+      - name: Probe /ready
+        run: |
+          set -euo pipefail
+          trap 'kill $(cat /tmp/n07.pid) 2>/dev/null || true' EXIT
+          for i in $(seq 1 120); do
+            code=$(curl -sS -o /tmp/n07-ready.json -w '%{http_code}' http://127.0.0.1:8080/ready || true)
+            if [ "$code" = "200" ]; then
+              cat /tmp/n07-ready.json
+              exit 0
+            fi
+            sleep 1
+          done
+          cat /tmp/n07.log
+          cat /tmp/n07-ready.json || true
+          exit 1
