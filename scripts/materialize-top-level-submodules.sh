@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Materialize only the SOUL top-level gitlinks.
+// Materialize only the SOUL top-level gitlinks.
+// The exact gitlink SHA is authoritative; avoid shallow-fetch assumptions that may
+// fail when the pinned revision is not the upstream default-branch tip.
 # Nested repositories remain governed by their own manifests; malformed nested
 # metadata is preserved as BLOCKED rather than silently discarded or promoted.
 if [[ ! -f .gitmodules ]]; then
@@ -16,7 +18,7 @@ mapfile -t paths < <(
 
 for path in "${paths[@]}"; do
   echo "MATERIALIZE_TOP_LEVEL: ${path}"
-  git submodule update --init --depth 1 -- "${path}"
+  git submodule update --init -- "${path}"
 done
 
 # Autogenesis has a verified nested gitlink for the public HLE dataset revision
