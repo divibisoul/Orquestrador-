@@ -8,7 +8,10 @@
     "legacyAliasesPreserved": true,
     "declaredDoesNotImplyExecutable": true,
     "sourceEvidenceRequired": true,
-    "integrationBoundary": "external typed-decision service is owned by N07 adapter; source repository remains independent and is not copied into nuclei"
+    "integrationBoundary": "external typed-decision service is owned by N07 adapter; source repository remains independent and is not copied into nuclei",
+    "grfIsTransversal": true,
+    "grceControlPlane": "N07",
+    "grfNeverCreatesNewNucleus": true
   },
   "owners": {
     "N01": [
@@ -101,7 +104,14 @@
       "mesh.supergpu.execute@1.0.0",
       "mesh.supergpu.parallel@1.0.0",
       "superagi.fabric.describe@1.0.0",
-      "superagi.fabric.execute@1.0.0"
+      "superagi.fabric.execute@1.0.0",
+      "grf.describe@2.0.0",
+      "grf.participant.describe@2.0.0",
+      "grce.describe@2.0.0",
+      "grce.bindings.describe@2.0.0",
+      "grce.cycle.execute@2.0.0",
+      "grf.participant.ingest@2.0.0",
+      "grce.sara.authoritative.execute@2.0.0"
     ],
     "SARA": [
       "sara.health",
