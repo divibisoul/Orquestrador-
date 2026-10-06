@@ -19,7 +19,7 @@ def load():
 
 def root(v):
     provider=str(v.get("provider") or "").strip().lower()
-    configured=pathlib.Path("integrations/external-adapters.json")
+    configured=REPO_ROOT/"integrations/external-adapters.json"
     try:
         adapters=json.loads(configured.read_text(encoding="utf-8"))
     except Exception as e:
