@@ -5,7 +5,7 @@
     "soul_components": 9,
     "upstream_providers": 16,
     "total_nodes": 28,
-    "edges": 156
+    "edges": 159
   },
   "authority": "Each SOUL component retains native authority. N07 is the federation/control plane.",
   "activation": [
@@ -1320,25 +1320,46 @@
       "reason": "GRCE execution-kernel complement"
     },
     {
-      "from": "bijux-dag-runtime",
-      "to": "ERU",
-      "mode": "contract",
+      "from": "N07",
+      "to": "ouro-loop",
+      "mode": "direct-affinity",
       "state": "PROJECTED",
-      "reason": "run snapshot/provenance boundary"
+      "reason": "GRCE remediation complement"
+    },
+    {
+      "from": "N07",
+      "to": "recurs",
+      "mode": "direct-affinity",
+      "state": "PROJECTED",
+      "reason": "GRCE experiential memory complement"
+    },
+    {
+      "from": "N07",
+      "to": "bijux-dag-runtime",
+      "mode": "direct-affinity",
+      "state": "PROJECTED",
+      "reason": "GRCE execution-kernel complement"
     },
     {
       "from": "bijux-dag-runtime",
-      "to": "RGO",
-      "mode": "contract",
-      "state": "PROJECTED",
-      "reason": "replay/audit evidence"
-    },
-    {
-      "from": "bijux-dag-runtime",
-      "to": "GRCE",
-      "mode": "kernel",
+      "to": "N07",
+      "mode": "return-contract",
       "state": "PROJECTED",
       "reason": "validated DAG execution boundary"
+    },
+    {
+      "from": "SARA",
+      "to": "bijux-dag-runtime",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "provenance and regeneration support"
+    },
+    {
+      "from": "bijux-dag-runtime",
+      "to": "N01",
+      "mode": "state-evidence",
+      "state": "PROJECTED",
+      "reason": "retained run evidence remains under native state ownership"
     },
     {
       "from": "N07",
@@ -1349,24 +1370,24 @@
     },
     {
       "from": "ouro-loop",
-      "to": "ARA",
-      "mode": "contract",
+      "to": "N07",
+      "mode": "return-contract",
       "state": "PROJECTED",
-      "reason": "regeneration/remediation boundary"
+      "reason": "bounded remediation boundary"
+    },
+    {
+      "from": "SARA",
+      "to": "ouro-loop",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "regeneration-safe remediation support"
     },
     {
       "from": "ouro-loop",
-      "to": "ETR",
-      "mode": "contract",
+      "to": "N06",
+      "mode": "agent-remediation",
       "state": "PROJECTED",
-      "reason": "runtime guardrail boundary"
-    },
-    {
-      "from": "ouro-loop",
-      "to": "GRCE",
-      "mode": "remediation",
-      "state": "PROJECTED",
-      "reason": "bounded retry/self-fix boundary"
+      "reason": "bounded repair support for cognitive execution"
     },
     {
       "from": "N07",
@@ -1377,24 +1398,24 @@
     },
     {
       "from": "recurs",
-      "to": "N06",
+      "to": "N07",
+      "mode": "return-contract",
+      "state": "PROJECTED",
+      "reason": "feedback localization boundary"
+    },
+    {
+      "from": "N06",
+      "to": "recurs",
       "mode": "learning-support",
       "state": "PROJECTED",
-      "reason": "cognition/agent memory boundary"
+      "reason": "cognition and agent memory support"
     },
     {
       "from": "recurs",
-      "to": "ERU",
-      "mode": "contract",
+      "to": "N01",
+      "mode": "state-evidence",
       "state": "PROJECTED",
-      "reason": "experiential evidence retention"
-    },
-    {
-      "from": "recurs",
-      "to": "GRCE",
-      "mode": "memory-feedback",
-      "state": "PROJECTED",
-      "reason": "characterization and feedback support"
+      "reason": "experiential evidence retention under native memory ownership"
     }
   ],
   "superpowers_engineering_layer": [
