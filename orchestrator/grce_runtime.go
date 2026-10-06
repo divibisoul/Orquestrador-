@@ -11,7 +11,6 @@ import (
 	"github.com/divibisoul/Orquestrador-/backend"
 	"github.com/divibisoul/Orquestrador-/grce"
 	"github.com/divibisoul/Orquestrador-/grf"
-	"github.com/divibisoul/Orquestrador-/mesh"
 	"github.com/divibisoul/Orquestrador-/supergpu"
 )
 
@@ -24,11 +23,11 @@ type GRCEFeedback struct {
 type GRCEExecutorRuntime struct {
 	SARA     *backend.SARAProxy
 	Compute  *supergpu.Runtime
-	Peers    *mesh.PeerClient
+	Peers    any
 	Feedback GRCEFeedback
 }
 
-func NewGRCEExecutorRuntime(sara *backend.SARAProxy, compute *supergpu.Runtime, peers *mesh.PeerClient, feedback GRCEFeedback) (*grce.Executor, error) {
+func NewGRCEExecutorRuntime(sara *backend.SARAProxy, compute *supergpu.Runtime, peers any, feedback GRCEFeedback) (*grce.Executor, error) {
 	if sara == nil || !sara.Configured() {
 		return nil, errors.New("GRCE requires configured SARA authoritative boundary")
 	}
