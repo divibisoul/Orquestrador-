@@ -273,6 +273,18 @@
       "finding": "MultiAgent facade contained a stale MetaGPT N06 ownership block inconsistent with the canonical external ownership registry",
       "transformation": "MetaGPT routing now resolves ownership and revision from the canonical external registry and uses the same adapter boundary",
       "evidence_state": "REAL"
+    },
+    {
+      "date": "2026-10-06",
+      "finding": "validators and runtime registry assumed 16 sources after Soul-29 complementary expansion",
+      "transformation": "all external validation paths now distinguish 16 primary + 6 complementary = 22 exact sources",
+      "evidence_state": "REAL"
+    },
+    {
+      "date": "2026-10-06",
+      "finding": "GRF/GRCE was structurally installed but not exposed to the canonical N07 transport path",
+      "transformation": "GRF/GRCE operations and participant ingress are registered in N07 Engine/backend/Mesh topology with explicit readiness state",
+      "evidence_state": "REAL"
     }
   ],
   "update_policy": {
@@ -373,5 +385,17 @@
       "state": "BLOCKED",
       "reason": "GitHub 404 during source verification on 2026-10-06"
     }
-  ]
+  ],
+  "grf_installation": {
+    "framework": "GRF 2.0",
+    "executor": "GRCE 2.0",
+    "installed_at_n07": true,
+    "soul29_manifest": "integrations/soul-29-capability-fabric.json",
+    "participant_contracts": "integrations/grf/soul-29-participant-contracts.json",
+    "system_binding": "integrations/grf/system-binding.json",
+    "runtime_operation": "grce.cycle.execute@2.0.0",
+    "runtime_state": "PROJECTED",
+    "block_reason": "distinct real ERU/MMD/ARA/ETR/ITR/RGO hooks are not yet bound and proven end-to-end",
+    "invariants": "I1-I18"
+  }
 }
