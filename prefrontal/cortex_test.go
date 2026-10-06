@@ -37,3 +37,27 @@ func TestCortexRuntime(t *testing.T) {
 		t.Fatal("cortex unhealthy")
 	}
 }
+
+func TestCortexPreservesInvalidCandidateEvaluationEvidence(t *testing.T) {
+	c, err := New(.1, 2)
+	if err != nil {
+		t.Fatal(err)
+	}
+	validCandidate := Candidate{ID: "valid", Utility: .9, Cost: .1, Risk: .1}
+	invalidCandidate := Candidate{ID: "invalid", Utility: .8, Cost: -1, Risk: .1}
+
+	if _, err := c.Evaluate([]Candidate{invalidCandidate, validCandidate}); err != nil {
+		t.Fatal(err)
+	}
+	issues := c.EvaluationIssues(0)
+	if len(issues) != 1 {
+		t.Fatalf("expected one retained evaluation issue, got %d", len(issues))
+	}
+	if issues[0].CandidateID != "invalid" || issues[0].Reason != "cost, risk, uncertainty, urgency and impact cannot be negative" {
+		t.Fatalf("invalid candidate evidence was not preserved: %+v", issues[0])
+	}
+	health := c.Health()
+	if health["evaluation_issue_count"] != uint64(1) || health["evaluation_issue_retained"] != 1 {
+		t.Fatalf("evaluation issue telemetry missing: %#v", health)
+	}
+}
