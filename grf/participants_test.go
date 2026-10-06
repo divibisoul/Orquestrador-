@@ -1,6 +1,8 @@
 package grf
 
 import (
+	"encoding/json"
+	"strings"
 	"testing"
 )
 
@@ -20,5 +22,19 @@ func TestBlockedParticipantNeverClaimsActiveExecution(t *testing.T) {
 	out,prov,ev:=p.Ingest(in,ctx)
 	if out.EpistemicState!=BLOCKED || ev.State!=BLOCKED || prov.Stage!="PARTICIPANT_INGEST_BLOCKED"{
 		t.Fatalf("unexpected blocked participant state: out=%#v prov=%#v ev=%#v",out,prov,ev)
+	}
+}
+
+func TestGRFProvenanceSerializesCanonicalFieldNames(t *testing.T) {
+	raw, err := json.Marshal(Provenance{
+		ParentHash:"parent", InputHash:"input", OutputHash:"output", SequenceIndex:7, Stage:"TEST",
+	})
+	if err != nil { t.Fatal(err) }
+	s := string(raw)
+	for _, forbidden := range []string{"ParentHash","InputHash","OutputHash","SequenceIndex"} {
+		if strings.Contains(s, forbidden) { t.Fatalf("non-canonical provenance field leaked: %s", forbidden) }
+	}
+	for _, required := range []string{"parent_hash","input_hash","output_hash","sequence_index"} {
+		if !strings.Contains(s, required) { t.Fatalf("missing canonical provenance field: %s", required) }
 	}
 }
