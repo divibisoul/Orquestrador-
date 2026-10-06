@@ -36,6 +36,11 @@ func TestGRCEExecutorRuntimeBindsRealBoundariesAndCompletes(t *testing.T) {
 				"trace_hash":             "sha256:test-trace",
 				"federated_context_hash": "sha256:test-context",
 			})
+		case "/v1/rgo/trinity":
+			writeGRCEJSONTest(w, map[string]any{
+				"final_status": "VALIDATED",
+				"finding_id": "grce:corr-test",
+			})
 		default:
 			http.NotFound(w, r)
 		}
