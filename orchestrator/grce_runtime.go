@@ -299,7 +299,16 @@ func (r *GRCEExecutorRuntime) mediate(ctx context.Context, artifacts []grf.Artif
 }
 
 func makeArtifactsSingle(stage string, state grf.State, c grf.Context, payload map[string]any, failureID string) ([]grf.Artifact, error) {
-	artifact, err := makeArtifact(stage, state, c, payload, failureID, c.SequenceIndex+70)
+	sequence := c.SequenceIndex + 70
+	switch stage {
+	case "ARA":
+		sequence = c.SequenceIndex + 71
+	case "ETR":
+		sequence = c.SequenceIndex + 72
+	case "ITR":
+		sequence = c.SequenceIndex + 73
+	}
+	artifact, err := makeArtifact(stage, state, c, payload, failureID, sequence)
 	if err != nil {
 		return nil, err
 	}
