@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"os"
 	"sort"
 	"strings"
@@ -31,7 +32,7 @@ func RegisterGRFGRCEOperations(e *Engine) error {
 	}
 
 	if err := e.Register(GRFDescribeOperation, func(ctx context.Context, m protocol.Message) (protocol.Result, error) {
-		if err := requireGRFContext(m); err != nil {
+		if _, err := requireGRFContext(m); err != nil {
 			return grfOperationFailure(m, err)
 		}
 		binding, err := readJSONFile("integrations/grf/system-binding.json")
@@ -122,6 +123,49 @@ func RegisterGRFGRCEOperations(e *Engine) error {
 		return err
 	}
 
+	if err := e.Register(GRFParticipantIngestOperation, func(ctx context.Context, m protocol.Message) (protocol.Result, error) {
+		grfContext, err := requireGRFContext(m)
+		if err != nil {
+			return grfOperationFailure(m, err)
+		}
+		id := strings.TrimSpace(m.Metadata["participant_id"])
+		if id == "" {
+			return grfOperationFailure(m, errors.New("GRF_PARTICIPANT_ID_REQUIRED"))
+		}
+		registry, err := grf.ParticipantRegistry()
+		if err != nil {
+			return grfOperationFailure(m, err)
+		}
+		participant, ok := registry[id]
+		if !ok {
+			return grfOperationFailure(m, errors.New("GRF_PARTICIPANT_NOT_REGISTERED:"+id))
+		}
+		payload := map[string]any{}
+		if raw := strings.TrimSpace(m.Metadata["grf_input_json"]); raw != "" {
+			if err := json.Unmarshal([]byte(raw), &payload); err != nil {
+				return grfOperationFailure(m, errors.New("GRF_INPUT_JSON_INVALID"))
+			}
+		}
+		input := grf.State{
+			ID: strings.TrimSpace(m.Metadata["state_id"]),
+			EpistemicState: grf.PRESERVED,
+			Payload: payload,
+		}
+		if input.ID == "" {
+			input.ID = "grf-input:" + m.TraceID
+		}
+		out, prov, evidence := participant.Ingest(input, grfContext)
+		raw, _ := json.Marshal(map[string]any{"state":out,"provenance":prov,"evidence":evidence})
+		_ = ctx
+		return protocol.Result{
+			TraceID:m.TraceID, CorrelationID:m.CorrelationID,
+			Source:"N07.GRF", Target:m.Source, Status:"ok",
+			Metadata:map[string]string{"participant_id":id,"participant_ingest_json":string(raw),"epistemic_state":string(evidence.State)},
+		}, nil
+	}); err != nil {
+		return err
+	}
+
 	if err := e.Register(GRCECycleOperation, func(ctx context.Context, m protocol.Message) (protocol.Result, error) {
 		if err := requireGRFContext(m); err != nil {
 			return grfOperationFailure(m, err)
@@ -144,14 +188,22 @@ func RegisterGRFGRCEOperations(e *Engine) error {
 	return nil
 }
 
-func requireGRFContext(m protocol.Message) error {
+func requireGRFContext(m protocol.Message) (grf.Context, error) {
 	if strings.TrimSpace(m.TraceID) == "" {
-		return errors.New("GRF_TRACE_ID_REQUIRED")
+		return grf.Context{}, errors.New("GRF_TRACE_ID_REQUIRED")
 	}
 	if strings.TrimSpace(m.CorrelationID) == "" {
-		return errors.New("GRF_CORRELATION_ID_REQUIRED")
+		return grf.Context{}, errors.New("GRF_CORRELATION_ID_REQUIRED")
 	}
-	return nil
+	raw := strings.TrimSpace(m.Metadata["grf_sequence_index"])
+	if raw == "" {
+		return grf.Context{}, errors.New("GRF_SEQUENCE_INDEX_REQUIRED")
+	}
+	var sequence uint64
+	if _, err := fmt.Sscanf(raw, "%d", &sequence); err != nil || sequence == 0 {
+		return grf.Context{}, errors.New("GRF_SEQUENCE_INDEX_INVALID")
+	}
+	return grf.Context{TraceID:m.TraceID,CorrelationID:m.CorrelationID,SequenceIndex:sequence}, nil
 }
 
 func readJSONFile(path string) (string, error) {
