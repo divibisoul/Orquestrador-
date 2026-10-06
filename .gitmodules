@@ -72,3 +72,16 @@
   path = integrations/external/cuda-oxide
   url = https://github.com/SuperInstance/cuda-oxide.git
   branch = main
+
+[submodule "integrations/external/bijux-dag-runtime"]
+	path = integrations/external/bijux-dag-runtime
+	url = https://github.com/bijux/bijux-core.git
+
+[submodule "integrations/external/ouro-loop"]
+	path = integrations/external/ouro-loop
+	url = https://github.com/VictorVVedtion/ouro-loop.git
+
+[submodule "integrations/external/recurs"]
+	path = integrations/external/recurs
+	url = https://github.com/Gen-Verse/Recuris.git
+
