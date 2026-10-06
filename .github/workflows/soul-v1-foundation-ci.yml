@@ -1,0 +1,29 @@
+name: SOUL v1 foundation CI - N07
+on:
+  push:
+    branches: [restructure/soul-v1-foundation-2026-10-06]
+  pull_request:
+    branches: [restructure/soul-v1-foundation-2026-10-06]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  foundation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.25.x'
+          cache: true
+      - name: Verify module
+        run: go mod verify
+      - name: Format check
+        run: test -z "$(gofmt -l grce)"
+      - name: GRCE unit tests
+        run: go test ./grce -count=1 -v
+      - name: Full Go tests
+        run: go test ./... -count=1

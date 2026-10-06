@@ -1,11 +1,11 @@
 {
   "schema_version": "1.0.0",
-  "graph": "SOUL-25-capability-fabric",
+  "graph": "SOUL-29-capability-fabric",
   "counts": {
     "soul_components": 9,
-    "upstream_providers": 16,
-    "total_nodes": 25,
-    "edges": 144
+    "upstream_providers": 20,
+    "total_nodes": 29,
+    "edges": 180
   },
   "authority": "Each SOUL component retains native authority. N07 is the federation/control plane.",
   "activation": [
@@ -261,6 +261,50 @@
       "revision": "dfb907a02bba8152ca444717ca5d78747ccb4bec",
       "capabilities": [
         "text-to-speech"
+      ]
+    },
+    {
+      "id": "bijux-core",
+      "type": "UPSTREAM",
+      "repository": "https://github.com/bijux/bijux-core",
+      "revision": "f0f5f56b49f380196918c4c6910b725b2b30ab7d",
+      "capabilities": [
+        "deterministic-execution",
+        "provenance",
+        "evidence-ledger"
+      ]
+    },
+    {
+      "id": "ouro-loop",
+      "type": "UPSTREAM",
+      "repository": "https://github.com/VictorVVedtion/ouro-loop",
+      "revision": "52f97e22dc2a72a45ffa025d452ea02c58cb6b94",
+      "capabilities": [
+        "self-healing",
+        "autonomous-remediation",
+        "validation-loop"
+      ]
+    },
+    {
+      "id": "recuris",
+      "type": "UPSTREAM",
+      "repository": "https://github.com/Gen-Verse/Recuris",
+      "revision": "7d3745ab787b1206ccd981cb1511100476097266",
+      "capabilities": [
+        "experiential-memory",
+        "failure-localization",
+        "recursive-validation"
+      ]
+    },
+    {
+      "id": "fedml",
+      "type": "UPSTREAM",
+      "repository": "https://github.com/FedML-AI/FedML",
+      "revision": "03e11dfee69a458a9820ec4e05b531a5f935eb2b",
+      "capabilities": [
+        "federated-learning",
+        "distributed-training",
+        "model-coordination"
       ]
     }
   ],
@@ -1272,6 +1316,258 @@
       "mode": "federated-availability",
       "state": "PROJECTED",
       "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "N01",
+      "to": "bijux-core",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "N02",
+      "to": "bijux-core",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "N03",
+      "to": "bijux-core",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "N04",
+      "to": "bijux-core",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "N05",
+      "to": "bijux-core",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "N06",
+      "to": "bijux-core",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "N07",
+      "to": "bijux-core",
+      "mode": "direct-affinity",
+      "state": "PROJECTED",
+      "reason": "functional-complementation"
+    },
+    {
+      "from": "SARA",
+      "to": "bijux-core",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "JEV",
+      "to": "bijux-core",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "N01",
+      "to": "ouro-loop",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "N02",
+      "to": "ouro-loop",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "N03",
+      "to": "ouro-loop",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "N04",
+      "to": "ouro-loop",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "N05",
+      "to": "ouro-loop",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "N06",
+      "to": "ouro-loop",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "N07",
+      "to": "ouro-loop",
+      "mode": "direct-affinity",
+      "state": "PROJECTED",
+      "reason": "functional-complementation"
+    },
+    {
+      "from": "SARA",
+      "to": "ouro-loop",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "JEV",
+      "to": "ouro-loop",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "N01",
+      "to": "recuris",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "N02",
+      "to": "recuris",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "N03",
+      "to": "recuris",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "N04",
+      "to": "recuris",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "N05",
+      "to": "recuris",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "N06",
+      "to": "recuris",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "N07",
+      "to": "recuris",
+      "mode": "direct-affinity",
+      "state": "PROJECTED",
+      "reason": "functional-complementation"
+    },
+    {
+      "from": "SARA",
+      "to": "recuris",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "JEV",
+      "to": "recuris",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "N01",
+      "to": "fedml",
+      "mode": "direct-affinity",
+      "state": "PROJECTED",
+      "reason": "functional-complementation"
+    },
+    {
+      "from": "N02",
+      "to": "fedml",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "N03",
+      "to": "fedml",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "N04",
+      "to": "fedml",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "N05",
+      "to": "fedml",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "N06",
+      "to": "fedml",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "N07",
+      "to": "fedml",
+      "mode": "direct-affinity",
+      "state": "PROJECTED",
+      "reason": "functional-complementation"
+    },
+    {
+      "from": "SARA",
+      "to": "fedml",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "JEV",
+      "to": "fedml",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
     }
   ],
   "superpowers_engineering_layer": [
@@ -1283,10 +1579,24 @@
     "superpowers.sara-trinity",
     "superpowers.cortex-orbital-supergpu",
     "superpowers.mesh-clareira",
-    "superpowers.octacore"
+    "superpowers.octacore",
+    "superpowers.grce-foundation",
+    "superpowers.federated-learning"
   ],
   "rule": "All 16 upstream capability sources are available to all 9 SOUL components through the canonical federation; direct affinity determines normal routing. No upstream provider becomes a second SOUL authority.",
   "direct_adapter_semantics": "direct-affinity edges mirror external-capabilities.targets; federated-availability edges preserve system-wide discoverability without implying ownership",
   "owner_registry": "integrations/external-capability-ownership.json",
-  "native_family_registry": "integrations/native-capability-augmentation.json"
+  "native_family_registry": "integrations/native-capability-augmentation.json",
+  "learning_dependencies": {
+    "hivemind": {
+      "repository": "https://github.com/learning-at-home/hivemind",
+      "revision": "4bd43b77895019b20d18d81d0d0c1a5ab9a10847",
+      "graph_node": false,
+      "role": "implementation-dependency",
+      "used_by": [
+        "fedml"
+      ],
+      "activation": "Vagus/Prefrontal learning fabric; evidence-gated"
+    }
+  }
 }

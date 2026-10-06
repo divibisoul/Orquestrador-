@@ -18,7 +18,8 @@
       "augmenters": [
         "langgraph",
         "letta-code",
-        "pydantic-ai"
+        "pydantic-ai",
+        "fedml"
       ],
       "mesh_access": [
         "mesh.supergpu.describe@1.0.0",
@@ -162,7 +163,11 @@
         "crewai",
         "microsoft-agent-framework",
         "metagpt",
-        "agentscope"
+        "agentscope",
+        "bijux-core",
+        "ouro-loop",
+        "recuris",
+        "fedml"
       ]
     },
     "SARA": {
@@ -359,6 +364,51 @@
         "text-to-speech"
       ],
       "state": "ADAPTER_BOUND"
+    },
+    "bijux-core": {
+      "role": "deterministic_provenance",
+      "capabilities": [
+        "deterministic-execution",
+        "provenance",
+        "evidence-ledger"
+      ],
+      "state": "ADAPTER_BOUND"
+    },
+    "ouro-loop": {
+      "role": "autonomous_remediation",
+      "capabilities": [
+        "self-healing",
+        "autonomous-remediation",
+        "validation-loop"
+      ],
+      "state": "ADAPTER_BOUND"
+    },
+    "recuris": {
+      "role": "experiential_failure_memory",
+      "capabilities": [
+        "experiential-memory",
+        "failure-localization",
+        "recursive-validation"
+      ],
+      "state": "ADAPTER_BOUND"
+    },
+    "fedml": {
+      "role": "federated_learning",
+      "capabilities": [
+        "federated-learning",
+        "distributed-training",
+        "model-coordination"
+      ],
+      "state": "ADAPTER_BOUND"
+    },
+    "hivemind": {
+      "role": "decentralized_learning_dependency",
+      "capabilities": [
+        "decentralized-learning",
+        "peer-to-peer-training"
+      ],
+      "state": "DEPENDENCY_PINNED",
+      "graph_node": false
     }
   },
   "runtime_policy": {
@@ -574,6 +624,45 @@
         "JEV"
       ],
       "activation_rule": "provider adapter plus real authenticated execution evidence; no provider or CPU fallback is treated as accelerator proof"
+    },
+    "goldenrule.regenerative.execution": {
+      "native_owner": "N07",
+      "external": {
+        "primary": [
+          "bijux-core",
+          "ouro-loop",
+          "recuris"
+        ]
+      },
+      "mesh_consumers": [
+        "N01",
+        "N02",
+        "N03",
+        "N04",
+        "N05",
+        "N06",
+        "SARA",
+        "JEV"
+      ],
+      "activation": "GRCE real participant execution with evidence chain"
+    },
+    "learning.federated": {
+      "native_owner": "N07",
+      "external": {
+        "primary": [
+          "fedml"
+        ]
+      },
+      "implementation_dependencies": [
+        "hivemind"
+      ],
+      "mesh_consumers": [
+        "N01",
+        "N06"
+      ],
+      "persistence_boundary": "N01 HortaCore",
+      "strategy_boundary": "N07 Prefrontal",
+      "transport_boundary": "SARA NervoVago"
     }
   }
 }

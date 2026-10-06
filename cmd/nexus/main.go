@@ -22,6 +22,7 @@ import (
 	"github.com/divibisoul/Orquestrador-/cooperation"
 	"github.com/divibisoul/Orquestrador-/jev"
 	"github.com/divibisoul/Orquestrador-/learning"
+	"github.com/divibisoul/Orquestrador-/grce"
 	"github.com/divibisoul/Orquestrador-/mesh"
 	"github.com/divibisoul/Orquestrador-/neural"
 	"github.com/divibisoul/Orquestrador-/octacore"
@@ -114,6 +115,9 @@ func main() {
 	if err := orchestrator.RegisterLearningOperations(e, learningMachine, n); err != nil {
 		log.Fatal(err)
 	}
+	if err := orchestrator.RegisterExternalLearningOperations(e); err != nil {
+		log.Fatal(err)
+	}
 	if err := orchestrator.RegisterSuperGPUOperations(e); err != nil {
 		log.Fatal(err)
 	}
@@ -147,6 +151,21 @@ func main() {
 		if err := backend.RegisterSARAOperations(e, saraProxy); err != nil {
 			log.Fatal(err)
 		}
+		if err := backend.RegisterVagusOperation(e, saraProxy); err != nil {
+			log.Fatal(err)
+		}
+	}
+	var grceParticipant grce.Participant
+	if saraProxy.Configured() {
+		grceParticipant = grce.NewCompositeParticipant(
+			grce.NewSARAParticipant(saraProxy),
+			grce.ConfiguredExternalParticipants()...,
+		)
+	} else {
+		grceParticipant = grce.NewCompositeParticipant(nil, grce.ConfiguredExternalParticipants()...)
+	}
+	if err := grce.Register(e, grceParticipant); err != nil {
+		log.Fatal(err)
 	}
 	if err := rgo.RegisterOperation(e, saraProxy); err != nil {
 		log.Fatal(err)
@@ -158,6 +177,10 @@ func main() {
 	}
 	peerClient.SetRouteScorer(learningMachine)
 	peerClient.SetRouteOutcomeObserver(learningMachine)
+	externalLearningFabric := learning.NewExternalFabric(learningMachine, peerClient, saraProxy)
+	if err := learning.RegisterExternalFabricOperations(e, externalLearningFabric); err != nil {
+		log.Fatal(err)
+	}
 	peerClient.SetAffinityProbe(protocol.N07, func(context.Context, string) (map[string]any, error) {
 		return map[string]any{"executableCapabilities": e.Operations()}, nil
 	})
@@ -357,7 +380,11 @@ func main() {
 		}
 		writeJSON(w, http.StatusOK, result)
 	})
-	mux.Handle("/api/soul-mesh", mesh.NewEnhancedFederatedHTTPGateway(e))
+	meshGateway := mesh.NewEnhancedFederatedHTTPGateway(e)
+	if err := mesh.RegisterRegistrationOperation(e, mesh.DefaultRegistrationRegistry()); err != nil {
+		log.Fatal(err)
+	}
+	mux.Handle("/api/soul-mesh", meshGateway)
 	mux.HandleFunc("/execute", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "POST required"})
