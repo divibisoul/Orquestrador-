@@ -44,7 +44,9 @@
     "durable_events": "Nervo Vago via NATS JetStream adapter",
     "request_response_capabilities": "canonical soul-mesh/1 remains authoritative",
     "state_store": "HortaCore/SARA-owned state systems remain authoritative",
-    "parallel_compute": "Octacore/SuperGPU remain compute organs; Nervo Vago carries control/event signals"
+    "parallel_compute": "Octacore/SuperGPU remain compute organs; Nervo Vago carries control/event signals",
+    "n07_event_operation": "nervo-vago.event@1.0.0",
+    "n07_describe_operation": "nervo-vago.describe@1.0.0"
   },
   "etr_gate": {
     "required_before_delivery": true,
@@ -66,18 +68,66 @@
     "replay_requires_idempotency_key": "message_id + correlation_id"
   },
   "organ_bindings": [
-    {"id": "N01", "mode": "event-signal", "state": "PROJECTED"},
-    {"id": "N02", "mode": "event-signal", "state": "PROJECTED"},
-    {"id": "N03", "mode": "event-signal", "state": "PROJECTED"},
-    {"id": "N04", "mode": "event-signal", "state": "PROJECTED"},
-    {"id": "N05", "mode": "event-signal", "state": "PROJECTED"},
-    {"id": "N06", "mode": "event-signal", "state": "PROJECTED"},
-    {"id": "N07", "mode": "control/event-signal", "state": "PROJECTED"},
-    {"id": "SARA", "mode": "event-signal/governance", "state": "PROJECTED"},
-    {"id": "SuperGPU", "mode": "event-signal", "state": "PROJECTED"},
-    {"id": "Octacore", "mode": "event-signal", "state": "PROJECTED"},
-    {"id": "HortaCore", "mode": "event-signal", "state": "PROJECTED"},
-    {"id": "Clareira", "mode": "event-signal", "state": "PROJECTED"}
+    {
+      "id": "N01",
+      "mode": "event-signal",
+      "state": "PROJECTED"
+    },
+    {
+      "id": "N02",
+      "mode": "event-signal",
+      "state": "PROJECTED"
+    },
+    {
+      "id": "N03",
+      "mode": "event-signal",
+      "state": "PROJECTED"
+    },
+    {
+      "id": "N04",
+      "mode": "event-signal",
+      "state": "PROJECTED"
+    },
+    {
+      "id": "N05",
+      "mode": "event-signal",
+      "state": "PROJECTED"
+    },
+    {
+      "id": "N06",
+      "mode": "event-signal",
+      "state": "PROJECTED"
+    },
+    {
+      "id": "N07",
+      "mode": "control/event-signal",
+      "state": "PROJECTED"
+    },
+    {
+      "id": "SARA",
+      "mode": "event-signal/governance",
+      "state": "PROJECTED"
+    },
+    {
+      "id": "SuperGPU",
+      "mode": "event-signal",
+      "state": "PROJECTED"
+    },
+    {
+      "id": "Octacore",
+      "mode": "event-signal",
+      "state": "PROJECTED"
+    },
+    {
+      "id": "HortaCore",
+      "mode": "event-signal",
+      "state": "PROJECTED"
+    },
+    {
+      "id": "Clareira",
+      "mode": "event-signal",
+      "state": "PROJECTED"
+    }
   ],
   "candidate_repositories": {
     "opensin-neural-bus": {
@@ -128,5 +178,13 @@
     "trace/provenance hash-chain proof",
     "no direct cross-component event path bypassing Nervo Vago",
     "parallel-front compatibility proof against PRs #125, #126, #127 and #128"
-  ]
+  ],
+  "execution_boundary": {
+    "owner": "N07",
+    "implementation": "backend.NervoVagoGateway",
+    "policy_gate": "SARA/ETR via sara.audit@1.0.0",
+    "delivery": "SARA /v1/vagus -> shared VagusNerveBus",
+    "state": "PROJECTED_WITH_REAL_SARA_PATH",
+    "fail_closed": true
+  }
 }
