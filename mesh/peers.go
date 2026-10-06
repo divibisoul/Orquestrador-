@@ -381,11 +381,14 @@ func (p *PeerClient) call(ctx context.Context, nucleus, capability string, paylo
 	}
 
 	var lastErr error
+	// One logical operation keeps one message ID across all retries.
+	// The correlation ID already identifies the operation; a stable message ID
+	// prevents a retry from becoming a second logical execution.
+	messageID := protocol.NewTraceID()
 	for attempt := 1; attempt <= p.maxRetry; attempt++ {
 		if err := ctx.Err(); err != nil {
 			return nil, err
 		}
-		messageID := protocol.NewTraceID()
 		nonce := protocol.NewTraceID()
 		wirePayload := payload
 		if wirePayload == nil {
