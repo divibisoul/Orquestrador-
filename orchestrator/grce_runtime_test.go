@@ -1,6 +1,7 @@
-package orchestrator
+package orchestrator_test
 
 import (
+	"github.com/divibisoul/Orquestrador-/orchestrator"
 	"context"
 	"encoding/json"
 	"net/http"
@@ -55,7 +56,7 @@ func TestGRCEExecutorRuntimeBindsRealBoundariesAndCompletes(t *testing.T) {
 	compute := supergpu.New(nil)
 	compute.Discover()
 
-	executor, err := NewGRCEExecutorRuntime(proxy, compute, peers, GRCEFeedback{
+	executor, err := orchestrator.NewGRCEExecutorRuntime(proxy, compute, peers, orchestrator.GRCEFeedback{
 		Horta: func(context.Context, grf.State, []grf.Provenance, []grf.Evidence, []grf.Capability, grf.Context) error { return nil },
 		Vagus: func(context.Context, grf.State, []grf.Provenance, []grf.Evidence, []grf.Capability, grf.Context) error { return nil },
 		Mesh:  func(context.Context, grf.State, []grf.Provenance, []grf.Evidence, []grf.Capability, grf.Context) error { return nil },
