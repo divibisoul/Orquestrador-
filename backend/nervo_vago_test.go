@@ -138,3 +138,17 @@ func TestNervoVagoBlocksWhenSARAIsUnconfigured(t *testing.T) {
 		t.Fatalf("expected unconfigured gate block, got %v", err)
 	}
 }
+
+func TestNervoVagoAcceptsSuperGPUEvents(t *testing.T) {
+	for _, eventType := range []string{"supergpu.submit", "supergpu.result", "supergpu.barrier"} {
+		envelope := NervoVagoEnvelope{
+			VagusVersion: "1.0", MessageID: "m-" + eventType, CorrelationID: "c-" + eventType,
+			Source: "N07.SuperGPU", Target: "SARA", Priority: 100, TTL: 1000,
+			Type: eventType, Payload: map[string]any{"kind": eventType},
+			Provenance: NervoVagoProvenance{TraceID: "t-" + eventType, CorrelationID: "c-" + eventType, MessageID: "m-" + eventType, SequenceIndex: 1, ParentHash: "parent", InputHash: "input"},
+		}
+		if err := envelope.Validate(); err != nil {
+			t.Fatalf("event type %q rejected: %v", eventType, err)
+		}
+	}
+}
