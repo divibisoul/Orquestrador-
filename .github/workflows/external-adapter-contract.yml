@@ -17,6 +17,7 @@ on:
       - grce/**
       - integrations/grf/**
       - integrations/soul-29-capability-fabric.json
+      - scripts/validate-soul-29-grf.mjs
       - .gitmodules
       - Dockerfile
   push:
@@ -49,6 +50,8 @@ jobs:
           node-version: 22
       - name: Validate provider-to-adapter graph
         run: node scripts/validate-external-adapters.mjs
+      - name: Validate Soul-29 GRF contract
+        run: node scripts/validate-soul-29-grf.mjs
       - name: Validate exact materialized submodule pins
         run: node scripts/validate-soul-external-submodules.mjs
       - name: Validate Python adapters syntax
