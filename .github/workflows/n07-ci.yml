@@ -34,6 +34,12 @@ on:
       - 'scripts/soul-architectural-integrity.mjs'
       - 'scripts/soul-live-source-audit.mjs'
       - 'scripts/generate-crossfront-state.mjs'
+      - 'scripts/external-capability-adapter.py'
+      - 'scripts/crewai_runner.py'
+      - 'scripts/metagpt_runner.py'
+      - 'scripts/validate-soul-external-submodules.mjs'
+      - 'scripts/validate-external-adapters.mjs'
+      - 'scripts/validate-external-capability-ownership.mjs'
       - 'grf/**'
       - 'grce/**'
       - 'integrations/grf/**'
@@ -42,6 +48,9 @@ on:
       - 'integrations/external-adapters.json'
       - 'integrations/external-capability-ownership.json'
       - 'integrations/external/**'
+      - 'config/soul-external-recovery-manifest.json'
+      - '.gitmodules'
+      - 'Dockerfile'
       - '.github/workflows/n07-ci.yml'
   workflow_dispatch:
 
