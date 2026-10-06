@@ -102,6 +102,28 @@ func (CPUBackend) Execute(ctx context.Context, _ Device, op string, in []float64
 		return out, nil
 	}
 }
+func WithCorrelationID(ctx context.Context, correlationID string) context.Context {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	return context.WithValue(ctx, correlationContextKey{}, correlationID)
+}
+
+
+func CorrelationIDFromContext(ctx context.Context) string {
+	if ctx == nil {
+		return ""
+	}
+	value, _ := ctx.Value(correlationContextKey{}).(string)
+	return value
+}
+
+
+func (f ReporterFunc) Report(ctx context.Context, event ExecutionEvent) error {
+	return f(ctx, event)
+}
+
+
 func New(backend Backend) *Runtime {
 	if backend == nil {
 		backend = CPUBackend{}
@@ -218,10 +240,16 @@ func (r *Runtime) Reserve(deviceID, owner string) error {
 		// CPU execution is intentionally shareable; no exclusive lease is stored.
 		return nil
 	}
-	if current, ok := r.reserved[deviceID]; ok && current.Owner != owner {
-		return errors.New("device already reserved")
+	if current, ok := r.reserved[deviceID]; ok {
+		if current.Owner != owner {
+			return errors.New("device already reserved")
+		}
+		current.LeaseCount++
+		current.ExpiresAt = time.Now().Add(30 * time.Second)
+		r.reserved[deviceID] = current
+		return nil
 	}
-	r.reserved[deviceID] = Reservation{DeviceID: deviceID, Owner: owner, ExpiresAt: time.Now().Add(30 * time.Second)}
+	r.reserved[deviceID] = Reservation{DeviceID: deviceID, Owner: owner, ExpiresAt: time.Now().Add(30 * time.Second), LeaseCount: 1}
 	return nil
 }
 func (r *Runtime) Release(deviceID, owner string) error {
@@ -233,6 +261,11 @@ func (r *Runtime) Release(deviceID, owner string) error {
 	}
 	if current.Owner != owner {
 		return errors.New("reservation owner mismatch")
+	}
+	if current.LeaseCount > 1 {
+		current.LeaseCount--
+		r.reserved[deviceID] = current
+		return nil
 	}
 	delete(r.reserved, deviceID)
 	return nil
@@ -268,7 +301,13 @@ func (r *Runtime) Execute(ctx context.Context, device Device, operation string, 
 			return nil, errors.New("runtime closed")
 		}
 	}
+	r.mu.Lock()
+	if r.closed {
+		r.mu.Unlock()
+		return nil, errors.New("runtime closed")
+	}
 	r.running.Add(1)
+	r.mu.Unlock()
 	defer r.running.Done()
 
 	correlationID := CorrelationIDFromContext(ctx)
