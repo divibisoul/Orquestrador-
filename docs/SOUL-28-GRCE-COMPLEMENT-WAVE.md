@@ -1,7 +1,7 @@
 # SOUL-28 — GRCE complement wave
 
 Parent graph: SOUL-25-capability-fabric  
-Parent file SHA-256: `sha256:15f70a247216327f51f064c115a9d23a8f27ac122def19604a0b7f832d1b1313`
+Parent file SHA-256: `sha256:4236a8dacdabcdcaf6607b8a13be3f0098c7b325374da694b88747fb0439f7d8`
 
 ## Preservação
 
@@ -43,3 +43,8 @@ N01–N07, SARA e JEV continuam com sua autoridade nativa. N07 continua sendo o 
 **PROJECTED:** execução dos três runtimes externos até existir comando configurado e resposta observável validada pelo contrato.  
 **BLOCKED:** ambientes sem o comando/runtime externo configurado ou com metadados/proveniência inválidos.  
 **PRESERVED:** SOUL-25 original, histórico Git e falhas encontradas durante a integração.
+
+
+## Correção de proveniência do pai
+
+A declaração histórica `sha256:15f70a247216327f51f064c115a9d23a8f27ac122def19604a0b7f832d1b1313` foi preservada, mas não passou pela verificação byte-a-byte. A auditoria confirmou que `integrations/soul-25-capability-fabric.json` no `main` e `_preserved/soul-25-capability-fabric.json` possuem o mesmo conteúdo e o SHA-256 real é `sha256:4236a8dacdabcdcaf6607b8a13be3f0098c7b325374da694b88747fb0439f7d8`. O gate agora calcula esse valor diretamente do arquivo preservado.
