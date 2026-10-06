@@ -258,9 +258,9 @@ func (c *Cortex) Health() map[string]any {
 		avg = float64(c.decisionNanos) / float64(c.evaluated) / 1e6
 	}
 	return map[string]any{"status": "ready", "threshold": c.threshold, "capacity": c.capacity, "decisions": len(c.decisions), "evaluated": c.evaluated, "inhibited": c.inhibited, "inhibition_checks": c.inhibitionChecks, "commits": c.commits, "decision_count": c.decisionCount, "evaluation_nanos": c.evaluationNanos, "commit_nanos": c.commitNanos, "inhibition_rate": func() float64 {
-		if c.evaluated == 0 {
+		if c.inhibitionChecks == 0 {
 			return 0
 		}
-		return float64(c.inhibited) / float64(c.evaluated)
+		return float64(c.inhibited) / float64(c.inhibitionChecks)
 	}(), "avg_decision_ms": avg, "last_decision": c.lastDecision}
 }
