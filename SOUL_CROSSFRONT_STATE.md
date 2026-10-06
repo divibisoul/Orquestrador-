@@ -81,3 +81,25 @@ N07 release gate:
 ## Non-elimination rule
 
 No files, branches, upstream source history, previous contracts, or existing runtime authorities are deleted by this restructuring line.
+
+## Delta 2026-10-06 — foundation execution line
+
+### New executable boundaries
+- `grce.cycle.execute@1.0.0` registered in N07.
+- Six GRCE hooks call the real SARA HTTP boundary when configured.
+- `GoldenRuleParticipant` is the canonical external participant contract.
+- `nervo.vago.publish@1.0.0` is the N07 canonical NervoVago Mesh operation.
+- N01 automatically attempts Mesh registration with N07 at startup.
+
+### New providers
+- bijux-core → GRCE characterize boundary.
+- ouro-loop → GRCE validate boundary.
+- Recuris → GRCE trace boundary.
+- FedML → federated learning boundary.
+- Hivemind → decentralized learning implementation dependency.
+
+### Promotion rule
+No item above is promoted to ONLINE by branch existence or manifest presence. Runtime promotion requires completed GitHub Actions evidence plus, where applicable, a real cross-service transaction.
+
+### Current release decision
+`ONLINE = false`.
