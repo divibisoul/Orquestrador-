@@ -1,0 +1,3 @@
+[materialize-grce]
+
+This marker requests the controlled SOUL-28 submodule materialization workflow. No runtime code is changed by this marker.
