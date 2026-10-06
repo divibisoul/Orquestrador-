@@ -34,7 +34,9 @@
   "governance": {
     "externalSourceRefsAreExactHeadAssertions": true,
     "selfSourceRefPolicy": "release-identity",
-    "masterContract": "SOUL_MASTER_ENGINEERING_CONTRACT.md"
+    "masterContract": "SOUL_MASTER_ENGINEERING_CONTRACT.md",
+    "grf": "GRF 2.0 transversal framework; N07 hosts GRCE control-plane operations while SARA/JEV/native nuclei retain their functional authority",
+    "grce": "GRCE 2.0 installed in N07; cycle remains BLOCKED until distinct real ERU/MMD/ARA/ETR/ITR/RGO hooks are proven"
   },
   "nuclei": {
     "N01": {
@@ -236,7 +238,12 @@
         "mesh.supergpu.execute@1.0.0",
         "mesh.supergpu.parallel@1.0.0",
         "superagi.fabric.describe@1.0.0",
-        "superagi.fabric.execute@1.0.0"
+        "superagi.fabric.execute@1.0.0",
+        "grf.describe@2.0.0",
+        "grf.participant.describe@2.0.0",
+        "grce.describe@2.0.0",
+        "grce.bindings.describe@2.0.0",
+        "grce.cycle.execute@2.0.0"
       ],
       "fusionBoundary": {
         "owner": "N07",
@@ -262,7 +269,8 @@
         "governance": [
           "prefrontal.orbital.evaluate@1.0.0",
           "jev.systemone@1.0.0",
-          "SARA"
+          "SARA",
+          "GRF/GRCE"
         ],
         "rule": "external providers remain explicit adapters; no provider becomes a SOUL nucleus or second control plane"
       }
@@ -499,5 +507,30 @@
         "status": "STRUCTURAL"
       }
     ]
+  },
+  "grf_grce": {
+    "schema_version": "2.0.0",
+    "control_plane": "N07",
+    "canonical_mesh": "soul-mesh/1",
+    "operations": [
+      "grf.describe@2.0.0",
+      "grf.participant.describe@2.0.0",
+      "grce.describe@2.0.0",
+      "grce.bindings.describe@2.0.0",
+      "grce.cycle.execute@2.0.0"
+    ],
+    "invariants": "I1-I18",
+    "layers": [
+      "L0",
+      "L1",
+      "L2",
+      "L3",
+      "L4",
+      "L5",
+      "L6",
+      "L7"
+    ],
+    "state": "PROJECTED",
+    "rule": "transversal; no second nucleus; no second Mesh"
   }
 }
