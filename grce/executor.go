@@ -179,7 +179,6 @@ func GoldenRuleCycle(ctx context.Context, d Dependencies, state grf.State, c grf
 	candidate.InputHash = state.Hash()
 	candidate.SequenceIndex = state.SequenceIndex + 1
 	candidate.Epistemic = grf.EpistemicProjected
-	candidate.OutputHash = candidate.Hash()
 
 	candidateProvenance := grf.Provenance{ParentHash: state.Hash(), InputHash: state.Hash(), OutputHash: candidate.Hash(), SequenceIndex: candidate.SequenceIndex, Chain: []string{"F", "E", "K", "O", "A", "I", "T", "F*"}}
 	provenance = append(provenance, candidateProvenance)
@@ -212,6 +211,9 @@ func GoldenRuleCycle(ctx context.Context, d Dependencies, state grf.State, c grf
 	}
 
 	candidate.Epistemic = grf.EpistemicActive
+	candidate.OutputHash = candidate.Hash()
+	candidateProvenance.OutputHash = candidate.OutputHash
+	provenance[len(provenance)-1] = candidateProvenance
 	newCaps := make([]grf.Capability, 0, len(transformations))
 	for _, t := range transformations {
 		id := t.FailureID + ":capability"
