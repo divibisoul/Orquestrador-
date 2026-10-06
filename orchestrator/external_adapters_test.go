@@ -2,13 +2,14 @@ package orchestrator
 
 import (
 	"context"
+	"os"
+	"strings"
+	"testing"
+
 	"github.com/divibisoul/Orquestrador-/neural"
 	"github.com/divibisoul/Orquestrador-/prefrontal"
 	"github.com/divibisoul/Orquestrador-/protocol"
 	"github.com/divibisoul/Orquestrador-/supergpu"
-	"os"
-	"strings"
-	"testing"
 )
 
 func newExternalTestEngine(t *testing.T) (*Engine, ExternalAdapterRegistry) {
