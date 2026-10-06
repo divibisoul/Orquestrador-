@@ -53,13 +53,15 @@ type Executor struct {
 }
 
 type Result struct {
-	NextState grf.State
-	Provenance []grf.Provenance
-	Evidence []grf.Evidence
-	Capabilities []grf.Capability
-	EpistemicState grf.EpistemicState
-	Outcome string
+	NextState grf.State `json:"next_state"`
+	Provenance []grf.Provenance `json:"provenance"`
+	Evidence []grf.Evidence `json:"evidence"`
+	Capabilities []grf.Capability `json:"capabilities"`
+	EpistemicState grf.EpistemicState `json:"epistemic_state"`
+	Outcome string `json:"outcome"`
 }
+const Formula = "R(n+1)=F*( T( I( A( O, C ), C ), C ), C )"
+const Version = "2.0.0"
 
 func New(invariants grf.InvariantSet, hooks Hooks) (*Executor, error) {
 	if err := grf.ValidateInvariantSet(invariants); err != nil { return nil, err }
@@ -134,6 +136,11 @@ func (e *Executor) Run(ctx context.Context, state grf.State, c grf.Context) (Res
 	if !vet||!vit||!vrgo{return e.preserve(ctx,state,prov,evidence,c,errors.New("GRCE_VALIDATION_FAILED"),"VALIDATE")}
 
 	caps,err:=e.hooks.ExtractCapabilities(ctx,candidate,prov,evidence,c);if err!=nil{return e.preserve(ctx,state,prov,evidence,c,err,"EXTRACT")}
+	for _,cap:=range caps{
+		if cap.ID=="" || cap.Provenance.CausalFailureID=="" {
+			return e.preserve(ctx,state,prov,evidence,c,errors.New("GRCE_CAPABILITY_CAUSAL_TRACE_MISSING"),"EXTRACT")
+		}
+	}
 	if err:=validateProvenanceChain(parentHash,prov,candidate);err!=nil{return e.preserve(ctx,state,prov,evidence,c,err,"PROVENANCE")}
 	candidate.EpistemicState=grf.ACTIVE
 	if err:=e.hooks.Horta(ctx,candidate,prov,evidence,caps,c);err!=nil{return e.preserve(ctx,state,prov,evidence,c,err,"HORTA_FEEDBACK")}
