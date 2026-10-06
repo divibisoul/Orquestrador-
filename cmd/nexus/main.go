@@ -151,6 +151,9 @@ func main() {
 		if err := backend.RegisterSARAOperations(e, saraProxy); err != nil {
 			log.Fatal(err)
 		}
+		if err := backend.RegisterVagusOperation(e, saraProxy); err != nil {
+			log.Fatal(err)
+		}
 	}
 	var grceParticipant grce.Participant
 	if saraProxy.Configured() {
