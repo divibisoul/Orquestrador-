@@ -70,7 +70,7 @@ type ERU interface {
 	Remember(context.Context, grf.State, []grf.Provenance, []grf.Evidence, []grf.Capability) error
 }
 
-type grceResultView struct {
+type ResultView struct {
 	Status string
 	State  grf.State
 }
