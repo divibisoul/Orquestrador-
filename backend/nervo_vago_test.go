@@ -152,3 +152,11 @@ func TestNervoVagoAcceptsSuperGPUEvents(t *testing.T) {
 		}
 	}
 }
+
+func TestParseNervoVagoIntegersStrictly(t *testing.T) {
+	if _, err := parseIntStrict("12x", 0); err == nil { t.Fatal("trailing characters must be rejected") }
+	if _, err := parseInt64Strict("99oops", 0); err == nil { t.Fatal("trailing characters must be rejected") }
+	if got, err := parseIntStrict("12", 0); err != nil || got != 12 { t.Fatalf("strict int parse failed: %d %v", got, err) }
+	if got, err := parseInt64Strict("99", 0); err != nil || got != 99 { t.Fatalf("strict int64 parse failed: %d %v", got, err) }
+}
+
