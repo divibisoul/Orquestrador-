@@ -370,7 +370,11 @@ func main() {
 		}
 		writeJSON(w, http.StatusOK, result)
 	})
-	mux.Handle("/api/soul-mesh", mesh.NewEnhancedFederatedHTTPGateway(e))
+	meshGateway := mesh.NewEnhancedFederatedHTTPGateway(e)
+	if err := mesh.RegisterRegistrationOperation(e, mesh.DefaultRegistrationRegistry()); err != nil {
+		log.Fatal(err)
+	}
+	mux.Handle("/api/soul-mesh", meshGateway)
 	mux.HandleFunc("/execute", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "POST required"})
