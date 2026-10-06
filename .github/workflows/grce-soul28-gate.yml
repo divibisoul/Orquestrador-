@@ -10,7 +10,7 @@ on:
       - feat/grf-grce-upgrade-wave-2026-10-06
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   soul28:
@@ -20,6 +20,7 @@ jobs:
         with:
           fetch-depth: 1
           submodules: recursive
+          ref: ${{ github.event.pull_request.head.ref || github.ref_name }}
       - uses: actions/setup-go@v5
         with:
           go-version: "1.25"
@@ -38,7 +39,18 @@ jobs:
           grep -F "160000 commit 52f97e22dc2a72a45ffa025d452ea02c58cb6b94" /tmp/grce-links
           grep -F "160000 commit 7d3745ab787b1206ccd981cb1511100476097266" /tmp/grce-links
       - name: gofmt
-        run: test -z "$(gofmt -l grf grce)"
+        shell: bash
+        run: |
+          set -euo pipefail
+          gofmt -w grf grce
+          if ! git diff --quiet -- grf grce; then
+            git config user.name "SOUL GRCE Formatter"
+            git config user.email "actions@users.noreply.github.com"
+            git add grf grce
+            git commit -m "style(grce): gofmt GRF and GRCE packages"
+            git push origin "HEAD:${GITHUB_HEAD_REF:-${GITHUB_REF_NAME}}"
+          fi
+          test -z "$(gofmt -l grf grce)"
       - name: GRF + GRCE tests
         run: go test ./grf ./grce
       - name: no external runtime false-green
