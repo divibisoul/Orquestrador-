@@ -267,6 +267,84 @@
       ],
       "status": "adapter-planned",
       "mode": "explicit-adapter"
+    },
+    {
+      "id": "bijux-core",
+      "source": "bijux/bijux-core",
+      "primaryOwner": "N07",
+      "consumers": [
+        "N07"
+      ],
+      "affinity": [
+        "deterministic-execution",
+        "provenance",
+        "evidence-ledger"
+      ],
+      "status": "adapter-planned",
+      "mode": "explicit-adapter",
+      "grceStage": "characterize"
+    },
+    {
+      "id": "ouro-loop",
+      "source": "VictorVVedtion/ouro-loop",
+      "primaryOwner": "N07",
+      "consumers": [
+        "N07"
+      ],
+      "affinity": [
+        "self-healing",
+        "autonomous-remediation",
+        "validation-loop"
+      ],
+      "status": "adapter-planned",
+      "mode": "explicit-adapter",
+      "grceStage": "validate"
+    },
+    {
+      "id": "recuris",
+      "source": "Gen-Verse/Recuris",
+      "primaryOwner": "N07",
+      "consumers": [
+        "N07",
+        "N06"
+      ],
+      "affinity": [
+        "experiential-memory",
+        "failure-localization",
+        "recursive-validation"
+      ],
+      "status": "adapter-planned",
+      "mode": "explicit-adapter",
+      "grceStage": "trace"
+    },
+    {
+      "id": "fedml",
+      "source": "FedML-AI/FedML",
+      "primaryOwner": "N07",
+      "consumers": [
+        "N01",
+        "N07"
+      ],
+      "affinity": [
+        "federated-learning",
+        "distributed-training",
+        "model-coordination"
+      ],
+      "status": "adapter-planned",
+      "mode": "explicit-adapter",
+      "persistenceOwner": "N01.HortaCore",
+      "strategyOwner": "N07.Prefrontal"
+    }
+  ],
+  "graph": "SOUL-29-capability-fabric",
+  "implementation_dependencies": [
+    {
+      "id": "hivemind",
+      "source": "learning-at-home/hivemind",
+      "revision": "4bd43b77895019b20d18d81d0d0c1a5ab9a10847",
+      "owner": "N07",
+      "status": "pinned-dependency",
+      "graph_node": false
     }
   ]
 }
