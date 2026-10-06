@@ -97,27 +97,34 @@ func (h *HortaCore) Health() map[string]any {
 	saraConfigured := h.sara != nil && h.sara.Configured()
 	engineReady := h.engine.Status() == "ready"
 	adapterModules := 0
+	executableAdapters := 0
 	for _, spec := range h.modules {
 		if spec.Status == StatusAdapter {
 			adapterModules++
+			if strings.TrimSpace(spec.Operation) != "" {
+				executableAdapters++
+			}
 		}
 	}
 	peerAttached := h.peers != nil
+	peerConfigured := peerAttached && h.peers.Configured("N02")
 	status := "DEGRADED"
-	if saraConfigured && engineReady && (adapterModules == 0 || peerAttached) {
+	if saraConfigured && engineReady && (executableAdapters == 0 || peerConfigured) {
 		status = "READY"
 	}
 	return map[string]any{
-		"system":                    "AETERNUM_HORTACORE",
-		"status":                    status,
-		"module_count":              len(h.modules),
+		"system":                     "AETERNUM_HORTACORE",
+		"status":                     status,
+		"module_count":               len(h.modules),
 		"processor_count":            len(h.Processors()),
 		"sara_configured":            saraConfigured,
-		"n07_engine_status":          h.engine.Status(),
-		"adapter_modules":            adapterModules,
-		"peer_client_attached":       peerAttached,
-		"adapter_execution_available": peerAttached,
-		"timestamp":                  time.Now().UTC(),
+		"n07_engine_status":           h.engine.Status(),
+		"adapter_modules":             adapterModules,
+		"executable_adapter_modules":  executableAdapters,
+		"peer_client_attached":        peerAttached,
+		"peer_client_configured":      peerConfigured,
+		"adapter_execution_available": peerConfigured,
+		"timestamp":                   time.Now().UTC(),
 		"principles": []string{
 			"no_mock",
 			"no_fabricated_success",
