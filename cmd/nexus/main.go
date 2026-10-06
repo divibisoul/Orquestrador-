@@ -174,6 +174,10 @@ func main() {
 	}
 	peerClient.SetRouteScorer(learningMachine)
 	peerClient.SetRouteOutcomeObserver(learningMachine)
+	externalLearningFabric := learning.NewExternalFabric(learningMachine, peerClient, saraProxy)
+	if err := learning.RegisterExternalFabricOperations(e, externalLearningFabric); err != nil {
+		log.Fatal(err)
+	}
 	peerClient.SetAffinityProbe(protocol.N07, func(context.Context, string) (map[string]any, error) {
 		return map[string]any{"executableCapabilities": e.Operations()}, nil
 	})
