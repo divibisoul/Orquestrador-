@@ -169,7 +169,7 @@ func semverGreater(a, b string) bool {
 		return aa.patch > bb.patch
 	}
 	if len(aa.pre) == 0 || len(bb.pre) == 0 {
-		return len(aa.pre) == 0
+		return len(aa.pre) == 0 && len(bb.pre) > 0
 	}
 	for i := 0; i < len(aa.pre) && i < len(bb.pre); i++ {
 		x, y := aa.pre[i], bb.pre[i]
