@@ -195,9 +195,6 @@ func main() {
 	if err := orchestrator.RegisterExternalAdapterOperations(e, externalRegistry); err != nil {
 		log.Fatal(err)
 	}
-	if err := orchestrator.RegisterGRFGRCEOperationsWithSARA(e, saraProxy); err != nil {
-		log.Fatal(err)
-	}
 	agentArsenalProxy := agentarsenal.NewFromEnv()
 	if err := orchestrator.RegisterAgentArsenalOperations(e, agentArsenalProxy); err != nil {
 		log.Fatal(err)
@@ -220,6 +217,21 @@ func main() {
 	}
 	nervoVagoGateway, err := backend.NewNervoVagoGateway(saraProxy)
 	if err != nil {
+		log.Fatal(err)
+	}
+	grceExecutor, err := orchestrator.NewGRCEExecutorRuntime(
+		saraProxy,
+		g,
+		peerClient,
+		orchestrator.GRCEFeedback{
+			Horta: orchestrator.NewGRCEVagoFeedback(nervoVagoGateway, "AETERNUM_HORTACORE", "horta"),
+			Vagus: orchestrator.NewGRCEVagoFeedback(nervoVagoGateway, "SARA", "vagus"),
+			Mesh:  orchestrator.NewGRCEVagoFeedback(nervoVagoGateway, "SOUL_MESH", "mesh"),
+		},
+	)
+	if err != nil {
+		log.Printf("GRCE executor unavailable: %v", err)
+	} else if err := orchestrator.RegisterGRFGRCEOperationsWithExecutor(e, saraProxy, grceExecutor); err != nil {
 		log.Fatal(err)
 	}
 	var nervoVagoSequence atomic.Uint64
