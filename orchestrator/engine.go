@@ -8,6 +8,82 @@ import (
 	"math"
 	"regexp"
 	"sort"
+	"strconv"
+	"strings"
+	"sync"
+	"sync/atomic"
+	"time"
+
+	"github.com/divibisoul/Orquestrador-/memory"
+	"github.com/divibisoul/Orquestrador-/neural"
+	"github.com/divibisoul/Orquestrador-/observability"
+	"github.com/divibisoul/Orquestrador-/prefrontal"
+	"github.com/divibisoul/Orquestrador-/protocol"
+	"github.com/divibisoul/Orquestrador-/supergpu"
+)
+
+type Handler func(context.Context, protocol.Message) (protocol.Result, error)
+
+type OperationRegistration struct {
+	Name      string
+	Version   string
+	Handler   Handler
+	Timeout   time.Duration
+	RateLimit int
+	Schema    json.RawMessage
+	Metadata  map[string]string
+}
+
+type traceState struct {
+	cancel  context.CancelFunc
+	stage   string
+	device  string
+	started time.Time
+}
+
+type rateState struct {
+	window time.Time
+	count  int
+}
+
+type routeCacheEntry struct {
+	handler   Handler
+	expires   time.Time
+	operation string
+	version   string
+}
+
+type Engine struct {
+	mu               sync.RWMutex
+	handlers         map[string]OperationRegistration
+	active           map[string]traceState
+	routes           map[string]routeCacheEntry
+	rates            map[string]rateState
+	neural           *neural.Network
+	cortex           *prefrontal.Cortex
+	compute          *supergpu.Runtime
+	memory           memory.Store
+	running          atomic.Bool
+	sequence         atomic.Uint64
+	failures         atomic.Uint64
+	metrics          *observability.Metrics
+	logger           *observability.Logger
+	rateLimit        int
+	routeTTL         time.Duration
+	failureThreshold uint64
+	breakerUntil     time.Time
+	breakerMu        sync.Mutex
+}
+
+var semverRx = regexp.MustCompile(`^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(?:-([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?(?:\+([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?package orchestrator
+
+import (
+	"context"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"math"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -76,7 +152,7 @@ type Engine struct {
 	breakerMu        sync.Mutex
 }
 
-var semverRx = regexp.MustCompile(`^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-([0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*))?(?:\\+([0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*))?$`)
+var semverRx = regexp.MustCompile()
 
 type semverValue struct {
 	major, minor, patch int
