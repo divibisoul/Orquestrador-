@@ -280,8 +280,7 @@
       "browser-use",
       "pydantic-ai",
       "llama-index",
-      "dspy",
-      "openhands"
+      "dspy"
     ]
   }
 }
