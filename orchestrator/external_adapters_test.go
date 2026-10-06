@@ -30,10 +30,23 @@ func newExternalTestEngine(t *testing.T) (*Engine, ExternalAdapterRegistry) {
 	}
 	return e, r
 }
-func TestExternalAdapterManifestHasSixteenProviders(t *testing.T) {
+func TestExternalAdapterManifestHasTwentyTwoProviders(t *testing.T) {
 	_, r := newExternalTestEngine(t)
-	if len(r.byID) != 16 {
+	if len(r.byID) != 22 {
 		t.Fatalf("providers=%d", len(r.byID))
+	}
+}
+func TestExternalAdapterPrimarySixteenRemainIntact(t *testing.T) {
+	_, r := newExternalTestEngine(t)
+	primary := []string{
+		"superpowers","superagi","langgraph","crewai","microsoft-agent-framework","openhands",
+		"metagpt","agentscope","letta-code","browser-use","smolagents","pydantic-ai",
+		"llama-index","dspy","whisper","kokoro",
+	}
+	for _, id := range primary {
+		if _, ok := r.byID[id]; !ok {
+			t.Fatalf("original primary provider missing: %s", id)
+		}
 	}
 }
 func TestExternalAdapterExecutionFailsClosedByDefault(t *testing.T) {
@@ -53,7 +66,7 @@ func TestExternalAdapterProbeRegistered(t *testing.T) {
 	}
 }
 
-func TestExternalAdapterAllSixteenProvidersProbe(t *testing.T) {
+func TestExternalAdapterAllTwentyTwoProvidersProbe(t *testing.T) {
 	e, r := newExternalTestEngine(t)
 	for id := range r.byID {
 		operation := "external." + id + ".probe@1.0.0"
