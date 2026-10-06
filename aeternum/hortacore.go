@@ -95,18 +95,29 @@ func (h *HortaCore) Capabilities() []ModuleSpec {
 
 func (h *HortaCore) Health() map[string]any {
 	saraConfigured := h.sara != nil && h.sara.Configured()
+	engineReady := h.engine.Status() == "ready"
+	adapterModules := 0
+	for _, spec := range h.modules {
+		if spec.Status == StatusAdapter {
+			adapterModules++
+		}
+	}
+	peerAttached := h.peers != nil
 	status := "DEGRADED"
-	if saraConfigured && h.engine.Status() == "ready" {
+	if saraConfigured && engineReady && (adapterModules == 0 || peerAttached) {
 		status = "READY"
 	}
 	return map[string]any{
-		"system":            "AETERNUM_HORTACORE",
-		"status":            status,
-		"module_count":      len(h.modules),
-		"processor_count":   len(h.Processors()),
-		"sara_configured":   saraConfigured,
-		"n07_engine_status": h.engine.Status(),
-		"timestamp":         time.Now().UTC(),
+		"system":                    "AETERNUM_HORTACORE",
+		"status":                    status,
+		"module_count":              len(h.modules),
+		"processor_count":            len(h.Processors()),
+		"sara_configured":            saraConfigured,
+		"n07_engine_status":          h.engine.Status(),
+		"adapter_modules":            adapterModules,
+		"peer_client_attached":       peerAttached,
+		"adapter_execution_available": peerAttached,
+		"timestamp":                  time.Now().UTC(),
 		"principles": []string{
 			"no_mock",
 			"no_fabricated_success",
