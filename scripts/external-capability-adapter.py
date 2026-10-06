@@ -177,9 +177,9 @@ def execute(v,rt):
             emit({"state":"PASS","provider":provider,"operation":op,"result":g.compile().invoke({"input":v.get("input") or v.get("prompt") or ""})})
         except Exception as e: emit({"state":"BLOCKED","code":"LANGGRAPH_EXECUTION_BLOCKED","detail":str(e)},2)
     if provider=="crewai" and op=="team.execute":
-        run_script("crewai_runner.py",{"goal":v.get("goal") or v.get("prompt"),"roles":v.get("roles") or ["Planner","Executor"],"root":str(rt),"maxRounds":v.get("maxRounds") or 3})
+        run_script("crewai_runner.py",{"goal":v.get("goal") or v.get("prompt"),"roles":v.get("roles") or ["Planner","Executor"],"maxRounds":v.get("maxRounds") or 3})
     if provider=="metagpt" and op=="team.execute":
-        run_script("metagpt_runner.py",{"goal":v.get("goal") or v.get("prompt"),"root":str(rt),"maxRounds":v.get("maxRounds") or 3})
+        run_script("metagpt_runner.py",{"goal":v.get("goal") or v.get("prompt"),"maxRounds":v.get("maxRounds") or 3})
     if provider=="whisper" and op=="speech.transcribe":
         audio=pathlib.Path(str(v.get("audio_path") or "")).resolve()
         if not audio.is_file(): emit({"state":"BLOCKED","code":"WHISPER_AUDIO_NOT_FOUND"},2)
