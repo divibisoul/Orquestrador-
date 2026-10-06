@@ -108,10 +108,12 @@ jobs:
       - name: Prove direct GRCE fails closed
         run: |
           set +e
-          curl -sS -H 'Authorization: Bearer e2e-n07-token-123456789'             -H 'Content-Type: application/json'             -X POST http://127.0.0.1:8080/v1/execute             -d '{"operation":"grce.cycle.execute@2.0.0","correlationId":"grce-direct-blocked","metadata":{"grf_sequence_index":"2"}}'             | tee /tmp/grce-direct.json
-          status=$?
+          http_status="$(curl -sS -o /tmp/grce-direct.json -w '%{http_code}' -H 'Authorization: Bearer e2e-n07-token-123456789' -H 'Content-Type: application/json' -X POST http://127.0.0.1:8080/v1/execute -d '{"operation":"grce.cycle.execute@2.0.0","correlationId":"grce-direct-blocked","metadata":{"grf_sequence_index":"2"}}')"
+          curl_status=$?
+          cat /tmp/grce-direct.json
+          test "$curl_status" -eq 0
+          test "$http_status" = "400"
           grep -q 'GRCE_RUNTIME_HOOKS_NOT_BOUND' /tmp/grce-direct.json
-          test "$status" -ne 0
 
       - name: Cleanup
         if: always()
