@@ -74,7 +74,56 @@ type Engine struct {
 	breakerMu        sync.Mutex
 }
 
-var semverRx = regexp.MustCompile(`^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(?:-[0-9A-Za-z.-]+)?$`)
+var semverRx = regexp.MustCompile(`^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(?:-([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?(?:\+([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?$`)
+
+type semverValue struct {
+	major, minor, patch int
+	pre                 []string
+}
+
+func parseSemver(value string) (semverValue, bool) {
+	value = strings.TrimSpace(value)
+	match := semverRx.FindStringSubmatch(value)
+	if match == nil {
+		return semverValue{}, false
+	}
+	version := match[0]
+	if plus := strings.IndexByte(version, '+'); plus >= 0 {
+		version = version[:plus]
+	}
+	pre := ""
+	if dash := strings.IndexByte(version, '-'); dash >= 0 {
+		pre = version[dash+1:]
+		version = version[:dash]
+	}
+	parts := strings.Split(version, ".")
+	parseInt := func(raw string) int {
+		out := 0
+		for _, ch := range raw {
+			out = out*10 + int(ch-'0')
+		}
+		return out
+	}
+	v := semverValue{major: parseInt(parts[0]), minor: parseInt(parts[1]), patch: parseInt(parts[2])}
+	if pre != "" {
+		v.pre = strings.Split(pre, ".")
+		for _, identifier := range v.pre {
+			if len(identifier) > 1 && identifier[0] == '0' {
+				allNumeric := true
+				for _, ch := range identifier {
+					if ch < '0' || ch > '9' {
+						allNumeric = false
+						break
+					}
+				}
+				if allNumeric {
+					return semverValue{}, false
+				}
+			}
+		}
+	}
+	return v, true
+}
 
 func splitOperation(operation string) (string, string, error) {
 	operation = strings.TrimSpace(operation)
@@ -89,37 +138,84 @@ func splitOperation(operation string) (string, string, error) {
 	if name == "" {
 		return "", "", errors.New("operation name is required")
 	}
-	if version != "" && !semverRx.MatchString(version) {
-		return "", "", errors.New("operation version must semantic version")
+	if version != "" {
+		if !semverRx.MatchString(version) {
+			return "", "", errors.New("operation version must semantic version")
+		}
+		if _, ok := parseSemver(version); !ok {
+			return "", "", errors.New("operation version must semantic version")
+		}
 	}
 	return name, version, nil
 }
 
-func semverGreater(a, b string) bool {
-	parse := func(value string) [3]int {
-		base := strings.SplitN(value, "-", 2)[0]
-		parts := strings.SplitN(base, ".", 3)
-		var out [3]int
-		for i := range out {
-			if i >= len(parts) {
-				continue
-			}
-			for _, ch := range parts[i] {
-				if ch < '0' || ch > '9' {
-					break
-				}
-				out[i] = out[i]*10 + int(ch-'0')
-			}
-		}
-		return out
+// semverGreater follows Semantic Versioning precedence: release versions
+// outrank pre-releases, numeric identifiers compare numerically, and build
+// metadata does not affect precedence.
+func isNumericIdentifier(value string) bool {
+	if value == "" {
+		return false
 	}
-	aa, bb := parse(a), parse(b)
-	for i := range aa {
-		if aa[i] != bb[i] {
-			return aa[i] > bb[i]
+	for _, ch := range value {
+		if ch < '0' || ch > '9' {
+			return false
 		}
+	}
+	return true
+}
+
+func numericIdentifierGreater(a, b string) bool {
+	a = strings.TrimLeft(a, "0")
+	b = strings.TrimLeft(b, "0")
+	if a == "" {
+		a = "0"
+	}
+	if b == "" {
+		b = "0"
+	}
+	if len(a) != len(b) {
+		return len(a) > len(b)
 	}
 	return a > b
+}
+
+func semverGreater(a, b string) bool {
+	aa, okA := parseSemver(a)
+	bb, okB := parseSemver(b)
+	if !okA || !okB {
+		return a > b
+	}
+	if aa.major != bb.major {
+		return aa.major > bb.major
+	}
+	if aa.minor != bb.minor {
+		return aa.minor > bb.minor
+	}
+	if aa.patch != bb.patch {
+		return aa.patch > bb.patch
+	}
+	if len(aa.pre) == 0 || len(bb.pre) == 0 {
+		return len(aa.pre) == 0 && len(bb.pre) > 0
+	}
+	for i := 0; i < len(aa.pre) && i < len(bb.pre); i++ {
+		x, y := aa.pre[i], bb.pre[i]
+		if x == y {
+			continue
+		}
+		xNumeric := isNumericIdentifier(x)
+		yNumeric := isNumericIdentifier(y)
+		if xNumeric && yNumeric {
+			return numericIdentifierGreater(x, y)
+		}
+		if xNumeric {
+			return false
+		}
+		if yNumeric {
+			return true
+		}
+		return x > y
+	}
+	return len(aa.pre) > len(bb.pre)
 }
 
 func New(n *neural.Network, c *prefrontal.Cortex, g *supergpu.Runtime) (*Engine, error) {
@@ -414,12 +510,13 @@ func (e *Engine) Submit(ctx context.Context, message protocol.Message) (protocol
 
 	handler, err := e.Route(message)
 	if err != nil {
-		e.recordFailure()
+		// Routing/registration rejections are client/configuration outcomes,
+		// not execution failures; they must not poison the global execution breaker.
 		return reject("rejected", err)
 	}
 	registration, err := e.registration(message.Operation)
 	if err != nil {
-		e.recordFailure()
+		// Preserve the rejection as evidence without counting it as a runtime fault.
 		return reject("rejected", err)
 	}
 
