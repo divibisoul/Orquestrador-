@@ -2,6 +2,8 @@ package grce
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"sort"
@@ -179,7 +181,10 @@ func GoldenRuleCycle(ctx context.Context, d Dependencies, state grf.State, c grf
 	candidate.SequenceIndex = state.SequenceIndex + 1
 	candidate.Epistemic = grf.EpistemicProjected
 
-	if err := grf.ValidateContextAndProvenance(state, c, candidate, provenance[0]); err != nil {
+	candidateProvenance := grf.Provenance{ParentHash: state.Hash(), InputHash: state.Hash(), OutputHash: candidate.Hash(), SequenceIndex: candidate.SequenceIndex, Chain: []string{"F", "E", "K", "O", "A", "I", "T", "F*"}}
+	provenance = append(provenance, candidateProvenance)
+
+	if err := grf.ValidateContextAndProvenance(state, c, candidate, candidateProvenance); err != nil {
 		_ = d.ERU.Remember(ctx, grf.PreserveOnFailure(state), provenance, evidence, nil)
 		return Result{State: grf.PreserveOnFailure(state), Provenance: provenance, Evidence: evidence, Status: grf.EpistemicPreserved}, err
 	}
@@ -227,7 +232,7 @@ func GoldenRuleCycle(ctx context.Context, d Dependencies, state grf.State, c grf
 	if err := d.Mesh.Distribute(ctx, candidate, c); err != nil {
 		return Result{State: candidate, Provenance: provenance, Evidence: evidence, Capabilities: newCaps, Status: grf.EpistemicActive}, err
 	}
-	if err := d.Neocortex.Learn(ctx, []grceResultView{{Status:"ACTIVE",State:candidate}}, c); err != nil {
+	if err := d.Neocortex.Learn(ctx, []ResultView{{Status:"ACTIVE",State:candidate}}, c); err != nil {
 		return Result{State: candidate, Provenance: provenance, Evidence: evidence, Capabilities: newCaps, Status: grf.EpistemicActive}, err
 	}
 	if err := d.ERU.Remember(ctx, candidate, provenance, evidence, newCaps); err != nil {
@@ -268,5 +273,6 @@ func parallelAnalyze(ctx context.Context, gpu, cpu Analyzer, oppositions []grf.O
 }
 
 func hashEvidence(e grf.Evidence) string {
-	return fmt.Sprintf("%x", []byte(e.ID+"|"+e.FailureID+"|"+e.ContextHash+"|"+e.Source+"|"+e.Detail))
+	h := sha256.Sum256([]byte(e.ID+"|"+e.FailureID+"|"+e.ContextHash+"|"+e.Source+"|"+e.Detail))
+	return hex.EncodeToString(h[:])
 }
