@@ -209,7 +209,9 @@
     "grce.describe@2.0.0",
     "grce.bindings.describe@2.0.0",
     "grce.cycle.execute@2.0.0",
-    "grce.sara.authoritative.execute@2.0.0"
+    "grce.sara.authoritative.execute@2.0.0",
+    "nervo-vago.event@1.0.0",
+    "nervo-vago.describe@1.0.0"
   ],
   "grf_cycle_topology": [
     "L0",
@@ -262,6 +264,9 @@
     "no_second_vagus": true,
     "no_second_mesh": true,
     "etr_gate_before_delivery": true,
-    "contract_manifest": "integrations/grf/nervo-vago-unified-contract.json"
+    "contract_manifest": "integrations/grf/nervo-vago-unified-contract.json",
+    "event_operation": "nervo-vago.event@1.0.0",
+    "describe_operation": "nervo-vago.describe@1.0.0",
+    "execution_boundary": "backend.NervoVagoGateway"
   }
 }
