@@ -233,7 +233,7 @@
   "unified_nervo_vago": {
     "id": "nervo-vago",
     "name": "Nervo Vago",
-    "state": "PROJECTED",
+    "state": "REAL",
     "logical_component": "single",
     "owner": "N07",
     "ethical_policy": "SARA/ETR",
@@ -267,6 +267,9 @@
     "contract_manifest": "integrations/grf/nervo-vago-unified-contract.json",
     "event_operation": "nervo-vago.event@1.0.0",
     "describe_operation": "nervo-vago.describe@1.0.0",
-    "execution_boundary": "backend.NervoVagoGateway"
+    "execution_boundary": "backend.NervoVagoGateway",
+    "evidence_scope": "local_SARA_N01",
+    "federated_state": "PROJECTED",
+    "note": "Local Nervo Vago is executable through preserved SARA/N01 components; durable/federated transport remains projected."
   }
 }
