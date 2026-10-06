@@ -134,6 +134,7 @@ func (e *Executor) Run(ctx context.Context, state grf.State, c grf.Context) (Res
 	if !vet||!vit||!vrgo{return e.preserve(ctx,state,prov,evidence,c,errors.New("GRCE_VALIDATION_FAILED"),"VALIDATE")}
 
 	caps,err:=e.hooks.ExtractCapabilities(ctx,candidate,prov,evidence,c);if err!=nil{return e.preserve(ctx,state,prov,evidence,c,err,"EXTRACT")}
+	if err:=validateProvenanceChain(parentHash,prov,candidate);err!=nil{return e.preserve(ctx,state,prov,evidence,c,err,"PROVENANCE")}
 	candidate.EpistemicState=grf.ACTIVE
 	if err:=e.hooks.Horta(ctx,candidate,prov,evidence,caps,c);err!=nil{return e.preserve(ctx,state,prov,evidence,c,err,"HORTA_FEEDBACK")}
 	if err:=e.hooks.Vagus(ctx,candidate,prov,evidence,caps,c);err!=nil{return e.preserve(ctx,state,prov,evidence,c,err,"VAGUS_FEEDBACK")}
@@ -156,6 +157,26 @@ func mergeFailures(a,b []grf.Failure)[]grf.Failure{
 	for _,f:=range append(append([]grf.Failure{},a...),b...){if f.ID==""{continue};if old,ok:=seen[f.ID];ok{if old.State==grf.BLOCKED&&f.State!=grf.BLOCKED{seen[f.ID]=f};continue};seen[f.ID]=f}
 	out:=make([]grf.Failure,0,len(seen));for _,f:=range seen{out=append(out,f)};return out
 }
+func validateProvenanceChain(parentHash string, prov []grf.Provenance, candidate grf.State) error {
+	if parentHash=="" || candidate.ParentHash=="" || candidate.ParentHash!=parentHash {
+		return errors.New("GRCE_PROVENANCE_PARENT_HASH_INVALID")
+	}
+	if len(prov)==0 {
+		return errors.New("GRCE_PROVENANCE_EMPTY")
+	}
+	var previous uint64
+	for _,p:=range prov{
+		if p.ParentHash=="" || p.InputHash=="" || p.OutputHash=="" || p.SequenceIndex==0 || p.Stage=="" {
+			return errors.New("GRCE_PROVENANCE_INCOMPLETE")
+		}
+		if previous>0 && p.SequenceIndex<=previous {
+			return errors.New("GRCE_PROVENANCE_SEQUENCE_NOT_STRICT")
+		}
+		previous=p.SequenceIndex
+	}
+	return nil
+}
+
 func (e *Executor) preserve(ctx context.Context,state grf.State,prov []grf.Provenance,evidence []grf.Evidence,c grf.Context,err error,stage string)(Result,error){
 	_ = e.hooks.Rollback(ctx,state,prov,evidence,c)
 	return Result{NextState:state,Provenance:prov,Evidence:evidence,EpistemicState:grf.PRESERVED,Outcome:"ROLLBACK_PRESERVED:"+stage},fmt.Errorf("%s: %w",stage,err)
