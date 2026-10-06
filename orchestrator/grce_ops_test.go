@@ -27,7 +27,7 @@ func TestGRFAndGRCEOperationsRegistered(t *testing.T) {
 	e := newGRFTestEngine(t)
 	for _, op := range []string{
 		GRFDescribeOperation, GRCEDescribeOperation, GRCEBindingsOperation,
-		GRCECycleOperation, GRFParticipantDescribeOperation,
+		GRCECycleOperation, GRFParticipantDescribeOperation, GRFParticipantIngestOperation,
 	} {
 		if !containsOperation(e.Operations(), op) {
 			t.Fatalf("missing operation %s", op)
@@ -42,7 +42,7 @@ func TestGRCECycleFailsClosedUntilRealHooksAreBound(t *testing.T) {
 	if err == nil || !strings.Contains(err.Error(), "GRF_TRACE_ID_REQUIRED") {
 		t.Fatalf("expected context gate, got %v", err)
 	}
-	msg, err := e.Execute(context.Background(), GRCECycleOperation, nil, map[string]string{"trace_id":"t","correlation_id":"c"})
+	msg, err := e.Execute(context.Background(), GRCECycleOperation, nil, map[string]string{"trace_id":"t","correlation_id":"c","grf_sequence_index":"1"})
 	if err == nil || !strings.Contains(err.Error(), "GRCE_RUNTIME_HOOKS_NOT_BOUND") {
 		t.Fatalf("expected explicit blocked state, got %v", err)
 	}
@@ -52,4 +52,15 @@ func TestGRFInvariantSetContainsI1ThroughI18(t *testing.T) {
 	set := grf.CanonicalInvariantSet()
 	if err := grf.ValidateInvariantSet(set); err != nil { t.Fatal(err) }
 	if len(set.Invariants) != 18 { t.Fatalf("invariants=%d",len(set.Invariants)) }
+}
+
+func TestGRFParticipantIngestPreservesEpistemicState(t *testing.T) {
+	e := newGRFTestEngine(t)
+	_, err := e.Execute(context.Background(), GRFParticipantIngestOperation, nil, map[string]string{
+		"trace_id":"t","correlation_id":"c","grf_sequence_index":"1",
+		"participant_id":"autogenesis","state_id":"s1","grf_input_json":"{\"goal\":\"preserve\"}",
+	})
+	if err != nil {
+		t.Fatalf("participant ingest failed: %v", err)
+	}
 }
