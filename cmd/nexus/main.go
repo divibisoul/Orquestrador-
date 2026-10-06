@@ -22,6 +22,7 @@ import (
 	"github.com/divibisoul/Orquestrador-/cooperation"
 	"github.com/divibisoul/Orquestrador-/jev"
 	"github.com/divibisoul/Orquestrador-/learning"
+	"github.com/divibisoul/Orquestrador-/grce"
 	"github.com/divibisoul/Orquestrador-/mesh"
 	"github.com/divibisoul/Orquestrador-/neural"
 	"github.com/divibisoul/Orquestrador-/octacore"
@@ -147,6 +148,13 @@ func main() {
 		if err := backend.RegisterSARAOperations(e, saraProxy); err != nil {
 			log.Fatal(err)
 		}
+	}
+	var grceParticipant grce.Participant
+	if saraProxy.Configured() {
+		grceParticipant = grce.NewSARAParticipant(saraProxy)
+	}
+	if err := grce.Register(e, grceParticipant); err != nil {
+		log.Fatal(err)
 	}
 	if err := rgo.RegisterOperation(e, saraProxy); err != nil {
 		log.Fatal(err)
