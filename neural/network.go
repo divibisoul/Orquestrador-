@@ -127,6 +127,8 @@ func (n *Network) Configure(config Config) error {
 	if err := validateConfig(config); err != nil {
 		return err
 	}
+	n.trainMu.Lock()
+	defer n.trainMu.Unlock()
 	n.mu.Lock()
 	defer n.mu.Unlock()
 	if n.config.Optimizer != "" && n.config.Optimizer != config.Optimizer {
@@ -142,6 +144,8 @@ func (n *Network) Configure(config Config) error {
 }
 
 func (n *Network) AddEdge(from, to int, weight float64) error {
+	n.trainMu.Lock()
+	defer n.trainMu.Unlock()
 	n.mu.Lock()
 	defer n.mu.Unlock()
 	if from < 0 || from >= n.size || to < 0 || to >= n.size {
@@ -188,6 +192,8 @@ func (n *Network) pathExistsLocked(from, to int) bool {
 	return dfs(from)
 }
 func (n *Network) RemoveEdge(from, to int) error {
+	n.trainMu.Lock()
+	defer n.trainMu.Unlock()
 	n.mu.Lock()
 	defer n.mu.Unlock()
 	if from < 0 || from >= n.size || to < 0 || to >= n.size {
