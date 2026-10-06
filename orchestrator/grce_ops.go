@@ -19,6 +19,7 @@ const (
 	GRCEDescribeOperation = "grce.describe@2.0.0"
 	GRCEBindingsOperation = "grce.bindings.describe@2.0.0"
 	GRCECycleOperation = "grce.cycle.execute@2.0.0"
+	GRCEAuthoritativeSaraOperation = "grce.sara.authoritative.execute@2.0.0"
 	GRFParticipantDescribeOperation = "grf.participant.describe@2.0.0"
 )
 
@@ -26,7 +27,20 @@ type GRCEControlPlane struct {
 	Executor *grce.Executor
 }
 
+type GRFSaraBridge interface {
+	Configured() bool
+	CycleWithContext(context.Context, string, string, string, map[string]any) (map[string]any, error)
+}
+
 func RegisterGRFGRCEOperations(e *Engine) error {
+	return registerGRFGRCEOperations(e, nil)
+}
+
+func RegisterGRFGRCEOperationsWithSARA(e *Engine, bridge GRFSaraBridge) error {
+	return registerGRFGRCEOperations(e, bridge)
+}
+
+func registerGRFGRCEOperations(e *Engine, saraBridge GRFSaraBridge) error {
 	if e == nil {
 		return errors.New("orchestrator engine is required")
 	}
@@ -161,6 +175,58 @@ func RegisterGRFGRCEOperations(e *Engine) error {
 			TraceID:m.TraceID, CorrelationID:m.CorrelationID,
 			Source:"N07.GRF", Target:m.Source, Status:"ok",
 			Metadata:map[string]string{"participant_id":id,"participant_ingest_json":string(raw),"epistemic_state":string(evidence.State)},
+		}, nil
+	}); err != nil {
+		return err
+	}
+
+	if err := e.Register(GRCEAuthoritativeSaraOperation, func(ctx context.Context, m protocol.Message) (protocol.Result, error) {
+		if _, err := requireGRFContext(m); err != nil {
+			return grfOperationFailure(m, err)
+		}
+		if saraBridge == nil || !saraBridge.Configured() {
+			return grfOperationFailure(m, errors.New("GRCE_SARA_BRIDGE_UNCONFIGURED"))
+		}
+		input := strings.TrimSpace(m.Metadata["grf_input_text"])
+		if input == "" {
+			input = strings.TrimSpace(m.Metadata["sara_input"])
+		}
+		if input == "" {
+			return grfOperationFailure(m, errors.New("GRCE_SARA_INPUT_REQUIRED"))
+		}
+		grfContext, _ := requireGRFContext(m)
+		contextPayload := map[string]any{
+			"grf_version":"2.0",
+			"trace_id":grfContext.TraceID,
+			"correlation_id":grfContext.CorrelationID,
+			"sequence_index":grfContext.SequenceIndex,
+			"executor":"GRCE",
+			"delegation":"SARA_AUTHORITATIVE",
+		}
+		cycleID := strings.TrimSpace(m.Metadata["sara_cycle_id"])
+		out, err := saraBridge.CycleWithContext(ctx, input, cycleID, m.CorrelationID, contextPayload)
+		if err != nil {
+			return grfOperationFailure(m, errors.New("GRCE_SARA_CYCLE_FAILED:"+err.Error()))
+		}
+		converged, _ := out["converged"].(bool)
+		traceHash := strings.TrimSpace(fmt.Sprint(out["trace_hash"]))
+		federatedHash := strings.TrimSpace(fmt.Sprint(out["federated_context_hash"]))
+		epistemic := grf.PROJECTED
+		status := "degraded"
+		if converged && traceHash != "" && federatedHash != "" {
+			epistemic = grf.REAL
+			status = "ok"
+		}
+		raw, _ := json.Marshal(out)
+		return protocol.Result{
+			TraceID:m.TraceID,CorrelationID:m.CorrelationID,Source:"N07.GRCE",Target:m.Source,Status:status,
+			Metadata:map[string]string{
+				"epistemic_state":string(epistemic),
+				"execution_mode":"SARA_AUTHORITATIVE",
+				"trace_hash":traceHash,
+				"federated_context_hash":federatedHash,
+				"sara_result_json":string(raw),
+			},
 		}, nil
 	}); err != nil {
 		return err
