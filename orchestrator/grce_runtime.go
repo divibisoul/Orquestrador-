@@ -451,6 +451,52 @@ func (r *GRCEExecutorRuntime) feedback(kind string) grce.FeedbackFunc {
 	}
 }
 
+func NewGRCEVagoFeedback(gateway *backend.NervoVagoGateway, target, kind string) func(context.Context, grf.State, []grf.Provenance, []grf.Evidence, []grf.Capability, grf.Context) error {
+	return func(ctx context.Context, state grf.State, prov []grf.Provenance, evidence []grf.Evidence, caps []grf.Capability, c grf.Context) error {
+		if gateway == nil {
+			return errors.New("GRCE_NERVO_VAGO_GATEWAY_UNAVAILABLE")
+		}
+		payload := map[string]any{
+			"kind":       kind,
+			"state_id":   state.ID,
+			"provenance": prov,
+			"evidence":   evidence,
+			"capabilities": caps,
+			"feedback":   "GRCE",
+		}
+		inputHash, err := grf.HashJSON(payload)
+		if err != nil {
+			return err
+		}
+		parentHash := inputHash
+		if len(prov) > 0 && prov[len(prov)-1].OutputHash != "" {
+			parentHash = prov[len(prov)-1].OutputHash
+		}
+		messageID := protocol.NewTraceID()
+		traceID := protocol.NewTraceID()
+		_, err = gateway.Publish(ctx, backend.NervoVagoEnvelope{
+			VagusVersion:  "1.0",
+			MessageID:     messageID,
+			CorrelationID: c.CorrelationID,
+			Source:        "N07.GRCE",
+			Target:        target,
+			Priority:      100,
+			TTL:           5000,
+			Type:          "nervo.grce.feedback." + kind,
+			Payload:       payload,
+			Provenance: backend.NervoVagoProvenance{
+				TraceID:       traceID,
+				CorrelationID: c.CorrelationID,
+				MessageID:     messageID,
+				SequenceIndex: c.SequenceIndex + uint64(len(prov)) + 100,
+				ParentHash:    parentHash,
+				InputHash:     inputHash,
+			},
+		})
+		return err
+	}
+}
+
 func (r *GRCEExecutorRuntime) extractCapabilities(ctx context.Context, state grf.State, prov []grf.Provenance, evidence []grf.Evidence, c grf.Context) ([]grf.Capability, error) {
 	_ = ctx
 	if len(prov) == 0 || len(evidence) == 0 {
