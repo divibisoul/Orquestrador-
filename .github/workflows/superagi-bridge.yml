@@ -1,0 +1,26 @@
+name: SuperAGI bridge verification
+
+on:
+  push:
+    branches:
+      - "feat/superagi-integration-2026-09-28"
+  pull_request:
+    branches: [main]
+    paths:
+      - "integrations/superagi/**"
+      - "docs/superagi-integration.md"
+      - ".github/workflows/superagi-bridge.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.25.x"
+      - run: go test ./integrations/superagi -count=1
