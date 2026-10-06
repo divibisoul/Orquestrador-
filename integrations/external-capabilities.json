@@ -228,5 +228,61 @@
         "text-to-speech"
       ]
     }
-  ]
+  ],
+  "extensions": {
+    "grce_complements": {
+      "schema_version": "1.0.0",
+      "parent_manifest": "integrations/external-capabilities.json",
+      "status_semantics": "structural source registration is not runtime activation",
+      "repositories": [
+        {
+          "id": "bijux-dag-runtime",
+          "source": "https://github.com/bijux/bijux-core",
+          "revision": "f0f5f56b49f380196918c4c6910b725b2b30ab7d",
+          "targets": [
+            "N07"
+          ],
+          "capabilities": [
+            "validated-DAG-execution",
+            "replay",
+            "run-provenance",
+            "artifact-integrity"
+          ],
+          "status": "adapter-planned"
+        },
+        {
+          "id": "ouro-loop",
+          "source": "https://github.com/VictorVVedtion/ouro-loop",
+          "revision": "52f97e22dc2a72a45ffa025d452ea02c58cb6b94",
+          "targets": [
+            "N07",
+            "SARA"
+          ],
+          "capabilities": [
+            "runtime-guardrails",
+            "verify-remediate-loop",
+            "danger-zone-boundaries",
+            "self-fix"
+          ],
+          "status": "adapter-planned"
+        },
+        {
+          "id": "recurs",
+          "source": "https://github.com/Gen-Verse/Recuris",
+          "revision": "7d3745ab787b1206ccd981cb1511100476097266",
+          "targets": [
+            "N06",
+            "N07"
+          ],
+          "capabilities": [
+            "experiential-memory",
+            "failure-localization",
+            "memory-evolution",
+            "long-horizon-learning"
+          ],
+          "status": "adapter-planned"
+        }
+      ]
+    }
+  }
 }
