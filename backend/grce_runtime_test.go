@@ -12,7 +12,7 @@ import (
 	"github.com/divibisoul/Orquestrador-/supergpu"
 )
 
-func TestGRCEExecutorRuntimeBindsRealBoundariesAndCompletes(t *testing.T) {
+func TestGRCEExecutorRuntimeCompletesWithHTTPBoundaryFixture(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case "/v1/state":
