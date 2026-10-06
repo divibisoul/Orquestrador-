@@ -31,6 +31,7 @@ type ExternalParticipant struct {
     Config       ExternalRuntimeConfig
     LastEvidence grf.Evidence
     LastProv     grf.Provenance
+    LastStatus   grf.EpistemicState
 }
 
 type externalRequest struct {
@@ -78,6 +79,7 @@ func (p *ExternalParticipant) Ingest(input grf.State, c grf.Context) (grf.Partic
         }
         e.Hash = hashExternalEvidence(e)
         p.LastEvidence = e
+        p.LastStatus = grf.EpistemicProjected
         p.LastProv = grf.Provenance{
             ParentHash: input.Hash(), InputHash: input.Hash(), OutputHash: input.Hash(),
             SequenceIndex: input.SequenceIndex + 1, Chain: []string{p.Config.ID, "PROJECTED", "BLOCKED_ENV"},
@@ -114,13 +116,15 @@ func (p *ExternalParticipant) Ingest(input grf.State, c grf.Context) (grf.Partic
     if resp.Provenance.SequenceIndex == 0 { resp.Provenance.SequenceIndex = input.SequenceIndex + 1 }
     if resp.Evidence.ID == "" { resp.Evidence.ID = p.Config.ID + "-external-evidence" }
     p.LastEvidence = resp.Evidence
+    p.LastStatus = resp.Status
+    if p.LastStatus == "" { p.LastStatus = grf.EpistemicProjected }
     p.LastProv = resp.Provenance
     return grf.ParticipantResult{Output: out, Provenance: resp.Provenance, Evidence: resp.Evidence}, nil
 }
 
 func (p *ExternalParticipant) EpistemicState() grf.EpistemicState {
-    if strings.TrimSpace(os.Getenv(p.Config.CommandEnv)) == "" { return grf.EpistemicProjected }
-    return grf.EpistemicReal
+    if p.LastStatus != "" { return p.LastStatus }
+    return grf.EpistemicProjected
 }
 
 func (p *ExternalParticipant) Invariants() []grf.Invariant { return grf.CanonicalInvariants }
