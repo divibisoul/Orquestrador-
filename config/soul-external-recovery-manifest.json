@@ -237,6 +237,32 @@
       "state": "CURRENT_PIN"
     }
   ],
+  "hardening_findings": [
+    {
+      "date": "2026-10-06",
+      "finding": "external federation was catalogued and adapted but not registered in cmd/nexus/main.go",
+      "transformation": "registered the canonical external adapter registry in the N07 runtime",
+      "evidence_state": "REAL"
+    },
+    {
+      "date": "2026-10-06",
+      "finding": "runtime execution did not independently verify gitlink and checked-out submodule HEAD",
+      "transformation": "runtime now fails closed on revision drift, missing materialization, or dirty submodule worktrees",
+      "evidence_state": "REAL"
+    },
+    {
+      "date": "2026-10-06",
+      "finding": "production image did not carry the external source tree or Python adapter runtime",
+      "transformation": "production image now carries the 16 materialized sources, adapter scripts, Python 3, and a build-time runtime attestation",
+      "evidence_state": "PROJECTED_UNTIL_IMAGE_SMOKE"
+    },
+    {
+      "date": "2026-10-06",
+      "finding": "MultiAgent facade contained a stale MetaGPT N06 ownership block inconsistent with the canonical external ownership registry",
+      "transformation": "MetaGPT routing now resolves ownership and revision from the canonical external registry and uses the same adapter boundary",
+      "evidence_state": "REAL"
+    }
+  ],
   "update_policy": {
     "compatibility_gate_required": true,
     "previous_pins_preserved_in_git_history": true,
