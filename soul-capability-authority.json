@@ -109,7 +109,8 @@
       "grf.participant.describe@2.0.0",
       "grce.describe@2.0.0",
       "grce.bindings.describe@2.0.0",
-      "grce.cycle.execute@2.0.0"
+      "grce.cycle.execute@2.0.0",
+      "grf.participant.ingest@2.0.0"
     ],
     "SARA": [
       "sara.health",
