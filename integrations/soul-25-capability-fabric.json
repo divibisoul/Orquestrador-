@@ -110,7 +110,7 @@
       "id": "langgraph",
       "type": "UPSTREAM",
       "repository": "https://github.com/langchain-ai/langgraph",
-      "revision": "157a06dda988d85afeb8751ff27b35ab3f4f8bf4",
+      "revision": "2d942085e214ef6b99b6f54ed4d544a7c7c5ac56",
       "capabilities": [
         "stateful-agents",
         "durable-workflows",
@@ -121,7 +121,7 @@
       "id": "crewai",
       "type": "UPSTREAM",
       "repository": "https://github.com/crewAIInc/crewAI",
-      "revision": "8078f9130c35a47be95d4a55bf1d73b3fd44fc88",
+      "revision": "1133f16cab274b9863b36fdacca7766b30e549fd",
       "capabilities": [
         "multi-agent-crews",
         "flows",
@@ -132,7 +132,7 @@
       "id": "microsoft-agent-framework",
       "type": "UPSTREAM",
       "repository": "https://github.com/microsoft/agent-framework",
-      "revision": "a2f4506c0ba30cea7c9bbe907fc158c0db2cc6a3",
+      "revision": "b9d24c8fb484c8330abe8bb9e7500ca3c3bbf46c",
       "capabilities": [
         "agents",
         "workflows",
@@ -144,7 +144,7 @@
       "id": "openhands",
       "type": "UPSTREAM",
       "repository": "https://github.com/OpenHands/OpenHands",
-      "revision": "2414d6ee5e31bede2e78211f72b58e9949575a75",
+      "revision": "8136a1d59f330edc99b977a69c1432a56c7010cc",
       "capabilities": [
         "software-agents",
         "tool-use",
@@ -181,7 +181,7 @@
       "id": "letta-code",
       "type": "UPSTREAM",
       "repository": "https://github.com/letta-ai/letta-code",
-      "revision": "1fcc9666817ab852bc2532a3a989f712e1fd6c19",
+      "revision": "4b028fab07c69edaac2ddb4f7b9a43573ff20d81",
       "capabilities": [
         "stateful-agents",
         "persistent-memory",
@@ -192,7 +192,7 @@
       "id": "browser-use",
       "type": "UPSTREAM",
       "repository": "https://github.com/browser-use/browser-use",
-      "revision": "302d8fcb245a7a63fb7531a4734c9ce3c7792779",
+      "revision": "7be96ed8bafa8dfe1eef228b59cf5c884b8b2431",
       "capabilities": [
         "browser-agents",
         "web-automation"
@@ -214,7 +214,7 @@
       "id": "pydantic-ai",
       "type": "UPSTREAM",
       "repository": "https://github.com/pydantic/pydantic-ai",
-      "revision": "6bc07cf18b0641ea92343d8c589cfb922108b802",
+      "revision": "cd99fbc21959731de84807724c997430115ce65e",
       "capabilities": [
         "typed-agents",
         "tools",
@@ -226,7 +226,7 @@
       "id": "llama-index",
       "type": "UPSTREAM",
       "repository": "https://github.com/run-llama/llama_index",
-      "revision": "962940ddc079cc21701d28d1237c84c82a7c5164",
+      "revision": "81f0e06f6e61a5659bd409cac4a199e28c2fd85e",
       "capabilities": [
         "RAG",
         "indexing",
@@ -238,7 +238,7 @@
       "id": "dspy",
       "type": "UPSTREAM",
       "repository": "https://github.com/stanfordnlp/dspy",
-      "revision": "ba3f9198efe5d125c7c1a2b40b1f1e6166209bd2",
+      "revision": "bc8af7ed3d5ee0b892211e5c03274396442a413c",
       "capabilities": [
         "LM-programming",
         "optimization",
