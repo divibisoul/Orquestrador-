@@ -236,6 +236,8 @@ func operationForTool(tool string) string {
 		return "grce.bindings.describe@2.0.0"
 	case "grce.cycle.execute":
 		return "grce.cycle.execute@2.0.0"
+	case "grce.sara.authoritative.execute":
+		return "grce.sara.authoritative.execute@2.0.0"
 	default:
 		return tool
 	}
@@ -336,7 +338,7 @@ func mapIntent(tool string, input map[string]any) ([]float64, map[string]string,
 		}
 		metadata["sara_cycle_id"] = strings.TrimSpace(cycleID)
 		return []float64{0}, metadata, nil
-	case "grf.describe", "grf.participant.describe", "grce.describe", "grce.bindings.describe", "grce.cycle.execute":
+	case "grf.describe", "grf.participant.describe", "grce.describe", "grce.bindings.describe", "grce.cycle.execute", "grce.sara.authoritative.execute":
 		if input == nil {
 			return nil, nil, errors.New("GRF/GRCE intent input is required")
 		}
