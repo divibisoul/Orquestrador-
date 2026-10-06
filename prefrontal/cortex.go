@@ -72,11 +72,6 @@ type Cortex struct {
 	taskFrames           []TaskFrame
 	currentTask          string
 	learningObservations []LearningObservation
-	inhibitionChecks uint64
-	commits uint64
-	decisionCount uint64
-	evaluationNanos uint64
-	commitNanos uint64
 	evaluationIssues     []EvaluationIssue
 	evaluationIssueCount uint64
 	evaluationIssueEvicted uint64
@@ -284,6 +279,18 @@ func (c *Cortex) EvaluationIssues(limit int) []EvaluationIssue {
 	out := make([]EvaluationIssue, limit)
 	copy(out, c.evaluationIssues[len(c.evaluationIssues)-limit:])
 	return out
+}
+
+func boundedPositive(v float64) float64 {
+	if v < 0 || math.IsNaN(v) || math.IsInf(v, 0) { return 0 }
+	return v / (1 + v)
+}
+
+func (c *Cortex) HistorySize() int {
+	if c == nil { return 0 }
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	return len(c.decisions)
 }
 
 func (c *Cortex) Recall(limit int) []Decision {
