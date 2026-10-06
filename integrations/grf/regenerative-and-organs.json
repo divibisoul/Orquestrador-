@@ -1,0 +1,102 @@
+{
+  "schema_version": "2.0.0",
+  "framework": "GRF",
+  "executor": "GRCE",
+  "source_authority": "divibisoul/SARA",
+  "regenerative_modules": [
+    {
+      "id": "ERU",
+      "implementation": "sara.meta.eru_engine.ERU_Engine",
+      "role": "historical state freeze/rollback evidence",
+      "state": "REAL"
+    },
+    {
+      "id": "MMD",
+      "implementation": "sara.omega.soul_services.MicroMacroManager",
+      "role": "micro/mid/macro mediation",
+      "state": "REAL"
+    },
+    {
+      "id": "ARA",
+      "implementation": "sara.core.ara.ARA",
+      "role": "audit/regeneration/autonomy",
+      "state": "REAL"
+    },
+    {
+      "id": "ETR",
+      "implementation": "sara.core.etr.ETR",
+      "role": "ethics/transparency/responsibility gate",
+      "state": "REAL"
+    },
+    {
+      "id": "ITR",
+      "implementation": "sara.core.itr.ITR",
+      "role": "innovation/strategy/execution",
+      "state": "REAL"
+    },
+    {
+      "id": "RGO",
+      "implementation": "sara.rgo.engine.RGOEngine",
+      "role": "Golden Rule governance/evidence intake",
+      "state": "REAL"
+    }
+  ],
+  "organ_layer": [
+    {
+      "id": "prefrontal-neocortex",
+      "owner": "N06",
+      "role": "characterize/dualize/form",
+      "state": "PROJECTED"
+    },
+    {
+      "id": "orbitador",
+      "owner": "N07",
+      "role": "merge SuperGPU/Octacore analyses",
+      "state": "PROJECTED"
+    },
+    {
+      "id": "SuperGPU",
+      "owner": "N07",
+      "role": "parallel vector detection/analysis",
+      "state": "PROJECTED"
+    },
+    {
+      "id": "Octacore",
+      "owner": "N07",
+      "role": "parallel CPU detection/analysis",
+      "state": "PROJECTED"
+    },
+    {
+      "id": "HortaCore",
+      "owner": "N01",
+      "role": "state transport/persistence",
+      "state": "REAL"
+    },
+    {
+      "id": "VagusBus",
+      "owner": "SARA",
+      "role": "signal transport",
+      "state": "REAL"
+    },
+    {
+      "id": "Clareira",
+      "owner": "N01/N04",
+      "role": "shared workspace/state mediation",
+      "state": "PROJECTED"
+    },
+    {
+      "id": "NervoVago",
+      "owner": "SARA",
+      "role": "transversal moral supervisory signal",
+      "state": "BLOCKED"
+    }
+  ],
+  "separation": {
+    "HortaCore": "transport/state vessel; not state authority",
+    "VagusBus": "signal bus; not state authority",
+    "Mesh": "canonical inter-nucleus transport and distribution",
+    "no_second_mesh": true,
+    "no_shadow_authority": true
+  },
+  "evidence_rule": "REAL means repository implementation/contract was directly verified; PROJECTED means integration boundary exists but end-to-end execution is not proven; BLOCKED means required source or infrastructure is unavailable."
+}
