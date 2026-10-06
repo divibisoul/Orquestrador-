@@ -2,9 +2,12 @@ package mesh
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/http/httptest"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
@@ -153,5 +156,119 @@ func TestPeerClientObserveRouteDoesNotRewriteOutcome(t *testing.T) {
 	p.observeRoute(protocol.N01, "core.health", "corr-test", true)
 	if len(o.outcomes) != 1 || o.outcomes[0] != "N01:core.health:corr-test:true" {
 		t.Fatalf("unexpected observed outcome: %#v", o.outcomes)
+	}
+}
+
+
+func signedPeerErrorResponse(correlation, capability, secret string) map[string]any {
+	msgID := protocol.NewTraceID()
+	nonce := protocol.NewTraceID()
+	timestamp := time.Now().UnixMilli()
+	env := protocol.MeshEnvelope{
+		Version: protocol.SoulMeshVersion,
+		ContractVersion: protocol.SoulMeshContractVersion,
+		MessageID: msgID,
+		Source: protocol.N01,
+		Target: protocol.N07,
+		Timestamp: timestamp,
+		Nonce: nonce,
+		CorrelationID: correlation,
+		Type: "ERROR",
+		Payload: map[string]any{
+			"capability": capability,
+			"payload":    map[string]any{"error": "remote failure"},
+		},
+	}
+	if err := protocol.SignHMAC(&env, secret); err != nil {
+		panic(err)
+	}
+	return map[string]any{
+		"protocol":        "soul-mesh/1",
+		"contractVersion": protocol.SoulMeshContractVersion,
+		"id":              msgID,
+		"correlationId":   correlation,
+		"source":          protocol.N01,
+		"target":          protocol.N07,
+		"kind":            "error",
+		"capability":      capability,
+		"payload":         map[string]any{"error": "remote failure"},
+		"timestamp":       timestamp,
+		"nonce":            nonce,
+		"hmac":             env.HMAC,
+	}
+}
+
+func TestPeerClientRejectsUnauthenticatedHTTPErrorBeforeStatusHandling(t *testing.T) {
+	secret := "0123456789abcdef0123456789abcdef"
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		_, _ = w.Write([]byte("{\"protocol\":\"soul-mesh/1\",\"contractVersion\":\"1.1.0\",\"id\":\"bad\",\"correlationId\":\"corr-auth\",\"source\":\"N01\",\"target\":\"N07\",\"kind\":\"error\",\"capability\":\"mesh.ping\",\"payload\":{\"error\":\"unsigned\"}}"))
+	}))
+	defer server.Close()
+
+	t.Setenv("SOUL_MESH_N01_URL", server.URL)
+	t.Setenv("SOUL_MESH_HMAC_SECRET", secret)
+	p, err := NewPeerClient(server.Client())
+	if err != nil {
+		t.Fatal(err)
+	}
+	p.maxRetry = 1
+
+	_, err = p.CallWithCorrelation(context.Background(), protocol.N01, "mesh.ping", map[string]any{}, "corr-auth")
+	if err == nil || !strings.Contains(err.Error(), "HMAC") {
+		t.Fatalf("expected authentication failure for unsigned HTTP error, got %v", err)
+	}
+}
+
+func TestPeerClientAcceptsAuthenticatedHTTPErrorAfterVerification(t *testing.T) {
+	secret := "abcdef0123456789abcdef0123456789"
+	correlation := "corr-auth-valid"
+	response := signedPeerErrorResponse(correlation, "mesh.ping", secret)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(response)
+	}))
+	defer server.Close()
+
+	t.Setenv("SOUL_MESH_N01_URL", server.URL)
+	t.Setenv("SOUL_MESH_HMAC_SECRET", secret)
+	p, err := NewPeerClient(server.Client())
+	if err != nil {
+		t.Fatal(err)
+	}
+	p.maxRetry = 1
+
+	result, err := p.CallWithCorrelation(context.Background(), protocol.N01, "mesh.ping", map[string]any{}, correlation)
+	if err == nil || !strings.Contains(err.Error(), "peer request failed") {
+		t.Fatalf("expected authenticated remote HTTP error, got result=%#v err=%v", result, err)
+	}
+	if result["kind"] != "error" || result["correlationId"] != correlation {
+		t.Fatalf("authenticated error response lost contract fields: %#v", result)
+	}
+}
+
+func TestPeerClientConfiguredRequiresRouteAndHMAC(t *testing.T) {
+	t.Setenv("SOUL_MESH_N02_URL", "http://127.0.0.1:19002")
+	t.Setenv("SOUL_MESH_HMAC_SECRET", "")
+	p, err := NewPeerClient(nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if p.Configured("N02") {
+		t.Fatal("peer route cannot be considered configured without HMAC secret")
+	}
+
+	t.Setenv("SOUL_MESH_HMAC_SECRET", "test-secret")
+	p, err = NewPeerClient(nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !p.Configured("N02") {
+		t.Fatal("configured route with HMAC secret was not recognized")
+	}
+	if p.Configured("N03") {
+		t.Fatal("unconfigured peer was reported as ready")
 	}
 }
