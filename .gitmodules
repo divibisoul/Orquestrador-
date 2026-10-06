@@ -51,23 +51,24 @@
 [submodule "integrations/external/autogenesis"]
   path = integrations/external/autogenesis
   url = https://github.com/DVampire/Autogenesis.git
-
+  branch = main
 [submodule "integrations/external/octos"]
   path = integrations/external/octos
   url = https://github.com/lispking/octos.git
-
+  branch = main
 [submodule "integrations/external/hora-graph-core"]
   path = integrations/external/hora-graph-core
   url = https://github.com/Vivien83/hora-graph-core.git
-
+  branch = main
 [submodule "integrations/external/mycelium"]
   path = integrations/external/mycelium
   url = https://github.com/mycelium-io/mycelium.git
-
+  branch = main
 [submodule "integrations/external/prime-agent"]
   path = integrations/external/prime-agent
   url = https://github.com/PrimeIntellect-ai/prime-agent.git
-
+  branch = main
 [submodule "integrations/external/cuda-oxide"]
   path = integrations/external/cuda-oxide
   url = https://github.com/SuperInstance/cuda-oxide.git
+  branch = main
