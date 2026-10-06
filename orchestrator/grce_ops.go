@@ -60,7 +60,7 @@ func RegisterGRFGRCEOperations(e *Engine) error {
 	}
 
 	if err := e.Register(GRCEDescribeOperation, func(ctx context.Context, m protocol.Message) (protocol.Result, error) {
-		if err := requireGRFContext(m); err != nil {
+		if _, err := requireGRFContext(m); err != nil {
 			return grfOperationFailure(m, err)
 		}
 		invariants := grf.CanonicalInvariantSet()
@@ -88,7 +88,7 @@ func RegisterGRFGRCEOperations(e *Engine) error {
 	}
 
 	if err := e.Register(GRCEBindingsOperation, func(ctx context.Context, m protocol.Message) (protocol.Result, error) {
-		if err := requireGRFContext(m); err != nil {
+		if _, err := requireGRFContext(m); err != nil {
 			return grfOperationFailure(m, err)
 		}
 		raw, _ := json.Marshal(grceBindingInventory(e))
@@ -103,7 +103,7 @@ func RegisterGRFGRCEOperations(e *Engine) error {
 	}
 
 	if err := e.Register(GRFParticipantDescribeOperation, func(ctx context.Context, m protocol.Message) (protocol.Result, error) {
-		if err := requireGRFContext(m); err != nil {
+		if _, err := requireGRFContext(m); err != nil {
 			return grfOperationFailure(m, err)
 		}
 		raw, _ := json.Marshal(map[string]any{
@@ -167,7 +167,7 @@ func RegisterGRFGRCEOperations(e *Engine) error {
 	}
 
 	if err := e.Register(GRCECycleOperation, func(ctx context.Context, m protocol.Message) (protocol.Result, error) {
-		if err := requireGRFContext(m); err != nil {
+		if _, err := requireGRFContext(m); err != nil {
 			return grfOperationFailure(m, err)
 		}
 		_ = ctx
