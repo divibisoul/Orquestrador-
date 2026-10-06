@@ -12,12 +12,20 @@ docker compose version >/dev/null || { echo "BLOCKED: docker compose is required
 mkdir -p "$REPO_ROOT"
 
 while read -r nucleus repo sha; do
-  if [[ -z "$nucleus" || "$nucleus" == \#* ]]; then continue; fi
+  if [[ -z "$nucleus" || "$nucleus" == #* ]]; then continue; fi
   dir="$REPO_ROOT/$(basename "$repo")"
   if [[ ! -d "$dir/.git" ]]; then git clone "https://github.com/$repo.git" "$dir"; fi
   git -C "$dir" fetch --all --tags --prune
   git -C "$dir" checkout --detach "$sha"
 done < "$LOCK"
+
+# SOUL-25 external providers are canonical submodules of N07.
+# Materialize them before adapter/runtime validation.
+if [[ -f "$ROOT/.gitmodules" ]]; then
+  git -C "$ROOT" submodule sync --recursive
+  git -C "$ROOT" submodule update --init --recursive
+  node "$ROOT/scripts/validate-soul-external-submodules.mjs"
+fi
 
 if [[ ! -f "$SECRETS" ]]; then
   cat > "$SECRETS" <<'EOF'
