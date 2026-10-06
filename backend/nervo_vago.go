@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"sort"
 	"strings"
 
 	"github.com/divibisoul/Orquestrador-/orchestrator"
@@ -243,17 +242,25 @@ func RegisterNervoVagoOperations(e *orchestrator.Engine, sara *SARAProxy) error 
 		if source == "" {
 			source = strings.TrimSpace(m.Source)
 		}
-		envelope := NervoVagoEnvelope{
-			VagusVersion:  "1.0",
-			MessageID:     strings.TrimSpace(m.Metadata["message_id"]),
-			CorrelationID: strings.TrimSpace(m.CorrelationID),
-			Source:        source,
-			Target:        strings.TrimSpace(m.Metadata["target"]),
-			Priority:      parseInt(m.Metadata["priority"], 50),
-			TTL:           parseInt64(m.Metadata["ttl"], 5000),
-			Type:          strings.TrimSpace(m.Metadata["type"]),
-			Payload:       payload,
-			Provenance: NervoVagoProvenance{
+	priority, err := parseIntStrict(m.Metadata["priority"], 50)
+	if err != nil {
+		return protocol.Result{}, errors.New("NERVO_VAGO_PRIORITY_INVALID")
+	}
+	ttl, err := parseInt64Strict(m.Metadata["ttl"], 5000)
+	if err != nil {
+		return protocol.Result{}, errors.New("NERVO_VAGO_TTL_INVALID")
+	}
+	envelope := NervoVagoEnvelope{
+		VagusVersion:  "1.0",
+		MessageID:     strings.TrimSpace(m.Metadata["message_id"]),
+		CorrelationID: strings.TrimSpace(m.CorrelationID),
+		Source:        source,
+		Target:        strings.TrimSpace(m.Metadata["target"]),
+		Priority:      priority,
+		TTL:           ttl,
+		Type:          strings.TrimSpace(m.Metadata["type"]),
+		Payload:       payload,
+		Provenance: NervoVagoProvenance{
 				TraceID:       strings.TrimSpace(m.TraceID),
 				CorrelationID: strings.TrimSpace(m.CorrelationID),
 				MessageID:     strings.TrimSpace(m.Metadata["message_id"]),
@@ -295,32 +302,26 @@ func RegisterNervoVagoOperations(e *orchestrator.Engine, sara *SARAProxy) error 
 	return nil
 }
 
-func parseInt(raw string, fallback int) int {
+func parseIntStrict(raw string, fallback int) (int, error) {
 	raw = strings.TrimSpace(raw)
 	if raw == "" {
-		return fallback
+		return fallback, nil
 	}
 	var v int
 	if _, err := fmt.Sscanf(raw, "%d", &v); err != nil {
-		return fallback
+		return 0, err
 	}
-	return v
+	return v, nil
 }
 
-func parseInt64(raw string, fallback int64) int64 {
+func parseInt64Strict(raw string, fallback int64) (int64, error) {
 	raw = strings.TrimSpace(raw)
 	if raw == "" {
-		return fallback
+		return fallback, nil
 	}
 	var v int64
 	if _, err := fmt.Sscanf(raw, "%d", &v); err != nil {
-		return fallback
+		return 0, err
 	}
-	return v
+	return v, nil
 }
-
-func rawString(raw []byte) string {
-	return string(raw)
-}
-
-var _ = sort.Strings
