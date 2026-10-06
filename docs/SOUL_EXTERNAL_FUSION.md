@@ -21,7 +21,7 @@ N07 permanece como plano de controle; a autoridade funcional continua nos núcle
 | Whisper | N03 | fala -> texto |
 | Kokoro | N03 | texto -> fala |
 
-Cada upstream possui fonte pinada, adapter explícito, probe, execução por operação, roteamento pelo N07/Mesh, limites de entrada/saída, timeout e falha fechada. A execução externa fica desligada por padrão e é ativada individualmente por variável SOUL_EXTERNAL_EXECUTE_<PROVIDER>=true.
+Cada upstream possui fonte pinada, adapter explícito, probe, execução por operação, roteamento pelo N07/Mesh, limites de entrada/saída, timeout e falha fechada. Os 16 sources são materializados no checkout de runtime e, na imagem de produção, carregados junto dos adapters e acompanhados por uma atestação de build dos 16 SHAs. A execução externa fica desligada por padrão e é ativada individualmente por variável SOUL_EXTERNAL_EXECUTE_<PROVIDER>=true.
 
 Adapter implementado não é evidência REAL. CI prova contrato e registro; evidência REAL depende de dependências, modelos, credenciais e ambiente compatível.
 
