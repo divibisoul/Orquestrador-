@@ -161,3 +161,16 @@ func TestSplitOperationAcceptsBuildMetadataAndRejectsMalformedSemVer(t *testing.
 		}
 	}
 }
+
+func TestSemanticVersionHandlesVeryLargeNumericPreReleaseIdentifiers(t *testing.T) {
+	large := "12345678901234567890123456789012345678901234567890"
+	greater := "12345678901234567890123456789012345678901234567891"
+	higher := "1.0.0-alpha." + greater
+	lower := "1.0.0-alpha." + large
+	if !semverGreater(higher, lower) {
+		t.Fatalf("large numeric prerelease identifier comparison failed: %s <= %s", higher, lower)
+	}
+	if semverGreater(lower, higher) {
+		t.Fatalf("large numeric prerelease comparison is not antisymmetric: %s > %s", lower, higher)
+	}
+}
