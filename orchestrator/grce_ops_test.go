@@ -37,10 +37,10 @@ func TestGRFAndGRCEOperationsRegistered(t *testing.T) {
 
 func TestGRCECycleFailsClosedUntilRealHooksAreBound(t *testing.T) {
 	e := newGRFTestEngine(t)
-	m := map[string]string{"correlation_id":"grf-test"}
+	m := map[string]string{"correlation_id":"grf-test","trace_id":"trace-grf-test"}
 	_, err := e.Execute(context.Background(), GRCECycleOperation, nil, m)
-	if err == nil || !strings.Contains(err.Error(), "GRF_TRACE_ID_REQUIRED") {
-		t.Fatalf("expected context gate, got %v", err)
+	if err == nil || !strings.Contains(err.Error(), "GRF_SEQUENCE_INDEX_REQUIRED") {
+		t.Fatalf("expected context sequence gate, got %v", err)
 	}
 	_, err = e.Execute(context.Background(), GRCECycleOperation, nil, map[string]string{"trace_id":"t","correlation_id":"c","grf_sequence_index":"1"})
 	if err == nil || !strings.Contains(err.Error(), "GRCE_RUNTIME_HOOKS_NOT_BOUND") {
