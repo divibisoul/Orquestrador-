@@ -1503,5 +1503,13 @@
     "reason": "previous parent_hash was not the SHA-256 of the canonical Soul-25 file",
     "previous": "sha256:c89a8ea7914f1bfbd3345a1dd40b2991287c180a45e54e916e30670495d8e975",
     "current": "sha256:f2726bcf8de66c41ff677ba095aa965876fd28a96a84596166ff45a144d59041"
-  }
+  },
+  "grf_version": "2.0.0",
+  "grce_version": "2.0.0",
+  "regenerative_modules_manifest": "integrations/grf/regenerative-and-organs.json",
+  "participant_contract_manifest": "integrations/grf/soul-29-participant-contracts.json",
+  "canonical_mesh": "soul-mesh/1",
+  "control_plane": "N07",
+  "grf_state": "PROJECTED",
+  "grce_state": "PROJECTED"
 }
