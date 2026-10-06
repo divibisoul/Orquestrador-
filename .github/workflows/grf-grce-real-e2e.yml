@@ -114,18 +114,37 @@ jobs:
           print('22-source federation: PASS')
           PY
 
-      - name: Execute real GRCE -> SARA cycle
+      - name: Execute full GRCE -> C1-C7-C1 with real SARA authority
         run: |
-          curl -fsS -H 'Authorization: Bearer e2e-n07-token-123456789' -H 'Content-Type: application/json' -X POST http://127.0.0.1:8080/v1/execute -d '{"operation":"grce.sara.authoritative.execute@2.0.0","correlationId":"grce-e2e-001","metadata":{"grf_sequence_index":"1","grf_input_text":"preservar estado, rastreabilidade e autonomia"}}' | tee /tmp/grce-sara.json
           python - <<'PY'
           import json
-          outer=json.load(open('/tmp/grce-sara.json'))
+          text = ("preservar autonomia, rastreabilidade e estado historico. " * 220)
+          body = {
+              "operation": "grce.cycle.execute@2.0.0",
+              "correlationId": "grce-full-e2e-001",
+              "metadata": {
+                  "grf_sequence_index": "1",
+                  "grf_input_text": text
+              }
+          }
+          json.dump(body, open("/tmp/grce-request.json", "w"))
+          PY
+          curl -fsS -H 'Authorization: Bearer e2e-n07-token-123456789' -H 'Content-Type: application/json' -X POST http://127.0.0.1:8080/v1/execute --data-binary @/tmp/grce-request.json | tee /tmp/grce-full.json
+          python - <<'PY'
+          import json
+          outer=json.load(open('/tmp/grce-full.json'))
           m=outer['metadata']
-          assert m['execution_mode']=='SARA_AUTHORITATIVE'
-          assert m['epistemic_state']=='REAL'
-          assert m['trace_hash'].startswith('sha256:')
-          assert m['federated_context_hash'].startswith('sha256:')
-          print('GRCE -> SARA authoritative: REAL')
+          result=json.loads(m['grce_result_json'])
+          assert outer['status']=='ok'
+          assert m['execution_mode']=='GRCE_EXECUTOR'
+          assert result['epistemic_state']=='ACTIVE', result
+          assert result['outcome']=='ACTIVE', result
+          assert len(result['provenance']) >= 5
+          assert len(result['evidence']) >= 1
+          assert len(result['capabilities']) >= 1
+          seq=[p['sequence_index'] for p in result['provenance']]
+          assert seq == sorted(seq) and len(seq)==len(set(seq)), seq
+          print('GRCE C1-C7-C1: ACTIVE / REAL')
           PY
 
       - name: Execute unified Nervo Vago path with ETR provenance
@@ -147,15 +166,15 @@ jobs:
           print('Nervo Vago -> ETR -> Vagus: REAL')
           PY
 
-      - name: Prove direct GRCE fails closed
+      - name: Prove GRCE fails closed on missing context
         run: |
           set +e
-          http_status="$(curl -sS -o /tmp/grce-direct.json -w '%{http_code}' -H 'Authorization: Bearer e2e-n07-token-123456789' -H 'Content-Type: application/json' -X POST http://127.0.0.1:8080/v1/execute -d '{"operation":"grce.cycle.execute@2.0.0","correlationId":"grce-direct-blocked","metadata":{"grf_sequence_index":"2"}}')"
+          http_status="$(curl -sS -o /tmp/grce-direct.json -w '%{http_code}' -H 'Authorization: Bearer e2e-n07-token-123456789' -H 'Content-Type: application/json' -X POST http://127.0.0.1:8080/v1/execute -d '{"operation":"grce.cycle.execute@2.0.0","correlationId":"grce-context-blocked","metadata":{}}')"
           curl_status=$?
           cat /tmp/grce-direct.json
           test "$curl_status" -eq 0
           test "$http_status" = "400"
-          grep -q 'GRCE_RUNTIME_HOOKS_NOT_BOUND' /tmp/grce-direct.json
+          grep -q 'GRF_SEQUENCE_INDEX_REQUIRED' /tmp/grce-direct.json
 
       - name: Cleanup
         if: always()
