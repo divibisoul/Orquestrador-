@@ -34,6 +34,14 @@ on:
       - 'scripts/soul-architectural-integrity.mjs'
       - 'scripts/soul-live-source-audit.mjs'
       - 'scripts/generate-crossfront-state.mjs'
+      - 'grf/**'
+      - 'grce/**'
+      - 'integrations/grf/**'
+      - 'integrations/soul-29-capability-fabric.json'
+      - 'integrations/external-capabilities.json'
+      - 'integrations/external-adapters.json'
+      - 'integrations/external-capability-ownership.json'
+      - 'integrations/external/**'
       - '.github/workflows/n07-ci.yml'
   workflow_dispatch:
 
@@ -218,7 +226,7 @@ jobs:
             sleep 1
           done
           curl -fsS             -H 'Authorization: Bearer ci'             -H 'Content-Type: application/json'             -X POST http://127.0.0.1:18082/execute             -d '{"operation":"external.federation.describe@1.0.0","metadata":{}}'             | tee /tmp/external-federation.json
-          grep -q '"provider_count":16' /tmp/external-federation.json
+          grep -q '"provider_count":22' /tmp/external-federation.json
           curl -fsS             -H 'Authorization: Bearer ci'             -H 'Content-Type: application/json'             -X POST http://127.0.0.1:18082/execute             -d '{"operation":"external.langgraph.probe@1.0.0","metadata":{}}'             | tee /tmp/langgraph-probe.json
           grep -q '"state":"PASS"' /tmp/langgraph-probe.json
           grep -q '"source_present":true' /tmp/langgraph-probe.json
