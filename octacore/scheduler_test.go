@@ -191,3 +191,33 @@ func TestOctacoreWebGPUIsExplicitlyUnavailable(t *testing.T) {
 		t.Fatalf("unexpected WebGPU error: %#v", result.Error)
 	}
 }
+
+func TestOctacoreCancellationPreservesCauseOverBarrierDeadlock(t *testing.T) {
+	s := newTestScheduler(t)
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	groupA := "a"
+	groupB := "b"
+	barrierA := "b"
+	barrierB := "a"
+	results := s.executePlan(ctx, []Job{
+		job("cancel-a", G7, G7, &groupA, &barrierA),
+		job("cancel-b", G7, G7, &groupB, &barrierB),
+	})
+
+	if len(results) != 2 {
+		t.Fatalf("expected two results, got %d", len(results))
+	}
+	for i, result := range results {
+		if result.OK {
+			t.Fatalf("result %d unexpectedly succeeded: %#v", i, result)
+		}
+		if result.Error == nil || result.Error.Code != "EXECUTION_CANCELLED" {
+			t.Fatalf("result %d lost cancellation cause: %#v", i, result.Error)
+		}
+		if result.CorrelationID == "" {
+			t.Fatalf("result %d lost correlation provenance", i)
+		}
+	}
+}
