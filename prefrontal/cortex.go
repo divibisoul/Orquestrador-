@@ -253,14 +253,18 @@ func (c *Cortex) Recall(limit int) []Decision {
 func (c *Cortex) Health() map[string]any {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
-	avg := 0.0
-	if c.evaluated > 0 {
-		avg = float64(c.decisionNanos) / float64(c.evaluated) / 1e6
+	avgEvaluationMS := 0.0
+	avgCommitMS := 0.0
+	if c.decisionCount > 0 {
+		avgEvaluationMS = float64(c.evaluationNanos) / float64(c.decisionCount) / 1e6
+	}
+	if c.commits > 0 {
+		avgCommitMS = float64(c.commitNanos) / float64(c.commits) / 1e6
 	}
 	return map[string]any{"status": "ready", "threshold": c.threshold, "capacity": c.capacity, "decisions": len(c.decisions), "evaluated": c.evaluated, "inhibited": c.inhibited, "inhibition_checks": c.inhibitionChecks, "commits": c.commits, "decision_count": c.decisionCount, "evaluation_nanos": c.evaluationNanos, "commit_nanos": c.commitNanos, "inhibition_rate": func() float64 {
 		if c.inhibitionChecks == 0 {
 			return 0
 		}
 		return float64(c.inhibited) / float64(c.inhibitionChecks)
-	}(), "avg_decision_ms": avg, "last_decision": c.lastDecision}
+	}(), "avg_decision_ms": avgEvaluationMS, "avg_commit_ms": avgCommitMS, "last_decision": c.lastDecision}
 }
