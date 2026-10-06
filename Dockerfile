@@ -43,10 +43,11 @@ COPY --from=builder /src/scripts/external-capability-adapter.py /app/scripts/ext
 COPY --from=builder /src/scripts/crewai_runner.py /app/scripts/crewai_runner.py
 COPY --from=builder /src/scripts/metagpt_runner.py /app/scripts/metagpt_runner.py
 COPY --from=builder /src/config/soul-external-runtime-attestation.json /app/config/soul-external-runtime-attestation.json
-RUN mkdir -p /var/lib/n07/storacha && chown -R n07:n07 /app /var/lib/n07
+RUN mkdir -p /var/lib/n07/storacha /var/lib/n07/external-io && chown -R n07:n07 /app /var/lib/n07
 USER n07
 ENV N07_HTTP_ADDR=:8080 \
     SOUL_EXTERNAL_PYTHON=/usr/bin/python3 \
+    SOUL_EXTERNAL_IO_ROOT=/var/lib/n07/external-io \
     STORACHA_GUPPY_BIN=/usr/local/bin/guppy \
     STORACHA_DATA_DIR=/var/lib/n07/storacha
 EXPOSE 8080
