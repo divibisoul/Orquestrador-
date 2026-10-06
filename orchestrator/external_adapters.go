@@ -133,7 +133,10 @@ func (r ExternalAdapterRegistry) python() string {
 	}
 	return "python3"
 }
-func (r ExternalAdapterRegistry) operationAllowed(provider, operation string) bool {
+func (r ExternalAdapterRegistry) operationAllowed(provider, mode, operation string) bool {
+	if strings.EqualFold(strings.TrimSpace(mode), "probe") && operation == "probe" {
+		return true
+	}
 	p, ok := r.byID[strings.ToLower(strings.TrimSpace(provider))]
 	if !ok {
 		return false
@@ -234,7 +237,7 @@ func (r ExternalAdapterRegistry) run(ctx context.Context, provider, mode, operat
 	if !ok {
 		return nil, fmt.Errorf("EXTERNAL_PROVIDER_UNKNOWN:%s", provider)
 	}
-	if !r.operationAllowed(p.ID, operation) {
+	if !r.operationAllowed(p.ID, mode, operation) {
 		return nil, fmt.Errorf("EXTERNAL_OPERATION_NOT_REGISTERED:%s:%s", p.ID, operation)
 	}
 	if err := r.validateMaterializedPin(ctx, p); err != nil {
