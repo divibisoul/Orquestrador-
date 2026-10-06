@@ -62,8 +62,8 @@ func TestCortexTelemetryCountersBecomeEvidence(t *testing.T) {
 	if health["decision_count"] != uint64(1) {
 		t.Fatalf("expected one evaluation decision, got %#v", health["decision_count"])
 	}
-	if health["inhibition_checks"] != uint64(2) {
-		t.Fatalf("expected two inhibition checks, got %#v", health["inhibition_checks"])
+	if health["inhibition_checks"] != uint64(3) {
+		t.Fatalf("expected three inhibition checks, got %#v", health["inhibition_checks"])
 	}
 	if health["commits"] != uint64(1) {
 		t.Fatalf("expected one commit, got %#v", health["commits"])
