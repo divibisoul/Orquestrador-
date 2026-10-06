@@ -29,6 +29,9 @@ for(const edge of soul25.edges){
 for(const id of ['autogenesis','supergpu-agi','clareira-agi','nervo-vago']){
   if(!soul29.nodes.some(x=>x.id===id)) throw new Error(`SOUL29_NODE_MISSING:${id}`);
 }
+const nervoNode=soul29.nodes.find(x=>x.id==='nervo-vago');
+if(nervoNode.repository!=='https://github.com/OpenSIN-AI/OpenSIN-Neural-Bus') throw new Error('NERVOVAGO_SOURCE_ALIGNMENT_INVALID');
+if(nervoNode.state!=='BLOCKED') throw new Error('NERVOVAGO_BLOCKED_STATE_INVALID');
 if(contracts.contracts?.length!==10 || contracts.contracts_count!==10) throw new Error('GRF_NEW_CONTRACT_COUNT_INVALID');
 const required=['ingest','epistemicState','invariants','capabilities','failuresAbsorbed','provenance'];
 for(const c of contracts.contracts){
