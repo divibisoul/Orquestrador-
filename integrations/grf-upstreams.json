@@ -1,0 +1,102 @@
+{
+  "schema_version": "1.0.0",
+  "wave": "GRF-GRCE-2026-10-06",
+  "policy": {
+    "preserve_existing_code": true,
+    "preserve_parallel_fronts": true,
+    "no_fake_runtime_success": true,
+    "pin_external_revisions": true,
+    "runtime_activation_requires_explicit_adapter": true,
+    "unresolved_sources_remain_unresolved": true
+  },
+  "sources": [
+    {
+      "id": "octos",
+      "source": "https://github.com/lispking/octos.git",
+      "revision": "26a916be14dee49bcc48fbc048947d018c7de6ba",
+      "path": "integrations/external/grf/octos",
+      "role": "Octacore",
+      "affinity": ["parallel-agent-coordination", "persistent-peer-agents", "bounded-execution"],
+      "status": "STRUCTURAL_ONLY"
+    },
+    {
+      "id": "hora-graph-core",
+      "source": "https://github.com/Vivien83/hora-graph-core.git",
+      "revision": "334f4f82d1c7525d29130ced9e6199e3633c0f61",
+      "path": "integrations/external/grf/hora-graph-core",
+      "role": "HortaCore",
+      "affinity": ["knowledge-graph", "memory-activation", "sleep-consolidation", "crash-safe-persistence"],
+      "status": "STRUCTURAL_ONLY"
+    },
+    {
+      "id": "mycelium",
+      "source": "https://github.com/mycelium-io/mycelium.git",
+      "revision": "26156b5e9f169e74c73848908ad5e3bad76cd6fa",
+      "path": "integrations/external/grf/mycelium",
+      "role": "Clareira",
+      "affinity": ["peer-agent-coordination", "persistent-memory", "semantic-negotiation", "shared-knowledge"],
+      "status": "STRUCTURAL_ONLY"
+    },
+    {
+      "id": "prime-agent",
+      "source": "https://github.com/PrimeIntellect-ai/prime-agent.git",
+      "revision": "7a52276cb17310f331f1075f28fa5cf9c4ae0a0a",
+      "path": "integrations/external/grf/prime-agent",
+      "role": "PrefrontalNeocortex",
+      "affinity": ["self-improvement", "long-running-agent-workflows", "durable-harness-state", "recursive-subagents"],
+      "status": "STRUCTURAL_ONLY"
+    },
+    {
+      "id": "cuda-oxide",
+      "source": "https://github.com/SuperInstance/cuda-oxide.git",
+      "revision": "1ad9bfc5241322ceeccb3f9182f2a188a648bd08",
+      "path": "integrations/external/grf/cuda-oxide",
+      "role": "SuperGPU",
+      "affinity": ["gpu-runtime", "fleet-coordination", "pipeline-execution"],
+      "status": "STRUCTURAL_ONLY"
+    },
+    {
+      "id": "openmind-conductor",
+      "source": "https://github.com/SuperInstance/openmind-conductor.git",
+      "revision": "18c5498a4175ed0b20bff03bc3cf2ed3233be014",
+      "path": "integrations/external/grf/openmind-conductor",
+      "role": "Orbitador",
+      "affinity": ["agent-conduction", "orchestration"],
+      "status": "STRUCTURAL_ONLY"
+    }
+  ],
+  "unresolved_candidates": [
+    {
+      "id": "cognifold",
+      "requested_source": "https://github.com/OpenNerve/CogniFold",
+      "status": "UNRESOLVED",
+      "reason": "GitHub returned HTTP 404 during live repository verification.",
+      "functional_replacement": "prime-agent",
+      "target": "PrefrontalNeocortex"
+    },
+    {
+      "id": "belel-protocol",
+      "requested_source": "https://github.com/TTOPM/belel-protocol",
+      "status": "UNRESOLVED",
+      "reason": "GitHub returned HTTP 404 during live repository verification.",
+      "functional_replacement": "SARA native VagusNerveBus boundary",
+      "target": "Nervo Vago"
+    },
+    {
+      "id": "opensin-neural-bus",
+      "requested_source": "https://github.com/OpenSIN-AI/OpenSIN-Neural-Bus",
+      "status": "UNRESOLVED",
+      "reason": "GitHub returned HTTP 404 during live repository verification.",
+      "functional_replacement": "existing canonical SOUL Mesh + SARA/N02 VagusBus",
+      "target": "VagusBus"
+    },
+    {
+      "id": "functional-graph-agi",
+      "requested_source": "https://github.com/kexi-bq/functional-graph-agi",
+      "status": "UNRESOLVED",
+      "reason": "GitHub returned HTTP 404 during live repository verification.",
+      "functional_replacement": "hora-graph-core + current N07 orbital/prefrontal runtime",
+      "target": "HortaCore/Orbitador"
+    }
+  ]
+}
