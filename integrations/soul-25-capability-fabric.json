@@ -144,7 +144,7 @@
       "id": "openhands",
       "type": "UPSTREAM",
       "repository": "https://github.com/OpenHands/OpenHands",
-      "revision": "8136a1d59f330edc99b977a69c1432a56c7010cc",
+      "revision": "81e83760a196ba6374ad2c3d38d577262c79ca2d",
       "capabilities": [
         "software-agents",
         "tool-use",
