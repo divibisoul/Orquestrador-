@@ -121,8 +121,12 @@ jobs:
       - name: Forbid recursive upstream submodule checkout
         run: |
           set -euo pipefail
-          if grep -R -nE 'submodules:[[:space:]]*recursive' .github/workflows; then
+          if grep -R -nE 'submodules:[[:space:]]*recursive' .github/workflows scripts/*.sh; then
             echo 'Recursive upstream submodule traversal is forbidden; materialize only registered top-level federation sources.'
+            exit 1
+          fi
+          if grep -nE 'git submodule (sync|update).*--recursive|git -C "\$ROOT" submodule (sync|update).*--recursive' scripts/soul-local-up.sh; then
+            echo 'Local bootstrap must not recurse into upstream-internal submodules.'
             exit 1
           fi
 
