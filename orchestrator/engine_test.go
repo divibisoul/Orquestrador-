@@ -114,3 +114,35 @@ func TestVersionedRouting(t *testing.T) {
 	}
 	_ = e.Shutdown(context.Background())
 }
+
+func TestRequestRejectionsDoNotOpenExecutionBreaker(t *testing.T) {
+	e, _ := newEngine(t, 1)
+	e.failureThreshold = 2
+
+	for i := 0; i < 5; i++ {
+		message := protocol.NewMessage("N01", "N07", "command", "missing.operation@1.0.0", []float64{1})
+		if _, err := e.Submit(context.Background(), message); err == nil {
+			t.Fatal("unknown operation must be rejected")
+		}
+		if e.breakerOpen() {
+			t.Fatalf("request rejection poisoned the execution breaker after attempt %d", i+1)
+		}
+	}
+	if got := e.failures.Load(); got != 0 {
+		t.Fatalf("request rejections must not increment execution failures, got %d", got)
+	}
+
+	if err := e.Register("failing.operation@1.0.0", func(context.Context, protocol.Message) (protocol.Result, error) {
+		return protocol.Result{Status: "error"}, context.Canceled
+	}); err != nil {
+		t.Fatal(err)
+	}
+	for i := 0; i < 2; i++ {
+		message := protocol.NewMessage("N01", "N07", "command", "failing.operation@1.0.0", []float64{1})
+		_, _ = e.Submit(context.Background(), message)
+	}
+	if !e.breakerOpen() {
+		t.Fatal("real execution failures must still trip the execution breaker")
+	}
+	_ = e.Shutdown(context.Background())
+}
