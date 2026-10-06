@@ -29,6 +29,12 @@ try {
   if (!nested.includes(expected)) {
     throw new Error(`NESTED_SUBMODULE_PIN_MISMATCH:${nested}`);
   }
+  // GitHub Actions checkout cleanup may inspect nested metadata recursively.
+  // Materialize the upstream's own missing .gitmodules only in the ephemeral CI
+  // worktree; the upstream repository and its top-level registration remain unchanged.
+  const nestedGitmodules = "[submodule \"datasets/hle\"]\\n  path = datasets/hle\\n  url = https://huggingface.co/datasets/cais/hle\\n";
+  const { writeFile } = await import("node:fs/promises");
+  await writeFile(`${autogenesis}/.gitmodules`, nestedGitmodules, "utf8");
   run(["config", "submodule.datasets/hle.url", "https://huggingface.co/datasets/cais/hle"], autogenesis);
   console.log("NESTED_SUBMODULE_METADATA: PROJECTED/BLOCKED");
   console.log("NESTED_SUBMODULE_REASON: Autogenesis pins HLE but its own .gitmodules is absent.");
