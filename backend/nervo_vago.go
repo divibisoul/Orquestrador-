@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"strconv"
 
 	"github.com/divibisoul/Orquestrador-/orchestrator"
 	"github.com/divibisoul/Orquestrador-/protocol"
@@ -234,8 +235,8 @@ func RegisterNervoVagoOperations(e *orchestrator.Engine, sara *SARAProxy) error 
 			return protocol.Result{}, errors.New("NERVO_VAGO_PAYLOAD_JSON_INVALID")
 		}
 		sequenceRaw := strings.TrimSpace(m.Metadata["sequence_index"])
-		var sequence uint64
-		if _, err := fmt.Sscanf(sequenceRaw, "%d", &sequence); err != nil || sequence == 0 {
+		sequence, err := strconv.ParseUint(sequenceRaw, 10, 64)
+		if err != nil || sequence == 0 {
 			return protocol.Result{}, errors.New("NERVO_VAGO_SEQUENCE_INDEX_INVALID")
 		}
 		source := strings.TrimSpace(m.Metadata["source"])
@@ -307,8 +308,8 @@ func parseIntStrict(raw string, fallback int) (int, error) {
 	if raw == "" {
 		return fallback, nil
 	}
-	var v int
-	if _, err := fmt.Sscanf(raw, "%d", &v); err != nil {
+	v, err := strconv.Atoi(raw)
+	if err != nil {
 		return 0, err
 	}
 	return v, nil
@@ -319,8 +320,8 @@ func parseInt64Strict(raw string, fallback int64) (int64, error) {
 	if raw == "" {
 		return fallback, nil
 	}
-	var v int64
-	if _, err := fmt.Sscanf(raw, "%d", &v); err != nil {
+	v, err := strconv.ParseInt(raw, 10, 64)
+	if err != nil {
 		return 0, err
 	}
 	return v, nil
