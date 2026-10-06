@@ -184,6 +184,13 @@ func main() {
 	if err := orchestrator.RegisterMultiAgentFacadeOperations(e); err != nil {
 		log.Fatal(err)
 	}
+	externalRegistry, err := orchestrator.NewExternalAdapterRegistry()
+	if err != nil {
+		log.Fatal(err)
+	}
+	if err := orchestrator.RegisterExternalAdapterOperations(e, externalRegistry); err != nil {
+		log.Fatal(err)
+	}
 	agentArsenalProxy := agentarsenal.NewFromEnv()
 	if err := orchestrator.RegisterAgentArsenalOperations(e, agentArsenalProxy); err != nil {
 		log.Fatal(err)
