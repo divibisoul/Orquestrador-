@@ -21,6 +21,7 @@ const (
 	GRCECycleOperation = "grce.cycle.execute@2.0.0"
 	GRCEAuthoritativeSaraOperation = "grce.sara.authoritative.execute@2.0.0"
 	GRFParticipantDescribeOperation = "grf.participant.describe@2.0.0"
+	GRFParticipantIngestOperation = "grf.participant.ingest@2.0.0"
 )
 
 type GRCEControlPlane struct {
