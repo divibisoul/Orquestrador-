@@ -19,6 +19,14 @@ while read -r nucleus repo sha; do
   git -C "$dir" checkout --detach "$sha"
 done < "$LOCK"
 
+# SOUL-25 external providers are canonical submodules of N07.
+# Materialize them before adapter/runtime validation.
+if [[ -f "$ROOT/.gitmodules" ]]; then
+  git -C "$ROOT" submodule sync
+  bash "$ROOT/scripts/materialize-top-level-submodules.sh"
+  node "$ROOT/scripts/validate-soul-external-submodules.mjs"
+fi
+
 if [[ ! -f "$SECRETS" ]]; then
   cat > "$SECRETS" <<'EOF'
 SOUL_MESH_SECRET=local-development-secret-change-me

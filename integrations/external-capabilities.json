@@ -1,5 +1,5 @@
 {
-  "schema_version": "1.0.0",
+  "schema_version": "1.1.0",
   "integration_mode": "external-capability-federation",
   "policy": {
     "preserve_existing_code": true,
@@ -43,7 +43,7 @@
     {
       "id": "langgraph",
       "source": "https://github.com/langchain-ai/langgraph",
-      "revision": "157a06dda988d85afeb8751ff27b35ab3f4f8bf4",
+      "revision": "2d942085e214ef6b99b6f54ed4d544a7c7c5ac56",
       "targets": [
         "N07",
         "N01"
@@ -57,7 +57,7 @@
     {
       "id": "crewai",
       "source": "https://github.com/crewAIInc/crewAI",
-      "revision": "8078f9130c35a47be95d4a55bf1d73b3fd44fc88",
+      "revision": "1133f16cab274b9863b36fdacca7766b30e549fd",
       "targets": [
         "N07"
       ],
@@ -70,7 +70,7 @@
     {
       "id": "microsoft-agent-framework",
       "source": "https://github.com/microsoft/agent-framework",
-      "revision": "a2f4506c0ba30cea7c9bbe907fc158c0db2cc6a3",
+      "revision": "b9d24c8fb484c8330abe8bb9e7500ca3c3bbf46c",
       "targets": [
         "N07"
       ],
@@ -84,7 +84,7 @@
     {
       "id": "openhands",
       "source": "https://github.com/OpenHands/OpenHands",
-      "revision": "2414d6ee5e31bede2e78211f72b58e9949575a75",
+      "revision": "81e83760a196ba6374ad2c3d38d577262c79ca2d",
       "targets": [
         "N06"
       ],
@@ -128,7 +128,7 @@
     {
       "id": "letta-code",
       "source": "https://github.com/letta-ai/letta-code",
-      "revision": "1fcc9666817ab852bc2532a3a989f712e1fd6c19",
+      "revision": "4b028fab07c69edaac2ddb4f7b9a43573ff20d81",
       "targets": [
         "N01"
       ],
@@ -141,7 +141,7 @@
     {
       "id": "browser-use",
       "source": "https://github.com/browser-use/browser-use",
-      "revision": "302d8fcb245a7a63fb7531a4734c9ce3c7792779",
+      "revision": "7be96ed8bafa8dfe1eef228b59cf5c884b8b2431",
       "targets": [
         "N04"
       ],
@@ -167,7 +167,7 @@
     {
       "id": "pydantic-ai",
       "source": "https://github.com/pydantic/pydantic-ai",
-      "revision": "6bc07cf18b0641ea92343d8c589cfb922108b802",
+      "revision": "cd99fbc21959731de84807724c997430115ce65e",
       "targets": [
         "N01",
         "JEV"
@@ -182,7 +182,7 @@
     {
       "id": "llama-index",
       "source": "https://github.com/run-llama/llama_index",
-      "revision": "962940ddc079cc21701d28d1237c84c82a7c5164",
+      "revision": "81f0e06f6e61a5659bd409cac4a199e28c2fd85e",
       "targets": [
         "N05"
       ],
@@ -196,7 +196,7 @@
     {
       "id": "dspy",
       "source": "https://github.com/stanfordnlp/dspy",
-      "revision": "ba3f9198efe5d125c7c1a2b40b1f1e6166209bd2",
+      "revision": "bc8af7ed3d5ee0b892211e5c03274396442a413c",
       "targets": [
         "N06"
       ],
@@ -228,5 +228,178 @@
         "text-to-speech"
       ]
     }
-  ]
+  ],
+  "complementary_repositories": [
+    {
+      "id": "autogenesis",
+      "source": "https://github.com/DVampire/Autogenesis",
+      "revision": "5b070d5cd497e951a188a01409138e8b530eaf4a",
+      "targets": [
+        "N07"
+      ],
+      "capabilities": [
+        "meta-agent",
+        "optimizer",
+        "evaluator",
+        "generator",
+        "self-evolution"
+      ],
+      "state": "PROJECTED"
+    },
+    {
+      "id": "octos",
+      "source": "https://github.com/lispking/octos",
+      "revision": "26a916be14dee49bcc48fbc048947d018c7de6ba",
+      "targets": [
+        "N07",
+        "N02"
+      ],
+      "capabilities": [
+        "agentic-os",
+        "parallel-fanout",
+        "swarm",
+        "memory",
+        "sandbox"
+      ],
+      "state": "PROJECTED"
+    },
+    {
+      "id": "hora-graph-core",
+      "source": "https://github.com/Vivien83/hora-graph-core",
+      "revision": "334f4f82d1c7525d29130ced9e6199e3633c0f61",
+      "targets": [
+        "N01",
+        "N07"
+      ],
+      "capabilities": [
+        "knowledge-graph",
+        "bi-temporal-memory",
+        "hybrid-retrieval",
+        "persistence"
+      ],
+      "state": "PROJECTED"
+    },
+    {
+      "id": "mycelium",
+      "source": "https://github.com/mycelium-io/mycelium",
+      "revision": "26156b5e9f169e74c73848908ad5e3bad76cd6fa",
+      "targets": [
+        "N04",
+        "N07"
+      ],
+      "capabilities": [
+        "shared-workspace",
+        "agent-coordination",
+        "persistent-memory",
+        "mediated-negotiation"
+      ],
+      "state": "PROJECTED"
+    },
+    {
+      "id": "prime-agent",
+      "source": "https://github.com/PrimeIntellect-ai/prime-agent",
+      "revision": "672085e883c25a8a5f10c77ad8e5d3fb38dd6584",
+      "targets": [
+        "N06",
+        "N07"
+      ],
+      "capabilities": [
+        "recursive-subagents",
+        "RLM",
+        "continual-harness",
+        "self-improvement"
+      ],
+      "state": "PROJECTED"
+    },
+    {
+      "id": "cuda-oxide",
+      "source": "https://github.com/SuperInstance/cuda-oxide",
+      "revision": "1ad9bfc5241322ceeccb3f9182f2a188a648bd08",
+      "targets": [
+        "N07"
+      ],
+      "capabilities": [
+        "CUDA-compiler",
+        "PTX",
+        "GPU-runtime",
+        "async-device-execution"
+      ],
+      "state": "PROJECTED"
+    }
+  ],
+  "blocked_candidates": [
+    {
+      "id": "cognifold",
+      "source": "https://github.com/OpenNerve/CogniFold",
+      "requested_role": "Neocortex",
+      "state": "BLOCKED",
+      "reason": "GitHub returned 404 during source verification on 2026-10-06"
+    },
+    {
+      "id": "belel-protocol",
+      "source": "https://github.com/TTOPM/belel-protocol",
+      "requested_role": "Nervo Vago",
+      "state": "BLOCKED",
+      "reason": "GitHub returned 404 during source verification on 2026-10-06"
+    },
+    {
+      "id": "opensinn-bus",
+      "source": "https://github.com/OpenSIN-AI/OpenSIN-Neural-Bus",
+      "requested_role": "VagusBus",
+      "state": "BLOCKED",
+      "reason": "GitHub returned 404 during source verification on 2026-10-06"
+    },
+    {
+      "id": "functional-graph-agi",
+      "source": "https://github.com/kexi-bq/functional-graph-agi",
+      "requested_role": "SuperGPU AGI",
+      "state": "BLOCKED",
+      "reason": "GitHub returned 404 during source verification on 2026-10-06"
+    }
+  ],
+  "candidate_sources": {
+    "multi-agent-engine": {
+      "source": "https://github.com/NickSpyker/multi-agent-engine",
+      "revision": "ed540b868fecd8d222cfcee1963589ad18c157f6",
+      "role": "Octacore parallel CPU/GPU reinforcement",
+      "state": "PROJECTED",
+      "integration_state": "NOT_MATERIALIZED_NO_NATIVE_ADAPTER_YET"
+    },
+    "cognitive-workspace": {
+      "source": "https://github.com/tao-hpu/cognitive-workspace",
+      "revision": "6740fc3b69a842ccc49663ac6c371600d0d9fc2e",
+      "role": "Clareira workspace reinforcement",
+      "state": "PROJECTED",
+      "integration_state": "NOT_MATERIALIZED_NO_NATIVE_ADAPTER_YET"
+    },
+    "ravana": {
+      "source": "https://github.com/OpenSource-Syndicate/RAVANA",
+      "revision": "c5d5095b2f918657b9261a6b958e2f4f013305cb",
+      "role": "Clareira autonomous-agent reinforcement",
+      "state": "PROJECTED",
+      "integration_state": "NOT_MATERIALIZED_NO_NATIVE_ADAPTER_YET"
+    },
+    "swarms-evals": {
+      "source": "https://github.com/The-Swarm-Corporation/swarms-evals",
+      "revision": "37901fe84f4064925a1807299ea0958ba770580c",
+      "role": "SuperGPU evaluation/proof reinforcement",
+      "state": "PROJECTED",
+      "integration_state": "NOT_MATERIALIZED_NO_NATIVE_ADAPTER_YET",
+      "boundary": "evaluation suite; not declared a hardware runtime"
+    },
+    "claude-brain": {
+      "source": "https://github.com/gammon-bio/claude-brain",
+      "revision": "20c1eb3791a81516d09b2ef91a1f3c656d133901",
+      "role": "HortaCore biological-memory research reinforcement",
+      "state": "PROJECTED",
+      "integration_state": "NOT_MATERIALIZED_NO_NATIVE_ADAPTER_YET",
+      "boundary": "prototype/playground; not declared production memory authority"
+    }
+  },
+  "candidate_policy": {
+    "excluded_from_primary_provider_count": true,
+    "excluded_from_complementary_provider_count": true,
+    "requires_native_adapter_before_materialization": true,
+    "requires_execution_evidence_before_REAL": true
+  }
 }

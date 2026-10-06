@@ -13,6 +13,15 @@ on:
       - 'scripts/soul-architectural-integrity.mjs'
       - 'scripts/soul-live-source-audit.mjs'
       - 'scripts/generate-crossfront-state.mjs'
+      - 'scripts/external-capability-adapter.py'
+      - 'scripts/crewai_runner.py'
+      - 'scripts/metagpt_runner.py'
+      - 'scripts/validate-soul-external-submodules.mjs'
+      - 'scripts/materialize-top-level-submodules.mjs'
+      - 'integrations/external-adapters.json'
+      - 'integrations/external-capabilities.json'
+      - 'integrations/external/**'
+      - 'config/soul-external-recovery-manifest.json'
       - '.github/workflows/n07-ci.yml'
   pull_request:
     paths:
@@ -26,6 +35,25 @@ on:
       - 'scripts/soul-architectural-integrity.mjs'
       - 'scripts/soul-live-source-audit.mjs'
       - 'scripts/generate-crossfront-state.mjs'
+      - 'scripts/external-capability-adapter.py'
+      - 'scripts/crewai_runner.py'
+      - 'scripts/metagpt_runner.py'
+      - 'scripts/validate-soul-external-submodules.mjs'
+      - 'scripts/materialize-top-level-submodules.mjs'
+      - 'scripts/validate-external-adapters.mjs'
+      - 'scripts/validate-external-capability-ownership.mjs'
+      - 'scripts/validate-soul-29-grf.mjs'
+      - 'grf/**'
+      - 'grce/**'
+      - 'integrations/grf/**'
+      - 'integrations/soul-29-capability-fabric.json'
+      - 'integrations/external-capabilities.json'
+      - 'integrations/external-adapters.json'
+      - 'integrations/external-capability-ownership.json'
+      - 'integrations/external/**'
+      - 'config/soul-external-recovery-manifest.json'
+      - '.gitmodules'
+      - 'Dockerfile'
       - '.github/workflows/n07-ci.yml'
   workflow_dispatch:
 
@@ -48,6 +76,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          submodules: true
 
       - uses: actions/setup-go@v5
         with:
@@ -80,13 +109,32 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          submodules: false
+
+      - name: Materialize top-level SOUL submodules without unsafe recursion
+        run: node scripts/materialize-top-level-submodules.mjs
 
       - uses: actions/setup-node@v4
         with:
           node-version: '22.x'
 
+      - name: Forbid recursive upstream submodule checkout
+        run: |
+          set -euo pipefail
+          if grep -R -nE 'submodules:[[:space:]]*recursive' .github/workflows scripts/*.sh; then
+            echo 'Recursive upstream submodule traversal is forbidden; materialize only registered top-level federation sources.'
+            exit 1
+          fi
+          if grep -nE 'git submodule (sync|update).*--recursive|git -C "\$ROOT" submodule (sync|update).*--recursive' scripts/soul-local-up.sh; then
+            echo 'Local bootstrap must not recurse into upstream-internal submodules.'
+            exit 1
+          fi
+
       - name: Architectural integrity
         run: node scripts/soul-architectural-integrity.mjs
+
+      - name: Validate Soul-29 and GRF invariants
+        run: node scripts/validate-soul-29-grf.mjs
 
       - name: Live source integrity
         run: node scripts/soul-live-source-audit.mjs
@@ -119,6 +167,10 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          submodules: false
+
+      - name: Materialize top-level SOUL submodules without unsafe recursion
+        run: node scripts/materialize-top-level-submodules.mjs
 
       - name: Assert declarative SOUL source
         run: |
@@ -185,6 +237,11 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: false
+
+      - name: Materialize top-level SOUL submodules without unsafe recursion
+        run: node scripts/materialize-top-level-submodules.mjs
 
       - name: Build production image
         run: docker build --pull --tag n07-orquestrador:ci .
@@ -193,4 +250,19 @@ jobs:
         run: |
           set -euo pipefail
           docker image inspect n07-orquestrador:ci >/dev/null
-          test "$(docker run --rm --entrypoint /bin/sh n07-orquestrador:ci -c 'test -x /app/n07 && test -x /usr/local/bin/guppy && echo ok')" = ok
+          test "$(docker run --rm --entrypoint /bin/sh n07-orquestrador:ci -c 'test -x /app/n07 && test -x /usr/local/bin/guppy && test -x /usr/bin/python3 && test -s /app/config/soul-external-runtime-attestation.json && echo ok')" = ok
+
+      - name: Production external federation smoke
+        run: |
+          set -euo pipefail
+          docker run -d --rm --name n07-external-smoke -p 18082:8080 -e N07_APP_TOKEN=ci n07-orquestrador:ci
+          trap 'docker rm -f n07-external-smoke >/dev/null 2>&1 || true' EXIT
+          for i in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:18082/health >/dev/null; then break; fi
+            sleep 1
+          done
+          curl -fsS             -H 'Authorization: Bearer ci'             -H 'Content-Type: application/json'             -X POST http://127.0.0.1:18082/execute             -d '{"operation":"external.federation.describe@1.0.0","metadata":{}}'             | tee /tmp/external-federation.json
+          grep -q '"provider_count":22' /tmp/external-federation.json
+          curl -fsS             -H 'Authorization: Bearer ci'             -H 'Content-Type: application/json'             -X POST http://127.0.0.1:18082/execute             -d '{"operation":"external.langgraph.probe@1.0.0","metadata":{}}'             | tee /tmp/langgraph-probe.json
+          grep -q '"state":"PASS"' /tmp/langgraph-probe.json
+          grep -q '"source_present":true' /tmp/langgraph-probe.json
