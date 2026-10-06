@@ -224,6 +224,18 @@ func operationForTool(tool string) string {
 		return "supergpu.parallel@1.0.0"
 	case "sara.cycle", "sara.audit", "sara.regenerate", "sara.state", "sara.capabilities", "sara.trace":
 		return strings.ToLower(strings.TrimSpace(tool)) + "@1.0.0"
+	case "grf.describe":
+		return "grf.describe@2.0.0"
+	case "grf.participant.describe":
+		return "grf.participant.describe@2.0.0"
+	case "grf.participant.ingest":
+		return "grf.participant.ingest@2.0.0"
+	case "grce.describe":
+		return "grce.describe@2.0.0"
+	case "grce.bindings.describe":
+		return "grce.bindings.describe@2.0.0"
+	case "grce.cycle.execute":
+		return "grce.cycle.execute@2.0.0"
 	default:
 		return tool
 	}
@@ -323,6 +335,39 @@ func mapIntent(tool string, input map[string]any) ([]float64, map[string]string,
 			return nil, nil, errors.New("SARA trace intent requires cycle_id string")
 		}
 		metadata["sara_cycle_id"] = strings.TrimSpace(cycleID)
+		return []float64{0}, metadata, nil
+	case "grf.describe", "grf.participant.describe", "grce.describe", "grce.bindings.describe", "grce.cycle.execute":
+		if input == nil {
+			return nil, nil, errors.New("GRF/GRCE intent input is required")
+		}
+		seq, ok := input["sequence_index"].(float64)
+		if !ok || seq < 1 {
+			return nil, nil, errors.New("GRF/GRCE intent requires positive sequence_index")
+		}
+		metadata["grf_sequence_index"] = strconv.FormatUint(uint64(seq), 10)
+		return []float64{0}, metadata, nil
+	case "grf.participant.ingest":
+		if input == nil {
+			return nil, nil, errors.New("GRF participant ingest input is required")
+		}
+		id, ok := input["participant_id"].(string)
+		if !ok || strings.TrimSpace(id) == "" {
+			return nil, nil, errors.New("GRF participant ingest requires participant_id")
+		}
+		seq, ok := input["sequence_index"].(float64)
+		if !ok || seq < 1 {
+			return nil, nil, errors.New("GRF participant ingest requires positive sequence_index")
+		}
+		raw, err := json.Marshal(input["state"])
+		if err != nil {
+			return nil, nil, errors.New("GRF participant state cannot be serialized")
+		}
+		metadata["participant_id"] = strings.TrimSpace(id)
+		metadata["grf_sequence_index"] = strconv.FormatUint(uint64(seq), 10)
+		metadata["grf_input_json"] = string(raw)
+		if sid, ok := input["state_id"].(string); ok && strings.TrimSpace(sid) != "" {
+			metadata["state_id"] = strings.TrimSpace(sid)
+		}
 		return []float64{0}, metadata, nil
 	default:
 		return nil, nil, fmt.Errorf("unsupported tool: %s", tool)
