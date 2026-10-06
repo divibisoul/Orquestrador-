@@ -11,6 +11,6 @@ const complements=["bijux-dag-runtime","ouro-loop","recurs"];
 for(const id of complements){ if(!ids.has(id)) throw new Error(`SOUL28_COMPLEMENT_MISSING:${id}`); }
 const counts={};
 for(const e of d.edges){ if(complements.includes(e.from)) counts[e.from]=(counts[e.from]||0)+1; }
-for(const id of complements){ if(counts[id]!==4) throw new Error(`SOUL28_EDGE_DEGREE:${id}:${counts[id]}`); }
+for(const id of complements){ const incident=d.edges.filter(e=>e.from===id||e.to===id).length; if(incident!==4) throw new Error(`SOUL28_EDGE_DEGREE:${id}:${incident}`); }
 if(!/^sha256:[0-9a-f]{64}$/.test(d.parent_hash)) throw new Error("SOUL28_PARENT_HASH_INVALID");
 console.log(JSON.stringify({ok:true,nodes:d.nodes.length,edges:d.edges.length,parent_hash:d.parent_hash,complements,edge_degree:counts},null,2));
