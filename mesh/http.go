@@ -349,7 +349,8 @@ func structuredMeshCapability(capability string) bool {
 		strings.HasPrefix(capability, "mesh.supergpu.") ||
 		strings.HasPrefix(capability, "superagi.fabric.") ||
 		strings.HasPrefix(capability, "grce.") ||
-		strings.HasPrefix(capability, "mesh.register")
+		strings.HasPrefix(capability, "mesh.register") ||
+		strings.HasPrefix(capability, "nervo.vago.publish")
 }
 
 func copyStructuredCapabilityMetadata(metadata map[string]string, capability string, payload map[string]any) error {
@@ -386,7 +387,17 @@ func copyStructuredCapabilityMetadata(metadata map[string]string, capability str
 			metadata["capabilities"] = strings.Join(values, " ")
 		}
 		return nil
-	case "grce.cycle.execute@1.0.0", "grce.cycle.execute":
+	case "nervo.vago.publish@1.0.0", "nervo.vago.publish":
+		if payload == nil {
+			return errors.New("NervoVago payload is required")
+		}
+		raw, err := json.Marshal(payload)
+		if err != nil {
+			return fmt.Errorf("NervoVago payload encode: %w", err)
+		}
+		metadata["sara_vagus_json"] = string(raw)
+		return nil
+		case "grce.cycle.execute@1.0.0", "grce.cycle.execute":
 		if payload == nil {
 			return errors.New("grce payload is required")
 		}
