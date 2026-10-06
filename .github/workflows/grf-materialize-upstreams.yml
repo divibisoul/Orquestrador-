@@ -57,6 +57,9 @@ jobs:
           add_pinned "prime-agent" "https://github.com/PrimeIntellect-ai/prime-agent.git" "integrations/external/grf/prime-agent" "7a52276cb17310f331f1075f28fa5cf9c4ae0a0a"
           add_pinned "cuda-oxide" "https://github.com/SuperInstance/cuda-oxide.git" "integrations/external/grf/cuda-oxide" "1ad9bfc5241322ceeccb3f9182f2a188a648bd08"
           add_pinned "openmind-conductor" "https://github.com/SuperInstance/openmind-conductor.git" "integrations/external/grf/openmind-conductor" "18c5498a4175ed0b20bff03bc3cf2ed3233be014"
+          add_pinned "bijux-dag-runtime" "https://github.com/bijux/bijux-core.git" "integrations/external/bijux-dag-runtime" "f0f5f56b49f380196918c4c6910b725b2b30ab7d"
+          add_pinned "ouro-loop" "https://github.com/VictorVVedtion/ouro-loop.git" "integrations/external/ouro-loop" "52f97e22dc2a72a45ffa025d452ea02c58cb6b94"
+          add_pinned "recurs" "https://github.com/Gen-Verse/Recuris.git" "integrations/external/recurs" "7d3745ab787b1206ccd981cb1511100476097266"
 
           git diff --check
           git status --short
