@@ -66,38 +66,23 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  normalize-main:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && github.actor != 'github-actions[bot]'
-    permissions:
-      contents: write
+  format-check:
+    if: github.event_name != 'workflow_dispatch' || github.ref != 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          submodules: true
-
+          submodules: false
+      - name: Materialize top-level SOUL submodules without unsafe recursion
+        run: node scripts/materialize-top-level-submodules.mjs
       - uses: actions/setup-go@v5
         with:
           go-version: '1.25.x'
           cache: true
-
-      - name: Normalize Go formatting
-        run: gofmt -w $(git ls-files '*.go')
-
-      - name: Commit formatting normalization
-        run: |
-          set -euo pipefail
-          if git diff --quiet; then
-            echo 'All tracked Go files are already gofmt-clean.'
-            exit 0
-          fi
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add -- '*.go'
-          git commit -m 'style(n07): normalize Go formatting'
-          git push origin HEAD:main
+      - name: Verify Go formatting
+        run: test -z "$(gofmt -l $(git ls-files '*.go'))"
 
   integrity:
     runs-on: ubuntu-latest
