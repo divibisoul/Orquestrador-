@@ -33,6 +33,10 @@ for (const provider of registry.repositories) {
   if (status.startsWith("-") || status.startsWith("+") || status.startsWith("U")) {
     errors.push(`SUBMODULE_STATUS_NOT_EXACT:${id}:${status}`);
   }
+  try { run(["-C", path, "diff", "--quiet"]); }
+  catch { errors.push(`SUBMODULE_WORKTREE_DIRTY:${id}`); }
+  try { run(["-C", path, "diff", "--cached", "--quiet"]); }
+  catch { errors.push(`SUBMODULE_INDEX_DIRTY:${id}`); }
 }
 
 if (errors.length) {
