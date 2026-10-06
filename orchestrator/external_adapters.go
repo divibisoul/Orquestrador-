@@ -46,9 +46,19 @@ const (
 	ExternalFederationExecuteOperation  = "external.federation.execute@1.0.0"
 )
 
+type ExternalCapabilityRevision struct {
+	ID       string `json:"id"`
+	Revision string `json:"revision"`
+}
+
+type ExternalCapabilityRegistry struct {
+	Repositories []ExternalCapabilityRevision `json:"repositories"`
+}
+
 type ExternalAdapterRegistry struct {
 	manifest     ExternalAdapterManifest
 	byID         map[string]ExternalAdapterSpec
+	revisions    map[string]string
 	manifestPath string
 }
 
@@ -81,7 +91,28 @@ func NewExternalAdapterRegistry() (ExternalAdapterRegistry, error) {
 		}
 		by[p.ID] = p
 	}
-	return ExternalAdapterRegistry{manifest: m, byID: by, manifestPath: path}, nil
+	capabilityPath := filepath.Join(root, "integrations", "external-capabilities.json")
+	capRaw, err := os.ReadFile(capabilityPath)
+	if err != nil {
+		return ExternalAdapterRegistry{}, fmt.Errorf("external capability registry: %w", err)
+	}
+	var capabilityRegistry ExternalCapabilityRegistry
+	if err := json.Unmarshal(capRaw, &capabilityRegistry); err != nil {
+		return ExternalAdapterRegistry{}, fmt.Errorf("external capability registry JSON: %w", err)
+	}
+	revisions := make(map[string]string, len(capabilityRegistry.Repositories))
+	for _, item := range capabilityRegistry.Repositories {
+		if item.ID == "" || len(item.Revision) != 40 {
+			return ExternalAdapterRegistry{}, fmt.Errorf("external capability revision invalid: %s", item.ID)
+		}
+		revisions[item.ID] = item.Revision
+	}
+	for id := range by {
+		if _, ok := revisions[id]; !ok {
+			return ExternalAdapterRegistry{}, fmt.Errorf("external capability revision missing: %s", id)
+		}
+	}
+	return ExternalAdapterRegistry{manifest: m, byID: by, revisions: revisions, manifestPath: path}, nil
 }
 func externalEnabled(provider string) bool {
 	key := "SOUL_EXTERNAL_EXECUTE_" + strings.ToUpper(strings.ReplaceAll(provider, "-", "_"))
@@ -97,10 +128,69 @@ func (r ExternalAdapterRegistry) python() string {
 	}
 	return "python3"
 }
+func (r ExternalAdapterRegistry) operationAllowed(provider, operation string) bool {
+	p, ok := r.byID[strings.ToLower(strings.TrimSpace(provider))]
+	if !ok {
+		return false
+	}
+	for _, allowed := range p.Operations {
+		if allowed == operation {
+			return true
+		}
+	}
+	return false
+}
+
+func (r ExternalAdapterRegistry) validateMaterializedPin(ctx context.Context, p ExternalAdapterSpec) error {
+	revision := r.revisions[p.ID]
+	rootDir := repositoryRoot()
+	root := p.Root
+	if !filepath.IsAbs(root) {
+		root = filepath.Join(rootDir, root)
+	}
+	root = filepath.Clean(root)
+	rel, err := filepath.Rel(rootDir, root)
+	if err != nil || strings.HasPrefix(rel, ".."+string(os.PathSeparator)) || rel == ".." {
+		return fmt.Errorf("EXTERNAL_PROVIDER_ROOT_INVALID:%s", p.ID)
+	}
+	gitCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+	treeCmd := exec.CommandContext(gitCtx, "git", "-C", rootDir, "ls-tree", "HEAD", "--", filepath.ToSlash(rel))
+	treeOut, err := treeCmd.Output()
+	if err != nil {
+		if gitCtx.Err() != nil {
+			return fmt.Errorf("EXTERNAL_GITLINK_CHECK_TIMEOUT:%s", p.ID)
+		}
+		return fmt.Errorf("EXTERNAL_GITLINK_CHECK_FAILED:%s", p.ID)
+	}
+	fields := strings.Fields(string(treeOut))
+	if len(fields) < 3 || fields[0] != "160000" || fields[1] != "commit" || fields[2] != revision {
+		return fmt.Errorf("EXTERNAL_GITLINK_REVISION_MISMATCH:%s:expected=%s", p.ID, revision)
+	}
+	headCmd := exec.CommandContext(gitCtx, "git", "-C", root, "rev-parse", "HEAD")
+	headOut, err := headCmd.Output()
+	if err != nil {
+		if gitCtx.Err() != nil {
+			return fmt.Errorf("EXTERNAL_SUBMODULE_HEAD_CHECK_TIMEOUT:%s", p.ID)
+		}
+		return fmt.Errorf("EXTERNAL_SUBMODULE_NOT_MATERIALIZED:%s", p.ID)
+	}
+	if strings.TrimSpace(string(headOut)) != revision {
+		return fmt.Errorf("EXTERNAL_SUBMODULE_HEAD_MISMATCH:%s:expected=%s:actual=%s", p.ID, revision, strings.TrimSpace(string(headOut)))
+	}
+	return nil
+}
+
 func (r ExternalAdapterRegistry) run(ctx context.Context, provider, mode, operation string, metadata map[string]string) (map[string]any, error) {
 	p, ok := r.byID[strings.ToLower(strings.TrimSpace(provider))]
 	if !ok {
 		return nil, fmt.Errorf("EXTERNAL_PROVIDER_UNKNOWN:%s", provider)
+	}
+	if !r.operationAllowed(p.ID, operation) {
+		return nil, fmt.Errorf("EXTERNAL_OPERATION_NOT_REGISTERED:%s:%s", p.ID, operation)
+	}
+	if err := r.validateMaterializedPin(ctx, p); err != nil {
+		return nil, err
 	}
 	root := p.Root
 	if !filepath.IsAbs(root) {
@@ -172,8 +262,12 @@ func RegisterExternalAdapterOperations(e *Engine, r ExternalAdapterRegistry) err
 	if err := e.Register(ExternalFederationDescribeOperation, func(ctx context.Context, m protocol.Message) (protocol.Result, error) {
 		providers := make([]map[string]any, 0, len(r.byID))
 		for _, p := range r.byID {
-			_, err := os.Stat(filepath.Clean(p.Root))
-			providers = append(providers, map[string]any{"id": p.ID, "owner": p.Owner, "kind": p.Kind, "root": p.Root, "operations": p.Operations, "sourcePresent": err == nil, "executionEnabled": externalEnabled(p.ID)})
+			root := p.Root
+			if !filepath.IsAbs(root) {
+				root = filepath.Join(repositoryRoot(), root)
+			}
+			_, err := os.Stat(filepath.Clean(root))
+			providers = append(providers, map[string]any{"id": p.ID, "owner": p.Owner, "kind": p.Kind, "root": root, "revision": r.revisions[p.ID], "operations": p.Operations, "sourcePresent": err == nil, "executionEnabled": externalEnabled(p.ID)})
 		}
 		raw, _ := json.Marshal(map[string]any{"state": "PASS", "control_plane": "N07", "provider_count": len(providers), "manifest": r.manifestPath, "providers": providers})
 		return protocol.Result{TraceID: m.TraceID, CorrelationID: m.CorrelationID, Source: "N07.external-federation", Target: m.Source, Status: "ok", Metadata: map[string]string{"federation_json": string(raw)}}, nil
@@ -193,7 +287,7 @@ func RegisterExternalAdapterOperations(e *Engine, r ExternalAdapterRegistry) err
 		if err != nil {
 			return externalAdapterFailure(m, err.Error())
 		}
-		return externalAdapterResult(m, result), nil
+		return externalAdapterExecutionResult(m, result)
 	}); err != nil {
 		return err
 	}
@@ -220,7 +314,7 @@ func RegisterExternalAdapterOperations(e *Engine, r ExternalAdapterRegistry) err
 			if err != nil {
 				return externalAdapterFailure(m, err.Error())
 			}
-			return externalAdapterResult(m, result), nil
+			return externalAdapterExecutionResult(m, result)
 		}); err != nil {
 			return err
 		}
@@ -251,10 +345,27 @@ func repositoryRoot() string {
 func externalAdapterResult(m protocol.Message, result map[string]any) protocol.Result {
 	raw, _ := json.Marshal(result)
 	state, _ := result["state"].(string)
-	status := "ok"
-	if strings.EqualFold(state, "BLOCKED") || strings.EqualFold(state, "FAIL") {
+	status := "error"
+	switch strings.ToUpper(strings.TrimSpace(state)) {
+	case "PASS":
+		status = "ok"
+	case "DEGRADED", "PROJECTED", "UNMEASURABLE":
+		status = "degraded"
+	case "BLOCKED", "FAIL":
 		status = "error"
 	}
 	provider, _ := result["provider"].(string)
 	return protocol.Result{TraceID: m.TraceID, CorrelationID: m.CorrelationID, Source: "N07.external-federation", Target: m.Source, Status: status, Metadata: map[string]string{"provider": provider, "external_result_json": string(raw)}}
+}
+
+func externalAdapterExecutionResult(m protocol.Message, result map[string]any) (protocol.Result, error) {
+	state, _ := result["state"].(string)
+	if !strings.EqualFold(strings.TrimSpace(state), "PASS") {
+		code, _ := result["code"].(string)
+		if code == "" {
+			code = "EXTERNAL_EXECUTION_NOT_PROVEN"
+		}
+		return externalAdapterFailure(m, code)
+	}
+	return externalAdapterResult(m, result), nil
 }
