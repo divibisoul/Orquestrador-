@@ -26,7 +26,7 @@ for (const provider of sources) {
   if (!cfg) {
     errors.push(`GITMODULE_MISSING:${id}`);
   } else {
-    const normalizeURL = (value) => value.replace(/\\.git$/, "").replace(/\/$/, "");
+    const normalizeURL = (value) => value.replace(/\.git$/, "").replace(/\/$/, "");
     if (normalizeURL(cfg.url || "") !== normalizeURL(provider.source || "")) {
       errors.push(`GITMODULE_SOURCE_MISMATCH:${id}:expected=${provider.source}:actual=${cfg.url || "MISSING"}`);
     }
