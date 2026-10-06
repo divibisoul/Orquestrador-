@@ -1,6 +1,8 @@
-# SOUL — fusão executável dos 16 upstreams
+# SOUL — fusão executável dos 16 upstreams + 6 fontes complementares
 
-N07 permanece como plano de controle; a autoridade funcional continua nos núcleos nativos. Os 16 repositórios externos são mantidos como submodules pinados e atravessam uma única fronteira de adapters.
+O conjunto histórico de 16 upstreams do SOUL-25 permanece preservado. O SOUL-29 acrescenta 6 fontes complementares verificadas, totalizando 22 fontes externas estruturais. As 4 referências solicitadas que retornaram 404 permanecem registradas separadamente como BLOCKED e não são substituídas.
+
+N07 permanece como plano de controle; a autoridade funcional continua nos núcleos nativos. Os 16 repositórios primários e as 6 fontes complementares são mantidos como gitlinks/submodules pinados e atravessam uma única fronteira de adapters.
 
 | Upstream | Dono | Função reforçada |
 |---|---|---|
@@ -42,3 +44,20 @@ Nenhum núcleo nativo é substituído e o histórico Git é preservado.
 - SuperAGI: \`SOUL_EXTERNAL_EXECUTE_SUPERAGI=true\` + \`SOUL_EXTERNAL_SUPERAGI_URL\`, \`SOUL_EXTERNAL_SUPERAGI_AGENT_ID\`, \`SOUL_EXTERNAL_SUPERAGI_API_KEY\`.
 - OpenHands: \`SOUL_EXTERNAL_EXECUTE_OPENHANDS=true\` + \`SOUL_EXTERNAL_OPENHANDS_URL\`, \`SOUL_EXTERNAL_OPENHANDS_CONVERSATION_ID\`, \`SOUL_EXTERNAL_OPENHANDS_SESSION_KEY\`.
 - Letta Code: \`SOUL_EXTERNAL_EXECUTE_LETTA_CODE=true\` + binário \`letta\` e a autenticação/configuração do próprio Letta.
+
+## Fontes complementares do SOUL-29
+
+| Fonte | Estado | Papel |
+|---|---|---|
+| Autogenesis | PROJECTED | auto-evolução complementar |
+| octos | PROJECTED | reforço Octacore / swarm |
+| hora-graph-core | PROJECTED | reforço HortaCore / grafo |
+| mycelium | PROJECTED | reforço Clareira / workspace |
+| prime-agent | PROJECTED | reforço Neocórtex/Clareira / RLM |
+| cuda-oxide | PROJECTED | reforço SuperGPU / runtime CUDA |
+
+As fontes são materializadas somente no primeiro nível da federação canônica. Recursão cega em submodules de upstreams é proibida: dependências aninhadas pertencem ao repositório upstream e sua ausência de metadata é preservada como evidência BLOCKED/PROJECTED, não como sucesso fabricado.
+
+### Evidência específica — Autogenesis/HLE
+
+No commit pinado do Autogenesis existe o gitlink `datasets/hle` na revisão `5a81a4c7271a2a2a312b9a690f0c2fde837e4c29`, mas o mesmo commit upstream não fornece `.gitmodules`. A fonte correspondente `cais/hle` existe no Hugging Face, porém é gated; portanto a dependência é registrada, não promovida a execução REAL. A reparação de URL usada na CI é apenas local ao checkout e não altera o upstream.
