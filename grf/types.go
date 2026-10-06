@@ -38,7 +38,7 @@ type Provenance struct {
 	ParentHash string `json:"parent_hash"`
 	InputHash string `json:"input_hash"`
 	OutputHash string `json:"output_hash"`
-	SequenceIndex uint64
+	SequenceIndex uint64 `json:"sequence_index"`
 	Stage string `json:"stage"`
 	CausalFailureID string `json:"causal_failure_id,omitempty"`
 }
@@ -48,43 +48,43 @@ type Evidence struct {
 	FailureID string `json:"failure_id"`
 	State EpistemicState `json:"state"`
 	Hash string `json:"hash"`
-	InputHash string
-	OutputHash string
-	SequenceIndex uint64
+	InputHash string `json:"input_hash"`
+	OutputHash string `json:"output_hash"`
+	SequenceIndex uint64 `json:"sequence_index"`
 	Payload map[string]any `json:"payload,omitempty"`
 }
 
 type Failure struct {
-	ID string
+	ID string `json:"id"`
 	Source string `json:"source"`
 	Description string `json:"description"`
 	RequiredOpposition string `json:"required_opposition,omitempty"`
 	PropertyNecessary string `json:"property_necessary,omitempty"`
 	PropertyDeclared bool `json:"property_declared"`
-	State EpistemicState
+	State EpistemicState `json:"state"`
 }
 
 type Characterization struct {
-	FailureID string
-	Description string
-	Properties map[string]any
-	State EpistemicState
+	FailureID string `json:"failure_id"`
+	Description string `json:"description"`
+	Properties map[string]any `json:"properties,omitempty"`
+	State EpistemicState `json:"state"`
 }
 
 type Opposition struct {
-	FailureID string
-	Description string
+	FailureID string `json:"failure_id"`
+	Description string `json:"description"`
 	NecessaryProperty string `json:"necessary_property"`
-	PropertyDeclared bool
-	State EpistemicState
+	PropertyDeclared bool `json:"property_declared"`
+	State EpistemicState `json:"state"`
 }
 
 type Artifact struct {
-	ID string
-	Stage string
-	State EpistemicState
-	Payload map[string]any
-	Provenance Provenance
+	ID string `json:"id"`
+	Stage string `json:"stage"`
+	State EpistemicState `json:"state"`
+	Payload map[string]any `json:"payload,omitempty"`
+	Provenance Provenance `json:"provenance"`
 }
 
 func (a Artifact) Size() (int, error) {
@@ -94,10 +94,10 @@ func (a Artifact) Size() (int, error) {
 }
 
 type State struct {
-	ID string
+	ID string `json:"id"`
 	EpistemicState EpistemicState `json:"epistemic_state"`
-	Payload map[string]any
-	ParentHash string
+	Payload map[string]any `json:"payload,omitempty"`
+	ParentHash string `json:"parent_hash,omitempty"`
 }
 
 func (s State) Hash() (string, error) { return HashJSON(s.Payload) }
@@ -109,10 +109,10 @@ func (s State) Size() (int, error) {
 }
 
 type Capability struct {
-	ID string
-	Description string
-	State EpistemicState
-	Provenance Provenance
+	ID string `json:"id"`
+	Description string `json:"description"`
+	State EpistemicState `json:"state"`
+	Provenance Provenance `json:"provenance"`
 }
 
 type GoldenRuleParticipant interface {
