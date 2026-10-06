@@ -193,5 +193,27 @@
     "total_external_sources": 22
   },
   "grce_state": "PROJECTED",
-  "grce_block_reason": "distinct real ERU/MMD/ARA/ETR/ITR/RGO hooks are not yet bound"
+  "grce_block_reason": "distinct real ERU/MMD/ARA/ETR/ITR/RGO hooks are not yet bound",
+  "invariant_catalog": "integrations/grf/invariants.json",
+  "participant_contracts": "integrations/grf/soul-29-participant-contracts.json",
+  "operations": [
+    "grf.describe@2.0.0",
+    "grf.participant.describe@2.0.0",
+    "grf.participant.ingest@2.0.0",
+    "grce.describe@2.0.0",
+    "grce.bindings.describe@2.0.0",
+    "grce.cycle.execute@2.0.0"
+  ],
+  "grf_cycle_topology": [
+    "L0",
+    "L1",
+    "L2",
+    "L3",
+    "L4",
+    "L5",
+    "L6",
+    "L7",
+    "feedback:L7→L0"
+  ],
+  "no_root_component": true
 }
