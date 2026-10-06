@@ -1,0 +1,28 @@
+name: N07 recovered neural and prefrontal verification
+
+on:
+  push:
+    branches:
+      - "recovery/cycle3-n07-neural-prefrontal-2026-09-28"
+  pull_request:
+    branches: [main]
+    paths:
+      - "neural/network.go"
+      - "prefrontal/neocortex.go"
+      - "recovery/neural_prefrontal_recovery_test.go"
+      - ".github/workflows/n07-neural-prefrontal-recovery.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.25.x"
+      - run: go test ./recovery -run '^TestRecoveredNeuralAndPrefrontalRuntime
+ -count=1
