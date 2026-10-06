@@ -177,9 +177,9 @@ func GoldenRuleCycle(ctx context.Context, d Dependencies, state grf.State, c grf
 	}
 	candidate.ParentHash = state.Hash()
 	candidate.InputHash = state.Hash()
-	candidate.OutputHash = candidate.Hash()
 	candidate.SequenceIndex = state.SequenceIndex + 1
 	candidate.Epistemic = grf.EpistemicProjected
+	candidate.OutputHash = candidate.Hash()
 
 	candidateProvenance := grf.Provenance{ParentHash: state.Hash(), InputHash: state.Hash(), OutputHash: candidate.Hash(), SequenceIndex: candidate.SequenceIndex, Chain: []string{"F", "E", "K", "O", "A", "I", "T", "F*"}}
 	provenance = append(provenance, candidateProvenance)
