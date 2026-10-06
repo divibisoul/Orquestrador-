@@ -145,7 +145,7 @@ func (c *Cortex) Plan(candidates []Candidate) ([]Candidate, error) {
 	}
 	out := make([]Candidate, 0, len(candidates))
 	for _, v := range candidates {
-		if err := valid(v); err; err != nil {
+		if err := valid(v); err != nil {
 			c.recordEvaluationIssue(v.ID, err)
 			continue
 		}
