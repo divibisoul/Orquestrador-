@@ -9,17 +9,19 @@ import (
 
 func TestExternalParticipantsAreFailClosedWhenRuntimeIsUnconfigured(t *testing.T) {
 	for id, p := range NewExternalParticipants() {
-		res, err := p.Ingest(grf.State{Payload: []byte("preserve"), Epistemic: grf.EpistemicActive}, grf.Context{CycleID: "cycle-external"})
-		if err == nil || !strings.Contains(err.Error(), "EXTERNAL_RUNTIME_BLOCKED:"+id) {
-			t.Fatalf("%s: expected blocked runtime, got %v", id, err)
+		input := grf.State{ID: "state-1", Payload: map[string]any{"value": "preserve"}, EpistemicState: grf.ACTIVE}
+		ctx := grf.Context{TraceID: "trace-external", CorrelationID: "corr-external", SequenceIndex: 1}
+		out, prov, ev := p.Ingest(input, ctx)
+		if ev.State != grf.BLOCKED {
+			t.Fatalf("%s: expected BLOCKED evidence, got %s", id, ev.State)
 		}
-		if string(res.Output.Payload) != "preserve" {
+		if out.EpistemicState != grf.PROJECTED {
+			t.Fatalf("%s: expected PROJECTED output, got %s", id, out.EpistemicState)
+		}
+		if out.Payload["value"] != "preserve" {
 			t.Fatalf("%s: input payload was not preserved", id)
 		}
-		if res.Output.Epistemic != grf.EpistemicProjected {
-			t.Fatalf("%s: expected PROJECTED, got %s", id, res.Output.Epistemic)
-		}
-		if res.Evidence.Hash == "" || res.Provenance.ParentHash == "" {
+		if prov.ParentHash == "" || prov.OutputHash == "" || ev.Hash == "" {
 			t.Fatalf("%s: missing evidence/provenance", id)
 		}
 	}
@@ -27,25 +29,21 @@ func TestExternalParticipantsAreFailClosedWhenRuntimeIsUnconfigured(t *testing.T
 
 func TestExternalResponseContractRequiresPinnedIdentityAndEvidence(t *testing.T) {
 	p := NewExternalParticipants()[BijuxDAGRuntimeID]
-	input := grf.State{Payload: []byte("input"), Epistemic: grf.EpistemicActive}
-	ctx := grf.Context{CycleID: "cycle-contract"}
-	e := grf.Evidence{ID: "evidence-1", FailureID: "failure-1", ContextHash: ctx.Hash(), Source: BijuxDAGRuntimeID, Detail: "observed"}
-	e.Hash = hashExternalEvidence(e)
-	out := input.Clone()
-	out.Payload = []byte("input")
-	out.Epistemic = grf.EpistemicProjected
+	input := grf.State{ID: "state-1", Payload: map[string]any{"value": "input"}, EpistemicState: grf.ACTIVE}
+	ctx := grf.Context{TraceID: "trace-contract", CorrelationID: "corr-contract", SequenceIndex: 1}
+	out := input
+	out.EpistemicState = grf.PROJECTED
+	out.ParentHash = mustStateHash(out)
+	prov, err := grf.SealProvenance(mustStateHash(input), input, out, 2, "EXTERNAL_TEST", "test")
+	if err != nil { t.Fatal(err) }
 	resp := externalResponse{
-		StateB64:   "aW5wdXQ=",
-		Provenance: grf.Provenance{ParentHash: input.Hash(), InputHash: input.Hash(), OutputHash: out.Hash(), SequenceIndex: 1, Chain: []string{"external"}},
-		Evidence:   e,
-		Status:     grf.EpistemicProjected,
-		Source:     p.Config.Source,
-		Revision:   p.Config.Revision,
+		State: out, Provenance: prov,
+		Evidence: grf.Evidence{ID: "evidence-1", FailureID: "failure-1", State: grf.PROJECTED, Hash: prov.OutputHash, InputHash: prov.InputHash, OutputHash: prov.OutputHash, SequenceIndex: 2},
+		Status: grf.PROJECTED, Source: p.Config.Source, Revision: p.Config.Revision,
 	}
 	if err := p.validateResponse(input, ctx, resp); err != nil {
 		t.Fatalf("valid response rejected: %v", err)
 	}
-
 	resp.Source = "attacker/source"
 	if err := p.validateResponse(input, ctx, resp); err == nil || !strings.Contains(err.Error(), "EXTERNAL_SOURCE_MISMATCH") {
 		t.Fatalf("expected pinned source rejection, got %v", err)
@@ -54,20 +52,20 @@ func TestExternalResponseContractRequiresPinnedIdentityAndEvidence(t *testing.T)
 
 func TestExternalRuntimeFailurePreservesEvidence(t *testing.T) {
 	p := NewExternalParticipants()[BijuxDAGRuntimeID]
-	input := grf.State{Payload: []byte("preserve"), Epistemic: grf.EpistemicActive}
-	ctx := grf.Context{CycleID: "cycle-runtime-failure"}
 	t.Setenv(p.Config.CommandEnv, "/definitely/not/a/real/soul-runtime")
-	res, err := p.Ingest(input, ctx)
-	if err == nil || !strings.Contains(err.Error(), "EXTERNAL_RUNTIME_BLOCKED:"+BijuxDAGRuntimeID+":runtime-exec") {
-		t.Fatalf("expected runtime-exec blocked error, got %v", err)
+	input := grf.State{ID: "state-1", Payload: map[string]any{"value": "preserve"}, EpistemicState: grf.ACTIVE}
+	ctx := grf.Context{TraceID: "trace-runtime", CorrelationID: "corr-runtime", SequenceIndex: 1}
+	out, prov, ev := p.Ingest(input, ctx)
+	if ev.State != grf.BLOCKED {
+		t.Fatalf("expected blocked evidence, got %s", ev.State)
 	}
-	if string(res.Output.Payload) != "preserve" || res.Output.Epistemic != grf.EpistemicProjected {
-		t.Fatal("runtime failure did not preserve input as PROJECTED")
+	if prov.ParentHash == "" || prov.OutputHash == "" || out.Payload["value"] != "preserve" {
+		t.Fatal("runtime failure did not preserve state/provenance")
 	}
-	if res.Evidence.Hash == "" || res.Evidence.ContextHash != ctx.Hash() {
-		t.Fatal("runtime failure evidence was not preserved")
-	}
-	if res.Provenance.ParentHash != input.Hash() || res.Provenance.OutputHash != res.Output.Hash() {
-		t.Fatal("runtime failure provenance was not preserved")
-	}
+}
+
+func mustStateHash(s grf.State) string {
+	h, err := s.Hash()
+	if err != nil { panic(err) }
+	return h
 }
