@@ -3,7 +3,9 @@ package observability
 import (
 	"context"
 	"crypto/rand"
+	"crypto/sha256"
 	"encoding/hex"
+	"encoding/binary"
 	"errors"
 	"sync"
 	"time"
@@ -36,6 +38,7 @@ type recorder struct {
 }
 
 var globalRecorder = &recorder{capacity: 4096}
+var fallbackIDCounter atomic.Uint64
 
 func newID(n int) (string, error) {
 	b := make([]byte, n)
@@ -44,6 +47,18 @@ func newID(n int) (string, error) {
 	}
 	return hex.EncodeToString(b), nil
 }
+func fallbackID(bytes int) string {
+	counter := fallbackIDCounter.Add(1)
+	seed := make([]byte, 16)
+	binary.BigEndian.PutUint64(seed[:8], uint64(time.Now().UnixNano()))
+	binary.BigEndian.PutUint64(seed[8:], counter)
+	digest := sha256.Sum256(seed)
+	if bytes >= len(digest) {
+		return hex.EncodeToString(digest[:])
+	}
+	return hex.EncodeToString(digest[:bytes])
+}
+
 func Start(ctx context.Context, operation, traceID string, _ int) (context.Context, *Span) {
 	if ctx == nil {
 		ctx = context.Background()
@@ -52,12 +67,12 @@ func Start(ctx context.Context, operation, traceID string, _ int) (context.Conte
 		if id, err := newID(16); err == nil {
 			traceID = id
 		} else {
-			traceID = "00000000000000000000000000000000"
+			traceID = fallbackID(16)
 		}
 	}
 	spanID, idErr := newID(8)
 	if idErr != nil {
-		spanID = "0000000000000000"
+		spanID = fallbackID(8)
 	}
 	s := &Span{operation: operation, traceID: traceID, spanID: spanID, start: time.Now().UTC()}
 	return context.WithValue(ctx, traceKey{}, traceID), s
