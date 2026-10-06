@@ -247,10 +247,15 @@ func (r ExternalAdapterRegistry) run(ctx context.Context, provider, mode, operat
 	if _, err := os.Stat(runner); err != nil {
 		return nil, errors.New("EXTERNAL_ADAPTER_RUNNER_NOT_FOUND")
 	}
-	req := map[string]any{"provider": provider, "mode": mode, "operation": operation, "root": root, "metadata": metadata}
+	req := map[string]any{"metadata": metadata}
 	for k, v := range metadata {
 		req[k] = v
 	}
+	// These fields are transport authority, never caller-controlled metadata.
+	req["provider"] = provider
+	req["mode"] = mode
+	req["operation"] = operation
+	req["root"] = root
 	data, err := json.Marshal(req)
 	if err != nil {
 		return nil, err
