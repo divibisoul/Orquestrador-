@@ -63,7 +63,126 @@ jobs:
             echo 'REAL_MESH_E2E: BLOCKED_ENV — staging federation endpoints/secrets are not configured; local execution is not promoted to online proof.'
             exit 0
           fi
-          go test -tags integration ./mesh -run '^TestN07FederatesToRealN04N05N06NativeCapabilities$' -count=1 -v
+          go test -tags integration ./mesh -run '^TestN07FederatesToRealN04N05N06NativeCapabilities
+
+      - name: Build current N07 image for deterministic local smoke
+        run: docker build -t soul-n07-commissioning:current .
+
+      - name: Start current N07 runtime
+        env:
+          N07_APP_TOKEN: commissioning-local-token
+        run: |
+          set -euo pipefail
+          docker run -d --rm --name n07-commissioning             -p 18080:8080             -e N07_APP_TOKEN="$N07_APP_TOKEN"             -e N07_HTTP_ADDR=:8080             soul-n07-commissioning:current
+          for i in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:18080/health >/tmp/n07-health.json; then
+              cat /tmp/n07-health.json
+              exit 0
+            fi
+            sleep 2
+          done
+          docker logs n07-commissioning || true
+          exit 1
+
+      - name: HTTP health and topology evidence
+        run: |
+          set -euxo pipefail
+          curl -i http://127.0.0.1:18080/health
+          curl -i -H 'Authorization: Bearer commissioning-local-token' http://127.0.0.1:18080/status
+          curl -i http://127.0.0.1:18080/identity
+          curl -i http://127.0.0.1:18080/topology
+
+      - name: Authenticated native execution evidence
+        run: |
+          set -euxo pipefail
+          curl -i -H 'Authorization: Bearer commissioning-local-token'             -H 'Content-Type: application/json'             -X POST http://127.0.0.1:18080/execute             -d '{"operation":"neural.forward@1.0.0","payload":[0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8],"metadata":{"source":"commissioning"}}'
+
+      - name: Stop runtime and emit logs
+        if: always()
+        run: |
+          docker logs n07-commissioning || true
+          docker stop n07-commissioning || true
+
+  configured-staging:
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.run_credentialed_staging == true }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Verify required staging configuration
+        env:
+          N07_APP_TOKEN: ${{ secrets.N07_APP_TOKEN }}
+          WEB3_STORAGE_TOKEN: ${{ secrets.WEB3_STORAGE_TOKEN }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          set -euo pipefail
+          test -n "$N07_APP_TOKEN"
+          test -n "$WEB3_STORAGE_TOKEN"
+          test -n "$SUPABASE_URL"
+          test -n "$SUPABASE_SERVICE_ROLE_KEY"
+
+      - name: Pull published N07 image
+        run: docker pull ghcr.io/divibisoul/soul-n07-orquestrador:latest
+
+      - name: Start credentialed staging runtime
+        env:
+          N07_APP_TOKEN: ${{ secrets.N07_APP_TOKEN }}
+          WEB3_STORAGE_TOKEN: ${{ secrets.WEB3_STORAGE_TOKEN }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          set -euo pipefail
+          docker run -d --rm --name n07-real-staging             -p 18081:8080             -e N07_APP_TOKEN="$N07_APP_TOKEN"             -e WEB3_STORAGE_TOKEN="$WEB3_STORAGE_TOKEN"             -e SUPABASE_URL="$SUPABASE_URL"             -e SUPABASE_SERVICE_ROLE_KEY="$SUPABASE_SERVICE_ROLE_KEY"             -e SUPABASE_RUNS_TABLE=n07_runs             -e SUPABASE_ARTIFACTS_TABLE=n07_artifacts             -e N07_BACKEND_TIMEOUT=30s             -e N07_HTTP_ADDR=:8080             ghcr.io/divibisoul/soul-n07-orquestrador:latest
+          for i in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:18081/health >/tmp/n07-real-health.json; then
+              cat /tmp/n07-real-health.json
+              exit 0
+            fi
+            sleep 2
+          done
+          docker logs n07-real-staging || true
+          exit 1
+
+      - name: Real staging health and execution
+        env:
+          N07_APP_TOKEN: ${{ secrets.N07_APP_TOKEN }}
+        run: |
+          set -euo pipefail
+          curl -i http://127.0.0.1:18081/health
+          curl -i -H "Authorization: Bearer $N07_APP_TOKEN" http://127.0.0.1:18081/v1/health
+          curl -i -H "Authorization: Bearer $N07_APP_TOKEN"             -H 'Content-Type: application/json'             -X POST http://127.0.0.1:18081/v1/execute             -d '{"operation":"neural.forward@1.0.0","payload":[0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8],"metadata":{"source":"real-staging"}}'
+
+      - name: Real Web3 storage round trip
+        env:
+          N07_APP_TOKEN: ${{ secrets.N07_APP_TOKEN }}
+        run: |
+          set -euo pipefail
+          printf 'SOUL N07 real staging commissioning\n' > /tmp/n07-commissioning.txt
+          upload=$(curl -sS -i -H "Authorization: Bearer $N07_APP_TOKEN"             -F 'file=@/tmp/n07-commissioning.txt;filename=n07-commissioning.txt'             -X POST http://127.0.0.1:18081/v1/storage/upload)
+          printf '%s\n' "$upload"
+          cid=$(printf '%s\n' "$upload" | sed -n 's/.*"cid":"\([^"]*\)".*/\1/p' | head -n1)
+          test -n "$cid"
+          curl -i -H "Authorization: Bearer $N07_APP_TOKEN" "http://127.0.0.1:18081/v1/storage/status/$cid"
+          curl -i -H "Authorization: Bearer $N07_APP_TOKEN" "http://127.0.0.1:18081/v1/storage/object/$cid"
+
+      - name: Stop credentialed staging and emit logs
+        if: always()
+        run: |
+          docker logs n07-real-staging || true
+          docker stop n07-real-staging || true
+ -count=1 -v
+
+      - name: N07 to N01 real RGO HortaCore E2E when configured
+        env:
+          SOUL_MESH_HMAC_SECRET: ${{ secrets.SOUL_MESH_HMAC_SECRET }}
+          SOUL_MESH_N01_URL: ${{ secrets.SOUL_MESH_N01_URL }}
+        run: |
+          set -euo pipefail
+          if [ -z "$SOUL_MESH_HMAC_SECRET" ] || [ -z "$SOUL_MESH_N01_URL" ]; then
+            echo 'REAL_RGO_HORTA_E2E: BLOCKED_ENV — N01 HortaCore endpoint/secret are not configured; no online persistence claim is made.'
+            exit 0
+          fi
+          go test -tags integration ./mesh -run TestN07PersistsRGOStageToRealN01HortaCore -count=1 -v
 
       - name: Build current N07 image for deterministic local smoke
         run: docker build -t soul-n07-commissioning:current .
