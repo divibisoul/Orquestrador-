@@ -145,7 +145,7 @@ func (s *Server) execute(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusBadRequest, result)
 		return
 	}
-	_ = s.Store.RecordRun(r.Context(), map[string]any{
+	persistenceErr := s.Store.RecordRun(r.Context(), map[string]any{
 		"trace_id":       result.TraceID,
 		"correlation_id": result.CorrelationID,
 		"source":         result.Source,
@@ -156,6 +156,14 @@ func (s *Server) execute(w http.ResponseWriter, r *http.Request) {
 		"error":          result.Error,
 		"metadata":       metadata,
 	})
+	if result.Metadata == nil { result.Metadata = map[string]string{} }
+	result.Metadata["persistence_target"] = "supabase"
+	if persistenceErr != nil {
+		result.Metadata["persistence_state"] = "BLOCKED"
+		result.Metadata["persistence_error"] = persistenceErr.Error()
+	} else {
+		result.Metadata["persistence_state"] = "RECORDED"
+	}
 	writeJSON(w, http.StatusOK, result)
 }
 
@@ -478,8 +486,10 @@ func (s *Server) upload(w http.ResponseWriter, r *http.Request) {
 			writeJSON(w, http.StatusBadGateway, map[string]any{"error": err.Error()})
 			return
 		}
-		_ = s.Store.RecordArtifact(r.Context(), map[string]any{"cid": cid, "filename": header.Filename, "size_bytes": size})
-		writeJSON(w, http.StatusOK, map[string]any{"cid": cid, "filename": header.Filename, "size": size, "gateway": s.Storage.ObjectURL(cid)})
+		persistenceErr := s.Store.RecordArtifact(r.Context(), map[string]any{"cid": cid, "filename": header.Filename, "size_bytes": size})
+		response := map[string]any{"cid": cid, "filename": header.Filename, "size": size, "gateway": s.Storage.ObjectURL(cid), "persistence": map[string]any{"target": "supabase"}}
+		if persistenceErr != nil { response["persistence"].(map[string]any)["state"] = "BLOCKED"; response["persistence"].(map[string]any)["error"] = persistenceErr.Error() } else { response["persistence"].(map[string]any)["state"] = "RECORDED" }
+		writeJSON(w, http.StatusOK, response)
 		return
 	}
 	limited := io.LimitReader(r.Body, s.Config.MaxUploadBytes+1)
@@ -488,11 +498,14 @@ func (s *Server) upload(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusBadGateway, map[string]any{"error": err.Error()})
 		return
 	}
-	_ = s.Store.RecordArtifact(r.Context(), map[string]any{"cid": cid, "filename": r.Header.Get("X-Filename"), "size_bytes": size})
-	writeJSON(w, http.StatusOK, map[string]any{"cid": cid, "size": size, "gateway": s.Storage.ObjectURL(cid)})
+	persistenceErr := s.Store.RecordArtifact(r.Context(), map[string]any{"cid": cid, "filename": r.Header.Get("X-Filename"), "size_bytes": size})
+	response := map[string]any{"cid": cid, "size": size, "gateway": s.Storage.ObjectURL(cid), "persistence": map[string]any{"target": "supabase"}}
+	if persistenceErr != nil { response["persistence"].(map[string]any)["state"] = "BLOCKED"; response["persistence"].(map[string]any)["error"] = persistenceErr.Error() } else { response["persistence"].(map[string]any)["state"] = "RECORDED" }
+	writeJSON(w, http.StatusOK, response)
 }
 
 func (s *Server) storageStatus(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet { writeJSON(w, http.StatusMethodNotAllowed, map[string]any{"error": "GET required"}); return }
 	cid := strings.TrimPrefix(r.URL.Path, "/v1/storage/status/")
 	if cid == "" {
 		writeJSON(w, http.StatusBadRequest, map[string]any{"error": "cid is required"})
@@ -507,6 +520,7 @@ func (s *Server) storageStatus(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) storageObject(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet { writeJSON(w, http.StatusMethodNotAllowed, map[string]any{"error": "GET required"}); return }
 	cid := strings.TrimPrefix(r.URL.Path, "/v1/storage/object/")
 	if cid == "" {
 		writeJSON(w, http.StatusBadRequest, map[string]any{"error": "cid is required"})
@@ -521,7 +535,17 @@ func decodeJSON(r *http.Request, limit int64, out any) error {
 	}
 	defer r.Body.Close()
 	decoder := json.NewDecoder(http.MaxBytesReader(nil, r.Body, limit))
-	return decoder.Decode(out)
+	if err := decoder.Decode(out); err != nil {
+		return err
+	}
+	var extra any
+	if err := decoder.Decode(&extra); err != io.EOF {
+		if err == nil {
+			return errors.New("request body must contain a single JSON value")
+		}
+		return err
+	}
+	return nil
 }
 
 func writeJSON(w http.ResponseWriter, status int, body any) {
