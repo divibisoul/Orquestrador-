@@ -152,3 +152,12 @@ func TestNervoVagoAcceptsSuperGPUEvents(t *testing.T) {
 		}
 	}
 }
+
+func TestNervoVagoStrictNumericParsing(t *testing.T) {
+	if _, err := parseIntStrict("50x", 0); err == nil {
+		t.Fatal("priority parser accepted trailing non-numeric data")
+	}
+	if _, err := parseInt64Strict("5000x", 0); err == nil {
+		t.Fatal("ttl parser accepted trailing non-numeric data")
+	}
+}
