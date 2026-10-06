@@ -179,7 +179,7 @@ func (e NervoVagoEnvelope) Validate() error {
 		strings.HasPrefix(e.Type, "health.") || strings.HasPrefix(e.Type, "capability.") ||
 		strings.HasPrefix(e.Type, "signal.") || strings.HasPrefix(e.Type, "sara.") ||
 		strings.HasPrefix(e.Type, "session.") || strings.HasPrefix(e.Type, "research.") ||
-		strings.HasPrefix(e.Type, "nervo.")) {
+		strings.HasPrefix(e.Type, "supergpu.") || strings.HasPrefix(e.Type, "nervo.")) {
 		return fmt.Errorf("NERVO_VAGO_TYPE_UNSUPPORTED:%s", e.Type)
 	}
 	return nil
