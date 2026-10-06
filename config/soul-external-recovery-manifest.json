@@ -250,6 +250,8 @@
       "transformation": "provider, mode, operation and root are now written after metadata merge and cannot be overridden by caller metadata",
       "evidence_state": "REAL"
     },
+    {
+      "date": "2026-10-06",
       "finding": "external federation was catalogued and adapted but not registered in cmd/nexus/main.go",
       "transformation": "registered the canonical external adapter registry in the N07 runtime",
       "evidence_state": "REAL"
@@ -286,7 +288,8 @@
       "browser-use",
       "pydantic-ai",
       "llama-index",
-      "dspy"
+      "dspy",
+      "openhands"
     ]
   }
 }
