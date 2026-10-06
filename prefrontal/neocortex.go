@@ -5,6 +5,7 @@ import (
 	"errors"
 	"math"
 	"time"
+	"strings"
 )
 
 // NeuralSignalProvider is the minimal neural-network boundary required by the
