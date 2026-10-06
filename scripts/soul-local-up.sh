@@ -22,8 +22,8 @@ done < "$LOCK"
 # SOUL-25 external providers are canonical submodules of N07.
 # Materialize them before adapter/runtime validation.
 if [[ -f "$ROOT/.gitmodules" ]]; then
-  git -C "$ROOT" submodule sync --recursive
-  git -C "$ROOT" submodule update --init --recursive
+  git -C "$ROOT" submodule sync
+  bash "$ROOT/scripts/materialize-top-level-submodules.sh"
   node "$ROOT/scripts/validate-soul-external-submodules.mjs"
 fi
 
