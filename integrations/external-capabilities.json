@@ -1,5 +1,5 @@
 {
-  "schema_version": "1.0.0",
+  "schema_version": "1.1.0",
   "integration_mode": "external-capability-federation",
   "policy": {
     "preserve_existing_code": true,
@@ -227,6 +227,134 @@
       "capabilities": [
         "text-to-speech"
       ]
+    }
+  ],
+  "complementary_repositories": [
+    {
+      "id": "autogenesis",
+      "source": "https://github.com/DVampire/Autogenesis",
+      "revision": "5b070d5cd497e951a188a01409138e8b530eaf4a",
+      "targets": [
+        "N07"
+      ],
+      "capabilities": [
+        "meta-agent",
+        "optimizer",
+        "evaluator",
+        "generator",
+        "self-evolution"
+      ],
+      "state": "PROJECTED"
+    },
+    {
+      "id": "octos",
+      "source": "https://github.com/lispking/octos",
+      "revision": "26a916be14dee49bcc48fbc048947d018c7de6ba",
+      "targets": [
+        "N07",
+        "N02"
+      ],
+      "capabilities": [
+        "agentic-os",
+        "parallel-fanout",
+        "swarm",
+        "memory",
+        "sandbox"
+      ],
+      "state": "PROJECTED"
+    },
+    {
+      "id": "hora-graph-core",
+      "source": "https://github.com/Vivien83/hora-graph-core",
+      "revision": "334f4f82d1c7525d29130ced9e6199e3633c0f61",
+      "targets": [
+        "N01",
+        "N07"
+      ],
+      "capabilities": [
+        "knowledge-graph",
+        "bi-temporal-memory",
+        "hybrid-retrieval",
+        "persistence"
+      ],
+      "state": "PROJECTED"
+    },
+    {
+      "id": "mycelium",
+      "source": "https://github.com/mycelium-io/mycelium",
+      "revision": "26156b5e9f169e74c73848908ad5e3bad76cd6fa",
+      "targets": [
+        "N04",
+        "N07"
+      ],
+      "capabilities": [
+        "shared-workspace",
+        "agent-coordination",
+        "persistent-memory",
+        "mediated-negotiation"
+      ],
+      "state": "PROJECTED"
+    },
+    {
+      "id": "prime-agent",
+      "source": "https://github.com/PrimeIntellect-ai/prime-agent",
+      "revision": "672085e883c25a8a5f10c77ad8e5d3fb38dd6584",
+      "targets": [
+        "N06",
+        "N07"
+      ],
+      "capabilities": [
+        "recursive-subagents",
+        "RLM",
+        "continual-harness",
+        "self-improvement"
+      ],
+      "state": "PROJECTED"
+    },
+    {
+      "id": "cuda-oxide",
+      "source": "https://github.com/SuperInstance/cuda-oxide",
+      "revision": "1ad9bfc5241322ceeccb3f9182f2a188a648bd08",
+      "targets": [
+        "N07"
+      ],
+      "capabilities": [
+        "CUDA-compiler",
+        "PTX",
+        "GPU-runtime",
+        "async-device-execution"
+      ],
+      "state": "PROJECTED"
+    }
+  ],
+  "blocked_candidates": [
+    {
+      "id": "cognifold",
+      "source": "https://github.com/OpenNerve/CogniFold",
+      "requested_role": "Neocortex",
+      "state": "BLOCKED",
+      "reason": "GitHub returned 404 during source verification on 2026-10-06"
+    },
+    {
+      "id": "belel-protocol",
+      "source": "https://github.com/TTOPM/belel-protocol",
+      "requested_role": "Nervo Vago",
+      "state": "BLOCKED",
+      "reason": "GitHub returned 404 during source verification on 2026-10-06"
+    },
+    {
+      "id": "opensinn-bus",
+      "source": "https://github.com/OpenSIN-AI/OpenSIN-Neural-Bus",
+      "requested_role": "VagusBus",
+      "state": "BLOCKED",
+      "reason": "GitHub returned 404 during source verification on 2026-10-06"
+    },
+    {
+      "id": "functional-graph-agi",
+      "source": "https://github.com/kexi-bq/functional-graph-agi",
+      "requested_role": "SuperGPU AGI",
+      "state": "BLOCKED",
+      "reason": "GitHub returned 404 during source verification on 2026-10-06"
     }
   ]
 }
