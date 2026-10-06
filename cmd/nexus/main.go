@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/signal"
 	"strings"
+	"sync/atomic"
 	"syscall"
 	"time"
 
@@ -221,6 +222,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	var nervoVagoSequence atomic.Uint64
 	g.SetExecutionReporter(supergpu.ReporterFunc(func(ctx context.Context, event supergpu.ExecutionEvent) error {
 		correlationID := event.CorrelationID
 		if strings.TrimSpace(correlationID) == "" {
@@ -255,9 +257,12 @@ func main() {
 			}
 			return hashErr
 		}
+		messageID := protocol.NewTraceID()
+		sequenceIndex := nervoVagoSequence.Add(1)
+		traceID := protocol.NewTraceID()
 		_, vagusErr := nervoVagoGateway.Publish(ctx, backend.NervoVagoEnvelope{
 			VagusVersion:  "1.0",
-			MessageID:     protocol.NewTraceID(),
+			MessageID:     messageID,
 			CorrelationID: correlationID,
 			Source:        "N07.SuperGPU",
 			Target:        "SARA",
@@ -266,10 +271,10 @@ func main() {
 			Type:          "supergpu." + event.Phase,
 			Payload:       payload,
 			Provenance: backend.NervoVagoProvenance{
-				TraceID:       correlationID,
+				TraceID:       traceID,
 				CorrelationID: correlationID,
-				MessageID:     "",
-				SequenceIndex: 1,
+				MessageID:     messageID,
+				SequenceIndex: sequenceIndex,
 				ParentHash:    parentHash,
 				InputHash:     inputHash,
 			},
