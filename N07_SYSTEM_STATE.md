@@ -56,3 +56,16 @@ This section supersedes only stale factual statements where they conflict with c
 - Release V1 remains **NOT ONLINE** until all required runtime gates produce admissible evidence.
 - No branch, file, runtime authority, or historical implementation is deleted by this restructuring line.
 
+## Foundation delta — 2026-10-06
+
+The restructuring line preserves the historical N07 implementation and adds:
+- canonical `GoldenRuleParticipant` and six-hook GRCE;
+- real Go→HTTP SARA participant;
+- N07 peer registration authority;
+- N01 startup registration path;
+- canonical `nervo.vago.publish@1.0.0` Mesh boundary;
+- SOUL-29 provider graph and pinned upstream gitlinks;
+- FedML/Hivemind learning boundaries with HortaCore, NervoVago and Prefrontal routing;
+- explicit foundation evidence ledger.
+
+The release remains **NOT ONLINE** until the real runtime gates complete successfully.
