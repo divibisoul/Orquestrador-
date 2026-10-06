@@ -2,6 +2,7 @@ package mesh
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
@@ -153,5 +154,91 @@ func TestPeerClientObserveRouteDoesNotRewriteOutcome(t *testing.T) {
 	p.observeRoute(protocol.N01, "core.health", "corr-test", true)
 	if len(o.outcomes) != 1 || o.outcomes[0] != "N01:core.health:corr-test:true" {
 		t.Fatalf("unexpected observed outcome: %#v", o.outcomes)
+	}
+}
+
+
+func TestPeerClientRetriesReuseLogicalMessageID(t *testing.T) {
+	secret := "n07-e2e-secret-0123456789abcdef"
+	var requestIDs []string
+	attempt := 0
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
+		var wire map[string]any
+		if err := json.NewDecoder(r.Body).Decode(&wire); err != nil {
+			t.Errorf("decode retry request: %v", err)
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		id, _ := wire["id"].(string)
+		requestIDs = append(requestIDs, id)
+		attempt++
+
+		if attempt == 1 {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusInternalServerError)
+			_ = json.NewEncoder(w).Encode(map[string]any{"error": "transient"})
+			return
+		}
+
+		correlation, _ := wire["correlationId"].(string)
+		timestamp := time.Now().UnixMilli()
+		env := protocol.MeshEnvelope{
+			Version:         protocol.SoulMeshVersion,
+			ContractVersion: protocol.SoulMeshContractVersion,
+			MessageID:       "retry-response",
+			Source:          protocol.N01,
+			Target:          protocol.N07,
+			Timestamp:       timestamp,
+			Nonce:           "retry-response-nonce-unique",
+			CorrelationID:   correlation,
+			Type:            "TASK_RESULT",
+			Payload: map[string]any{
+				"capability": "mesh.ping",
+				"payload":    map[string]any{"ok": true},
+			},
+		}
+		if err := protocol.SignHMAC(&env, secret); err != nil {
+			t.Fatalf("sign response: %v", err)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"protocol":        "soul-mesh/1",
+			"contractVersion": env.ContractVersion,
+			"id":              env.MessageID,
+			"correlationId":   env.CorrelationID,
+			"source":          env.Source,
+			"target":          env.Target,
+			"kind":            "response",
+			"capability":      "mesh.ping",
+			"payload":         map[string]any{"ok": true},
+			"timestamp":       env.Timestamp,
+			"nonce":           env.Nonce,
+			"hmac":            env.HMAC,
+		})
+	}))
+	defer server.Close()
+
+	t.Setenv("SOUL_MESH_N01_URL", server.URL)
+	t.Setenv("SOUL_MESH_HMAC_SECRET", secret)
+	p, err := NewPeerClient(server.Client())
+	if err != nil {
+		t.Fatal(err)
+	}
+	p.maxRetry = 2
+
+	correlation := "mesh-retry-id-stability"
+	if _, err := p.CallWithCorrelation(context.Background(), protocol.N01, "mesh.ping", map[string]any{"probe": true}, correlation); err != nil {
+		t.Fatalf("expected second retry to succeed: %v", err)
+	}
+	if len(requestIDs) != 2 {
+		t.Fatalf("expected exactly two wire attempts, got %d", len(requestIDs))
+	}
+	if requestIDs[0] == "" || requestIDs[1] == "" {
+		t.Fatalf("expected message IDs on both attempts: %#v", requestIDs)
+	}
+	if requestIDs[0] != requestIDs[1] {
+		t.Fatalf("logical message ID changed across retry: %#v", requestIDs)
 	}
 }
