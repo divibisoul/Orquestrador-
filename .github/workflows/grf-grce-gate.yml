@@ -1,0 +1,30 @@
+name: GRF + GRCE gate
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches:
+      - feat/grf-grce-upgrade-wave-2026-10-06
+
+permissions:
+  contents: read
+
+jobs:
+  grf-grce:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          submodules: recursive
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.25"
+          cache: true
+      - name: gofmt
+        run: test -z "$(gofmt -l grf grce)"
+      - name: focused tests
+        run: go test ./grf ./grce
+      - name: package build
+        run: go test ./grf ./grce -run '^$'
