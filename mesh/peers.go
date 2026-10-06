@@ -264,6 +264,22 @@ func (p *PeerClient) Call(ctx context.Context, nucleus, capability string, paylo
 	return p.CallWithCorrelation(ctx, nucleus, capability, payload, protocol.NewTraceID())
 }
 
+// Configured reports whether a real authenticated route to the requested
+// remote nucleus is available. A constructed PeerClient alone is not evidence.
+func (p *PeerClient) Configured(nucleus string) bool {
+	if p == nil {
+		return false
+	}
+	nucleus = strings.TrimSpace(nucleus)
+	if nucleus == "" {
+		return false
+	}
+	p.mu.RLock()
+	defer p.mu.RUnlock()
+	peer, ok := p.peers[nucleus]
+	return ok && strings.TrimSpace(peer.URL) != "" && strings.TrimSpace(p.secret) != ""
+}
+
 func (p *PeerClient) CallWithCorrelation(ctx context.Context, nucleus, capability string, payload map[string]any, correlation string) (map[string]any, error) {
 	if ctx == nil {
 		return nil, errors.New("context is nil")
