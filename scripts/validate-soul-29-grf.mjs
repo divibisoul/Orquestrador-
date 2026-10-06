@@ -2,7 +2,11 @@ import { readFile } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 
 const raw25=await readFile('integrations/soul-25-capability-fabric.json');
+const preserved25=await readFile('_preserved/soul-25-capability-fabric.json');
 const soul25=JSON.parse(raw25);
+if(!raw25.equals?.(preserved25)) {
+  if(Buffer.from(raw25).compare(Buffer.from(preserved25))!==0) throw new Error('SOUL25_PRESERVED_COPY_NOT_BYTE_IDENTICAL');
+}
 const soul29=JSON.parse(await readFile('integrations/soul-29-capability-fabric.json','utf8'));
 const contracts=JSON.parse(await readFile('integrations/grf/soul-29-participant-contracts.json','utf8'));
 const binding=JSON.parse(await readFile('integrations/grf/system-binding.json','utf8'));
