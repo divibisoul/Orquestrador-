@@ -53,7 +53,8 @@ type ExternalCapabilityRevision struct {
 }
 
 type ExternalCapabilityRegistry struct {
-	Repositories []ExternalCapabilityRevision `json:"repositories"`
+	Repositories              []ExternalCapabilityRevision `json:"repositories"`
+	ComplementaryRepositories []ExternalCapabilityRevision `json:"complementary_repositories"`
 }
 
 type ExternalRuntimeAttestation struct {
@@ -106,10 +107,14 @@ func NewExternalAdapterRegistry() (ExternalAdapterRegistry, error) {
 	if err := json.Unmarshal(capRaw, &capabilityRegistry); err != nil {
 		return ExternalAdapterRegistry{}, fmt.Errorf("external capability registry JSON: %w", err)
 	}
-	revisions := make(map[string]string, len(capabilityRegistry.Repositories))
-	for _, item := range capabilityRegistry.Repositories {
+	allRevisions := append(append([]ExternalCapabilityRevision{}, capabilityRegistry.Repositories...), capabilityRegistry.ComplementaryRepositories...)
+	revisions := make(map[string]string, len(allRevisions))
+	for _, item := range allRevisions {
 		if item.ID == "" || len(item.Revision) != 40 {
 			return ExternalAdapterRegistry{}, fmt.Errorf("external capability revision invalid: %s", item.ID)
+		}
+		if _, exists := revisions[item.ID]; exists {
+			return ExternalAdapterRegistry{}, fmt.Errorf("duplicate external capability revision: %s", item.ID)
 		}
 		revisions[item.ID] = item.Revision
 	}
