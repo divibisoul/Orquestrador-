@@ -243,3 +243,25 @@ func TestPeerClientRetriesReuseLogicalMessageID(t *testing.T) {
 		t.Fatalf("logical message ID changed across retry: %#v", requestIDs)
 	}
 }
+
+
+func TestPeerClientRegisterPeerUpdatesCanonicalTable(t *testing.T) {
+	p, err := NewPeerClient(nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := p.RegisterPeer(protocol.N01, "http://127.0.0.1:18081", []string{"mesh.health"}); err != nil {
+		t.Fatalf("register peer: %v", err)
+	}
+	peers := p.ConfiguredPeers()
+	var got PeerInfo
+	for _, peer := range peers {
+		if peer.Nucleus == protocol.N01 {
+			got = peer
+			break
+		}
+	}
+	if got.URL != "http://127.0.0.1:18081" || !got.Healthy || got.Circuit != CircuitClosed {
+		t.Fatalf("unexpected registered peer: %+v", got)
+	}
+}
