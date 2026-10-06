@@ -83,6 +83,7 @@ func New(size int, learningRate float64) (*Network, error) {
 		return nil, err
 	}
 	return n, nil
+}
 
 func validateConfig(config Config) error {
 	if len(config.Layers) == 0 {
