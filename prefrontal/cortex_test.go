@@ -54,6 +54,9 @@ func TestCortexTelemetryCountersBecomeEvidence(t *testing.T) {
 	if _, err = c.Commit(candidate, "telemetry-test"); err != nil {
 		t.Fatal(err)
 	}
+	if !c.Inhibit(Candidate{ID: "blocked", Utility: .1, Risk: .9}) {
+		t.Fatal("expected blocked candidate")
+	}
 
 	health := c.Health()
 	if health["decision_count"] != uint64(1) {
@@ -67,5 +70,8 @@ func TestCortexTelemetryCountersBecomeEvidence(t *testing.T) {
 	}
 	if health["evaluation_nanos"].(uint64) == 0 || health["commit_nanos"].(uint64) == 0 {
 		t.Fatalf("expected non-zero timing evidence: %#v", health)
+	}
+	if rate, _ := health["inhibition_rate"].(float64); rate <= 0 || rate >= 1 {
+		t.Fatalf("inhibition rate must use inhibition checks, got %v from %#v", rate, health)
 	}
 }
