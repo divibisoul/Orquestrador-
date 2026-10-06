@@ -1434,7 +1434,7 @@
   "owner_registry": "integrations/external-capability-ownership.json",
   "native_family_registry": "integrations/native-capability-augmentation.json",
   "version": 29,
-  "parent_hash": "sha256:f2726bcf8de66c41ff677ba095aa965876fd28a96a84596166ff45a144d59041",
+  "parent_hash": "sha256:c89a8ea7914f1bfbd3345a1dd40b2991287c180a45e54e916e30670495d8e975",
   "complementary_sources": [
     {
       "id": "autogenesis",
@@ -1499,12 +1499,12 @@
       "reason": "GitHub 404 on 2026-10-06"
     }
   ],
-  "previous_parent_hash": "sha256:c89a8ea7914f1bfbd3345a1dd40b2991287c180a45e54e916e30670495d8e975",
+  "previous_parent_hash": "sha256:f2726bcf8de66c41ff677ba095aa965876fd28a96a84596166ff45a144d59041",
   "provenance_reconciliation": {
     "corrected_at": "2026-10-06",
-    "reason": "current Soul-25 source and preserved Soul-25 are byte-identical; prior SOUL-29 parent hash c89... did not match that canonical source",
-    "previous": "sha256:c89a8ea7914f1bfbd3345a1dd40b2991287c180a45e54e916e30670495d8e975",
-    "current": "sha256:f2726bcf8de66c41ff677ba095aa965876fd28a96a84596166ff45a144d59041"
+    "previous": "sha256:f2726bcf8de66c41ff677ba095aa965876fd28a96a84596166ff45a144d59041",
+    "current": "sha256:c89a8ea7914f1bfbd3345a1dd40b2991287c180a45e54e916e30670495d8e975",
+    "reason": "parent_hash identifies the preserved Soul-25 bytes; f272 identifies current canonical source bytes"
   },
   "grf_version": "2.0.0",
   "grce_version": "2.0.0",
@@ -1513,5 +1513,6 @@
   "canonical_mesh": "soul-mesh/1",
   "control_plane": "N07",
   "grf_state": "PROJECTED",
-  "grce_state": "PROJECTED"
+  "grce_state": "PROJECTED",
+  "current_soul25_source_hash": "sha256:f2726bcf8de66c41ff677ba095aa965876fd28a96a84596166ff45a144d59041"
 }
