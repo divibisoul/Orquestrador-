@@ -325,16 +325,7 @@ func (s *Scheduler) executePlan(ctx context.Context, jobs []Job) []Result {
 			return ready[i] < ready[j]
 		})
 
-		var wg sync.WaitGroup
-		for _, index := range ready {
-			index := index
-			wg.Add(1)
-			go func() {
-				defer wg.Done()
-				results[index] = s.execute(ctx, jobs[index])
-			}()
-		}
-		wg.Wait()
+		s.executeWave(ctx, jobs, ready, results)
 
 		for _, index := range ready {
 			delete(pending, index)
@@ -346,6 +337,58 @@ func (s *Scheduler) executePlan(ctx context.Context, jobs []Job) []Result {
 		}
 	}
 	return results
+}
+
+func (s *Scheduler) executeWave(ctx context.Context, jobs []Job, indices []int, results []Result) {
+	if len(indices) == 0 {
+		return
+	}
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	workers := s.cfg.MaxInflight
+	if workers < 1 {
+		workers = 1
+	}
+	if workers > len(indices) {
+		workers = len(indices)
+	}
+	work := make(chan int)
+	var wg sync.WaitGroup
+	wg.Add(workers)
+	for i := 0; i < workers; i++ {
+		go func() {
+			defer wg.Done()
+			for {
+				select {
+				case <-ctx.Done():
+					return
+				case index, ok := <-work:
+					if !ok {
+						return
+					}
+					results[index] = s.execute(ctx, jobs[index])
+				}
+			}
+		}()
+	}
+dispatch:
+	for _, index := range indices {
+		select {
+		case work <- index:
+		case <-ctx.Done():
+			break dispatch
+		}
+	}
+	close(work)
+	wg.Wait()
+	if err := ctx.Err(); err != nil {
+		for _, index := range indices {
+			if results[index].JobID == "" {
+				results[index] = failed(jobs[index], "EXECUTION_CANCELLED", err, 0, 0)
+			}
+		}
+	}
 }
 
 func barrierReady(index int, job Job, pending map[int]Job) bool {
