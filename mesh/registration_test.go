@@ -1,33 +1,27 @@
 package mesh
 
 import (
-	"context"
 	"testing"
 
-	"github.com/divibisoul/Orquestrador-/orchestrator"
 	"github.com/divibisoul/Orquestrador-/protocol"
 )
 
 func TestRegistrationRegistryPreservesPeerIdentity(t *testing.T) {
 	r := NewRegistrationRegistry()
-	e := &orchestrator.Engine{}
-	if err := RegisterRegistrationOperation(e, r); err != nil {
-		t.Fatal(err)
-	}
 
 	message := protocol.NewMessage("N01", "N07", "command", "mesh.register@1.0.0", nil)
 	message.CorrelationID = "registration-test"
 	message.Metadata = map[string]string{
-		"endpoint":    "http://127.0.0.1:18081",
+		"endpoint":     "http://127.0.0.1:18081",
 		"capabilities": "mesh.ping mesh.discovery grce.cycle.execute@1.0.0",
 	}
 
-	result, err := e.Submit(context.Background(), message)
+	registration, err := r.Register(message)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if result.Status != "ok" {
-		t.Fatalf("unexpected registration status: %s", result.Status)
+	if registration.Nucleus != "N01" || registration.Endpoint != "http://127.0.0.1:18081" {
+		t.Fatalf("unexpected registration: %+v", registration)
 	}
 
 	entries := r.Snapshot()
