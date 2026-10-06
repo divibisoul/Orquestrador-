@@ -41,3 +41,18 @@ N07 owns orchestration, neural federation, routing, capability composition and t
 
 ## Rule
 A detected failure is corrected and revalidated when the environment provides the required evidence. Missing external runtime configuration is never replaced by mocks, placeholders or fabricated green status.
+
+## SOUL v1 restructuring — 2026-10-06
+
+This section supersedes only stale factual statements where they conflict with current Git evidence. It does not erase prior history.
+
+- N03 current main contains `package-lock.json`; historical "missing lockfile" statements are stale.
+- N07 has an executable GRCE boundary with six hooks and a real Go→HTTP SARA participant.
+- Real runtime proof remains fail-closed: absent SARA endpoint/token leaves GRCE BLOCKED.
+- N01 dual Mesh runtimes are preserved; the restructuring branch adds a contract test for `soul-mesh/1` / `1.1.0`.
+- N01→N07 E2E and GRCE→SARA E2E workflows are present and have been submitted to GitHub Actions through PR #147.
+- SOUL-29 is structurally represented as 9 native nodes + 20 upstream capability providers. Hivemind is explicitly a learning implementation dependency and is not a 30th graph node.
+- NervoVago is the canonical SARA-side name for the existing VagusNerveBus implementation; VagusBus remains a compatibility alias.
+- Release V1 remains **NOT ONLINE** until all required runtime gates produce admissible evidence.
+- No branch, file, runtime authority, or historical implementation is deleted by this restructuring line.
+
