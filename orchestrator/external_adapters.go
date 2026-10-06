@@ -6,13 +6,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/divibisoul/Orquestrador-/protocol"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/divibisoul/Orquestrador-/protocol"
 )
 
 type ExternalAdapterSpec struct {
