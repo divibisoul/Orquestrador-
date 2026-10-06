@@ -14,10 +14,10 @@ if(soul29.version!==29) throw new Error(`SOUL29_VERSION:${soul29.version}`);
 if(soul29.nodes.length!==29 || soul29.counts?.total_nodes!==29) throw new Error('SOUL29_NODE_COUNT_INVALID');
 if(soul29.edges.length!==160 || soul29.counts?.edges!==160) throw new Error('SOUL29_EDGE_COUNT_INVALID');
 
-const oldNodeIds=new Set(soul25.nodes.map(x=>x.id));
 const missingOld=soul25.nodes.filter(x=>!soul29.nodes.some(y=>y.id===x.id));
 if(missingOld.length) throw new Error(`SOUL25_NODES_NOT_PRESERVED:${missingOld.map(x=>x.id).join(',')}`);
-const oldEdges=JSON.stringify(soul25.edges);
+if(soul29.nodes.length-soul25.nodes.length!==4) throw new Error('SOUL29_NEW_NODE_DELTA_INVALID');
+if(soul29.edges.length-soul25.edges.length!==16) throw new Error('SOUL29_NEW_EDGE_DELTA_INVALID');
 for(const edge of soul25.edges){
   if(!soul29.edges.some(candidate=>JSON.stringify(candidate)===JSON.stringify(edge))) throw new Error(`SOUL25_EDGE_NOT_PRESERVED:${JSON.stringify(edge)}`);
 }
