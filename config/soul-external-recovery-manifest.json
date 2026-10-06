@@ -37,54 +37,62 @@
       "id": "langgraph",
       "source": "https://github.com/langchain-ai/langgraph",
       "path": "integrations/external/langgraph",
-      "pinned_revision": "157a06dda988d85afeb8751ff27b35ab3f4f8bf4",
+      "pinned_revision": "2d942085e214ef6b99b6f54ed4d544a7c7c5ac56",
       "latest_upstream_head": "2d942085e214ef6b99b6f54ed4d544a7c7c5ac56",
       "targets": [
         "N07",
         "N01"
       ],
       "latest_observed_at": "2026-10-05T17:46:44Z",
-      "drift_from_pinned": true,
-      "state": "REQUIRES_COMPATIBILITY_GATE"
+      "drift_from_pinned": false,
+      "state": "CURRENT_PIN",
+      "previous_pinned_revision": "157a06dda988d85afeb8751ff27b35ab3f4f8bf4",
+      "promotion_reason": "upstream HEAD observed on 2026-10-06; promoted only as a pinned revision pending adapter/E2E verification"
     },
     {
       "id": "crewai",
       "source": "https://github.com/crewAIInc/crewAI",
       "path": "integrations/external/crewai",
-      "pinned_revision": "8078f9130c35a47be95d4a55bf1d73b3fd44fc88",
+      "pinned_revision": "1133f16cab274b9863b36fdacca7766b30e549fd",
       "latest_upstream_head": "1133f16cab274b9863b36fdacca7766b30e549fd",
       "targets": [
         "N07"
       ],
       "latest_observed_at": "2026-10-05T18:45:05Z",
-      "drift_from_pinned": true,
-      "state": "REQUIRES_COMPATIBILITY_GATE"
+      "drift_from_pinned": false,
+      "state": "CURRENT_PIN",
+      "previous_pinned_revision": "8078f9130c35a47be95d4a55bf1d73b3fd44fc88",
+      "promotion_reason": "upstream HEAD observed on 2026-10-06; promoted only as a pinned revision pending adapter/E2E verification"
     },
     {
       "id": "microsoft-agent-framework",
       "source": "https://github.com/microsoft/agent-framework",
       "path": "integrations/external/microsoft-agent-framework",
-      "pinned_revision": "a2f4506c0ba30cea7c9bbe907fc158c0db2cc6a3",
+      "pinned_revision": "b9d24c8fb484c8330abe8bb9e7500ca3c3bbf46c",
       "latest_upstream_head": "b9d24c8fb484c8330abe8bb9e7500ca3c3bbf46c",
       "targets": [
         "N07"
       ],
       "latest_observed_at": "2026-10-05T17:39:30Z",
-      "drift_from_pinned": true,
-      "state": "REQUIRES_COMPATIBILITY_GATE"
+      "drift_from_pinned": false,
+      "state": "CURRENT_PIN",
+      "previous_pinned_revision": "a2f4506c0ba30cea7c9bbe907fc158c0db2cc6a3",
+      "promotion_reason": "upstream HEAD observed on 2026-10-06; promoted only as a pinned revision pending adapter/E2E verification"
     },
     {
       "id": "openhands",
       "source": "https://github.com/OpenHands/OpenHands",
       "path": "integrations/external/openhands",
-      "pinned_revision": "2414d6ee5e31bede2e78211f72b58e9949575a75",
+      "pinned_revision": "8136a1d59f330edc99b977a69c1432a56c7010cc",
       "latest_upstream_head": "8136a1d59f330edc99b977a69c1432a56c7010cc",
       "targets": [
         "N06"
       ],
       "latest_observed_at": "2026-10-06T04:53:31Z",
-      "drift_from_pinned": true,
-      "state": "REQUIRES_COMPATIBILITY_GATE"
+      "drift_from_pinned": false,
+      "state": "CURRENT_PIN",
+      "previous_pinned_revision": "2414d6ee5e31bede2e78211f72b58e9949575a75",
+      "promotion_reason": "upstream HEAD observed on 2026-10-06; promoted only as a pinned revision pending adapter/E2E verification"
     },
     {
       "id": "metagpt",
@@ -117,27 +125,31 @@
       "id": "letta-code",
       "source": "https://github.com/letta-ai/letta-code",
       "path": "integrations/external/letta-code",
-      "pinned_revision": "1fcc9666817ab852bc2532a3a989f712e1fd6c19",
+      "pinned_revision": "4b028fab07c69edaac2ddb4f7b9a43573ff20d81",
       "latest_upstream_head": "4b028fab07c69edaac2ddb4f7b9a43573ff20d81",
       "targets": [
         "N01"
       ],
       "latest_observed_at": "2026-10-05T23:06:21Z",
-      "drift_from_pinned": true,
-      "state": "REQUIRES_COMPATIBILITY_GATE"
+      "drift_from_pinned": false,
+      "state": "CURRENT_PIN",
+      "previous_pinned_revision": "1fcc9666817ab852bc2532a3a989f712e1fd6c19",
+      "promotion_reason": "upstream HEAD observed on 2026-10-06; promoted only as a pinned revision pending adapter/E2E verification"
     },
     {
       "id": "browser-use",
       "source": "https://github.com/browser-use/browser-use",
       "path": "integrations/external/browser-use",
-      "pinned_revision": "302d8fcb245a7a63fb7531a4734c9ce3c7792779",
+      "pinned_revision": "7be96ed8bafa8dfe1eef228b59cf5c884b8b2431",
       "latest_upstream_head": "7be96ed8bafa8dfe1eef228b59cf5c884b8b2431",
       "targets": [
         "N04"
       ],
       "latest_observed_at": "2026-10-03T00:06:05Z",
-      "drift_from_pinned": true,
-      "state": "REQUIRES_COMPATIBILITY_GATE"
+      "drift_from_pinned": false,
+      "state": "CURRENT_PIN",
+      "previous_pinned_revision": "302d8fcb245a7a63fb7531a4734c9ce3c7792779",
+      "promotion_reason": "upstream HEAD observed on 2026-10-06; promoted only as a pinned revision pending adapter/E2E verification"
     },
     {
       "id": "smolagents",
@@ -156,41 +168,47 @@
       "id": "pydantic-ai",
       "source": "https://github.com/pydantic/pydantic-ai",
       "path": "integrations/external/pydantic-ai",
-      "pinned_revision": "6bc07cf18b0641ea92343d8c589cfb922108b802",
+      "pinned_revision": "cd99fbc21959731de84807724c997430115ce65e",
       "latest_upstream_head": "cd99fbc21959731de84807724c997430115ce65e",
       "targets": [
         "N01",
         "JEV"
       ],
       "latest_observed_at": "2026-10-06T03:16:23Z",
-      "drift_from_pinned": true,
-      "state": "REQUIRES_COMPATIBILITY_GATE"
+      "drift_from_pinned": false,
+      "state": "CURRENT_PIN",
+      "previous_pinned_revision": "6bc07cf18b0641ea92343d8c589cfb922108b802",
+      "promotion_reason": "upstream HEAD observed on 2026-10-06; promoted only as a pinned revision pending adapter/E2E verification"
     },
     {
       "id": "llama-index",
       "source": "https://github.com/run-llama/llama_index",
       "path": "integrations/external/llama-index",
-      "pinned_revision": "962940ddc079cc21701d28d1237c84c82a7c5164",
+      "pinned_revision": "81f0e06f6e61a5659bd409cac4a199e28c2fd85e",
       "latest_upstream_head": "81f0e06f6e61a5659bd409cac4a199e28c2fd85e",
       "targets": [
         "N05"
       ],
       "latest_observed_at": "2026-10-05T15:17:09Z",
-      "drift_from_pinned": true,
-      "state": "REQUIRES_COMPATIBILITY_GATE"
+      "drift_from_pinned": false,
+      "state": "CURRENT_PIN",
+      "previous_pinned_revision": "962940ddc079cc21701d28d1237c84c82a7c5164",
+      "promotion_reason": "upstream HEAD observed on 2026-10-06; promoted only as a pinned revision pending adapter/E2E verification"
     },
     {
       "id": "dspy",
       "source": "https://github.com/stanfordnlp/dspy",
       "path": "integrations/external/dspy",
-      "pinned_revision": "ba3f9198efe5d125c7c1a2b40b1f1e6166209bd2",
+      "pinned_revision": "bc8af7ed3d5ee0b892211e5c03274396442a413c",
       "latest_upstream_head": "bc8af7ed3d5ee0b892211e5c03274396442a413c",
       "targets": [
         "N06"
       ],
       "latest_observed_at": "2026-10-05T16:53:14Z",
-      "drift_from_pinned": true,
-      "state": "REQUIRES_COMPATIBILITY_GATE"
+      "drift_from_pinned": false,
+      "state": "CURRENT_PIN",
+      "previous_pinned_revision": "ba3f9198efe5d125c7c1a2b40b1f1e6166209bd2",
+      "promotion_reason": "upstream HEAD observed on 2026-10-06; promoted only as a pinned revision pending adapter/E2E verification"
     },
     {
       "id": "whisper",
@@ -218,5 +236,21 @@
       "drift_from_pinned": false,
       "state": "CURRENT_PIN"
     }
-  ]
+  ],
+  "update_policy": {
+    "compatibility_gate_required": true,
+    "previous_pins_preserved_in_git_history": true,
+    "runtime_promotion_requires_green_ci": true,
+    "current_pins_updated_in_this_wave": [
+      "langgraph",
+      "crewai",
+      "microsoft-agent-framework",
+      "openhands",
+      "letta-code",
+      "browser-use",
+      "pydantic-ai",
+      "llama-index",
+      "dspy"
+    ]
+  }
 }
