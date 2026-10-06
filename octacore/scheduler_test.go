@@ -191,3 +191,30 @@ func TestOctacoreWebGPUIsExplicitlyUnavailable(t *testing.T) {
 		t.Fatalf("unexpected WebGPU error: %#v", result.Error)
 	}
 }
+
+func TestOctacorePreservesMultipleBarrierSignalsWithSameBarrier(t *testing.T) {
+	s := newTestScheduler(t)
+	barrier := "producer"
+	groupA := "consumer-a"
+	groupB := "consumer-b"
+	jobs := []Job{
+		job("consumer-a", G7, G7, &groupA, &barrier),
+		job("consumer-b", G7, G7, &groupB, &barrier),
+	}
+	results := s.executePlan(context.Background(), jobs)
+	for i, result := range results {
+		if !result.OK {
+			t.Fatalf("job %d failed: %#v", i, result.Error)
+		}
+	}
+	signals := barriersForReady(jobs, results, []int{0, 1})
+	if len(signals) != 2 {
+		t.Fatalf("expected two barrier signals, got %d", len(signals))
+	}
+	if _, ok := signals["producer::consumer-a"]; !ok {
+		t.Fatal("first barrier signal provenance was lost")
+	}
+	if _, ok := signals["producer::consumer-b"]; !ok {
+		t.Fatal("second barrier signal provenance was lost")
+	}
+}
