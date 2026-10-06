@@ -17,7 +17,7 @@ on:
       - 'scripts/crewai_runner.py'
       - 'scripts/metagpt_runner.py'
       - 'scripts/validate-soul-external-submodules.mjs'
-      - 'scripts/materialize-top-level-submodules.sh'
+      - 'scripts/materialize-top-level-submodules.mjs'
       - 'integrations/external-adapters.json'
       - 'integrations/external-capabilities.json'
       - 'integrations/external/**'
@@ -39,7 +39,7 @@ on:
       - 'scripts/crewai_runner.py'
       - 'scripts/metagpt_runner.py'
       - 'scripts/validate-soul-external-submodules.mjs'
-      - 'scripts/materialize-top-level-submodules.sh'
+      - 'scripts/materialize-top-level-submodules.mjs'
       - 'scripts/validate-external-adapters.mjs'
       - 'scripts/validate-external-capability-ownership.mjs'
       - 'scripts/validate-soul-29-grf.mjs'
@@ -112,7 +112,7 @@ jobs:
           submodules: false
 
       - name: Materialize top-level SOUL submodules without unsafe recursion
-        run: bash scripts/materialize-top-level-submodules.sh
+        run: node scripts/materialize-top-level-submodules.mjs
 
       - uses: actions/setup-node@v4
         with:
@@ -170,7 +170,7 @@ jobs:
           submodules: false
 
       - name: Materialize top-level SOUL submodules without unsafe recursion
-        run: bash scripts/materialize-top-level-submodules.sh
+        run: node scripts/materialize-top-level-submodules.mjs
 
       - name: Assert declarative SOUL source
         run: |
@@ -241,7 +241,7 @@ jobs:
           submodules: false
 
       - name: Materialize top-level SOUL submodules without unsafe recursion
-        run: bash scripts/materialize-top-level-submodules.sh
+        run: node scripts/materialize-top-level-submodules.mjs
 
       - name: Build production image
         run: docker build --pull --tag n07-orquestrador:ci .
