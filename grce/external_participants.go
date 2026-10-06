@@ -53,8 +53,6 @@ func (c *CompositeParticipant) ExecuteHook(ctx context.Context, hook Hook, input
 			continue
 		}
 
-		started := provider.ExecuteHook
-		_ = started
 		aux, auxErr := provider.ExecuteHook(ctx, hook, input, correlationID, cycleID)
 		name := auxiliaryProviderName(provider)
 		evidence := ProviderEvidence{
@@ -107,13 +105,16 @@ func (p *CommandGoldenRuleParticipant) ID() string   { return p.id }
 func (p *CommandGoldenRuleParticipant) Hook() Hook   { return p.hook }
 
 func (p *CommandGoldenRuleParticipant) ExecuteHook(ctx context.Context, hook Hook, input, correlationID, cycleID string) (HookResult, error) {
+	if p == nil {
+		return HookResult{Hook: hook, EvidenceState: StateBlocked}, errors.New("EXTERNAL_PARTICIPANT_UNAVAILABLE")
+	}
 	result := HookResult{
 		Hook: hook,
 		Operation: p.id + ".golden-rule." + string(hook),
 		InputHash: hashText(input),
 		EvidenceState: StateBlocked,
 	}
-	if p == nil || strings.TrimSpace(p.command) == "" {
+	if strings.TrimSpace(p.command) == "" {
 		return result, errors.New(p.id + "_COMMAND_NOT_CONFIGURED")
 	}
 
