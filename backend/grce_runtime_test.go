@@ -58,7 +58,7 @@ func TestGRCEExecutorRuntimeCompletesWithHTTPBoundaryFixture(t *testing.T) {
 	compute := supergpu.New(nil)
 	compute.Discover()
 
-	executor, err := NewGRCEExecutorRuntime(proxy, compute, peers, GRCEFeedback{
+	executor, err := NewGRCEExecutorRuntime(proxy, compute, GRCEFeedback{
 		Horta: func(context.Context, grf.State, []grf.Provenance, []grf.Evidence, []grf.Capability, grf.Context) error { return nil },
 		Vagus: func(context.Context, grf.State, []grf.Provenance, []grf.Evidence, []grf.Capability, grf.Context) error { return nil },
 		Mesh:  func(context.Context, grf.State, []grf.Provenance, []grf.Evidence, []grf.Capability, grf.Context) error { return nil },
