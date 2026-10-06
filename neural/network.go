@@ -332,23 +332,38 @@ func (n *Network) Normalize(values []float64) ([]float64, error) {
 	if len(values) == 0 {
 		return nil, errors.New("empty vector")
 	}
-	mean := 0.0
+	maxAbs := 0.0
 	for _, v := range values {
 		if math.IsNaN(v) || math.IsInf(v, 0) {
 			return nil, errors.New("invalid vector")
 		}
-		mean += v
+		if abs := math.Abs(v); abs > maxAbs {
+			maxAbs = abs
+		}
 	}
-	mean /= float64(len(values))
-	variance := 0.0
+	if maxAbs == 0 {
+		return make([]float64, len(values)), nil
+	}
+	meanScaled := 0.0
 	for _, v := range values {
-		d := v - mean
-		variance += d * d
+		meanScaled += v / maxAbs
 	}
-	std := math.Sqrt(variance/float64(len(values)) + 1e-12)
+	meanScaled /= float64(len(values))
+	varianceScaled := 0.0
+	for _, v := range values {
+		d := v/maxAbs - meanScaled
+		varianceScaled += d * d
+	}
+	stdScaled := math.Sqrt(varianceScaled/float64(len(values)) + 1e-12/(maxAbs*maxAbs))
+	if math.IsNaN(stdScaled) || math.IsInf(stdScaled, 0) || stdScaled <= 0 {
+		return nil, errors.New("normalization failed")
+	}
 	out := make([]float64, len(values))
 	for i, v := range values {
-		out[i] = (v - mean) / std
+		out[i] = (v/maxAbs - meanScaled) / stdScaled
+		if math.IsNaN(out[i]) || math.IsInf(out[i], 0) {
+			return nil, errors.New("normalization produced non-finite value")
+		}
 	}
 	return out, nil
 }
