@@ -1413,7 +1413,19 @@
   "owner_registry": "integrations/external-capability-ownership.json",
   "native_family_registry": "integrations/native-capability-augmentation.json",
   "parent_graph": "SOUL-25-capability-fabric",
-  "parent_hash": "sha256:15f70a247216327f51f064c115a9d23a8f27ac122def19604a0b7f832d1b1313",
+  "parent_hash": "sha256:4236a8dacdabcdcaf6607b8a13be3f0098c7b325374da694b88747fb0439f7d8",
+  "parent_hash_history": [
+    {
+      "value": "sha256:15f70a247216327f51f064c115a9d23a8f27ac122def19604a0b7f832d1b1313",
+      "state": "PRESERVED",
+      "status": "SUPERSEDED_AFTER_BYTE_LEVEL_VERIFICATION"
+    },
+    {
+      "value": "sha256:4236a8dacdabcdcaf6607b8a13be3f0098c7b325374da694b88747fb0439f7d8",
+      "state": "REAL",
+      "status": "BYTE_LEVEL_VERIFIED_AGAINST_ORIGINAL_AND_PRESERVED_FILE"
+    }
+  ],
   "extensions": {
     "grce": {
       "algorithm": "Golden Rule Cycle Executor",
