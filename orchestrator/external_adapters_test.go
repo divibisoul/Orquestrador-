@@ -76,3 +76,28 @@ func TestExternalAdapterDegradedExecutionFailsClosed(t *testing.T) {
 		t.Fatalf("degraded execution was not fail-closed: %#v", result)
 	}
 }
+
+func TestExternalAdapterTransportAuthorityCannotBeOverridden(t *testing.T) {
+	req := buildExternalAdapterRequest(
+		"langgraph",
+		"execute",
+		"workflow.invoke",
+		"/app/integrations/external/langgraph",
+		map[string]string{
+			"provider":  "crewai",
+			"operation": "arbitrary.operation",
+			"root":      "/tmp/escape",
+			"mode":      "probe",
+		},
+	)
+	for key, expected := range map[string]string{
+		"provider":  "langgraph",
+		"mode":      "execute",
+		"operation": "workflow.invoke",
+		"root":      "/app/integrations/external/langgraph",
+	} {
+		if got := req[key]; got != expected {
+			t.Fatalf("%s override succeeded: got=%v want=%s", key, got, expected)
+		}
+	}
+}
