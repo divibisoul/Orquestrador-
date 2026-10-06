@@ -17,10 +17,10 @@ func TestCanonicalInvariantSetIsComplete(t *testing.T) {
 func TestMonotonicityRejectsContentLoss(t *testing.T) {
 	before := State{Payload: []byte("0123456789"), Epistemic: EpistemicActive}
 	after := State{Payload: []byte("0123"), Epistemic: EpistemicProjected}
-	ctx := Context{CycleID:"cycle-test"}
-	p := Provenance{ParentHash:before.Hash(),InputHash:before.Hash(),OutputHash:after.Hash(),SequenceIndex:1}
-	err := ValidateContextAndProvenance(before,ctx,after,p)
-	if err == nil || !strings.Contains(err.Error(),"MONOTONICITY") {
+	ctx := Context{CycleID: "cycle-test"}
+	p := Provenance{ParentHash: before.Hash(), InputHash: before.Hash(), OutputHash: after.Hash(), SequenceIndex: 1}
+	err := ValidateContextAndProvenance(before, ctx, after, p)
+	if err == nil || !strings.Contains(err.Error(), "MONOTONICITY") {
 		t.Fatalf("expected monotonicity error, got %v", err)
 	}
 }
