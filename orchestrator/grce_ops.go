@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strconv"
 	"os"
 	"sort"
 	"strings"
@@ -65,7 +66,7 @@ func registerGRFGRCEOperations(e *Engine, saraBridge GRFSaraBridge) error {
 			Metadata: map[string]string{
 				"framework": "GRF",
 				"version": "2.0",
-				"epistemic_state": string(grf.ACTIVE),
+				"epistemic_state": string(grf.REAL),
 				"system_binding_json": binding,
 				"soul29_fabric_json": fabric,
 			},
@@ -266,8 +267,8 @@ func requireGRFContext(m protocol.Message) (grf.Context, error) {
 	if raw == "" {
 		return grf.Context{}, errors.New("GRF_SEQUENCE_INDEX_REQUIRED")
 	}
-	var sequence uint64
-	if _, err := fmt.Sscanf(raw, "%d", &sequence); err != nil || sequence == 0 {
+	sequence, err := strconv.ParseUint(raw, 10, 64)
+	if err != nil || sequence == 0 {
 		return grf.Context{}, errors.New("GRF_SEQUENCE_INDEX_INVALID")
 	}
 	return grf.Context{TraceID:m.TraceID,CorrelationID:m.CorrelationID,SequenceIndex:sequence}, nil
