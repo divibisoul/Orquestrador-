@@ -1,6 +1,11 @@
 package prefrontal
 
-import "testing"
+import (
+	"math"
+	"testing"
+
+	"github.com/divibisoul/Orquestrador-/neural"
+)
 
 func TestCortexRuntime(t *testing.T) {
 	c, err := New(0.1, 4)
@@ -103,5 +108,18 @@ func TestCortexTelemetryCountersBecomeEvidence(t *testing.T) {
 	}
 	if avg, _ := health["avg_commit_ms"].(float64); avg <= 0 {
 		t.Fatalf("expected commit latency evidence in avg_commit_ms: %#v", health)
+	}
+}
+
+
+func TestNeocortexEvaluateSignalRejectsNonFinite(t *testing.T) {
+	cortex, err := New(0.1, 4)
+	if err != nil { t.Fatal(err) }
+	n, err := neural.New(4, 0.1)
+	if err != nil { t.Fatal(err) }
+	nc, err := NewNeocortex(cortex, n)
+	if err != nil { t.Fatal(err) }
+	if _, err := nc.EvaluateSignal("bad", []float64{1, math.NaN()}, 0.1, 0.1, 0, 1, "neural.forward"); err == nil {
+		t.Fatal("non-finite neural signal must be rejected")
 	}
 }
