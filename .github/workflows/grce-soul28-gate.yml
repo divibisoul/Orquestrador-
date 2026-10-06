@@ -1,0 +1,45 @@
+name: GRCE SOUL-28 gate
+
+on:
+  push:
+    branches:
+      - feat/grce-complements-soul28-2026-10-06
+  pull_request:
+    branches:
+      - main
+      - feat/grf-grce-upgrade-wave-2026-10-06
+
+permissions:
+  contents: read
+
+jobs:
+  soul28:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          submodules: recursive
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.25"
+          cache: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: validate SOUL-28 manifest
+        run: node scripts/validate-soul-28.mjs
+      - name: verify submodule gitlinks
+        shell: bash
+        run: |
+          set -euo pipefail
+          git ls-tree HEAD integrations/external/bijux-dag-runtime integrations/external/ouro-loop integrations/external/recurs | tee /tmp/grce-links
+          grep -F "160000 commit f0f5f56b49f380196918c4c6910b725b2b30ab7d" /tmp/grce-links
+          grep -F "160000 commit 52f97e22dc2a72a45ffa025d452ea02c58cb6b94" /tmp/grce-links
+          grep -F "160000 commit 7d3745ab787b1206ccd981cb1511100476097266" /tmp/grce-links
+      - name: gofmt
+        run: test -z "$(gofmt -l grf grce)"
+      - name: GRF + GRCE tests
+        run: go test ./grf ./grce
+      - name: no external runtime false-green
+        run: go test ./grce -run TestExternalParticipantsAreFailClosedWhenRuntimeIsUnconfigured
