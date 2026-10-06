@@ -417,23 +417,20 @@ func (r *GRCEExecutorRuntime) validateITR(ctx context.Context, state grf.State, 
 }
 
 func (r *GRCEExecutorRuntime) validateRGO(ctx context.Context, state grf.State, c grf.Context) (bool, error) {
-	raw, err := json.Marshal(map[string]any{
+	finding := map[string]any{
 		"finding_id":  "grce:" + c.CorrelationID,
 		"description": stateText(state),
 		"provenance": map[string]any{
 			"trace_id":       c.TraceID,
 			"sequence_index": c.SequenceIndex,
 		},
-	})
-	if err != nil {
-		return false, err
 	}
-	result, err := r.SARA.Cycle(ctx, string(raw), c.CorrelationID, c.CorrelationID)
+	result, err := r.SARA.RGOTrinity(ctx, finding, c.CorrelationID, c.CorrelationID)
 	if err != nil {
-		return false, fmt.Errorf("GRCE_RGO_VALIDATION_CYCLE_FAILED:%w", err)
+		return false, fmt.Errorf("GRCE_RGO_TRINITY_FAILED:%w", err)
 	}
-	converged, _ := result["converged"].(bool)
-	return converged, nil
+	status, _ := result["final_status"].(string)
+	return strings.EqualFold(status, "VALIDATED"), nil
 }
 
 func (r *GRCEExecutorRuntime) rollback(ctx context.Context, state grf.State, prov []grf.Provenance, evidence []grf.Evidence, c grf.Context) error {
