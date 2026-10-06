@@ -321,7 +321,38 @@ func main() {
 			"type":           event.Type,
 			"payload":        event.Payload,
 		}
-		_, err := saraProxy.PublishVagus(ctx, payload, event.CorrelationID)
+		inputHash, err := backend.HashNervoVagoValue(payload)
+		if err != nil {
+			return fmt.Errorf("octacore nervo-vago input hash: %w", err)
+		}
+		parentHash, err := backend.HashNervoVagoValue(map[string]any{
+			"correlation_id": event.CorrelationID,
+			"source":         "N07.Octacore",
+		})
+		if err != nil {
+			return fmt.Errorf("octacore nervo-vago parent hash: %w", err)
+		}
+		traceID := protocol.NewTraceID()
+		sequenceIndex := nervoVagoSequence.Add(1)
+		_, err = nervoVagoGateway.Publish(ctx, backend.NervoVagoEnvelope{
+			VagusVersion:  event.VagusVersion,
+			MessageID:     event.MessageID,
+			CorrelationID: event.CorrelationID,
+			Source:        event.Source,
+			Target:        event.Target,
+			Priority:      event.Priority,
+			TTL:           event.TTL,
+			Type:          event.Type,
+			Payload:       event.Payload,
+			Provenance: backend.NervoVagoProvenance{
+				TraceID:       traceID,
+				CorrelationID: event.CorrelationID,
+				MessageID:     event.MessageID,
+				SequenceIndex: sequenceIndex,
+				ParentHash:    parentHash,
+				InputHash:     inputHash,
+			},
+		})
 		return err
 	})
 	if err := octacore.RegisterOperations(e, octacoreProcessor); err != nil {
