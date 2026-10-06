@@ -599,6 +599,29 @@ func (e *Engine) registerBuiltins() error {
 		return err
 	}
 
+	if err := e.Register("neural.parameters@1.0.0", func(ctx context.Context, message protocol.Message) (protocol.Result, error) {
+		e.setStage(message.TraceID, "neural.parameters", "")
+		select {
+		case <-ctx.Done():
+			return protocol.Result{}, ctx.Err()
+		default:
+		}
+		parameters, err := json.Marshal(e.neural.Parameters())
+		if err != nil {
+			return protocol.Result{}, err
+		}
+		return protocol.Result{
+			TraceID:       message.TraceID,
+			CorrelationID: message.CorrelationID,
+			Source:        "N07.neural",
+			Target:        message.Source,
+			Status:        "ok",
+			Metadata:      map[string]string{"parameters": string(parameters), "configuration_scope": "canonical_read_only"},
+		}, nil
+	}); err != nil {
+		return err
+	}
+
 	if err := e.Register("compute.execute@1.0.0", func(ctx context.Context, message protocol.Message) (protocol.Result, error) {
 		device, err := e.compute.Select(message.Metadata["device"])
 		if err != nil {

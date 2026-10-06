@@ -2,6 +2,7 @@ package orchestrator
 
 import (
 	"context"
+	"encoding/json"
 	"github.com/divibisoul/Orquestrador-/neural"
 	"github.com/divibisoul/Orquestrador-/prefrontal"
 	"github.com/divibisoul/Orquestrador-/protocol"
@@ -113,4 +114,42 @@ func TestVersionedRouting(t *testing.T) {
 		t.Fatal("N07 topology is not six-peer bidirectional")
 	}
 	_ = e.Shutdown(context.Background())
+}
+
+func TestNeuralParametersCapability(t *testing.T) {
+	e, _ := newEngine(t, 8)
+	result, err := e.Execute(context.Background(), "neural.parameters@1.0.0", nil, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Status != "ok" {
+		t.Fatalf("unexpected status: %s", result.Status)
+	}
+	raw := result.Metadata["parameters"]
+	if raw == "" {
+		t.Fatal("canonical neural parameters missing")
+	}
+	var params map[string]any
+	if err := json.Unmarshal([]byte(raw), &params); err != nil {
+		t.Fatal(err)
+	}
+	if params["size"] != float64(8) || params["learning_rate"] != 0.1 {
+		t.Fatalf("unexpected neural parameters: %#v", params)
+	}
+	if params["optimizer"] != "adam" {
+		t.Fatalf("unexpected optimizer: %#v", params["optimizer"])
+	}
+	if !containsString(e.Operations(), "neural.parameters@1.0.0") {
+		t.Fatal("neural parameters capability not registered")
+	}
+	_ = e.Shutdown(context.Background())
+}
+
+func containsString(values []string, want string) bool {
+	for _, value := range values {
+		if value == want {
+			return true
+		}
+	}
+	return false
 }
