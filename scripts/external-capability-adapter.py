@@ -352,7 +352,20 @@ def execute(v,rt):
             out.parent.mkdir(parents=True,exist_ok=True); sf.write(str(out),np.concatenate(chunks),24000)
             emit({"state":"PASS","provider":provider,"operation":op,"output_path":str(out)})
         except Exception as e: emit({"state":"BLOCKED","code":"KOKORO_EXECUTION_BLOCKED","detail":str(e)},2)
-    if op == "source.verify":
+    verify_operations = {
+        "bijux-dag-runtime": "dag.execute",
+        "ouro-loop": "loop.verify",
+        "recuris": "memory.evolve",
+        "fedml": "federated.train",
+        "hivemind": "swarm.join",
+        "temporal": "workflow.selftest",
+        "hora-graph-core": "memory.smoke",
+        "cognitive-workspace": "workspace.broadcast",
+        "ravana": "agent.initiate",
+        "ray": "distributed.execute",
+        "nats-go": "transport.connect",
+    }
+    if op == "source.verify" or verify_operations.get(provider) == op:
         source_verify(provider, rt)
     if op.endswith(".describe"):
         emit({
