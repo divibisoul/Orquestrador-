@@ -30,9 +30,9 @@ func newExternalTestEngine(t *testing.T) (*Engine, ExternalAdapterRegistry) {
 	}
 	return e, r
 }
-func TestExternalAdapterManifestHasTwentyTwoProviders(t *testing.T) {
+func TestExternalAdapterManifestHasThirtyTwoProviders(t *testing.T) {
 	_, r := newExternalTestEngine(t)
-	if len(r.byID) != 22 {
+	if len(r.byID) != 32 {
 		t.Fatalf("providers=%d", len(r.byID))
 	}
 }
@@ -66,7 +66,7 @@ func TestExternalAdapterProbeRegistered(t *testing.T) {
 	}
 }
 
-func TestExternalAdapterAllTwentyTwoProvidersProbe(t *testing.T) {
+func TestExternalAdapterAllThirtyTwoProvidersProbe(t *testing.T) {
 	e, r := newExternalTestEngine(t)
 	for id := range r.byID {
 		operation := "external." + id + ".probe@1.0.0"
