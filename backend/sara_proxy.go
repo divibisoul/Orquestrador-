@@ -153,7 +153,7 @@ func (p *SARAProxy) PublishVagus(ctx context.Context, event map[string]any, corr
 	return out, nil
 }
 
-func (p *SARAProxy) RGOTrinity(ctx context.Context, finding map[string]any, cycleID, correlationID string) (map[string]any, error) {
+func (p *SARAProxy) RGOTrinityWithCycle(ctx context.Context, finding map[string]any, cycleID, correlationID string) (map[string]any, error) {
 	if finding == nil {
 		return nil, errors.New("RGO finding is required")
 	}
