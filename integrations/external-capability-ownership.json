@@ -371,6 +371,176 @@
       ],
       "status": "adapter-planned",
       "mode": "complementary"
+    },
+    {
+      "id": "bijux-dag-runtime",
+      "source": "bijux/bijux-core",
+      "primaryOwner": "N07",
+      "consumers": [
+        "N06",
+        "SARA"
+      ],
+      "affinity": [
+        "deterministic-execution",
+        "DAG-runtime",
+        "provenance"
+      ],
+      "status": "adapter-planned",
+      "mode": "complementary"
+    },
+    {
+      "id": "ouro-loop",
+      "source": "VictorVVedtion/ouro-loop",
+      "primaryOwner": "N07",
+      "consumers": [
+        "SARA",
+        "JEV"
+      ],
+      "affinity": [
+        "bounded-autonomy",
+        "verification-loop",
+        "self-remediation"
+      ],
+      "status": "adapter-planned",
+      "mode": "complementary"
+    },
+    {
+      "id": "recuris",
+      "source": "Gen-Verse/Recuris",
+      "primaryOwner": "N06",
+      "consumers": [
+        "N01",
+        "N07"
+      ],
+      "affinity": [
+        "experiential-memory",
+        "failure-localization",
+        "memory-evolution"
+      ],
+      "status": "adapter-planned",
+      "mode": "complementary"
+    },
+    {
+      "id": "fedml",
+      "source": "FedML-AI/FedML",
+      "primaryOwner": "N07",
+      "consumers": [
+        "N01",
+        "N06",
+        "SARA"
+      ],
+      "affinity": [
+        "federated-learning",
+        "distributed-training",
+        "model-deployment"
+      ],
+      "status": "adapter-planned",
+      "mode": "complementary"
+    },
+    {
+      "id": "hivemind",
+      "source": "learning-at-home/hivemind",
+      "primaryOwner": "N07",
+      "consumers": [
+        "N01",
+        "N06"
+      ],
+      "affinity": [
+        "decentralized-learning",
+        "P2P-training",
+        "fault-tolerant-aggregation"
+      ],
+      "status": "adapter-planned",
+      "mode": "complementary"
+    },
+    {
+      "id": "temporal",
+      "source": "temporalio/temporal",
+      "primaryOwner": "N07",
+      "consumers": [
+        "SARA",
+        "JEV"
+      ],
+      "affinity": [
+        "durable-execution",
+        "workflow-retries",
+        "workflow-state"
+      ],
+      "status": "adapter-planned",
+      "mode": "complementary"
+    },
+    {
+      "id": "cognitive-workspace",
+      "source": "tao-hpu/cognitive-workspace",
+      "primaryOwner": "N06",
+      "consumers": [
+        "N02",
+        "N01",
+        "N07"
+      ],
+      "affinity": [
+        "global-workspace",
+        "controlled-sharing",
+        "cognitive-context"
+      ],
+      "status": "adapter-planned",
+      "mode": "complementary"
+    },
+    {
+      "id": "ravana",
+      "source": "OpenSource-Syndicate/RAVANA",
+      "primaryOwner": "N06",
+      "consumers": [
+        "N01",
+        "N02",
+        "N07"
+      ],
+      "affinity": [
+        "proactive-agency",
+        "reflection",
+        "long-term-memory"
+      ],
+      "status": "adapter-planned",
+      "mode": "complementary"
+    },
+    {
+      "id": "ray",
+      "source": "ray-project/ray",
+      "primaryOwner": "N07",
+      "consumers": [
+        "N01",
+        "N06"
+      ],
+      "affinity": [
+        "distributed-compute",
+        "actors",
+        "parallel-tasks"
+      ],
+      "status": "adapter-planned",
+      "mode": "complementary"
+    },
+    {
+      "id": "nats-go",
+      "source": "nats-io/nats.go",
+      "primaryOwner": "N07",
+      "consumers": [
+        "N01",
+        "N02",
+        "N03",
+        "N04",
+        "N05",
+        "N06",
+        "SARA",
+        "JEV"
+      ],
+      "affinity": [
+        "event-transport",
+        "pub-sub",
+        "request-reply"
+      ],
+      "status": "adapter-planned",
+      "mode": "transport-reinforcement"
     }
-  ]
+  ],
+  "public_integration_rule": "All public sources are reachable through N07 canonical federation, with preferred affinity by function; no source becomes a SOUL authority."
 }
