@@ -1,0 +1,20 @@
+{
+  "protocol": "soul-mesh/1",
+  "contract_version": "1.1.0",
+  "control_plane": "cooperation",
+  "transport": "canonical Soul Mesh",
+  "rule": "one authority per responsibility; no second bus; additive reconciliation",
+  "fronts": [
+    {"id":"N01","repository":"divibisoul/aeternum-core-29","role":"vascular/context/Clareira authority","transport":"Soul Mesh"},
+    {"id":"N02","repository":"divibisoul/Eternium-","role":"Gemini/native neural provider authority","transport":"Soul Mesh"},
+    {"id":"N03","repository":"divibisoul/nexus-aeternum-fusion","role":"audio/multimodal fusion authority","transport":"Soul Mesh"},
+    {"id":"N04","repository":"divibisoul/nextjs-ai-chatbots","role":"application/tools/document authority","transport":"Soul Mesh"},
+    {"id":"N05","repository":"divibisoul/nextjs-ai-chatbot","role":"chat/Gemini tooling interface authority","transport":"Soul Mesh"},
+    {"id":"N06","repository":"divibisoul/nextjs-ai-chatbot-2000","role":"cognitive/session composition authority","transport":"Soul Mesh"},
+    {"id":"N07","repository":"divibisoul/Orquestrador-","role":"routing/learning/cooperation coordinator","transport":"Soul Mesh"},
+    {"id":"SARA","repository":"divibisoul/SARA","role":"regeneration/governance transversal authority","transport":"N07 SARA boundary/Vagus"}
+  ],
+  "operations": ["cooperation.handshake@1.0.0","cooperation.exchange@1.0.0","cooperation.health@1.0.0"],
+  "correlation": "required on every cross-front exchange",
+  "evidence": "runtime execution and CI only; source presence is not runtime proof"
+}

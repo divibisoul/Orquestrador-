@@ -1,0 +1,64 @@
+name: Crossfront State Verification
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'scripts/generate-crossfront-state.mjs'
+      - 'scripts/assert-crossfront-state.mjs'
+      - 'soul-nuclei.json'
+      - '.github/workflows/crossfront-state-verification.yml'
+      - 'SOUL_MASTER_ENGINEERING_CONTRACT.md'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout N07
+        uses: actions/checkout@v4
+      - name: Checkout N01
+        uses: actions/checkout@v4
+        with:
+          repository: divibisoul/aeternum-core-29
+          path: sources/N01
+          fetch-depth: 1
+      - name: Checkout N02
+        uses: actions/checkout@v4
+        with:
+          repository: divibisoul/Eternium-
+          path: sources/N02
+          fetch-depth: 1
+      - name: Checkout N03
+        uses: actions/checkout@v4
+        with:
+          repository: divibisoul/nexus-aeternum-fusion
+          path: sources/N03
+          fetch-depth: 1
+      - name: Checkout N04
+        uses: actions/checkout@v4
+        with:
+          repository: divibisoul/nextjs-ai-chatbots
+          path: sources/N04
+          fetch-depth: 1
+      - name: Checkout N05
+        uses: actions/checkout@v4
+        with:
+          repository: divibisoul/nextjs-ai-chatbot
+          path: sources/N05
+          fetch-depth: 1
+      - name: Checkout N06
+        uses: actions/checkout@v4
+        with:
+          repository: divibisoul/nextjs-ai-chatbot-2000
+          path: sources/N06
+          fetch-depth: 1
+      - name: Generate real crossfront evidence
+        run: node scripts/generate-crossfront-state.mjs
+      - name: Inspect generated evidence
+        run: cat SOUL-CROSSFRONT-EVIDENCE.json
+      - name: Assert N05/N07 discovery
+        run: node scripts/assert-crossfront-state.mjs

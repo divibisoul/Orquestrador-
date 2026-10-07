@@ -1,0 +1,63 @@
+name: SOUL External Adapter Contract
+
+on:
+  pull_request:
+    paths:
+      - integrations/external-adapters.json
+      - integrations/external-capabilities.json
+      - integrations/external-capability-ownership.json
+      - orchestrator/external_adapters.go
+      - orchestrator/external_adapters_test.go
+      - scripts/external-capability-adapter.py
+      - scripts/validate-external-adapters.mjs
+      - scripts/crewai_runner.py
+      - scripts/metagpt_runner.py
+      - cmd/nexus/main.go
+      - grf/**
+      - grce/**
+      - integrations/grf/**
+      - integrations/soul-29-capability-fabric.json
+      - scripts/validate-soul-29-grf.mjs
+      - .gitmodules
+      - Dockerfile
+  push:
+    branches: [main]
+    paths:
+      - integrations/external-adapters.json
+      - integrations/external-capabilities.json
+      - integrations/external-capability-ownership.json
+      - orchestrator/external_adapters.go
+      - orchestrator/external_adapters_test.go
+      - scripts/external-capability-adapter.py
+      - scripts/validate-external-adapters.mjs
+      - scripts/crewai_runner.py
+      - scripts/metagpt_runner.py
+      - cmd/nexus/main.go
+  workflow_dispatch:
+
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: false
+
+      - name: Materialize SOUL top-level submodules without recursion
+        run: node scripts/materialize-top-level-submodules.mjs
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Validate provider-to-adapter graph
+        run: node scripts/validate-external-adapters.mjs
+      - name: Validate Soul-29 GRF contract
+        run: node scripts/validate-soul-29-grf.mjs
+      - name: Validate exact materialized submodule pins
+        run: node scripts/validate-soul-external-submodules.mjs
+      - name: Validate Python adapters syntax
+        run: python -m py_compile scripts/external-capability-adapter.py scripts/crewai_runner.py scripts/metagpt_runner.py
+      - name: Test external adapter registration
+        run: go test ./orchestrator -run TestExternalAdapter -count=1

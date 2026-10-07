@@ -1,0 +1,15 @@
+{
+  "system": "SOUL",
+  "capturedAt": "2026-09-03",
+  "source": "GitHub main HEAD verification",
+  "nuclei": {
+    "N01": {"repository":"divibisoul/aeternum-core-29","main":"6c828648fb2d953f609218d612501102566684fc","workflowEvidence":"no commit-scoped workflow runs returned"},
+    "N02": {"repository":"divibisoul/Eternium-","main":"28ab385589ea664c92c0adbeeeb3e26752a645e4","workflowEvidence":"no commit-scoped workflow runs returned; PR #14 failure had zero steps and BlobNotFound"},
+    "N03": {"repository":"divibisoul/nexus-aeternum-fusion","main":"3e19255a75c8bfc219e0efb8e67760e5e1c4631d","workflowEvidence":"PR #10 head a14ce0... failed dependency-review, validation diagnostics, and dependency determinism with zero steps/log BlobNotFound"},
+    "N04": {"repository":"divibisoul/nextjs-ai-chatbots","main":"d7cc05f84c8b83184905705b5ceed5551723afcd","workflowEvidence":"no commit-scoped workflow runs returned"},
+    "N05": {"repository":"divibisoul/nextjs-ai-chatbot","main":"adab63cc31d68f6cd54b43a5bc0f3b9169a1acdf","workflowEvidence":"no commit-scoped workflow runs returned"},
+    "N06": {"repository":"divibisoul/nextjs-ai-chatbot-2000","main":"ba5eb65594c5b93fda03df7b1d42fcb48af7f673","workflowEvidence":"no commit-scoped workflow runs returned"},
+    "N07": {"repository":"divibisoul/Orquestrador-","main":"a7f63c8656c4f22e59230739d0baed2ad5211183","workflowEvidence":"current write lineage; prior build check on f521d... was green"}
+  },
+  "principle": "This baseline is evidence, not permission to assume runtime readiness. Any drift requires re-audit."
+}

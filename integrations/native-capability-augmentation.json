@@ -1,0 +1,579 @@
+{
+  "schema_version": "1.0.0",
+  "graph": "SOUL-native-capability-augmentation",
+  "principle": "external providers reinforce native SOUL capabilities; they never replace native ownership",
+  "native_components": {
+    "N01": {
+      "repository": "divibisoul/aeternum-core-29",
+      "native_capabilities": [
+        "memory.semantic.vector.recall",
+        "memory.semantic.vector.remember",
+        "external.capability.execute@1.0.0",
+        "supercompute.execute",
+        "mesh.capabilities",
+        "mesh.discovery",
+        "clareira.ingest",
+        "clareira.metrics"
+      ],
+      "augmenters": [
+        "langgraph",
+        "letta-code",
+        "pydantic-ai"
+      ],
+      "mesh_access": [
+        "mesh.supergpu.describe@1.0.0",
+        "mesh.supergpu.execute@1.0.0",
+        "mesh.supergpu.parallel@1.0.0",
+        "superagi.fabric.describe@1.0.0",
+        "superagi.fabric.execute@1.0.0"
+      ]
+    },
+    "N02": {
+      "repository": "divibisoul/Eternium-",
+      "native_capabilities": [
+        "ai.generate",
+        "ai.multimodal",
+        "cognitive-processing",
+        "cognitive.csae",
+        "resource.dcrs",
+        "octacore.execute",
+        "neural.bnc_v2",
+        "neural_forge"
+      ],
+      "augmenters": [],
+      "mesh_access": [
+        "mesh.supergpu.describe@1.0.0",
+        "mesh.supergpu.execute@1.0.0",
+        "mesh.supergpu.parallel@1.0.0",
+        "superagi.fabric.describe@1.0.0",
+        "superagi.fabric.execute@1.0.0"
+      ]
+    },
+    "N03": {
+      "repository": "divibisoul/nexus-aeternum-fusion",
+      "native_capabilities": [
+        "audio.transcribe",
+        "speech.synthesize",
+        "audio.analyze.emotion",
+        "speech.translate",
+        "audio.summarize",
+        "speaker.identify"
+      ],
+      "augmenters": [
+        "agentscope",
+        "whisper",
+        "kokoro"
+      ],
+      "mesh_access": [
+        "mesh.supergpu.describe@1.0.0",
+        "mesh.supergpu.execute@1.0.0",
+        "mesh.supergpu.parallel@1.0.0",
+        "superagi.fabric.describe@1.0.0",
+        "superagi.fabric.execute@1.0.0"
+      ]
+    },
+    "N04": {
+      "repository": "divibisoul/nextjs-ai-chatbots",
+      "native_capabilities": [
+        "tool-execution",
+        "artifact-processing",
+        "document-processing",
+        "context-orchestration",
+        "tool.run",
+        "document.create",
+        "document.edit"
+      ],
+      "augmenters": [
+        "browser-use"
+      ],
+      "mesh_access": [
+        "mesh.supergpu.describe@1.0.0",
+        "mesh.supergpu.execute@1.0.0",
+        "mesh.supergpu.parallel@1.0.0",
+        "superagi.fabric.describe@1.0.0",
+        "superagi.fabric.execute@1.0.0"
+      ]
+    },
+    "N05": {
+      "repository": "divibisoul/nextjs-ai-chatbot",
+      "native_capabilities": [
+        "ai.infer",
+        "inference.reason",
+        "inference.analyze",
+        "inference.summarize",
+        "inference.translate",
+        "inference.classify",
+        "conversation.chat",
+        "conversation.memory"
+      ],
+      "augmenters": [
+        "llama-index"
+      ],
+      "mesh_access": [
+        "mesh.supergpu.describe@1.0.0",
+        "mesh.supergpu.execute@1.0.0",
+        "mesh.supergpu.parallel@1.0.0",
+        "superagi.fabric.describe@1.0.0",
+        "superagi.fabric.execute@1.0.0"
+      ]
+    },
+    "N06": {
+      "repository": "divibisoul/nextjs-ai-chatbot-2000",
+      "native_capabilities": [
+        "support.context",
+        "support.artifacts",
+        "support.documents",
+        "support.tool-execution",
+        "support.streaming",
+        "support.mesh",
+        "support.ai-pilot",
+        "planning",
+        "reasoning",
+        "composition"
+      ],
+      "augmenters": [
+        "openhands",
+        "smolagents",
+        "dspy"
+      ],
+      "mesh_access": [
+        "mesh.supergpu.describe@1.0.0",
+        "mesh.supergpu.execute@1.0.0",
+        "mesh.supergpu.parallel@1.0.0",
+        "superagi.fabric.describe@1.0.0",
+        "superagi.fabric.execute@1.0.0"
+      ]
+    },
+    "N07": {
+      "repository": "divibisoul/Orquestrador-",
+      "native_capabilities": [
+        "orchestration",
+        "federation",
+        "supergpu",
+        "mesh.capability.resolve@1.0.0",
+        "cognitive.planning.sources@1.0.0",
+        "prefrontal.orbital.evaluate@1.0.0",
+        "transcendental.estimate@1.0.0"
+      ],
+      "augmenters": [
+        "superpowers",
+        "superagi",
+        "langgraph",
+        "crewai",
+        "microsoft-agent-framework",
+        "metagpt",
+        "agentscope"
+      ]
+    },
+    "SARA": {
+      "repository": "divibisoul/SARA",
+      "native_capabilities": [
+        "sara.health",
+        "sara.cycle",
+        "sara.audit",
+        "sara.regenerate",
+        "sara.state",
+        "sara.capabilities",
+        "sara.trace",
+        "ARA",
+        "ETR",
+        "ITR",
+        "RGO",
+        "MMD"
+      ],
+      "augmenters": [],
+      "mesh_access": [
+        "mesh.supergpu.describe@1.0.0",
+        "mesh.supergpu.execute@1.0.0",
+        "mesh.supergpu.parallel@1.0.0",
+        "superagi.fabric.describe@1.0.0",
+        "superagi.fabric.execute@1.0.0"
+      ]
+    },
+    "JEV": {
+      "repository": "divibisoul/jev-api",
+      "native_capabilities": [
+        "jev.systemone@1.0.0"
+      ],
+      "augmenters": [
+        "pydantic-ai"
+      ],
+      "mesh_access": [
+        "mesh.supergpu.describe@1.0.0",
+        "mesh.supergpu.execute@1.0.0",
+        "mesh.supergpu.parallel@1.0.0",
+        "superagi.fabric.describe@1.0.0",
+        "superagi.fabric.execute@1.0.0"
+      ]
+    }
+  },
+  "providers": {
+    "superpowers": {
+      "role": "engineering_methodology",
+      "capabilities": [
+        "planning",
+        "subagents",
+        "tdd",
+        "review",
+        "debugging",
+        "verification"
+      ],
+      "state": "ADAPTER_BOUND"
+    },
+    "superagi": {
+      "role": "agent_runtime_pattern",
+      "capabilities": [
+        "autonomous-agents",
+        "tools",
+        "memory",
+        "multimodal",
+        "telemetry"
+      ],
+      "state": "ADAPTER_BOUND"
+    },
+    "langgraph": {
+      "role": "stateful_workflow_engine",
+      "capabilities": [
+        "stateful-agents",
+        "durable-workflows",
+        "orchestration"
+      ],
+      "state": "ADAPTER_BOUND"
+    },
+    "crewai": {
+      "role": "multi_agent_coordination",
+      "capabilities": [
+        "multi-agent-crews",
+        "flows",
+        "role-specialization"
+      ],
+      "state": "ADAPTER_BOUND"
+    },
+    "microsoft-agent-framework": {
+      "role": "interoperable_agents",
+      "capabilities": [
+        "agents",
+        "workflows",
+        "MCP",
+        "A2A"
+      ],
+      "state": "ADAPTER_BOUND"
+    },
+    "openhands": {
+      "role": "software_engineering_agents",
+      "capabilities": [
+        "software-agents",
+        "tool-use",
+        "execution"
+      ],
+      "state": "ADAPTER_BOUND"
+    },
+    "metagpt": {
+      "role": "software_process_agents",
+      "capabilities": [
+        "role-based-agents",
+        "multi-agent-collaboration",
+        "software-process"
+      ],
+      "state": "ADAPTER_BOUND"
+    },
+    "agentscope": {
+      "role": "agent_and_tool_runtime",
+      "capabilities": [
+        "agents",
+        "teams",
+        "tools",
+        "memory",
+        "sandbox",
+        "A2A",
+        "voice"
+      ],
+      "state": "ADAPTER_BOUND"
+    },
+    "letta-code": {
+      "role": "persistent_agent_memory",
+      "capabilities": [
+        "stateful-agents",
+        "persistent-memory",
+        "identity"
+      ],
+      "state": "ADAPTER_BOUND"
+    },
+    "browser-use": {
+      "role": "browser_automation",
+      "capabilities": [
+        "browser-agents",
+        "web-automation"
+      ],
+      "state": "ADAPTER_BOUND"
+    },
+    "smolagents": {
+      "role": "code_tool_agents",
+      "capabilities": [
+        "code-agents",
+        "tools",
+        "MCP",
+        "multimodal"
+      ],
+      "state": "ADAPTER_BOUND"
+    },
+    "pydantic-ai": {
+      "role": "typed_agent_contracts",
+      "capabilities": [
+        "typed-agents",
+        "tools",
+        "subagents",
+        "durable-execution"
+      ],
+      "state": "ADAPTER_BOUND"
+    },
+    "llama-index": {
+      "role": "retrieval_and_rag",
+      "capabilities": [
+        "RAG",
+        "indexing",
+        "retrieval",
+        "agent-workflows"
+      ],
+      "state": "ADAPTER_BOUND"
+    },
+    "dspy": {
+      "role": "reasoning_and_optimization",
+      "capabilities": [
+        "LM-programming",
+        "optimization",
+        "reasoning-pipelines"
+      ],
+      "state": "ADAPTER_BOUND"
+    },
+    "whisper": {
+      "role": "speech_recognition",
+      "capabilities": [
+        "speech-to-text"
+      ],
+      "state": "ADAPTER_BOUND"
+    },
+    "kokoro": {
+      "role": "speech_synthesis",
+      "capabilities": [
+        "text-to-speech"
+      ],
+      "state": "ADAPTER_BOUND"
+    }
+  },
+  "runtime_policy": {
+    "native_owner_first": true,
+    "external_provider_is_optional_augmenter": true,
+    "execution_requires_explicit_adapter": true,
+    "missing_adapter_state": "BLOCKED",
+    "no_fake_runtime_success": true,
+    "preserve_history": true,
+    "direct_affinity_semantics": "targets in external-capabilities.json are direct adapter hosts; consumers are Mesh users and do not imply provider ownership"
+  },
+  "capability_families": {
+    "memory.identity.persistent": {
+      "native_owner": "N01",
+      "external": {
+        "primary": [
+          "letta-code"
+        ],
+        "secondary": [
+          "pydantic-ai"
+        ]
+      },
+      "mesh_consumers": [
+        "N05",
+        "N06",
+        "SARA"
+      ]
+    },
+    "workflow.stateful.graph": {
+      "native_owner": "N07",
+      "ingress_owner": "N01",
+      "external": {
+        "primary": [
+          "langgraph"
+        ]
+      },
+      "mesh_consumers": [
+        "N02",
+        "N06"
+      ]
+    },
+    "multiagent.crews": {
+      "native_owner": "N07",
+      "external": {
+        "primary": [
+          "crewai"
+        ],
+        "secondary": [
+          "metagpt"
+        ]
+      },
+      "mesh_consumers": [
+        "N02",
+        "N06"
+      ]
+    },
+    "software.agent.execution": {
+      "native_owner": "N06",
+      "external": {
+        "primary": [
+          "openhands",
+          "smolagents"
+        ]
+      },
+      "mesh_consumers": [
+        "N04",
+        "N07"
+      ]
+    },
+    "rag.retrieval": {
+      "native_owner": "N05",
+      "external": {
+        "primary": [
+          "llama-index"
+        ]
+      },
+      "mesh_consumers": [
+        "N04",
+        "N06"
+      ]
+    },
+    "reasoning.prompt.optimization": {
+      "native_owner": "N06",
+      "external": {
+        "primary": [
+          "dspy"
+        ]
+      },
+      "mesh_consumers": [
+        "N02",
+        "N05"
+      ]
+    },
+    "speech.to.text": {
+      "native_owner": "N03",
+      "external": {
+        "primary": [
+          "whisper"
+        ]
+      },
+      "mesh_consumers": [
+        "N05"
+      ]
+    },
+    "speech.text.to.audio": {
+      "native_owner": "N03",
+      "external": {
+        "primary": [
+          "kokoro"
+        ],
+        "secondary": [
+          "agentscope"
+        ]
+      },
+      "mesh_consumers": [
+        "N05"
+      ]
+    },
+    "browser.automation": {
+      "native_owner": "N04",
+      "external": {
+        "primary": [
+          "browser-use"
+        ]
+      },
+      "mesh_consumers": [
+        "N05",
+        "N07"
+      ]
+    },
+    "typed.decisions.guardrails": {
+      "native_owner": "JEV",
+      "external": {
+        "primary": [
+          "pydantic-ai"
+        ]
+      },
+      "mesh_consumers": [
+        "N07",
+        "SARA"
+      ]
+    },
+    "engineering.methodology": {
+      "native_owner": "TRANSVERSAL",
+      "external": {
+        "primary": [
+          "superpowers"
+        ]
+      },
+      "distribution": "resident-agents",
+      "runtime_bridge": "N07"
+    },
+    "telemetry.generic.agents": {
+      "native_owner": "N07",
+      "external": {
+        "catalog": [
+          "superagi",
+          "microsoft-agent-framework",
+          "agentscope"
+        ]
+      },
+      "mesh_consumers": [
+        "N01",
+        "N02",
+        "N03",
+        "N04",
+        "N05",
+        "N06",
+        "SARA",
+        "JEV"
+      ]
+    },
+    "accelerated.multiagent.fabric": {
+      "native_owner": "N07",
+      "canonical_control_plane": "N07",
+      "transport": "soul-mesh/1",
+      "contractVersion": "1.1.0",
+      "components": [
+        "MultiAgentFacade",
+        "AgentArsenal",
+        "SuperGPU",
+        "Octacore",
+        "Prefrontal",
+        "SARA",
+        "JEV"
+      ],
+      "external_providers": [
+        "superagi",
+        "crewai",
+        "superpowers",
+        "langgraph",
+        "microsoft-agent-framework",
+        "metagpt",
+        "agentscope",
+        "openhands",
+        "smolagents",
+        "dspy",
+        "letta-code",
+        "browser-use",
+        "llama-index",
+        "pydantic-ai",
+        "whisper",
+        "kokoro"
+      ],
+      "mesh_consumers": [
+        "N01",
+        "N02",
+        "N03",
+        "N04",
+        "N05",
+        "N06",
+        "SARA",
+        "JEV"
+      ],
+      "activation_rule": "provider adapter plus real authenticated execution evidence; no provider or CPU fallback is treated as accelerator proof"
+    }
+  }
+}

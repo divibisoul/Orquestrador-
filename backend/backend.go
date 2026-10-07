@@ -1,0 +1,629 @@
+package backend
+
+import (
+	"context"
+	"crypto/rand"
+	"encoding/hex"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"io"
+	"mime"
+	"net/http"
+	"os"
+	"strconv"
+	"strings"
+	"time"
+
+	"github.com/divibisoul/Orquestrador-/orchestrator"
+)
+
+type Config struct {
+	AppToken               string
+	CORSOrigins            []string
+	MaxRequestBytes        int64
+	MaxUploadBytes         int64
+	SupabaseURL            string
+	SupabaseServiceKey     string
+	SupabaseRunsTable      string
+	SupabaseArtifactsTable string
+	Web3StorageURL         string
+	Web3StorageToken       string
+	IPFSGatewayURL         string
+	SARAServiceURL         string
+	SARAServiceToken       string
+	SARARequestTimeout     time.Duration
+	RequestTimeout         time.Duration
+}
+
+func DefaultConfig() Config {
+	maxRequest := int64(2 << 20)
+	maxUpload := int64(100 << 20)
+	return Config{
+		AppToken:               strings.TrimSpace(getenv("N07_APP_TOKEN")),
+		CORSOrigins:            splitCSV(getenv("N07_CORS_ORIGINS")),
+		MaxRequestBytes:        envInt64("N07_MAX_REQUEST_BYTES", maxRequest),
+		MaxUploadBytes:         envInt64("N07_MAX_UPLOAD_BYTES", maxUpload),
+		SupabaseURL:            strings.TrimRight(strings.TrimSpace(getenv("SUPABASE_URL")), "/"),
+		SupabaseServiceKey:     strings.TrimSpace(getenv("SUPABASE_SERVICE_ROLE_KEY")),
+		SupabaseRunsTable:      envString("SUPABASE_RUNS_TABLE", "n07_runs"),
+		SupabaseArtifactsTable: envString("SUPABASE_ARTIFACTS_TABLE", "n07_artifacts"),
+		Web3StorageURL:         strings.TrimRight(envString("WEB3_STORAGE_API_URL", "https://api.web3.storage"), "/"),
+		Web3StorageToken:       strings.TrimSpace(getenv("WEB3_STORAGE_TOKEN")),
+		IPFSGatewayURL:         strings.TrimRight(envString("N07_IPFS_GATEWAY_URL", "https://dweb.link/ipfs"), "/"),
+		SARAServiceURL:         strings.TrimRight(envString("SARA_SERVICE_URL", ""), "/"),
+		SARAServiceToken:       strings.TrimSpace(getenv("SARA_SERVICE_TOKEN")),
+		SARARequestTimeout:     envDuration("SARA_REQUEST_TIMEOUT", 30*time.Second),
+		RequestTimeout:         envDuration("N07_BACKEND_TIMEOUT", 30*time.Second),
+	}
+}
+
+type Server struct {
+	Engine  *orchestrator.Engine
+	Config  Config
+	Store   *SupabaseStore
+	Storage *Web3Storage
+}
+
+func New(engine *orchestrator.Engine, cfg Config) *Server {
+	return &Server{
+		Engine:  engine,
+		Config:  cfg,
+		Store:   NewSupabaseStore(cfg),
+		Storage: NewWeb3Storage(cfg),
+	}
+}
+
+func (s *Server) Handler() http.Handler {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/v1/capabilities", s.capabilities)
+	mux.HandleFunc("/v1/capability-upgrade", s.capabilityUpgrade)
+	mux.HandleFunc("/v1/health", s.health)
+	mux.HandleFunc("/v1/execute", s.execute)
+	mux.HandleFunc("/v1/intent", s.intent)
+	mux.HandleFunc("/v1/storage/upload", s.upload)
+	mux.HandleFunc("/v1/storage/status/", s.storageStatus)
+	mux.HandleFunc("/v1/storage/object/", s.storageObject)
+	return withCORS(s.Config.CORSOrigins, withRequestID(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if err := s.authorize(r); err != nil {
+			writeJSON(w, http.StatusUnauthorized, map[string]any{"error": err.Error()})
+			return
+		}
+		mux.ServeHTTP(w, r)
+	})))
+}
+
+func (s *Server) authorize(r *http.Request) error {
+	if r.Method == http.MethodOptions {
+		return nil
+	}
+	if strings.TrimSpace(s.Config.AppToken) == "" {
+		return errors.New("N07_APP_TOKEN is not configured")
+	}
+	h := strings.TrimSpace(r.Header.Get("Authorization"))
+	if len(h) < 7 || !strings.EqualFold(h[:7], "bearer ") {
+		return errors.New("Bearer authentication required")
+	}
+	if !secureEqual(strings.TrimSpace(h[7:]), s.Config.AppToken) {
+		return errors.New("invalid application token")
+	}
+	return nil
+}
+
+type executeRequest struct {
+	Operation     string            `json:"operation"`
+	Payload       []float64         `json:"payload"`
+	Metadata      map[string]string `json:"metadata"`
+	CorrelationID string            `json:"correlationId"`
+}
+
+func (s *Server) execute(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]any{"error": "POST required"})
+		return
+	}
+	var req executeRequest
+	if err := decodeJSON(r, s.Config.MaxRequestBytes, &req); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]any{"error": err.Error()})
+		return
+	}
+	if strings.TrimSpace(req.Operation) == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]any{"error": "operation is required"})
+		return
+	}
+	ctx, cancel := context.WithTimeout(r.Context(), s.Config.RequestTimeout)
+	defer cancel()
+	metadata := req.Metadata
+	if metadata == nil {
+		metadata = map[string]string{}
+	}
+	if correlationID := strings.TrimSpace(req.CorrelationID); correlationID != "" {
+		metadata["correlation_id"] = correlationID
+	}
+	result, err := s.Engine.Execute(ctx, req.Operation, req.Payload, metadata)
+	if err != nil {
+		writeJSON(w, http.StatusBadRequest, result)
+		return
+	}
+	_ = s.Store.RecordRun(r.Context(), map[string]any{
+		"trace_id":       result.TraceID,
+		"correlation_id": result.CorrelationID,
+		"source":         result.Source,
+		"operation":      req.Operation,
+		"status":         result.Status,
+		"payload":        req.Payload,
+		"result":         result.Payload,
+		"error":          result.Error,
+		"metadata":       metadata,
+	})
+	writeJSON(w, http.StatusOK, result)
+}
+
+type intentRequest struct {
+	Tool          string         `json:"tool"`
+	Input         map[string]any `json:"input"`
+	CorrelationID string         `json:"correlationId"`
+}
+
+func (s *Server) intent(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]any{"error": "POST required"})
+		return
+	}
+	var req intentRequest
+	if err := decodeJSON(r, s.Config.MaxRequestBytes, &req); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]any{"error": err.Error()})
+		return
+	}
+	toolName := strings.TrimSpace(req.Tool)
+	if toolName == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]any{"error": "tool is required"})
+		return
+	}
+	values, metadata, err := mapIntent(toolName, req.Input)
+	if err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]any{"error": err.Error()})
+		return
+	}
+	if strings.TrimSpace(req.CorrelationID) != "" {
+		metadata["correlation_id"] = strings.TrimSpace(req.CorrelationID)
+	}
+	ctx, cancel := context.WithTimeout(r.Context(), s.Config.RequestTimeout)
+	defer cancel()
+	result, err := s.Engine.Execute(ctx, operationForTool(toolName), values, metadata)
+	if err != nil {
+		writeJSON(w, http.StatusBadRequest, result)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{
+		"tool":          toolName,
+		"operation":     operationForTool(toolName),
+		"traceId":       result.TraceID,
+		"correlationId": result.CorrelationID,
+		"status":        result.Status,
+		"payload":       result.Payload,
+		"metadata":      result.Metadata,
+	})
+}
+
+func operationForTool(tool string) string {
+	switch strings.ToLower(strings.TrimSpace(tool)) {
+	case "neural.forward":
+		return "neural.forward@1.0.0"
+	case "neural.learn":
+		return "neural.learn@1.0.0"
+	case "compute.execute":
+		return "compute.execute@1.0.0"
+	case "cognitive.execute":
+		return "cognitive.execute@1.0.0"
+	case "supergpu.execute":
+		return "supergpu.execute@1.0.0"
+	case "jev.systemone":
+		return "jev.systemone@1.0.0"
+	case "supergpu.parallel":
+		return "supergpu.parallel@1.0.0"
+	case "sara.cycle", "sara.audit", "sara.regenerate", "sara.state", "sara.capabilities", "sara.trace":
+		return strings.ToLower(strings.TrimSpace(tool)) + "@1.0.0"
+	case "grf.describe":
+		return "grf.describe@2.0.0"
+	case "grf.participant.describe":
+		return "grf.participant.describe@2.0.0"
+	case "grf.participant.ingest":
+		return "grf.participant.ingest@2.0.0"
+	case "grce.describe":
+		return "grce.describe@2.0.0"
+	case "grce.bindings.describe":
+		return "grce.bindings.describe@2.0.0"
+	case "grce.cycle.execute":
+		return "grce.cycle.execute@2.0.0"
+	case "grce.sara.authoritative.execute":
+		return "grce.sara.authoritative.execute@2.0.0"
+	default:
+		return tool
+	}
+}
+
+func mapIntent(tool string, input map[string]any) ([]float64, map[string]string, error) {
+	metadata := map[string]string{}
+	switch strings.ToLower(strings.TrimSpace(tool)) {
+	case "neural.forward":
+		return numberArray(input["values"])
+	case "neural.learn":
+		in, err := numberArrayOnly(input["input"])
+		if err != nil {
+			return nil, nil, err
+		}
+		target, err := numberArrayOnly(input["target"])
+		if err != nil {
+			return nil, nil, err
+		}
+		return append(in, target...), metadata, nil
+	case "compute.execute", "cognitive.execute", "supergpu.execute":
+		values, err := numberArrayOnly(input["values"])
+		if err != nil {
+			return nil, nil, err
+		}
+		if op, ok := input["operation"].(string); ok && strings.TrimSpace(op) != "" {
+			metadata["operation"] = strings.TrimSpace(op)
+		}
+		if device, ok := input["device"].(string); ok && strings.TrimSpace(device) != "" {
+			metadata["device"] = strings.TrimSpace(device)
+		}
+		return values, metadata, nil
+	case "supergpu.parallel":
+		batch, err := json.Marshal(input["inputs"])
+		if err != nil {
+			return nil, nil, errors.New("inputs must be an array of numeric arrays")
+		}
+		metadata["inputs_json"] = string(batch)
+		if op, ok := input["operation"].(string); ok && strings.TrimSpace(op) != "" {
+			metadata["operation"] = strings.TrimSpace(op)
+		}
+		if device, ok := input["device"].(string); ok && strings.TrimSpace(device) != "" {
+			metadata["device"] = strings.TrimSpace(device)
+		}
+		if workers, ok := input["workers"].(float64); ok {
+			metadata["workers"] = strconv.Itoa(int(workers))
+		}
+		return []float64{1}, metadata, nil
+	case "jev.systemone":
+		if input == nil {
+			return nil, nil, errors.New("Jev intent input is required")
+		}
+		state, ok := input["state"]
+		if !ok || state == nil {
+			return nil, nil, errors.New("Jev intent requires state")
+		}
+		questions, ok := input["questions"]
+		if !ok || questions == nil {
+			return nil, nil, errors.New("Jev intent requires questions")
+		}
+		questionsMap, ok := questions.(map[string]any)
+		if !ok || len(questionsMap) == 0 {
+			return nil, nil, errors.New("Jev intent questions must be a non-empty object")
+		}
+		stateJSON, err := json.Marshal(state)
+		if err != nil {
+			return nil, nil, errors.New("Jev state cannot be serialized")
+		}
+		questionsJSON, err := json.Marshal(questionsMap)
+		if err != nil {
+			return nil, nil, errors.New("Jev questions cannot be serialized")
+		}
+		metadata["state_json"] = string(stateJSON)
+		metadata["questions_json"] = string(questionsJSON)
+		if model, ok := input["model"].(string); ok && strings.TrimSpace(model) != "" {
+			metadata["model"] = strings.TrimSpace(model)
+		}
+		return []float64{0}, metadata, nil
+	case "sara.cycle", "sara.audit", "sara.regenerate":
+		value, ok := input["input"].(string)
+		if !ok || strings.TrimSpace(value) == "" {
+			return nil, nil, errors.New("SARA intent requires input string")
+		}
+		metadata["sara_input"] = value
+		if cycleID, ok := input["cycle_id"].(string); ok && strings.TrimSpace(cycleID) != "" {
+			metadata["sara_cycle_id"] = strings.TrimSpace(cycleID)
+		}
+		if reqID, ok := input["request_id"].(string); ok && strings.TrimSpace(reqID) != "" {
+			metadata["sara_request_id"] = strings.TrimSpace(reqID)
+		}
+		return []float64{0}, metadata, nil
+	case "sara.state", "sara.capabilities":
+		return []float64{0}, metadata, nil
+	case "sara.trace":
+		cycleID, ok := input["cycle_id"].(string)
+		if !ok || strings.TrimSpace(cycleID) == "" {
+			return nil, nil, errors.New("SARA trace intent requires cycle_id string")
+		}
+		metadata["sara_cycle_id"] = strings.TrimSpace(cycleID)
+		return []float64{0}, metadata, nil
+	case "grf.describe", "grf.participant.describe", "grce.describe", "grce.bindings.describe", "grce.cycle.execute", "grce.sara.authoritative.execute":
+		if input == nil {
+			return nil, nil, errors.New("GRF/GRCE intent input is required")
+		}
+		seq, ok := input["sequence_index"].(float64)
+		if !ok || seq < 1 {
+			return nil, nil, errors.New("GRF/GRCE intent requires positive sequence_index")
+		}
+		metadata["grf_sequence_index"] = strconv.FormatUint(uint64(seq), 10)
+		return []float64{0}, metadata, nil
+	case "grf.participant.ingest":
+		if input == nil {
+			return nil, nil, errors.New("GRF participant ingest input is required")
+		}
+		id, ok := input["participant_id"].(string)
+		if !ok || strings.TrimSpace(id) == "" {
+			return nil, nil, errors.New("GRF participant ingest requires participant_id")
+		}
+		seq, ok := input["sequence_index"].(float64)
+		if !ok || seq < 1 {
+			return nil, nil, errors.New("GRF participant ingest requires positive sequence_index")
+		}
+		raw, err := json.Marshal(input["state"])
+		if err != nil {
+			return nil, nil, errors.New("GRF participant state cannot be serialized")
+		}
+		metadata["participant_id"] = strings.TrimSpace(id)
+		metadata["grf_sequence_index"] = strconv.FormatUint(uint64(seq), 10)
+		metadata["grf_input_json"] = string(raw)
+		if sid, ok := input["state_id"].(string); ok && strings.TrimSpace(sid) != "" {
+			metadata["state_id"] = strings.TrimSpace(sid)
+		}
+		return []float64{0}, metadata, nil
+	default:
+		return nil, nil, fmt.Errorf("unsupported tool: %s", tool)
+	}
+}
+
+func numberArray(v any) ([]float64, map[string]string, error) {
+	values, err := numberArrayOnly(v)
+	return values, map[string]string{}, err
+}
+
+func numberArrayOnly(v any) ([]float64, error) {
+	encoded, err := json.Marshal(v)
+	if err != nil {
+		return nil, errors.New("values must be an array of numbers")
+	}
+	var values []float64
+	if err := json.Unmarshal(encoded, &values); err != nil {
+		return nil, errors.New("values must be an array of numbers")
+	}
+	return values, nil
+}
+
+func (s *Server) capabilities(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]any{"error": "GET required"})
+		return
+	}
+	jevConfigured := strings.TrimSpace(os.Getenv("JEV_API_KEY")) != ""
+	jevOperations := []string{}
+	if jevConfigured {
+		jevOperations = []string{"jev.systemone@1.0.0"}
+	}
+	writeJSON(w, http.StatusOK, map[string]any{
+		"nucleus":            "N07",
+		"operations":         s.Engine.Operations(),
+		"capability_upgrade": map[string]any{"endpoint": "/v1/capability-upgrade", "method": "GET|POST", "evidence": "PROJECTED until provider runtime adapter/configuration/e2e evidence exists"},
+		"storage":            map[string]any{"configured": s.Storage.Configured(), "api": "web3.storage-compatible"},
+		"supabase":           map[string]any{"configured": s.Store.Configured()},
+		"jev": map[string]any{
+			"installed":           true,
+			"configured":          jevConfigured,
+			"base_url_configured": strings.TrimSpace(os.Getenv("JEV_API_BASE_URL")) != "",
+			"model":               envString("JEV_MODEL", "jev-latest"),
+			"operations":          jevOperations,
+		},
+		"sara": map[string]any{
+			"configured":          s.Config.SARAServiceURL != "" && s.Config.SARAServiceToken != "",
+			"base_url_configured": s.Config.SARAServiceURL != "",
+			"token_configured":    s.Config.SARAServiceToken != "",
+			"operations": []string{
+				"sara.cycle@1.0.0",
+				"sara.audit@1.0.0",
+				"sara.regenerate@1.0.0",
+				"sara.state@1.0.0",
+				"sara.capabilities@1.0.0",
+				"sara.trace@1.0.0",
+			},
+		},
+	})
+}
+
+func (s *Server) health(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]any{"error": "GET required"})
+		return
+	}
+	status := s.Engine.Health()
+	status["backend"] = map[string]any{
+		"supabase_configured": s.Store.Configured(),
+		"storage_configured":  s.Storage.Configured(),
+		"sara_configured":     s.Config.SARAServiceURL != "" && s.Config.SARAServiceToken != "",
+	}
+	writeJSON(w, http.StatusOK, status)
+}
+
+func (s *Server) upload(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]any{"error": "POST required"})
+		return
+	}
+	if !s.Storage.Configured() {
+		writeJSON(w, http.StatusServiceUnavailable, map[string]any{"error": "Web3 Storage is not configured"})
+		return
+	}
+	contentType := r.Header.Get("Content-Type")
+	if strings.Contains(contentType, "multipart/form-data") {
+		_, params, err := mime.ParseMediaType(contentType)
+		if err != nil {
+			writeJSON(w, http.StatusBadRequest, map[string]any{"error": "invalid multipart content type"})
+			return
+		}
+		if err := r.ParseMultipartForm(s.Config.MaxUploadBytes); err != nil {
+			writeJSON(w, http.StatusBadRequest, map[string]any{"error": err.Error()})
+			return
+		}
+		file, header, err := r.FormFile("file")
+		if err != nil {
+			writeJSON(w, http.StatusBadRequest, map[string]any{"error": "multipart field 'file' is required"})
+			return
+		}
+		defer file.Close()
+		_ = params
+		cid, size, err := s.Storage.Upload(r.Context(), file, header.Filename)
+		if err != nil {
+			writeJSON(w, http.StatusBadGateway, map[string]any{"error": err.Error()})
+			return
+		}
+		_ = s.Store.RecordArtifact(r.Context(), map[string]any{"cid": cid, "filename": header.Filename, "size_bytes": size})
+		writeJSON(w, http.StatusOK, map[string]any{"cid": cid, "filename": header.Filename, "size": size, "gateway": s.Storage.ObjectURL(cid)})
+		return
+	}
+	limited := io.LimitReader(r.Body, s.Config.MaxUploadBytes+1)
+	cid, size, err := s.Storage.Upload(r.Context(), limited, r.Header.Get("X-Filename"))
+	if err != nil {
+		writeJSON(w, http.StatusBadGateway, map[string]any{"error": err.Error()})
+		return
+	}
+	_ = s.Store.RecordArtifact(r.Context(), map[string]any{"cid": cid, "filename": r.Header.Get("X-Filename"), "size_bytes": size})
+	writeJSON(w, http.StatusOK, map[string]any{"cid": cid, "size": size, "gateway": s.Storage.ObjectURL(cid)})
+}
+
+func (s *Server) storageStatus(w http.ResponseWriter, r *http.Request) {
+	cid := strings.TrimPrefix(r.URL.Path, "/v1/storage/status/")
+	if cid == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]any{"error": "cid is required"})
+		return
+	}
+	status, err := s.Storage.Status(r.Context(), cid)
+	if err != nil {
+		writeJSON(w, http.StatusBadGateway, map[string]any{"error": err.Error()})
+		return
+	}
+	writeJSON(w, http.StatusOK, status)
+}
+
+func (s *Server) storageObject(w http.ResponseWriter, r *http.Request) {
+	cid := strings.TrimPrefix(r.URL.Path, "/v1/storage/object/")
+	if cid == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]any{"error": "cid is required"})
+		return
+	}
+	http.Redirect(w, r, s.Storage.ObjectURL(cid), http.StatusFound)
+}
+
+func decodeJSON(r *http.Request, limit int64, out any) error {
+	if limit <= 0 {
+		limit = 2 << 20
+	}
+	defer r.Body.Close()
+	decoder := json.NewDecoder(http.MaxBytesReader(nil, r.Body, limit))
+	return decoder.Decode(out)
+}
+
+func writeJSON(w http.ResponseWriter, status int, body any) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	_ = json.NewEncoder(w).Encode(body)
+}
+
+func withRequestID(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		id := r.Header.Get("X-Request-ID")
+		if strings.TrimSpace(id) == "" {
+			id = randomID()
+		}
+		w.Header().Set("X-Request-ID", id)
+		next.ServeHTTP(w, r)
+	})
+}
+
+func withCORS(origins []string, next http.Handler) http.Handler {
+	allowed := map[string]struct{}{}
+	for _, origin := range origins {
+		allowed[origin] = struct{}{}
+	}
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		origin := strings.TrimSpace(r.Header.Get("Origin"))
+		if origin != "" {
+			if _, ok := allowed[origin]; ok {
+				w.Header().Set("Access-Control-Allow-Origin", origin)
+				w.Header().Set("Vary", "Origin")
+			}
+		}
+		w.Header().Set("Access-Control-Allow-Headers", "Authorization, Content-Type, X-Filename, X-Request-ID")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+		if r.Method == http.MethodOptions {
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
+func secureEqual(a, b string) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	var diff byte
+	for i := range a {
+		diff |= a[i] ^ b[i]
+	}
+	return diff == 0
+}
+
+func randomID() string {
+	b := make([]byte, 16)
+	if _, err := rand.Read(b); err != nil {
+		return fmt.Sprintf("%d", time.Now().UnixNano())
+	}
+	return hex.EncodeToString(b)
+}
+
+func getenv(key string) string    { return strings.TrimSpace(envLookup(key)) }
+func envLookup(key string) string { return lookupEnv(key) }
+
+// Kept as narrow wrappers so this package has one environment seam.
+var lookupEnv = func(key string) string { return os.Getenv(key) }
+
+func splitCSV(value string) []string {
+	parts := strings.Split(value, ",")
+	out := make([]string, 0, len(parts))
+	for _, part := range parts {
+		if p := strings.TrimSpace(part); p != "" {
+			out = append(out, p)
+		}
+	}
+	return out
+}
+func envString(key, fallback string) string {
+	if value := strings.TrimSpace(lookupEnv(key)); value != "" {
+		return value
+	}
+	return fallback
+}
+func envInt64(key string, fallback int64) int64 {
+	value := strings.TrimSpace(lookupEnv(key))
+	if value == "" {
+		return fallback
+	}
+	parsed, err := strconv.ParseInt(value, 10, 64)
+	if err != nil || parsed <= 0 {
+		return fallback
+	}
+	return parsed
+}
+func envDuration(key string, fallback time.Duration) time.Duration {
+	value := strings.TrimSpace(lookupEnv(key))
+	if value == "" {
+		return fallback
+	}
+	parsed, err := time.ParseDuration(value)
+	if err != nil || parsed <= 0 {
+		return fallback
+	}
+	return parsed
+}

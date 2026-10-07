@@ -1,0 +1,16 @@
+name: rgo-trinity-mmd
+on:
+  push:
+    branches: [rgo-trinity-mmd-2026-09-28]
+  pull_request:
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - uses: actions/setup-go@v5
+        with: {go-version: '1.25'}
+      - run: go test ./rgo
+      - run: go test ./orchestrator

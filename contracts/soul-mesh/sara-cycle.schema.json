@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://soul.local/contracts/soul-mesh/sara-cycle.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "input",
+    "cycle_id",
+    "correlationId"
+  ],
+  "properties": {
+    "input": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 100000
+    },
+    "cycle_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256
+    },
+    "correlationId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "source": {
+      "type": "string"
+    },
+    "requestedPhases": {
+      "type": "array",
+      "items": {
+        "enum": [
+          "ingestion",
+          "audit",
+          "regeneration",
+          "identity",
+          "ethics",
+          "strategy",
+          "execution",
+          "validation",
+          "persistence",
+          "snapshot",
+          "monitoring",
+          "governance"
+        ]
+      }
+    }
+  }
+}

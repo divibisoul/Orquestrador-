@@ -1,0 +1,57 @@
+#!/usr/bin/env node
+import fs from "node:fs";
+
+const eventPath = process.env.GITHUB_EVENT_PATH;
+if (!eventPath || !fs.existsSync(eventPath)) {
+  console.log("COOPERATIVE_OVERLAP_STATUS=skipped");
+  process.exit(0);
+}
+const event = JSON.parse(fs.readFileSync(eventPath, "utf8"));
+const current = event.pull_request;
+if (!current) {
+  console.log("COOPERATIVE_OVERLAP_STATUS=skipped");
+  process.exit(0);
+}
+const token = process.env.GITHUB_TOKEN;
+const repository = process.env.GITHUB_REPOSITORY;
+if (!token || !repository) {
+  console.log("COOPERATIVE_OVERLAP_STATUS=skipped");
+  process.exit(0);
+}
+const [owner, repo] = repository.split("/");
+const api = async (path) => {
+  const response = await fetch("https://api.github.com" + path, {
+    headers: {
+      Accept: "application/vnd.github+json",
+      Authorization: "Bearer " + token,
+      "X-GitHub-Api-Version": "2022-11-28",
+    },
+  });
+  if (!response.ok) {
+    const body = await response.text();
+    const rateLimited = response.status === 403 && /rate limit exceeded/i.test(body);
+    if (rateLimited) {
+      console.log(JSON.stringify({
+        status: "UNMEASURABLE",
+        reason: "GITHUB_API_RATE_LIMIT",
+        api_path: path,
+        http_status: response.status,
+      }, null, 2));
+      console.log("COOPERATIVE_OVERLAP_STATUS=UNMEASURABLE_RATE_LIMIT");
+      process.exit(0);
+    }
+    throw new Error(`GitHub API ${response.status}: ${body}`);
+  }
+  return response.json();
+};
+const changed = await api(`/repos/${owner}/${repo}/pulls/${current.number}/files?per_page=100`);
+const currentFiles = new Set(changed.map(file => file.filename));
+const open = await api(`/repos/${owner}/${repo}/pulls?state=open&per_page=100`);
+const overlaps = [];
+for (const pr of open.filter(item => item.number !== current.number)) {
+  const files = await api(`/repos/${owner}/${repo}/pulls/${pr.number}/files?per_page=100`);
+  const shared = [...new Set(files.map(file => file.filename).filter(file => currentFiles.has(file)))].sort();
+  if (shared.length > 0) overlaps.push({ number: pr.number, title: pr.title, files: shared });
+}
+console.log(JSON.stringify({ current_pr: current.number, overlaps }, null, 2));
+console.log(`COOPERATIVE_OVERLAP_STATUS=${overlaps.length ? "attention_required" : "clean"}`);

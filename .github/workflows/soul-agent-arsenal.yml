@@ -1,0 +1,95 @@
+name: SOUL Agent Arsenal
+
+on:
+  push:
+    paths:
+      - "agentarsenal/**"
+      - "orchestrator/agent_arsenal.go"
+      - "orchestrator/identity.go"
+      - "integrations/agent-arsenal/**"
+      - "integrations/soul-provider-contracts.json"
+      - "soul-capability-authority.json"
+      - "soul-nuclei.json"
+      - "cmd/nexus/main.go"
+      - ".env.example"
+      - ".github/workflows/soul-agent-arsenal.yml"
+  pull_request:
+    paths:
+      - "agentarsenal/**"
+      - "orchestrator/agent_arsenal.go"
+      - "orchestrator/identity.go"
+      - "integrations/agent-arsenal/**"
+      - "integrations/soul-provider-contracts.json"
+      - "soul-capability-authority.json"
+      - "soul-nuclei.json"
+      - "cmd/nexus/main.go"
+      - ".env.example"
+      - ".github/workflows/soul-agent-arsenal.yml"
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: false
+
+      - name: Materialize SOUL top-level submodules without recursion
+        run: node scripts/materialize-top-level-submodules.mjs
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Verify gateway syntax
+        working-directory: integrations/agent-arsenal
+        run: node --check gateway.mjs
+
+      - name: Verify pinned upstream provenance and fail-closed defaults
+        working-directory: integrations/agent-arsenal
+        run: |
+          node <<'NODE'
+          const fs = require("node:fs");
+          const s = fs.readFileSync("gateway.mjs", "utf8");
+          const pins = [
+            "8ca22dba9a94f28898bbce59f2537ff4d87c747d",
+            "c05b2d6614f62f6db0047669aa4eefb223d478f9",
+            "27982983ea6cdc4767c0b6614a4ad9a9d9497cce"
+          ];
+          for (const pin of pins) {
+            if (!s.includes(pin)) throw new Error("PIN_MISSING:" + pin);
+          }
+          if (/npx\s+--yes/i.test(s)) throw new Error("FLOATING_NPX_EXECUTION_FORBIDDEN");
+          if (!s.includes("AGENT_ARSENAL_EXECUTE || \"false\"")) {
+            throw new Error("EXECUTION_DEFAULT_MUST_BE_DISABLED");
+          }
+          if (!s.includes("sourceVerified: true")) {
+            throw new Error("PINNED_RUNTIME_MUST_REPORT_SOURCE_VERIFICATION");
+          }
+          console.log("Agent Arsenal provenance policy: PASS");
+          NODE
+
+      - name: Test Go proxy and adapter
+        run: go test ./agentarsenal ./orchestrator
+
+      - name: Verify integration contract
+        run: |
+          node <<'NODE'
+          const fs = require("node:fs");
+          const p = JSON.parse(fs.readFileSync("integrations/soul-provider-contracts.json", "utf8"));
+          const provider = p.providers.find(x => x.id === "agent-arsenal");
+          if (!provider) throw new Error("AGENT_ARSENAL_PROVIDER_MISSING");
+          if (provider.directAdapterHosts?.join(",") !== "N07") throw new Error("AGENT_ARSENAL_OWNER_INVALID");
+          if (provider.fail_closed !== true) throw new Error("AGENT_ARSENAL_FAIL_CLOSED_REQUIRED");
+          console.log("Agent Arsenal contract: PASS");
+          NODE
+
+      - name: Build sidecar image
+        working-directory: integrations/agent-arsenal
+        run: docker build --no-cache --tag soul-agent-arsenal-ci:latest .

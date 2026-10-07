@@ -1,0 +1,29 @@
+name: SOUL mainline source-ref integrity
+
+on:
+  push:
+    paths:
+      - "soul-nuclei.json"
+      - "scripts/verify-soul-mainline-refs.mjs"
+      - ".github/workflows/soul-mainline-source-ref-integrity.yml"
+  pull_request:
+    paths:
+      - "soul-nuclei.json"
+      - "scripts/verify-soul-mainline-refs.mjs"
+      - ".github/workflows/soul-mainline-source-ref-integrity.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify-source-refs:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Verify all external SOUL source refs against current main
+        run: node scripts/verify-soul-mainline-refs.mjs

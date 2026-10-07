@@ -1,0 +1,131 @@
+name: SOUL public capability runtime verification
+
+on:
+  pull_request:
+    paths:
+      - ".gitmodules"
+      - "integrations/external-adapters.json"
+      - "integrations/external-capabilities.json"
+      - "integrations/external-capability-ownership.json"
+      - "integrations/soul-public-capability-fusion-v1.json"
+      - "scripts/external-capability-adapter.py"
+      - "integrations/external/**"
+  workflow_dispatch:
+
+jobs:
+  rust-capabilities:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - provider: bijux-dag-runtime
+          - provider: hora-graph-core
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 1
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Verify upstream source through SOUL adapter
+        run: |
+          printf '%s' '{"provider":"${{ matrix.provider }}","operation":"source.verify"}' |
+            python3 scripts/external-capability-adapter.py | tee "public-${{ matrix.provider }}.json"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: public-capability-${{ matrix.provider }}
+          path: public-${{ matrix.provider }}.json
+
+  python-capabilities:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - provider: ouro-loop
+            install: ""
+          - provider: recuris
+            install: "python -m pip install -e integrations/external/recuris"
+          - provider: cognitive-workspace
+            install: ""
+          - provider: ravana
+            install: ""
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 1
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install source dependencies
+        if: matrix.install != ''
+        run: ${{ matrix.install }}
+      - name: Verify upstream source through SOUL adapter
+        run: |
+          printf '%s' '{"provider":"${{ matrix.provider }}","operation":"source.verify"}' |
+            python3 scripts/external-capability-adapter.py | tee "public-${{ matrix.provider }}.json"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: public-capability-${{ matrix.provider }}
+          path: public-${{ matrix.provider }}.json
+
+  distributed-python-capabilities:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - provider: fedml
+            install: "python -m pip install -e integrations/external/fedml/python"
+          - provider: hivemind
+            install: "python -m pip install -e integrations/external/hivemind"
+          - provider: ray
+            install: "python -m pip install -e integrations/external/ray/python"
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 1
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install source dependencies
+        run: ${{ matrix.install }}
+      - name: Verify upstream source through SOUL adapter
+        run: |
+          printf '%s' '{"provider":"${{ matrix.provider }}","operation":"source.verify"}' |
+            python3 scripts/external-capability-adapter.py | tee "public-${{ matrix.provider }}.json"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: public-capability-${{ matrix.provider }}
+          path: public-${{ matrix.provider }}.json
+
+  go-capabilities:
+    strategy:
+      fail-fast: false
+      matrix:
+        provider:
+          - temporal
+          - nats-go
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 1
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.24"
+      - name: Verify upstream source through SOUL adapter
+        run: |
+          printf '%s' '{"provider":"${{ matrix.provider }}","operation":"source.verify"}' |
+            python3 scripts/external-capability-adapter.py | tee "public-${{ matrix.provider }}.json"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: public-capability-${{ matrix.provider }}
+          path: public-${{ matrix.provider }}.json

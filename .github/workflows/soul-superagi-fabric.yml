@@ -1,0 +1,94 @@
+name: SOUL SuperAGI Fabric
+
+on:
+  push:
+    paths:
+      - "supergpu/**"
+      - "orchestrator/supergpu_mesh.go"
+      - "orchestrator/superagi_fabric.go"
+      - "orchestrator/identity.go"
+      - "cmd/nexus/main.go"
+      - "integrations/superagi-fabric.json"
+      - "integrations/native-capability-augmentation.json"
+      - "soul-capability-authority.json"
+      - "soul-nuclei.json"
+      - ".github/workflows/soul-superagi-fabric.yml"
+  pull_request:
+    paths:
+      - "supergpu/**"
+      - "orchestrator/supergpu_mesh.go"
+      - "orchestrator/superagi_fabric.go"
+      - "orchestrator/identity.go"
+      - "cmd/nexus/main.go"
+      - "integrations/superagi-fabric.json"
+      - "integrations/native-capability-augmentation.json"
+      - "soul-capability-authority.json"
+      - "soul-nuclei.json"
+      - ".github/workflows/soul-superagi-fabric.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: false
+
+      - name: Materialize SOUL top-level submodules without recursion
+        run: node scripts/materialize-top-level-submodules.mjs
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+      - name: Go formatting check
+        run: |
+          set -euo pipefail
+          files="$(gofmt -l supergpu/accelerator.go supergpu/accelerator_test.go supergpu/federation.go orchestrator/supergpu_mesh.go orchestrator/supergpu_mesh_test.go orchestrator/superagi_fabric.go orchestrator/superagi_fabric_test.go)"
+          if [ -n "$files" ]; then
+            printf '%s\n' "$files"
+            gofmt -d $files
+            exit 1
+          fi
+          echo "Go formatting: PASS"
+      - name: SuperGPU unit and federation tests
+        run: go test ./supergpu
+      - name: Mesh and SuperAGI fabric tests
+        run: go test ./orchestrator -run 'Test(SuperGPU|SuperAGI)'
+      - name: Full package test
+        run: go test ./...
+      - name: Verify fused-system manifest
+        run: |
+          python - <<'PY'
+          import json
+          p=json.load(open("integrations/superagi-fabric.json"))
+          assert p["canonical_owner"] == "N07"
+          assert p["transport"]["protocol"] == "soul-mesh/1"
+          assert p["transport"]["contractVersion"] == "1.1.0"
+          assert p["rules"]["singleMesh"] is True
+          assert p["rules"]["singleCanonicalControlPlane"] is True
+          assert p["rules"]["noSyntheticAccelerator"] is True
+          assert p["truthBoundary"]["generalIntelligenceClaim"] == "NOT_ASSERTED"
+          assert set(p["consumers"]) == {"N01","N02","N03","N04","N05","N06","SARA","JEV"}
+          assert len(p["pipeline"][0]["providers"]) == 17
+          assert "browser-use" in p["pipeline"][0]["providers"]
+          assert "letta-code" in p["pipeline"][0]["providers"]
+          assert "pydantic-ai" in p["pipeline"][0]["providers"]
+          assert "llama-index" in p["pipeline"][0]["providers"]
+          assert "whisper" in p["pipeline"][0]["providers"]
+          assert "kokoro" in p["pipeline"][0]["providers"]
+          print("SOUL SuperAGI fabric manifest: PASS")
+          PY
+      - name: Verify fused authority
+        run: |
+          python - <<'PY'
+          import json
+          d=json.load(open("soul-capability-authority.json"))
+          caps=set(d["owners"]["N07"])
+          required={"mesh.supergpu.describe@1.0.0","mesh.supergpu.execute@1.0.0","mesh.supergpu.parallel@1.0.0","superagi.fabric.describe@1.0.0","superagi.fabric.execute@1.0.0"}
+          assert required <= caps
+          print("SOUL fused capability authority: PASS")
+          PY

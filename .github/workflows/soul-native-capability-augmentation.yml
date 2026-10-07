@@ -1,0 +1,59 @@
+name: SOUL Native Capability Augmentation
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "integrations/native-capability-augmentation.json"
+      - "orchestrator/capability_augmentation.go"
+      - "orchestrator/capability_augmentation_test.go"
+      - "cmd/nexus/main.go"
+      - "orchestrator/topology.go"
+      - ".github/workflows/soul-native-capability-augmentation.yml"
+  pull_request:
+    paths:
+      - "integrations/native-capability-augmentation.json"
+      - "orchestrator/capability_augmentation.go"
+      - "orchestrator/capability_augmentation_test.go"
+      - "cmd/nexus/main.go"
+      - "orchestrator/topology.go"
+      - ".github/workflows/soul-native-capability-augmentation.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: false
+
+      - name: Materialize SOUL top-level submodules without recursion
+        run: node scripts/materialize-top-level-submodules.mjs
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+      - name: Verify 25-node augmentation manifest
+        run: |
+          python - <<'PY'
+          import json
+          m=json.load(open('integrations/native-capability-augmentation.json'))
+          assert len(m['native_components']) == 9
+          assert len(m['providers']) == 16
+          assert m['runtime_policy']['native_owner_first'] is True
+          assert m['runtime_policy']['external_provider_is_optional_augmenter'] is True
+          assert m['runtime_policy']['execution_requires_explicit_adapter'] is True
+          assert m['runtime_policy']['no_fake_runtime_success'] is True
+          for component,data in m['native_components'].items():
+              assert data['repository'] and data['native_capabilities'] and isinstance(data['augmenters'], list)
+              assert len(data['augmenters']) <= 16
+          print('SOUL native capability augmentation manifest: PASS')
+          PY
+      - name: Run augmentation resolver tests
+        run: go test ./orchestrator
+      - name: Run orchestration regression
+        run: go test ./backend ./mesh ./octacore

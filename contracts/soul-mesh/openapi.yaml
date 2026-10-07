@@ -1,0 +1,64 @@
+
+openapi: 3.0.3
+info:
+  title: SOUL Mesh
+  version: 1.1.0
+paths:
+  /mesh/health:
+    get:
+      responses:
+        "200": {description: Health}
+  /mesh/discovery:
+    get:
+      responses:
+        "200": {description: Agent and capability discovery}
+  /mesh/in:
+    post:
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/MeshEnvelope"}
+      responses:
+        "200":
+          description: Mesh result
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/MeshEnvelope"}
+        "400": {description: Invalid envelope}
+        "401": {description: Authentication failure}
+        "403": {description: Capability authorization failure}
+        "409": {description: Replay detected}
+        "413": {description: Payload too large}
+        "429": {description: Rate limited}
+        "503": {description: Unavailable/circuit open}
+  /mesh/register:
+    post:
+      responses:
+        "200": {description: Registered}
+components:
+  schemas:
+    MeshEnvelope:
+      type: object
+      required: [version, contractVersion, messageId, source, target, timestamp, nonce, correlationId, type, payload]
+      properties:
+        version: {type: string}
+        contractVersion: {type: string}
+        messageId: {type: string}
+        source: {type: string}
+        target: {type: string}
+        timestamp: {type: integer}
+        nonce: {type: string}
+        correlationId: {type: string}
+        type: {type: string}
+        ttl: {type: integer}
+        payload:
+          type: object
+          required: [capability, payload]
+          properties:
+            capability: {type: string}
+            payload: {}
+            metadata: {type: object}
+        operation: {type: string}
+        metadata: {type: object}
+        hmac: {type: string}

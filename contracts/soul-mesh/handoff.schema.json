@@ -1,0 +1,76 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://soul.local/contracts/soul-mesh/handoff.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "stage",
+    "sourceRevision",
+    "targetRevision",
+    "correlationId",
+    "evidenceState",
+    "tests",
+    "blockers"
+  ],
+  "properties": {
+    "stage": {
+      "type": "string"
+    },
+    "sourceRevision": {
+      "type": "string"
+    },
+    "targetRevision": {
+      "type": "string"
+    },
+    "correlationId": {
+      "type": "string"
+    },
+    "timestamp": {
+      "type": "string"
+    },
+    "evidenceState": {
+      "enum": [
+        "REAL",
+        "PROJECTED",
+        "BLOCKED",
+        "UNMEASURABLE"
+      ]
+    },
+    "endpoints": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true
+      }
+    },
+    "capabilitiesExercised": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "tests": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true
+      }
+    },
+    "failureInjection": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true
+      }
+    },
+    "blockers": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "rollbackPoint": {
+      "type": "string"
+    }
+  }
+}
