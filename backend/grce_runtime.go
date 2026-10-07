@@ -424,12 +424,22 @@ func (r *GRCEExecutorRuntime) validateRGO(ctx context.Context, state grf.State, 
 			"sequence_index": c.SequenceIndex,
 		},
 	}
-	result, err := r.SARA.RGOTrinity(ctx, finding, c.CorrelationID, c.CorrelationID)
+	result, err := r.SARA.GRCEHooks(ctx, finding, c.CorrelationID, c.CorrelationID)
 	if err != nil {
-		return false, fmt.Errorf("GRCE_RGO_TRINITY_FAILED:%w", err)
+		return false, fmt.Errorf("GRCE_SARA_HOOKS_FAILED:%w", err)
 	}
 	status, _ := result["final_status"].(string)
-	return strings.EqualFold(status, "VALIDATED"), nil
+	observed, _ := result["all_hooks_observed"].(bool)
+	evidence, ok := result["hook_evidence"].(map[string]any)
+	if !ok {
+		return false, errors.New("GRCE_SARA_HOOK_EVIDENCE_MISSING")
+	}
+	for _, name := range []string{"RGO", "ARA", "ITR", "ETR", "ERU", "MMD"} {
+		if value, ok := evidence[name].(bool); !ok || !value {
+			return false, fmt.Errorf("GRCE_SARA_HOOK_MISSING:%s", name)
+		}
+	}
+	return strings.EqualFold(status, "VALIDATED") && observed, nil
 }
 
 func (r *GRCEExecutorRuntime) rollback(ctx context.Context, state grf.State, prov []grf.Provenance, evidence []grf.Evidence, c grf.Context) error {
