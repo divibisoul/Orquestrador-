@@ -243,6 +243,106 @@
         "cuda-oxide.describe"
       ],
       "package": null
+    },
+    {
+      "id": "bijux-dag-runtime",
+      "owner": "N07",
+      "kind": "complementary-rust",
+      "root": "integrations/external/bijux-dag-runtime",
+      "operations": [
+        "dag.execute"
+      ],
+      "package": null
+    },
+    {
+      "id": "ouro-loop",
+      "owner": "N07",
+      "kind": "complementary-python",
+      "root": "integrations/external/ouro-loop",
+      "operations": [
+        "loop.verify"
+      ],
+      "package": null
+    },
+    {
+      "id": "recuris",
+      "owner": "N06",
+      "kind": "complementary-python",
+      "root": "integrations/external/recuris",
+      "operations": [
+        "memory.evolve"
+      ],
+      "package": "recuris"
+    },
+    {
+      "id": "fedml",
+      "owner": "N07",
+      "kind": "complementary-python",
+      "root": "integrations/external/fedml",
+      "operations": [
+        "federated.train"
+      ],
+      "package": "fedml"
+    },
+    {
+      "id": "hivemind",
+      "owner": "N07",
+      "kind": "complementary-python",
+      "root": "integrations/external/hivemind",
+      "operations": [
+        "swarm.join"
+      ],
+      "package": "hivemind"
+    },
+    {
+      "id": "temporal",
+      "owner": "N07",
+      "kind": "complementary-go",
+      "root": "integrations/external/temporal",
+      "operations": [
+        "workflow.selftest"
+      ],
+      "package": null
+    },
+    {
+      "id": "cognitive-workspace",
+      "owner": "N06",
+      "kind": "complementary-python",
+      "root": "integrations/external/cognitive-workspace",
+      "operations": [
+        "workspace.broadcast"
+      ],
+      "package": null
+    },
+    {
+      "id": "ravana",
+      "owner": "N06",
+      "kind": "complementary-python",
+      "root": "integrations/external/ravana",
+      "operations": [
+        "agent.initiate"
+      ],
+      "package": null
+    },
+    {
+      "id": "ray",
+      "owner": "N07",
+      "kind": "complementary-python",
+      "root": "integrations/external/ray",
+      "operations": [
+        "distributed.execute"
+      ],
+      "package": "ray"
+    },
+    {
+      "id": "nats-go",
+      "owner": "N07",
+      "kind": "transport-go",
+      "root": "integrations/external/nats-go",
+      "operations": [
+        "transport.connect"
+      ],
+      "package": null
     }
   ]
 }
