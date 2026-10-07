@@ -289,11 +289,13 @@
     {
       "id": "nervo-vago",
       "type": "CHANNEL_COMPLEMENT",
-      "repository": "https://github.com/OpenSIN-AI/OpenSIN-Neural-Bus",
-      "role": "supervisory signal channel; OpenSIN source currently unavailable",
-      "state": "BLOCKED",
-      "previous_repository": "https://github.com/TTOPM/belel-protocol",
-      "reason": "OpenSIN-AI/OpenSIN-Neural-Bus returned 404 during verification on 2026-10-06"
+      "repository": "https://github.com/nats-io/nats.go",
+      "role": "transport reinforcement for unified Nervo Vago; NATS is transport, not a second Mesh",
+      "state": "PROJECTED",
+      "previous_repository": "https://github.com/OpenSIN-AI/OpenSIN-Neural-Bus",
+      "reason": "Historical OpenSIN candidate was unavailable; NATS is the verified public transport source selected for the Nervo Vago transport layer. Historical failure preserved.",
+      "historical_previous_repository": "https://github.com/TTOPM/belel-protocol",
+      "replacement_revision": "f90b0a9f9df8f42a634a4f5351df1594dada4184"
     }
   ],
   "edges": [
