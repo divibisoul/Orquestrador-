@@ -153,6 +153,21 @@ func (p *SARAProxy) PublishVagus(ctx context.Context, event map[string]any, corr
 	return out, nil
 }
 
+func (p *SARAProxy) GRCEHooks(ctx context.Context, finding map[string]any, cycleID, correlationID string) (map[string]any, error) {
+    if finding == nil {
+        return nil, errors.New("GRCE finding is required")
+    }
+    body := map[string]any{"finding": finding}
+    if strings.TrimSpace(cycleID) != "" {
+        body["cycle_id"] = strings.TrimSpace(cycleID)
+    }
+    var out map[string]any
+    if err := p.request(ctx, http.MethodPost, "/v1/grce/hooks", body, correlationID, &out); err != nil {
+        return nil, err
+    }
+    return out, nil
+}
+
 func (p *SARAProxy) RGOTrinity(ctx context.Context, finding map[string]any, cycleID, correlationID string) (map[string]any, error) {
 	if finding == nil {
 		return nil, errors.New("RGO finding is required")
