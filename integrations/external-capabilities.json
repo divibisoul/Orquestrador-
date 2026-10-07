@@ -6,7 +6,9 @@
     "preserve_external_repositories": true,
     "no_fake_runtime_success": true,
     "pin_external_revisions": true,
-    "runtime_activation_requires_explicit_adapter": true
+    "runtime_activation_requires_explicit_adapter": true,
+    "public_sources_are_executable_inputs": true,
+    "native_affinity_required": true
   },
   "repositories": [
     {
@@ -325,6 +327,180 @@
         "async-device-execution"
       ],
       "state": "PROJECTED"
+    },
+    {
+      "id": "bijux-dag-runtime",
+      "source": "https://github.com/bijux/bijux-core",
+      "revision": "f0f5f56b49f380196918c4c6910b725b2b30ab7d",
+      "targets": [
+        "N07",
+        "N06",
+        "SARA"
+      ],
+      "capabilities": [
+        "deterministic-execution",
+        "DAG-runtime",
+        "provenance"
+      ],
+      "state": "PROJECTED",
+      "integration_state": "MATERIALIZED_NATIVE_ADAPTER"
+    },
+    {
+      "id": "ouro-loop",
+      "source": "https://github.com/VictorVVedtion/ouro-loop",
+      "revision": "52f97e22dc2a72a45ffa025d452ea02c58cb6b94",
+      "targets": [
+        "N07",
+        "SARA"
+      ],
+      "capabilities": [
+        "bounded-autonomy",
+        "verification-loop",
+        "self-remediation"
+      ],
+      "state": "PROJECTED",
+      "integration_state": "MATERIALIZED_NATIVE_ADAPTER"
+    },
+    {
+      "id": "recuris",
+      "source": "https://github.com/Gen-Verse/Recuris",
+      "revision": "7d3745ab787b1206ccd981cb1511100476097266",
+      "targets": [
+        "N06",
+        "N01",
+        "N07"
+      ],
+      "capabilities": [
+        "experiential-memory",
+        "failure-localization",
+        "memory-evolution"
+      ],
+      "state": "PROJECTED",
+      "integration_state": "MATERIALIZED_NATIVE_ADAPTER"
+    },
+    {
+      "id": "fedml",
+      "source": "https://github.com/FedML-AI/FedML",
+      "revision": "03e11dfee69a458a9820ec4e05b531a5f935eb2b",
+      "targets": [
+        "N07",
+        "N01",
+        "N06"
+      ],
+      "capabilities": [
+        "federated-learning",
+        "distributed-training",
+        "model-deployment"
+      ],
+      "state": "PROJECTED",
+      "integration_state": "MATERIALIZED_NATIVE_ADAPTER"
+    },
+    {
+      "id": "hivemind",
+      "source": "https://github.com/learning-at-home/hivemind",
+      "revision": "4bd43b77895019b20d18d81d0d0c1a5ab9a10847",
+      "targets": [
+        "N07",
+        "N06",
+        "N01"
+      ],
+      "capabilities": [
+        "decentralized-learning",
+        "P2P-training",
+        "fault-tolerant-aggregation"
+      ],
+      "state": "PROJECTED",
+      "integration_state": "MATERIALIZED_NATIVE_ADAPTER"
+    },
+    {
+      "id": "temporal",
+      "source": "https://github.com/temporalio/temporal",
+      "revision": "6319f845fe9c813a2022389a5dd64b9d408dd72e",
+      "targets": [
+        "N07",
+        "SARA"
+      ],
+      "capabilities": [
+        "durable-execution",
+        "workflow-retries",
+        "workflow-state"
+      ],
+      "state": "PROJECTED",
+      "integration_state": "MATERIALIZED_NATIVE_ADAPTER"
+    },
+    {
+      "id": "cognitive-workspace",
+      "source": "https://github.com/tao-hpu/cognitive-workspace",
+      "revision": "6740fc3b69a842ccc49663ac6c371600d0d9fc2e",
+      "targets": [
+        "N06",
+        "N02",
+        "N01"
+      ],
+      "capabilities": [
+        "global-workspace",
+        "controlled-sharing",
+        "cognitive-context"
+      ],
+      "state": "PROJECTED",
+      "integration_state": "MATERIALIZED_NATIVE_ADAPTER"
+    },
+    {
+      "id": "ravana",
+      "source": "https://github.com/OpenSource-Syndicate/RAVANA",
+      "revision": "c5d5095b2f918657b9261a6b958e2f4f013305cb",
+      "targets": [
+        "N06",
+        "N01",
+        "N02"
+      ],
+      "capabilities": [
+        "proactive-agency",
+        "reflection",
+        "long-term-memory"
+      ],
+      "state": "PROJECTED",
+      "integration_state": "MATERIALIZED_NATIVE_ADAPTER"
+    },
+    {
+      "id": "ray",
+      "source": "https://github.com/ray-project/ray",
+      "revision": "378b6b1bfb7c51da47d5539423430af359b76e92",
+      "targets": [
+        "N07",
+        "N06",
+        "N01"
+      ],
+      "capabilities": [
+        "distributed-compute",
+        "actors",
+        "parallel-tasks"
+      ],
+      "state": "PROJECTED",
+      "integration_state": "MATERIALIZED_NATIVE_ADAPTER"
+    },
+    {
+      "id": "nats-go",
+      "source": "https://github.com/nats-io/nats.go",
+      "revision": "f90b0a9f9df8f42a634a4f5351df1594dada4184",
+      "targets": [
+        "N07",
+        "N01",
+        "N02",
+        "N03",
+        "N04",
+        "N05",
+        "N06",
+        "SARA"
+      ],
+      "capabilities": [
+        "event-transport",
+        "pub-sub",
+        "request-reply"
+      ],
+      "state": "PROJECTED",
+      "integration_state": "MATERIALIZED_NATIVE_ADAPTER",
+      "role": "transport reinforcement for unified Nervo Vago; not a second Mesh"
     }
   ],
   "blocked_candidates": [
