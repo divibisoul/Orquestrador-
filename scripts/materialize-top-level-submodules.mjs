@@ -18,7 +18,7 @@ if (paths.length === 0) {
 
 for (const path of paths) {
   console.log("MATERIALIZE_TOP_LEVEL:", path);
-  run(["submodule", "update", "--init", "--", path]);
+  run(["-c", "submodule.recurse=false", "submodule", "update", "--init", "--", path]);
 }
 
 const autogenesis = "integrations/external/autogenesis";
