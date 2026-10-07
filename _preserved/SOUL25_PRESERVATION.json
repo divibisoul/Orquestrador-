@@ -1,8 +1,0 @@
-{
-  "schema_version": "1.0.0",
-  "preserved_artifact": "integrations/soul-25-capability-fabric.json",
-  "preserved_copy": "_preserved/soul-25-capability-fabric.json",
-  "sha256": "sha256:f2726bcf8de66c41ff677ba095aa965876fd28a96a84596166ff45a144d59041",
-  "byte_length": 32215,
-  "rule": "I1 non-elimination; preserved copy is evidence and not runtime authority"
-}
