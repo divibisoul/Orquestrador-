@@ -326,12 +326,13 @@ def execute(v,rt):
         except Exception as e: emit({"state":"BLOCKED","code":"KOKORO_EXECUTION_BLOCKED","detail":str(e)},2)
     if op.endswith(".describe"):
         emit({
-            "state":"REAL" if rt.exists() else "BLOCKED",
+            "state":"PROJECTED" if rt.exists() else "BLOCKED",
             "provider":provider,
             "operation":op,
             "source_present":rt.exists(),
             "package_available":package_available(provider),
             "execution_proven":False,
+            "evidence_rule":"source presence is not runtime execution evidence",
         })
     emit({"state":"BLOCKED","code":"EXTERNAL_ADAPTER_OPERATION_NOT_AVAILABLE","provider":provider,"operation":op},2)
 
