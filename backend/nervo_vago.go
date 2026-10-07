@@ -293,7 +293,7 @@ func RegisterNervoVagoOperations(e *orchestrator.Engine, sara *SARAProxy) error 
 			Target:        m.Source,
 			Status:        "ok",
 			Metadata:      map[string]string{
-				"nervo_vago_json": rawString(raw),
+				"nervo_vago_json": string(raw),
 				"epistemic_state": "REAL",
 			},
 		}, nil
