@@ -155,6 +155,56 @@ func (r ExternalAdapterRegistry) operationAllowed(provider, mode, operation stri
 	return false
 }
 
+// validateRegisteredPin validates the immutable source pin from the parent repository
+// without fetching or executing the public source. It is intended only for
+// read-only probe/describe operations; execute mode still requires a clean,
+// materialized worktree at the exact pinned revision.
+func (r ExternalAdapterRegistry) validateRegisteredPin(ctx context.Context, p ExternalAdapterSpec) error {
+	revision := r.revisions[p.ID]
+	rootDir := repositoryRoot()
+	root := p.Root
+	if !filepath.IsAbs(root) {
+		root = filepath.Join(rootDir, root)
+	}
+	root = filepath.Clean(root)
+	canonical := filepath.Clean(filepath.Join(rootDir, "integrations", "external", p.ID))
+	if root != canonical {
+		return fmt.Errorf("EXTERNAL_PROVIDER_ROOT_NON_CANONICAL:%s", p.ID)
+	}
+	rel, err := filepath.Rel(rootDir, root)
+	if err != nil || strings.HasPrefix(rel, ".."+string(os.PathSeparator)) || rel == ".." {
+		return fmt.Errorf("EXTERNAL_PROVIDER_ROOT_INVALID:%s", p.ID)
+	}
+	gitCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+	if _, err := os.Stat(filepath.Join(rootDir, ".git")); err != nil {
+		return fmt.Errorf("EXTERNAL_GITLINK_CHECK_UNAVAILABLE:%s", p.ID)
+	}
+	treeCmd := exec.CommandContext(gitCtx, "git", "-C", rootDir, "ls-tree", "HEAD", "--", filepath.ToSlash(rel))
+	treeOut, err := treeCmd.Output()
+	if err != nil {
+		if gitCtx.Err() != nil {
+			return fmt.Errorf("EXTERNAL_GITLINK_CHECK_TIMEOUT:%s", p.ID)
+		}
+		return fmt.Errorf("EXTERNAL_GITLINK_CHECK_FAILED:%s", p.ID)
+	}
+	fields := strings.Fields(string(treeOut))
+	if len(fields) < 3 || fields[0] != "160000" || fields[1] != "commit" {
+		return fmt.Errorf("EXTERNAL_GITLINK_NOT_REGISTERED:%s", p.ID)
+	}
+	if !isGitRevision(revision) || !strings.EqualFold(fields[2], revision) {
+		return fmt.Errorf("EXTERNAL_GITLINK_REVISION_MISMATCH:%s:expected=%s:actual=%s", p.ID, revision, fields[2])
+	}
+	return nil
+}
+
+func sourceWorktreeIsGit(root string) bool {
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, "git", "-C", root, "rev-parse", "--show-toplevel")
+	return cmd.Run() == nil
+}
+
 func (r ExternalAdapterRegistry) validateMaterializedPin(ctx context.Context, p ExternalAdapterSpec) error {
 	revision := r.revisions[p.ID]
 	rootDir := repositoryRoot()
@@ -250,8 +300,16 @@ func (r ExternalAdapterRegistry) run(ctx context.Context, provider, mode, operat
 	if !r.operationAllowed(p.ID, mode, operation) {
 		return nil, fmt.Errorf("EXTERNAL_OPERATION_NOT_REGISTERED:%s:%s", p.ID, operation)
 	}
-	if err := r.validateMaterializedPin(ctx, p); err != nil {
-		return nil, err
+	readOnlyMetadataOperation := strings.EqualFold(strings.TrimSpace(mode), "probe") ||
+		strings.EqualFold(strings.TrimSpace(mode), "describe")
+	if readOnlyMetadataOperation && !sourceWorktreeIsGit(filepath.Join(repositoryRoot(), p.Root)) {
+		if err := r.validateRegisteredPin(ctx, p); err != nil {
+			return nil, err
+		}
+	} else {
+		if err := r.validateMaterializedPin(ctx, p); err != nil {
+			return nil, err
+		}
 	}
 	root := p.Root
 	if !filepath.IsAbs(root) {
@@ -262,7 +320,7 @@ func (r ExternalAdapterRegistry) run(ctx context.Context, provider, mode, operat
 	if !strings.HasPrefix(root, externalRoot+string(os.PathSeparator)) {
 		return nil, errors.New("EXTERNAL_PROVIDER_ROOT_INVALID")
 	}
-	if _, err := os.Stat(root); err != nil {
+	if _, err := os.Stat(root); err != nil && !readOnlyMetadataOperation {
 		return nil, fmt.Errorf("EXTERNAL_SOURCE_NOT_PRESENT:%s", provider)
 	}
 	runner := r.manifest.Runner.Path
