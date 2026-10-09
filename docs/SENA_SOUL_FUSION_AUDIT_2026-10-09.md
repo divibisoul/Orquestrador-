@@ -177,3 +177,38 @@ O NATS é candidato de transporte, não um novo Mesh nem um segundo VagusBus. HO
 ### Registro de CI e limiar de promoção
 
 Os checks verdes da fundação SENA comprovam os contratos e as invariantes da fundação naquele SHA — não são evidência de execução de runtime. Em 09/10/2026 foram encontradas e corrigidas, em suas branches proprietárias, causas concretas nos workflows de fontes públicas e GRCE/SARA: pin-count desatualizado, pin de NATS rejeitado pelo auditor GRF, versão Python inadequada para Recuris, checkout recursivo de submódulos durante um job Go e descrição RGO repetindo o payload integral. Os novos SHAs precisam concluir seus próprios workflows; nenhuma integração recebe o estado `REAL` até que seu E2E autenticado produza evidência real de correlação, proveniência, gates ETR/JEV, admissão SuperGPU e persistência HortaCore.
+
+## 9. Fontes principais já pinadas — uso individual e benefício previsto
+
+Os 16 repositórios abaixo já constam do registry principal da frente pública. Os SHAs registrados devem ser tratados como pins da revisão inspecionada, não como prova de que o código foi instalado ou executado em produção. O owner identifica a autoridade SOUL que recebe o adapter; não transfere a autoridade do núcleo para o upstream.
+
+| Repositório público (pin registrado) | Owner | Como será utilizado / melhoria esperada |
+|---|---|---|
+| [Superpowers](https://github.com/obra/superpowers) — `8ca22dba9a94f28898bbce59f2537ff4d87c747d` | N07 | práticas de desenvolvimento, revisão e validação reproduzíveis; melhora a qualidade do fluxo de engenharia sem executar ações do usuário. |
+| [SuperAGI](https://github.com/TransformerOptimus/SuperAGI) — `c3c1982e7bd6a11cfed53c5a193ea502f924b1b6` | N07 | adapter de agente externo para tarefas aprovadas, com credenciais explícitas e execução desativada por padrão. |
+| [LangGraph](https://github.com/langchain-ai/langgraph) — `157a06dda988d85afeb8751ff27b35ab3f4f8bf4` | N07 | workflows como grafo, controle de estado do workflow e rotas recuperáveis; N07 permanece o control plane. |
+| [CrewAI](https://github.com/crewAIInc/crewAI) — `8078f9130c35a47be95d4a55bf1d73b3fd44fc88` | N07 | equipes de agentes com papéis e handoffs; saídas voltam como propostas tipadas, sem novo orquestrador. |
+| [Microsoft Agent Framework](https://github.com/microsoft/agent-framework) — `a2f4506c0ba30cea7c9bbe907fc158c0db2cc6a3` | N07 | agentes/workflows com contratos mais explícitos e integração empresarial por adapter delimitado. |
+| [OpenHands](https://github.com/OpenHands/OpenHands) — `2414d6ee5e31bede2e78211f72b58e9949575a75` | N06 | tarefas de engenharia em ambiente autorizado e isolado; nenhuma execução de shell ou ação externa livre pelo SENA. |
+| [MetaGPT](https://github.com/FoundationAgents/MetaGPT) — `11cdf466d042aece04fc6cfd13b28e1a70341b1f` | N07 | decomposição multiagente por papéis e procedimentos; reutiliza o dispatch existente e mantém proveniência. |
+| [AgentScope](https://github.com/agentscope-ai/agentscope) — `72f3f6fa0b2fc38b8517f408ab616f0f2bd229e6` | N03 | composição de agentes orientados a tarefas multimodais, subordinados às interfaces de áudio/percepção já existentes. |
+| [Letta Code](https://github.com/letta-ai/letta-code) — `1fcc9666817ab852bc2532a3a989f712e1fd6c19` | N01 | experimentos com contexto persistente do agente, somente via interface; não cria uma segunda memória canônica. |
+| [Browser Use](https://github.com/browser-use/browser-use) — `302d8fcb245a7a63fb7531a4734c9ce3c7792779` | N04 | navegação assistida em tarefas autorizadas, com limites de passos, timeout e sem ações web implícitas. |
+| [smolagents](https://github.com/huggingface/smolagents) — `c30b115286e000e98711fae5e85993547b73d826` | N06 | executor leve de agentes para tarefas delimitadas; ferramentas e efeitos colaterais permanecem restritos por JEV/SARA. |
+| [Pydantic AI](https://github.com/pydantic/pydantic-ai) — `6bc07cf18b0641ea92343d8c589cfb922108b802` | N01 | contratos tipados de entrada/saída e erros explícitos, reduzindo respostas que não passam schema. |
+| [LlamaIndex](https://github.com/run-llama/llama_index) — `962940ddc079cc21701d28d1237c84c82a7c5164` | N05 | ingestão e recuperação RAG ligadas ao núcleo de conhecimento; HortaCore continua a persistência autoritativa. |
+| [DSPy](https://github.com/stanfordnlp/dspy) — `ba3f9198efe5d125c7c1a2b40b1f1e6166209bd2` | N06 | avaliação e otimização offline de prompts/programas; não altera políticas nem treina online sem aprovação. |
+| [Whisper](https://github.com/openai/whisper) — `86098128c0b4f24f0e2aa2994de830614b474227` | N03 | transcrição de áudio autorizado para alimentar a pipeline multimodal com origem e metadados explícitos. |
+| [Kokoro](https://github.com/hexgrad/kokoro) — `dfb907a02bba8152ca444717ca5d78747ccb4bec` | N03 | síntese de fala na saída multimodal, mantendo áudio/voz dentro da autoridade de N03. |
+
+## 10. Ordem de integração recomendada
+
+**Prioridade 1 — conexão estrutural:** fechar #152 (pins + adapters + contrato Nervo Vago), #153 (GRCE/SARA E2E e gateway autenticado) e esta #154 (SENA → VagusBus → SuperGPU → VagusBus → SENA → VagusBus → Pré-Frontal → SARA/ETR + JEV → HortaCore pelo caminho N07/N01 existente). Isso consolida as fronteiras antes de ativar agentes externos.
+
+**Prioridade 2 — primeiros adapters de baixo risco:** Pydantic AI para schemas, LangGraph para workflow, LlamaIndex para retrieval, Whisper/Kokoro para I/O multimodal. Esses adapters ampliam validação, recuperação e interface sem entregar controle de recursos ou persistência aos upstreams.
+
+**Prioridade 3 — execução de agentes:** CrewAI, Microsoft Agent Framework, SuperAGI, MetaGPT, AgentScope, OpenHands e smolagents sob timeout, limites de payload, credenciais fora do payload, admissão N07 e retorno por VagusBus. As fontes só entram como runtime utilizável após teste com pin materializado.
+
+**Prioridade 4 — otimização e expansão:** DSPy, AutoGenesis, Ouro Loop, Recuris, Bijux DAG Runtime, Ray, Temporal, CUDA-Oxide, FedML e Hivemind. Primeiro shadow/offline e propostas; qualquer escalonamento de GPU passa por SuperGPU, qualquer promoção passa por Pré-Frontal + SARA/JEV, e persistência permanece HortaCore/N01. NATS Go é candidato para o transporte de eventos do único VagusBus, sujeito ao E2E autenticado.
+
+**Nenhuma dessas fontes é declarada REAL só por estar pinada ou listada.** O estado runtime dependerá dos checks do SHA vigente, da materialização limpa do commit exato e da execução observável no contrato correto.
