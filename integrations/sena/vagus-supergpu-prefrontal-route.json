@@ -1,10 +1,10 @@
 {
   "schema_version": "1.0.0",
   "status": "SPEC_ONLY",
-  "purpose": "Define the single canonical route for SENA general-core integration through Nervo Vago/VagusBus to existing SOUL compute and prefrontal decision authorities.",
+  "purpose": "Define the single canonical route for SENA general-core integration with both SuperGPU and Neocortex Prefrontal exclusively through the existing Nervo Vago/VagusBus signal transport.",
   "invariants": [
     "SENA is an optional capability, not a new SOUL nucleus or control plane.",
-    "Nervo Vago and VagusBus are one logical signal transport; do not create a second bus.",
+    "Every SENA↔SuperGPU and SENA↔Neocortex Prefrontal connection must traverse the single logical Nervo Vago/VagusBus signal transport; no direct bypass is allowed.",
     "SOUL Mesh 1.1.0 remains the canonical request/response and federation contract owned by N07.",
     "SuperGPU owns compute admission and scheduling; SENA must not allocate resources directly or infer idle capacity from a fixed percentage.",
     "Neocortex Prefrontal owns evaluation, inhibition, prioritization and commit; SENA outputs are candidates, not commands.",
@@ -32,7 +32,7 @@
       "sequence": 2,
       "from": "SENA adapter",
       "to": "Nervo Vago / VagusBus",
-      "operation": "publish typed signal envelope",
+      "operation": "publish typed SENA request envelope",
       "required": [
         "schema_version",
         "trace_id",
@@ -65,22 +65,39 @@
     {
       "sequence": 4,
       "from": "SuperGPU",
-      "to": "SENA general core",
-      "operation": "execute admitted inference or offline evaluation",
+      "to": "Nervo Vago / VagusBus",
+      "operation": "publish admission grant or explicit refusal",
       "required": [
         "admission_id",
         "resource_grant",
         "model_revision",
-        "input_hash"
+        "input_hash",
+        "evidence_state"
       ],
       "owner": "Existing SuperGPU",
       "status": "SPEC_ONLY"
     },
     {
       "sequence": 5,
+      "from": "Nervo Vago / VagusBus",
+      "to": "SENA general core",
+      "operation": "deliver admitted inference/offline-evaluation request",
+      "required": [
+        "admission_id",
+        "resource_grant",
+        "model_revision",
+        "input_hash",
+        "trace_id",
+        "correlation_id"
+      ],
+      "owner": "Existing VagusBus",
+      "status": "SPEC_ONLY"
+    },
+    {
+      "sequence": 6,
       "from": "SENA general core",
-      "to": "Neocortex Prefrontal",
-      "operation": "submit candidate, scores and provenance",
+      "to": "Nervo Vago / VagusBus",
+      "operation": "publish candidate, scores and provenance",
       "required": [
         "candidate_id",
         "output_hash",
@@ -89,14 +106,30 @@
         "provenance_ref",
         "deadline_unix_ms"
       ],
+      "owner": "SENA publishes signal only; no decision authority",
+      "status": "SPEC_ONLY"
+    },
+    {
+      "sequence": 7,
+      "from": "Nervo Vago / VagusBus",
+      "to": "Neocortex Prefrontal",
+      "operation": "deliver candidate for evaluation, inhibition and prioritization",
+      "required": [
+        "candidate_id",
+        "output_hash",
+        "trace_id",
+        "correlation_id",
+        "provenance_ref",
+        "deadline_unix_ms"
+      ],
       "owner": "Existing Prefrontal",
       "status": "SPEC_ONLY"
     },
     {
-      "sequence": 6,
+      "sequence": 8,
       "from": "Neocortex Prefrontal",
       "to": "SARA ETR + JEV",
-      "operation": "ethical/governance and typed guardrail evaluation",
+      "operation": "evaluate candidate decision through existing guardrails",
       "required": [
         "candidate_id",
         "decision_id",
@@ -107,7 +140,7 @@
       "status": "SPEC_ONLY"
     },
     {
-      "sequence": 7,
+      "sequence": 9,
       "from": "SARA/JEV accepted decision",
       "to": "HortaCore via existing N07/N01 persistence path",
       "operation": "persist approved state/evidence only",
