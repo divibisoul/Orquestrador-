@@ -88,3 +88,17 @@ test("validator rejects route bypasses and ownership duplication", () => {
   assert.ok(errors.some((error) => error.includes("canonical path")));
   assert.ok(errors.some((error) => error.includes("SuperGPU")));
 });
+
+test("validator requires the existing Vagus event protocol and pinned NATS transport only", () => {
+  const { contract, crosswalk, registry, route } = fixtures();
+  const mutated = structuredClone(route);
+  mutated.transport_binding.protocol = "private.sena.bus.v1";
+  mutated.transport_binding.no_second_mesh = false;
+  mutated.transport_binding.transport_candidate.revision = "";
+  mutated.transport_binding.transport_candidate.role = "new independent request Mesh";
+  const errors = validateFoundation(contract, crosswalk, registry, mutated);
+  assert.ok(errors.some((error) => error.includes("canonical Vagus event protocol")));
+  assert.ok(errors.some((error) => error.includes("prohibit a second Mesh")));
+  assert.ok(errors.some((error) => error.includes("pinned to a commit")));
+  assert.ok(errors.some((error) => error.includes("not a second Mesh")));
+});
