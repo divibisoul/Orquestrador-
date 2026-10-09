@@ -9,12 +9,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          # This contract job tests N07 Go packages only. Recursive checkout of
-          # every public adapter is unnecessary here and fails on upstream
-          # nested datasets/hle metadata; source materialization is covered by
-          # the dedicated pinned-source verification workflow.
+          # Avoid Actions' recursive submodule post-cleanup failure. The
+          # dedicated repository script materializes only canonical top-level
+          # source pins and classifies Autogenesis' nested HLE metadata without
+          # mutating the upstream repository.
           submodules: false
           fetch-depth: 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Materialize the exact pinned public-source worktrees
+        run: node scripts/materialize-top-level-submodules.mjs
       - uses: actions/setup-go@v5
         with: {go-version: '1.25'}
       - run: go test ./rgo
