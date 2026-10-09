@@ -53,6 +53,21 @@ def package_available(p):
     name=PACKAGES.get(p)
     return name is not None and importlib.util.find_spec(name) is not None
 
+def source_worktree_present(rt):
+    if not rt.exists():
+        return False
+    try:
+        result=subprocess.run(
+            ["git","-C",str(rt),"rev-parse","--show-toplevel"],
+            text=True,capture_output=True,timeout=3,check=False,
+        )
+        if result.returncode != 0:
+            return False
+        return pathlib.Path(result.stdout.strip()).resolve() == rt.resolve()
+    except Exception:
+        return False
+
+
 def external_io_root():
     configured=str(os.environ.get("SOUL_EXTERNAL_IO_ROOT") or "").strip()
     if configured:
@@ -371,11 +386,12 @@ def execute(v,rt):
     if op == "source.verify" or verify_operations.get(provider) == op:
         source_verify(provider, rt)
     if op.endswith(".describe"):
+        source_present=source_worktree_present(rt)
         emit({
-            "state":"PROJECTED" if rt.exists() else "BLOCKED",
+            "state":"PROJECTED" if not source_present else "PASS",
             "provider":provider,
             "operation":op,
-            "source_present":rt.exists(),
+            "source_present":source_present,
             "package_available":package_available(provider),
             "execution_proven":False,
             "evidence_rule":"source presence is not runtime execution evidence",
@@ -385,5 +401,15 @@ def execute(v,rt):
 v=load()
 rt=root(v)
 if str(v.get("mode") or "probe").strip().lower()=="probe":
-    emit({"state":"PASS","provider":str(v.get("provider") or ""),"mode":"probe","source_present":rt.exists(),"package_available":package_available(str(v.get("provider") or "")),"root":str(rt)})
+    source_present=source_worktree_present(rt)
+    emit({
+        "state":"PASS" if source_present else "PROJECTED",
+        "provider":str(v.get("provider") or ""),
+        "mode":"probe",
+        "source_present":source_present,
+        "package_available":package_available(str(v.get("provider") or "")),
+        "execution_proven":False,
+        "evidence_rule":"probe validates registration/worktree state only; it does not execute the source",
+        "root":str(rt),
+    })
 execute(v,rt)
