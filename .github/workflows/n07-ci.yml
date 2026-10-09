@@ -76,7 +76,8 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          submodules: true
+          # Formatting normalization operates on tracked Go files, not source worktrees.
+          submodules: false
 
       - uses: actions/setup-go@v5
         with:
@@ -169,9 +170,8 @@ jobs:
           fetch-depth: 0
           submodules: false
 
-      - name: Materialize top-level SOUL submodules without unsafe recursion
-        run: node scripts/materialize-top-level-submodules.mjs
-
+      # Go tests validate adapter contracts against committed gitlinks; runtime
+      # source materialization is performed by integrity and container jobs.
       - name: Assert declarative SOUL source
         run: |
           set -euo pipefail

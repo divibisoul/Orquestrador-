@@ -12,6 +12,7 @@ const contracts=JSON.parse(await readFile('integrations/grf/soul-29-participant-
 const binding=JSON.parse(await readFile('integrations/grf/system-binding.json','utf8'));
 const invariantCatalog=JSON.parse(await readFile('integrations/grf/invariants.json','utf8'));
 const nervoVago=JSON.parse(await readFile('integrations/grf/nervo-vago-unified-contract.json','utf8'));
+const externalRegistry=JSON.parse(await readFile('integrations/external-capabilities.json','utf8'));
 
 const parentHash=createHash('sha256').update(raw25).digest('hex');
 if(soul29.parent_hash!==`sha256:${parentHash}`) throw new Error(`SOUL29_PARENT_HASH_MISMATCH:expected=sha256:${parentHash}:actual=${soul29.parent_hash}`);
@@ -30,8 +31,20 @@ for(const id of ['autogenesis','supergpu-agi','clareira-agi','nervo-vago']){
   if(!soul29.nodes.some(x=>x.id===id)) throw new Error(`SOUL29_NODE_MISSING:${id}`);
 }
 const nervoNode=soul29.nodes.find(x=>x.id==='nervo-vago');
-if(nervoNode.repository!=='https://github.com/OpenSIN-AI/OpenSIN-Neural-Bus') throw new Error('NERVOVAGO_SOURCE_ALIGNMENT_INVALID');
-if(nervoNode.state!=='BLOCKED') throw new Error('NERVOVAGO_BLOCKED_STATE_INVALID');
+const historicalNervoRepository='https://github.com/OpenSIN-AI/OpenSIN-Neural-Bus';
+const selectedTransportRepository='https://github.com/nats-io/nats.go';
+if(nervoNode.repository===selectedTransportRepository) {
+  if(nervoNode.previous_repository!==historicalNervoRepository) throw new Error('NERVOVAGO_HISTORICAL_SOURCE_NOT_PRESERVED');
+  if(nervoNode.state!=='PROJECTED') throw new Error('NERVOVAGO_NATS_STATE_INVALID');
+  if(!String(nervoNode.role||'').includes('not a second Mesh')) throw new Error('NERVOVAGO_NATS_MUST_REMAIN_TRANSPORT_ONLY');
+  const natsPin=(externalRegistry.complementary_repositories||[]).find(x=>x.id==='nats-go');
+  if(!natsPin || natsPin.source!=='https://github.com/nats-io/nats.go' || natsPin.revision!==nervoNode.replacement_revision)
+    throw new Error('NERVOVAGO_NATS_PIN_MISMATCH');
+} else if(nervoNode.repository===historicalNervoRepository) {
+  if(nervoNode.state!=='BLOCKED') throw new Error('NERVOVAGO_BLOCKED_STATE_INVALID');
+} else {
+  throw new Error('NERVOVAGO_SOURCE_ALIGNMENT_INVALID');
+}
 if(contracts.contracts?.length!==10 || contracts.contracts_count!==10) throw new Error('GRF_NEW_CONTRACT_COUNT_INVALID');
 const required=['ingest','epistemicState','invariants','capabilities','failuresAbsorbed','provenance'];
 for(const c of contracts.contracts){

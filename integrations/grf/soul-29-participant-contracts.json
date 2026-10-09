@@ -2,13 +2,13 @@
   "schema_version": "2.0.0",
   "framework": "GRF",
   "executor": "GRCE",
-  "contracts_count": 10,
-  "evidence_rule": "PRESERVED/BLOCKED when source or runtime proof is absent; never convert absence into PASS",
+  "contracts_count": 20,
+  "evidence_rule": "Historical unavailable sources are PRESERVED evidence; active public sources remain PROJECTED until runtime execution evidence.",
   "contracts": [
     {
       "id": "autogenesis",
       "source": "DVampire/Autogenesis",
-      "state": "PROJECTED",
+      "state": "PRESERVED",
       "role": "self-evolution",
       "interface": [
         "ingest",
@@ -23,7 +23,7 @@
     {
       "id": "cognifold",
       "source": "OpenNerve/CogniFold",
-      "state": "BLOCKED",
+      "state": "PRESERVED",
       "role": "neocortex",
       "interface": [
         "ingest",
@@ -38,7 +38,7 @@
     {
       "id": "belel-protocol",
       "source": "TTOPM/belel-protocol",
-      "state": "BLOCKED",
+      "state": "PRESERVED",
       "role": "nervo-vago",
       "interface": [
         "ingest",
@@ -53,7 +53,7 @@
     {
       "id": "opensinn-bus",
       "source": "OpenSIN-AI/OpenSIN-Neural-Bus",
-      "state": "BLOCKED",
+      "state": "PRESERVED",
       "role": "vagus-bus",
       "interface": [
         "ingest",
@@ -143,7 +143,7 @@
     {
       "id": "functional-graph-agi",
       "source": "kexi-bq/functional-graph-agi",
-      "state": "BLOCKED",
+      "state": "PRESERVED",
       "role": "supergpu agi",
       "interface": [
         "ingest",
@@ -154,6 +154,160 @@
         "provenance"
       ],
       "causal_trace": "F→E→K→O→A→I→T"
+    },
+    {
+      "id": "bijux-dag-runtime",
+      "source": "bijux/bijux-core",
+      "state": "PROJECTED",
+      "role": "deterministic DAG execution and provenance",
+      "interface": [
+        "ingest",
+        "epistemicState",
+        "invariants",
+        "capabilities",
+        "failuresAbsorbed",
+        "provenance"
+      ],
+      "causal_trace": "F→E→K→O→A→I→T"
+    },
+    {
+      "id": "ouro-loop",
+      "source": "VictorVVedtion/ouro-loop",
+      "state": "PROJECTED",
+      "role": "bounded verification and self-remediation",
+      "interface": [
+        "ingest",
+        "epistemicState",
+        "invariants",
+        "capabilities",
+        "failuresAbsorbed",
+        "provenance"
+      ],
+      "causal_trace": "F→E→K→O→A→I→T"
+    },
+    {
+      "id": "recuris",
+      "source": "Gen-Verse/Recuris",
+      "state": "PROJECTED",
+      "role": "experiential memory and failure localization",
+      "interface": [
+        "ingest",
+        "epistemicState",
+        "invariants",
+        "capabilities",
+        "failuresAbsorbed",
+        "provenance"
+      ],
+      "causal_trace": "F→E→K→O→A→I→T"
+    },
+    {
+      "id": "fedml",
+      "source": "FedML-AI/FedML",
+      "state": "PROJECTED",
+      "role": "federated learning",
+      "interface": [
+        "ingest",
+        "epistemicState",
+        "invariants",
+        "capabilities",
+        "failuresAbsorbed",
+        "provenance"
+      ],
+      "causal_trace": "F→E→K→O→A→I→T"
+    },
+    {
+      "id": "hivemind",
+      "source": "learning-at-home/hivemind",
+      "state": "PROJECTED",
+      "role": "decentralized P2P learning",
+      "interface": [
+        "ingest",
+        "epistemicState",
+        "invariants",
+        "capabilities",
+        "failuresAbsorbed",
+        "provenance"
+      ],
+      "causal_trace": "F→E→K→O→A→I→T"
+    },
+    {
+      "id": "temporal",
+      "source": "temporalio/temporal",
+      "state": "PROJECTED",
+      "role": "durable workflow execution",
+      "interface": [
+        "ingest",
+        "epistemicState",
+        "invariants",
+        "capabilities",
+        "failuresAbsorbed",
+        "provenance"
+      ],
+      "causal_trace": "F→E→K→O→A→I→T"
+    },
+    {
+      "id": "cognitive-workspace",
+      "source": "tao-hpu/cognitive-workspace",
+      "state": "PROJECTED",
+      "role": "global cognitive workspace",
+      "interface": [
+        "ingest",
+        "epistemicState",
+        "invariants",
+        "capabilities",
+        "failuresAbsorbed",
+        "provenance"
+      ],
+      "causal_trace": "F→E→K→O→A→I→T"
+    },
+    {
+      "id": "ravana",
+      "source": "OpenSource-Syndicate/RAVANA",
+      "state": "PROJECTED",
+      "role": "proactive cognition and reflection",
+      "interface": [
+        "ingest",
+        "epistemicState",
+        "invariants",
+        "capabilities",
+        "failuresAbsorbed",
+        "provenance"
+      ],
+      "causal_trace": "F→E→K→O→A→I→T"
+    },
+    {
+      "id": "ray",
+      "source": "ray-project/ray",
+      "state": "PROJECTED",
+      "role": "distributed compute and stateful actors",
+      "interface": [
+        "ingest",
+        "epistemicState",
+        "invariants",
+        "capabilities",
+        "failuresAbsorbed",
+        "provenance"
+      ],
+      "causal_trace": "F→E→K→O→A→I→T"
+    },
+    {
+      "id": "nats-go",
+      "source": "nats-io/nats.go",
+      "state": "PROJECTED",
+      "role": "Nervo Vago transport reinforcement; not a second Mesh",
+      "interface": [
+        "ingest",
+        "epistemicState",
+        "invariants",
+        "capabilities",
+        "failuresAbsorbed",
+        "provenance"
+      ],
+      "causal_trace": "F→E→K→O→A→I→T"
     }
+  ],
+  "new_public_contracts": 10,
+  "reused_existing_public_contracts": [
+    "hora-graph-core"
   ]
 }

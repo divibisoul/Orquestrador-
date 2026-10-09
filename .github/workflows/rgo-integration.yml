@@ -9,7 +9,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          submodules: true
+          # Contract tests exercise N07 registration and pin metadata. They do
+          # not need 32 public source worktrees; pinned-source execution is
+          # covered by the dedicated source-verification workflow.
+          submodules: false
+          fetch-depth: 1
       - uses: actions/setup-go@v5
         with: {go-version: '1.25'}
       - run: go test ./rgo

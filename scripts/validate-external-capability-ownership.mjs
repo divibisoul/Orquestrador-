@@ -8,9 +8,9 @@ const complementary = registry.complementary_repositories ?? [];
 const allSources = [...primary, ...complementary];
 const registryIds = allSources.map(x=>x.id).sort();
 const rows = ownership.capabilities;
-if (rows.length !== 22) throw new Error(`OWNERSHIP_COUNT:${rows.length}`);
+if (rows.length !== allSources.length) throw new Error(`OWNERSHIP_COUNT:${rows.length}:EXPECTED:${allSources.length}`);
 const ids = rows.map(x=>x.id).sort();
-if (JSON.stringify(ids) !== JSON.stringify(registryIds)) throw new Error('OWNERSHIP_IDS_DO_NOT_MATCH_22_SOURCE_REGISTRY');
+if (JSON.stringify(ids) !== JSON.stringify(registryIds)) throw new Error('OWNERSHIP_IDS_DO_NOT_MATCH_SOURCE_REGISTRY');
 const owners = new Set(['N01','N02','N03','N04','N05','N06','N07']);
 for (const row of rows) {
   if (!owners.has(row.primaryOwner)) throw new Error(`INVALID_PRIMARY_OWNER:${row.id}`);
