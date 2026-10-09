@@ -144,3 +144,36 @@ Por isso, esta fundação não altera nem mascara essas falhas, não fecha PRs e
 - [N07 → operações do sidecar](https://github.com/divibisoul/Orquestrador-/blob/main/orchestrator/agent_arsenal.go)
 - [Kernel G0 existente de SARA](https://github.com/divibisoul/SARA/blob/main/src/sara/meta/octacore_kernel.py)
 - [Boundary contratual de SARA](https://github.com/divibisoul/SARA/blob/main/integrations/capability-boundary.json)
+
+## 8. Atualização aditiva — rota VagusBus e 16 fontes complementares
+
+O crosswalk agora separa claramente **16 fontes principais registradas na base da SENA** das **16 fontes complementares pinadas na PR pública #152**. Essa segunda lista é referenciada por pin e proveniência, mas permanece marcada `PINNED_IN_OPEN_PR_NOT_CANONICAL_ON_SENA_BRANCH`: ela não é copiada para o registry central desta PR e não é declarada como incorporada/ativa. O validador exige IDs únicos, SHA de 40 caracteres, owner previsto, vínculo com uma frente aberta, benefício proposto e limite de autoridade por fonte.
+
+| Fonte pública complementar | Owner SOUL | Ganho planejado para SENA/SOUL |
+|---|---|---|
+| [AutoGenesis](https://github.com/DVampire/Autogenesis) | N07 | propostas de autoavaliação e evolução para avaliação offline, sem autoimplantação |
+| [Octos](https://github.com/lispking/octos) | N07/N02 (adapter N07) | fan-out/swarms de agentes com limites e retorno tipado |
+| [HORA Graph Core](https://github.com/Vivien83/hora-graph-core) | N01 | projeções de grafo temporal e recuperação híbrida; HortaCore continua a fonte de verdade |
+| [Mycelium](https://github.com/mycelium-io/mycelium) | N04 | coordenação de workspace e negociação mediada por tarefa |
+| [Prime Agent](https://github.com/PrimeIntellect-ai/prime-agent) | N06 | subagentes recursivos e decomposição de raciocínio delimitada |
+| [CUDA-Oxide](https://github.com/SuperInstance/cuda-oxide) | N07, sujeito à admissão SuperGPU | avaliar um adapter CUDA/PTX de baixo nível sem alocação direta de GPU pelo SENA |
+| [Bijux DAG Runtime](https://github.com/bijux/bijux-core) | N07/SARA | execução DAG determinística e linhagem de estágios |
+| [Ouro Loop](https://github.com/VictorVVedtion/ouro-loop) | N07/SARA | verificação e retries limitados, sem auto-remediação com efeitos externos |
+| [Recuris](https://github.com/Gen-Verse/Recuris) | N06 | localização de falhas e propostas de evolução de memória sob revisão |
+| [FedML](https://github.com/FedML-AI/FedML) | N07 | experimentos federados offline; treino/deploy online ficam desativados até autorização específica |
+| [Hivemind](https://github.com/learning-at-home/hivemind) | N07 | agregação distribuída tolerante a falhas em modo de pesquisa |
+| [Temporal](https://github.com/temporalio/temporal) | N07/SARA | execução durável, retries e prazos, sem substituir o Mesh nem HortaCore |
+| [Cognitive Workspace](https://github.com/tao-hpu/cognitive-workspace) | N06 | compartilhamento cognitivo com escopo e controle explícitos |
+| [RAVANA](https://github.com/OpenSource-Syndicate/RAVANA) | N06 | propostas proativas/reflexivas que permanecem candidatas até aprovação |
+| [Ray](https://github.com/ray-project/ray) | N07 | tarefas CPU e avaliações paralelas; não substitui a autoridade de admissão do SuperGPU |
+| [NATS Go](https://github.com/nats-io/nats.go) | N07 | transporte durável candidato para o contrato único de eventos do Nervo Vago |
+
+### Caminho obrigatório de toda interação SENA
+
+`N07 SOUL Mesh 1.1.0 → adapter SENA → Nervo Vago/VagusBus → SuperGPU (admissão) → VagusBus → SENA → VagusBus → Neocórtex Pré-Frontal → SARA/ETR + JEV → HortaCore pelo caminho N07/N01 existente`.
+
+O NATS é candidato de transporte, não um novo Mesh nem um segundo VagusBus. HORA Graph Core/Letta/Recuris podem apoiar projeções ou propostas de contexto, mas não ganham autoridade de persistência. FedML/Hivemind ficam em pesquisa offline; AutoGenesis/Ouro Loop/RAVANA não ganham capacidade de autoaprovar promoção ou side effects.
+
+### Registro de CI e limiar de promoção
+
+Os checks verdes da fundação SENA comprovam os contratos e as invariantes da fundação naquele SHA — não são evidência de execução de runtime. Em 09/10/2026 foram encontradas e corrigidas, em suas branches proprietárias, causas concretas nos workflows de fontes públicas e GRCE/SARA: pin-count desatualizado, pin de NATS rejeitado pelo auditor GRF, versão Python inadequada para Recuris, checkout recursivo de submódulos durante um job Go e descrição RGO repetindo o payload integral. Os novos SHAs precisam concluir seus próprios workflows; nenhuma integração recebe o estado `REAL` até que seu E2E autenticado produza evidência real de correlação, proveniência, gates ETR/JEV, admissão SuperGPU e persistência HortaCore.
