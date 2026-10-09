@@ -103,6 +103,28 @@ export function validateFoundation(contract, crosswalk, canonicalRegistry, route
   requireValue(route?.invariants?.some((item) => item.includes("SuperGPU owns compute admission")), "route must keep compute admission under SuperGPU");
   requireValue(route?.invariants?.some((item) => item.includes("Neocortex Prefrontal owns evaluation")), "route must keep candidate evaluation under Prefrontal");
   requireValue(route?.invariants?.some((item) => item.includes("HortaCore remains the authoritative state persistence")), "route must preserve HortaCore/SARA/JEV ownership");
+  const vagusBinding = route?.transport_binding ?? {};
+  requireValue(vagusBinding.id === "nervo-vago", "SENA route must bind to the single canonical Nervo Vago component");
+  requireValue(vagusBinding.owner === "N07", "Nervo Vago/VagusBus signal transport remains owned by N07");
+  requireValue(vagusBinding.protocol === "soul.vagus.event.v1", "SENA must use the canonical Vagus event protocol");
+  requireValue(vagusBinding.publish_operation === "nervo-vago.event@1.0.0", "SENA must publish via the existing Nervo Vago event operation");
+  requireValue(vagusBinding.describe_operation === "nervo-vago.describe@1.0.0", "SENA must discover the existing Nervo Vago event contract");
+  requireValue(vagusBinding.delivery_gate === "SARA/ETR before consumer delivery", "Vagus event delivery must pass through SARA ETR");
+  requireValue(vagusBinding.request_response_contract === "SOUL Mesh 1.1.0 remains the canonical request/response and federation contract", "Vagus signals must not replace the canonical SOUL Mesh request/response contract");
+  requireValue(vagusBinding.no_second_mesh === true, "Vagus transport binding must prohibit a second Mesh");
+  requireValue(vagusBinding.no_second_vagus === true, "Vagus transport binding must prohibit a second logical VagusBus");
+  requireValue(vagusBinding.no_direct_sena_bypass === true, "SENA must not bypass the canonical Vagus signal transport");
+  requireValue(vagusBinding.preserve_correlation_and_idempotency === true, "Vagus transport must preserve correlation and idempotency");
+  requireValue(vagusBinding.status === "SPEC_ONLY", "Vagus transport binding must remain SPEC_ONLY until runtime evidence exists");
+  requireValue(Array.isArray(vagusBinding.preserve_existing_components) && vagusBinding.preserve_existing_components.some((item) => item.includes("SARA shared VagusNerveBus")), "Vagus binding must preserve SARA's existing shared event bus");
+  const transportCandidate = vagusBinding.transport_candidate ?? {};
+  requireValue(transportCandidate.id === "nats-go", "SENA route must reuse the selected NATS Go transport candidate from public-capability federation");
+  requireValue(transportCandidate.repository === "https://github.com/nats-io/nats.go", "NATS source repository must be canonical");
+  requireValue(/^[a-f0-9]{40}$/i.test(String(transportCandidate.revision ?? "")), "NATS candidate must be pinned to a commit");
+  requireValue(transportCandidate.state === "PROJECTED", "NATS transport must remain PROJECTED until integration is verified");
+  requireValue(transportCandidate.role?.includes("not a second Mesh"), "NATS may provide event transport only, not a second Mesh");
+  requireValue(transportCandidate.role?.includes("not a second logical VagusBus"), "NATS may not create a second logical VagusBus");
+
   const hops = route?.route ?? [];
   const expectedHops = [
     ["N07 SOUL Mesh 1.1.0", "SENA adapter"],
