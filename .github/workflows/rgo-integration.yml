@@ -9,17 +9,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          # Avoid Actions' recursive submodule post-cleanup failure. The
-          # dedicated repository script materializes only canonical top-level
-          # source pins and classifies Autogenesis' nested HLE metadata without
-          # mutating the upstream repository.
+          # Contract tests exercise N07 registration and pin metadata. They do
+          # not need 32 public source worktrees; pinned-source execution is
+          # covered by the dedicated source-verification workflow.
           submodules: false
           fetch-depth: 1
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "22"
-      - name: Materialize the exact pinned public-source worktrees
-        run: node scripts/materialize-top-level-submodules.mjs
       - uses: actions/setup-go@v5
         with: {go-version: '1.25'}
       - run: go test ./rgo
