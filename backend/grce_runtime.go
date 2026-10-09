@@ -437,8 +437,24 @@ func (r *GRCEExecutorRuntime) validateRGO(ctx context.Context, state grf.State, 
 	if err != nil {
 		return false, fmt.Errorf("GRCE_RGO_INPUT_HASH_FAILED:%w", err)
 	}
+	// Keep the full original state in the hash-linked candidate and evidence
+	// chain, but do not feed the entire raw user payload into SARA's second
+	// RGO/Trinity description pass. That pass validates the candidate/evidence
+	// envelope; the original input was already submitted to SARA's ARA/ETR
+	// audit/regeneration stages. Re-embedding it here can produce a second,
+	// unrelated structural finding (for example, punctuation density on a
+	// deliberately repetitive input) and make the real cycle inconclusive.
+	originalState, hasOriginalState := state.Payload["original_state"]
+	if !hasOriginalState || originalState == nil {
+		return false, errors.New("GRCE_RGO_ORIGINAL_STATE_REFERENCE_MISSING")
+	}
+	originalStateHash, err := grf.HashJSON(originalState)
+	if err != nil {
+		return false, fmt.Errorf("GRCE_RGO_ORIGINAL_STATE_HASH_FAILED:%w", err)
+	}
 	evidence := make([]map[string]any, 0, len(rawArtifacts))
 	parentIDs := make([]string, 0, len(rawArtifacts))
+	artifactStages := make([]string, 0, len(rawArtifacts))
 	for _, artifact := range rawArtifacts {
 		if strings.TrimSpace(artifact.ID) == "" || strings.TrimSpace(artifact.Stage) == "" {
 			return false, errors.New("GRCE_RGO_ARTIFACT_ID_OR_STAGE_MISSING")
@@ -453,7 +469,12 @@ func (r *GRCEExecutorRuntime) validateRGO(ctx context.Context, state grf.State, 
 			"ref":  artifact.ID,
 		})
 		parentIDs = append(parentIDs, artifact.ID)
+		artifactStages = append(artifactStages, artifact.Stage)
 	}
+	description := fmt.Sprintf(
+		"Validate GRCE candidate envelope %s; candidate_hash=%s; original_state_hash=%s; artifact_count=%d; stages=%s. Original content remains preserved in hash-linked candidate artifacts and evidence references.",
+		state.ID, inputHash, originalStateHash, len(rawArtifacts), strings.Join(artifactStages, ","),
+	)
 	finding := map[string]any{
 		"schema_version": "1.0.0",
 		"finding_id":     "grce:" + c.CorrelationID,
@@ -476,7 +497,7 @@ func (r *GRCEExecutorRuntime) validateRGO(ctx context.Context, state grf.State, 
 		},
 		"failure": map[string]any{
 			"type":        "GRCE_CANDIDATE_VALIDATION",
-			"description": stateText(state),
+			"description": description,
 			"nature":      "candidate-validation",
 			"cause":       "candidate must retain its input, outputs, and ordered provenance",
 			"impact":      "prevent promotion without SARA stage evidence",
@@ -499,6 +520,9 @@ func (r *GRCEExecutorRuntime) validateRGO(ctx context.Context, state grf.State, 
 		"extensions": map[string]any{
 			"grce_sequence_index": c.SequenceIndex,
 			"artifact_count":      len(rawArtifacts),
+			"original_state_hash": originalStateHash,
+			"candidate_hash":      inputHash,
+			"artifact_stages":     artifactStages,
 		},
 	}
 	result, err := r.SARA.RGOTrinityWithCycle(ctx, finding, c.CorrelationID, c.CorrelationID)
