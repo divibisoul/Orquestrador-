@@ -192,7 +192,14 @@ func (r ExternalAdapterRegistry) validateRegisteredPin(ctx context.Context, p Ex
 	if len(fields) < 3 || fields[0] != "160000" || fields[1] != "commit" {
 		return fmt.Errorf("EXTERNAL_GITLINK_NOT_REGISTERED:%s", p.ID)
 	}
-	if !isGitRevision(revision) || !strings.EqualFold(fields[2], revision) {
+	validRevision := len(revision) == 40
+	for _, ch := range strings.ToLower(revision) {
+		if (ch < '0' || ch > '9') && (ch < 'a' || ch > 'f') {
+			validRevision = false
+			break
+		}
+	}
+	if !validRevision || !strings.EqualFold(fields[2], revision) {
 		return fmt.Errorf("EXTERNAL_GITLINK_REVISION_MISMATCH:%s:expected=%s:actual=%s", p.ID, revision, fields[2])
 	}
 	return nil
