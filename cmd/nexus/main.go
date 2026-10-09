@@ -224,8 +224,8 @@ func main() {
 		g,
 		backend.GRCEFeedback{
 			Horta: backend.NewGRCEVagoFeedback(nervoVagoGateway, "AETERNUM_HORTACORE", "horta"),
-			Vagus: orchestrator.NewGRCEVagoFeedback(nervoVagoGateway, "SARA", "vagus"),
-			Mesh:  orchestrator.NewGRCEVagoFeedback(nervoVagoGateway, "SOUL_MESH", "mesh"),
+			Vagus: backend.NewGRCEVagoFeedback(nervoVagoGateway, "SARA", "vagus"),
+			Mesh:  backend.NewGRCEVagoFeedback(nervoVagoGateway, "SOUL_MESH", "mesh"),
 		},
 	)
 	if err != nil {
