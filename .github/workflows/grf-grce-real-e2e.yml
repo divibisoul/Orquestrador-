@@ -133,7 +133,10 @@ jobs:
           }
           json.dump(body, open("/tmp/grce-request.json", "w"))
           PY
-          curl -fsS -H 'Authorization: Bearer e2e-n07-token-123456789' -H 'Content-Type: application/json' -X POST http://127.0.0.1:8080/v1/execute --data-binary @/tmp/grce-request.json | tee /tmp/grce-full.json
+          http_status="$(curl -sS -o /tmp/grce-full.json -w '%{http_code}' -H 'Authorization: Bearer e2e-n07-token-123456789' -H 'Content-Type: application/json' -X POST http://127.0.0.1:8080/v1/execute --data-binary @/tmp/grce-request.json)"
+          echo "GRCE_HTTP_STATUS=${http_status}"
+          cat /tmp/grce-full.json
+          test "${http_status}" = "200"
           python - <<'PY'
           import json
           outer=json.load(open('/tmp/grce-full.json'))

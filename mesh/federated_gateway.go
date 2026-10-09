@@ -61,6 +61,14 @@ func (g *FederatedGateway) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		g.base.Handler(w, r)
 		return
 	}
+	// The base HTTP gateway owns authentication for transport/health operations.
+	// Delegating before the federation layer authenticates prevents a single-use
+	// HMAC nonce from being consumed twice on the same request.
+	if capability == "mesh.ping" || capability == "mesh.describe" || capability == "core.health" {
+		r.Body = ioNopCloser(bytes.NewReader(body))
+		g.base.Handler(w, r)
+		return
+	}
 	envelope := normalizedMeshEnvelope(wire)
 	if err := envelope.Validate(); err != nil {
 		g.base.Handler(w, r)
@@ -91,11 +99,6 @@ func (g *FederatedGateway) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			"endpoint": strings.TrimRight(strings.TrimSpace(endpoint), "/"),
 			"capabilities": capabilities, "contractVersion": envelope.ContractVersion,
 		})
-		return
-	}
-	if capability == "mesh.ping" || capability == "mesh.describe" || capability == "core.health" {
-		r.Body = ioNopCloser(bytes.NewReader(body))
-		g.base.Handler(w, r)
 		return
 	}
 	peer, descErr := g.selectPeer(r.Context(), capability)
