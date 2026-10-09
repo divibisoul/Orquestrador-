@@ -110,7 +110,7 @@ func NewExternalAdapterRegistry() (ExternalAdapterRegistry, error) {
 	allRevisions := append(append([]ExternalCapabilityRevision{}, capabilityRegistry.Repositories...), capabilityRegistry.ComplementaryRepositories...)
 	revisions := make(map[string]string, len(allRevisions))
 	for _, item := range allRevisions {
-		if item.ID == "" || len(item.Revision) != 40 {
+		if item.ID == "" || !isGitRevision(item.Revision) {
 			return ExternalAdapterRegistry{}, fmt.Errorf("external capability revision invalid: %s", item.ID)
 		}
 		if _, exists := revisions[item.ID]; exists {
