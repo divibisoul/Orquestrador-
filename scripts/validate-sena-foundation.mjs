@@ -99,7 +99,7 @@ export function validateFoundation(contract, crosswalk, canonicalRegistry, route
   requireValue(contract?.state_semantics?.no_fake_pass === true, "state semantics must prohibit synthetic PASS");
 
   requireValue(route?.status === "SPEC_ONLY", "SENA integration route must remain SPEC_ONLY");
-  requireValue(route?.invariants?.some((item) => item.includes("Nervo Vago and VagusBus are one logical signal transport")), "route must preserve the single Nervo Vago/VagusBus transport");
+  requireValue(route?.invariants?.some((item) => item.includes("Every SENA↔SuperGPU and SENA↔Neocortex Prefrontal connection must traverse")), "route must preserve the single Nervo Vago/VagusBus transport");
   requireValue(route?.invariants?.some((item) => item.includes("SuperGPU owns compute admission")), "route must keep compute admission under SuperGPU");
   requireValue(route?.invariants?.some((item) => item.includes("Neocortex Prefrontal owns evaluation")), "route must keep candidate evaluation under Prefrontal");
   requireValue(route?.invariants?.some((item) => item.includes("HortaCore remains the authoritative state persistence")), "route must preserve HortaCore/SARA/JEV ownership");
@@ -108,12 +108,14 @@ export function validateFoundation(contract, crosswalk, canonicalRegistry, route
     ["N07 SOUL Mesh 1.1.0", "SENA adapter"],
     ["SENA adapter", "Nervo Vago / VagusBus"],
     ["Nervo Vago / VagusBus", "SuperGPU"],
-    ["SuperGPU", "SENA general core"],
-    ["SENA general core", "Neocortex Prefrontal"],
+    ["SuperGPU", "Nervo Vago / VagusBus"],
+    ["Nervo Vago / VagusBus", "SENA general core"],
+    ["SENA general core", "Nervo Vago / VagusBus"],
+    ["Nervo Vago / VagusBus", "Neocortex Prefrontal"],
     ["Neocortex Prefrontal", "SARA ETR + JEV"],
     ["SARA/JEV accepted decision", "HortaCore via existing N07/N01 persistence path"]
   ];
-  requireValue(hops.length === expectedHops.length, "route must contain exactly seven ordered hops");
+  requireValue(hops.length === expectedHops.length, "route must contain exactly nine ordered hops");
   for (let i = 0; i < expectedHops.length; i += 1) {
     requireValue(hops[i]?.sequence === i + 1, "route hop sequence must be contiguous at " + (i + 1));
     requireValue(hops[i]?.from === expectedHops[i][0] && hops[i]?.to === expectedHops[i][1], "route hop " + (i + 1) + " must preserve the canonical path");
