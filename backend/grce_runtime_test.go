@@ -156,3 +156,91 @@ func writeGRCEJSONTest(w http.ResponseWriter, payload map[string]any) {
 	w.Header().Set("Content-Type", "application/json")
 	_ = json.NewEncoder(w).Encode(payload)
 }
+
+
+func TestGRCEExtractCapabilitiesResolvesExplicitComplementaryProvider(t *testing.T) {
+	runtime := &GRCEExecutorRuntime{}
+	state := grf.State{
+		ID:              "state-external-affinity",
+		EpistemicState: grf.PRESERVED,
+		Payload: map[string]any{
+			"text":       "coordenar execução paralela",
+			"component":  "N07",
+			"capability": "parallel-fanout",
+		},
+	}
+	caps, err := runtime.extractCapabilities(
+		context.Background(),
+		state,
+		[]grf.Provenance{{OutputHash: "parent-output-hash"}},
+		[]grf.Evidence{{FailureID: "failure-parallel-fanout"}},
+		grf.Context{TraceID: "trace-affinity", CorrelationID: "corr-affinity", SequenceIndex: 10},
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(caps) < 2 {
+		t.Fatalf("expected the preserved GRCE capability plus a resolved external candidate, got %d", len(caps))
+	}
+	found := false
+	for _, cap := range caps {
+		if strings.HasPrefix(cap.ID, "external:octos:") {
+			found = true
+			if cap.State != grf.PROJECTED {
+				t.Fatalf("external candidate state=%s, want PROJECTED", cap.State)
+			}
+			if !strings.Contains(cap.Description, "pinned revision") ||
+				!strings.Contains(cap.Description, "explicit activation") {
+				t.Fatalf("candidate description lacks provenance/activation gate: %q", cap.Description)
+			}
+			if cap.Provenance.CausalFailureID != "failure-parallel-fanout" ||
+				cap.Provenance.OutputHash == "" || cap.Provenance.SequenceIndex <= 3010 {
+				t.Fatalf("candidate provenance is incomplete: %#v", cap.Provenance)
+			}
+		}
+	}
+	if !found {
+		t.Fatalf("octos candidate was not linked from the canonical capability resolver: %#v", caps)
+	}
+}
+
+func TestGRCEExtractCapabilitiesPreservesGenericFallbackWithoutExplicitMapping(t *testing.T) {
+	runtime := &GRCEExecutorRuntime{}
+	state := grf.State{
+		ID: "state-generic",
+		EpistemicState: grf.PRESERVED,
+		Payload: map[string]any{"text": "preservar estado histórico"},
+	}
+	caps, err := runtime.extractCapabilities(
+		context.Background(),
+		state,
+		[]grf.Provenance{{OutputHash: "parent-output-hash"}},
+		[]grf.Evidence{{FailureID: "failure-generic"}},
+		grf.Context{TraceID: "trace-generic", CorrelationID: "corr-generic", SequenceIndex: 20},
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(caps) != 1 || !strings.HasPrefix(caps[0].ID, "capability:") {
+		t.Fatalf("legacy generic extraction must remain intact without explicit mapping: %#v", caps)
+	}
+}
+
+func TestGRCEExtractCapabilitiesFailsClosedOnInvalidExplicitComponent(t *testing.T) {
+	runtime := &GRCEExecutorRuntime{}
+	state := grf.State{
+		ID: "state-invalid-component",
+		EpistemicState: grf.PRESERVED,
+		Payload: map[string]any{"component": "N08", "capability": "parallel-fanout"},
+	}
+	_, err := runtime.extractCapabilities(
+		context.Background(),
+		state,
+		[]grf.Provenance{{OutputHash: "parent-output-hash"}},
+		[]grf.Evidence{{FailureID: "failure-invalid-component"}},
+		grf.Context{TraceID: "trace-invalid", CorrelationID: "corr-invalid", SequenceIndex: 30},
+	)
+	if err == nil || !strings.Contains(err.Error(), "GRCE_EXTERNAL_CAPABILITY_RESOLUTION_FAILED") {
+		t.Fatalf("invalid external capability target must fail closed, got %v", err)
+	}
+}
