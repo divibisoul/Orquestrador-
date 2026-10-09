@@ -133,7 +133,12 @@ func (e *Executor) Run(ctx context.Context, state grf.State, c grf.Context) (Res
 	vet,err:=e.hooks.ValidateETR(ctx,candidate,c);if err!=nil{return e.preserve(ctx,state,prov,evidence,c,err,"VALIDATE_ETR")}
 	vit,err:=e.hooks.ValidateITR(ctx,candidate,c);if err!=nil{return e.preserve(ctx,state,prov,evidence,c,err,"VALIDATE_ITR")}
 	vrgo,err:=e.hooks.ValidateRGO(ctx,candidate,c);if err!=nil{return e.preserve(ctx,state,prov,evidence,c,err,"VALIDATE_RGO")}
-	if !vet||!vit||!vrgo{return e.preserve(ctx,state,prov,evidence,c,errors.New("GRCE_VALIDATION_FAILED"),"VALIDATE")}
+	if !vet || !vit || !vrgo {
+		// Keep the promotion gate fail-closed while preserving which independent
+		// validator rejected the candidate; a generic error hid real SARA/E2E causes.
+		return e.preserve(ctx, state, prov, evidence, c,
+			fmt.Errorf("GRCE_VALIDATION_FAILED:ETR=%t:ITR=%t:RGO=%t", vet, vit, vrgo), "VALIDATE")
+	}
 
 	caps,err:=e.hooks.ExtractCapabilities(ctx,candidate,prov,evidence,c);if err!=nil{return e.preserve(ctx,state,prov,evidence,c,err,"EXTRACT")}
 	for _,cap:=range caps{
