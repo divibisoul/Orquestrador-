@@ -1,0 +1,333 @@
+{
+  "schema_version": "1.0.0",
+  "snapshot_date": "2026-10-09",
+  "purpose": "Crosswalk from SENA feature domains to the existing SOUL capability fabric and open public-source recovery fronts.",
+  "rule": "This is an audit snapshot, not a runtime capability registry. The canonical registries and upstream revision pins remain authoritative.",
+  "canonical_registry": "integrations/external-capabilities.json",
+  "canonical_ownership_registry": "integrations/external-capability-ownership.json",
+  "current_mainline_source_ids": [
+    {
+      "id": "superpowers",
+      "owner": "N07",
+      "domains": [
+        "engineering-methodology",
+        "planning",
+        "TDD",
+        "review"
+      ],
+      "sena_use": "develop, test and review the adapter; never a model runtime by itself"
+    },
+    {
+      "id": "superagi",
+      "owner": "N07",
+      "domains": [
+        "agent-orchestration",
+        "tools",
+        "memory",
+        "telemetry"
+      ],
+      "sena_use": "optional bounded agent orchestration through N07"
+    },
+    {
+      "id": "langgraph",
+      "owner": "N07",
+      "domains": [
+        "stateful-workflows",
+        "durable-orchestration"
+      ],
+      "sena_use": "workflow state only through the current orchestration boundary"
+    },
+    {
+      "id": "crewai",
+      "owner": "N07",
+      "domains": [
+        "multi-agent-crews",
+        "role-specialization"
+      ],
+      "sena_use": "optional multi-agent execution; not a second SOUL control plane"
+    },
+    {
+      "id": "microsoft-agent-framework",
+      "owner": "N07",
+      "domains": [
+        "agent-workflows",
+        "MCP",
+        "A2A"
+      ],
+      "sena_use": "typed workflow and tool interoperability when its adapter is verified"
+    },
+    {
+      "id": "openhands",
+      "owner": "N06",
+      "domains": [
+        "software-agents",
+        "tool-use",
+        "bounded-execution"
+      ],
+      "sena_use": "task-bound agent execution under N06's native authority"
+    },
+    {
+      "id": "metagpt",
+      "owner": "N07",
+      "domains": [
+        "role-based-agents",
+        "multi-agent-collaboration"
+      ],
+      "sena_use": "candidate role decomposition behind existing N07/N06 boundaries"
+    },
+    {
+      "id": "agentscope",
+      "owner": "N03",
+      "domains": [
+        "agents",
+        "multimodal",
+        "voice"
+      ],
+      "sena_use": "optional audio/multimodal agent capability; N03 retains modality ownership"
+    },
+    {
+      "id": "letta-code",
+      "owner": "N01",
+      "domains": [
+        "persistent-agent-memory",
+        "identity",
+        "stateful-agents"
+      ],
+      "sena_use": "optional stateful-memory adapter; must not replace N01 or SARA memory authority"
+    },
+    {
+      "id": "browser-use",
+      "owner": "N04",
+      "domains": [
+        "browser-automation",
+        "web-retrieval"
+      ],
+      "sena_use": "tools/browser tasks through N04; not unrestricted side effects from shadow mode"
+    },
+    {
+      "id": "smolagents",
+      "owner": "N06",
+      "domains": [
+        "code-agents",
+        "tools",
+        "MCP",
+        "multimodal"
+      ],
+      "sena_use": "optional execution worker under N06 and JEV/SARA gates"
+    },
+    {
+      "id": "pydantic-ai",
+      "owner": "N01",
+      "domains": [
+        "typed-agent-contracts",
+        "tools",
+        "subagents"
+      ],
+      "sena_use": "typed request/response boundaries and compatible SARA/JEV adapters"
+    },
+    {
+      "id": "llama-index",
+      "owner": "N05",
+      "domains": [
+        "RAG",
+        "indexing",
+        "retrieval"
+      ],
+      "sena_use": "retrieval augmentation through N05; do not add a competing persistent memory"
+    },
+    {
+      "id": "dspy",
+      "owner": "N06",
+      "domains": [
+        "LM-programming",
+        "optimization",
+        "reasoning-pipelines"
+      ],
+      "sena_use": "offline prompt/pipeline evaluation; not permission for online policy mutation"
+    },
+    {
+      "id": "whisper",
+      "owner": "N03",
+      "domains": [
+        "speech-to-text"
+      ],
+      "sena_use": "audio input by delegating to N03 rather than fabricating sensor tensors"
+    },
+    {
+      "id": "kokoro",
+      "owner": "N03",
+      "domains": [
+        "text-to-speech"
+      ],
+      "sena_use": "speech output via N03's owned runtime"
+    }
+  ],
+  "candidate_source_sets_in_open_prs": [
+    {
+      "pr": "divibisoul/Orquestrador-#112",
+      "observed_state": "OPEN_NOT_MERGED",
+      "role": "OSS agent, memory, evaluation and GPU stack",
+      "source_ids": [
+        "everything-claude-code",
+        "swarmclaw",
+        "mem0",
+        "letta",
+        "langfuse",
+        "vllm",
+        "sglang",
+        "ray",
+        "megatron-lm"
+      ],
+      "dependency_note": "Use this branch's source pins and evidence if selected; do not duplicate its manifests."
+    },
+    {
+      "pr": "divibisoul/Orquestrador-#129",
+      "observed_state": "OPEN_NOT_MERGED",
+      "role": "SOUL-25 external repository recovery/materialization",
+      "source_ids": [
+        "autogenesis",
+        "browser-use",
+        "crewai",
+        "cuda-oxide",
+        "dspy",
+        "hora-graph-core",
+        "langgraph",
+        "letta-code",
+        "llama-index",
+        "microsoft-agent-framework",
+        "mycelium",
+        "octos",
+        "openhands",
+        "prime-agent",
+        "pydantic-ai"
+      ],
+      "dependency_note": "Mainline registry pins are not proof that all submodule worktrees or runtime adapters are operational."
+    },
+    {
+      "pr": "divibisoul/Orquestrador-#144",
+      "observed_state": "OPEN_NOT_MERGED",
+      "role": "GRF/GRCE framework and verified upstream wave",
+      "source_ids": [
+        "cuda-oxide",
+        "hora-graph-core",
+        "mycelium",
+        "octos",
+        "openmind-conductor",
+        "prime-agent"
+      ],
+      "dependency_note": "SENA learning/promotion must fit GRF/GRCE invariants instead of adding a competing training authority."
+    },
+    {
+      "pr": "divibisoul/Orquestrador-#146",
+      "observed_state": "OPEN_NOT_MERGED",
+      "role": "SOUL-28 complementary execution/healing/memory",
+      "source_ids": [
+        "bijux-dag-runtime",
+        "ouro-loop",
+        "recuris"
+      ],
+      "dependency_note": "This branch is based on #144; preserve its explicit SOUL-28 extension and source pins."
+    },
+    {
+      "pr": "divibisoul/Orquestrador-#152",
+      "observed_state": "OPEN_NOT_MERGED",
+      "role": "Public capability federation, source verification and NATS/Vagus reinforcement",
+      "source_ids": [
+        "bijux-dag-runtime",
+        "cognitive-workspace",
+        "fedml",
+        "hivemind",
+        "nats-go",
+        "ravana",
+        "ray",
+        "recuris",
+        "temporal"
+      ],
+      "dependency_note": "This branch is based on the #129 recovery branch; do not cherry-pick source manifests into main independently of that ancestry."
+    }
+  ],
+  "active_integration_fronts": [
+    {
+      "pr": "divibisoul/Orquestrador-#153",
+      "observed_state": "OPEN_DRAFT",
+      "role": "GRCE compile boundary correction",
+      "base_line": "restructure/soul-v2-foundation-2026-10-06",
+      "integration_rule": "Verify on its own base; it is not a completed runtime promotion."
+    },
+    {
+      "pr": "divibisoul/Orquestrador-#130",
+      "observed_state": "OPEN_DRAFT",
+      "role": "Native Go multilayer neural-learning integrity",
+      "base_line": "main",
+      "integration_rule": "Reconcile with the existing neural/network.go and learning pipeline before selecting a single training authority."
+    },
+    {
+      "pr": "divibisoul/SARA#43",
+      "observed_state": "OPEN_NOT_MERGED",
+      "role": "Real SARA hook execution evidence over existing ARA/ETR/ITR/ERU/RGO/MMD",
+      "base_line": "main",
+      "integration_rule": "SARA remains the regenerative and governance authority; SENA may consume evidence, not reimplement SARA."
+    },
+    {
+      "pr": "divibisoul/Orquestrador-#125",
+      "observed_state": "OPEN_DRAFT",
+      "role": "N07 -> canonical Mesh -> N01 HortaCore end-to-end provenance",
+      "base_line": "main",
+      "integration_rule": "Require cycle and output hashes across the same chain before calling persistence integrated."
+    },
+    {
+      "pr": "divibisoul/aeternum-core-29#102",
+      "observed_state": "OPEN_DRAFT",
+      "role": "Canonical active Mesh channels and N07 structural identity",
+      "base_line": "main",
+      "integration_rule": "Do not introduce SENA-specific transport, duplicate links or a second Mesh."
+    },
+    {
+      "pr": "divibisoul/nextjs-ai-chatbot-2000#42",
+      "observed_state": "OPEN_DRAFT",
+      "role": "N06 cognition/provider/cooperation reconciliation",
+      "base_line": "main",
+      "integration_rule": "SENA suggestions must be consumed as bounded typed results through N06/N07, not direct mutation."
+    },
+    {
+      "pr": "divibisoul/nextjs-ai-chatbot#47",
+      "observed_state": "OPEN_DRAFT",
+      "role": "N05 inference/retrieval/Mesh/readiness reconciliation",
+      "base_line": "main",
+      "integration_rule": "Use N05 native inference/RAG boundaries instead of duplicating retrieval or inference ownership."
+    },
+    {
+      "pr": "divibisoul/Orquestrador-#148",
+      "observed_state": "OPEN_NOT_MERGED",
+      "role": "SOUL v2 foundation consolidation and canonical Mesh repair",
+      "base_line": "main",
+      "integration_rule": "Changes chained to this baseline must be tested and promoted as a coherent branch."
+    }
+  ],
+  "dependency_edges_observed": [
+    {
+      "from": "Orquestrador-#129",
+      "to": "Orquestrador-#152",
+      "relation": "base_branch"
+    },
+    {
+      "from": "Orquestrador-#144",
+      "to": "Orquestrador-#146",
+      "relation": "base_branch"
+    },
+    {
+      "from": "Orquestrador-#148",
+      "to": "Orquestrador-#153",
+      "relation": "base_branch"
+    }
+  ],
+  "review_invariants": [
+    "Registry presence is structural evidence only; authenticated execution is a separate gate.",
+    "External repositories remain pinned implementation sources, not SOUL nuclei or authorities.",
+    "N07 is the single canonical orchestration/federation boundary.",
+    "SARA owns ARA/ETR/ITR/ERU/RGO/MMD provenance and regeneration decisions.",
+    "N01 owns state/identity/HortaCore boundaries; VagusBus is signal transport.",
+    "Capability ownership and upstream revision pins stay in their current canonical registries.",
+    "A SENA rollout must not modify or retarget other open pull requests."
+  ]
+}
