@@ -13,10 +13,30 @@ const adapterIds=adapters.providers.map(x=>x.id).sort();
 const ownerIds=ownership.capabilities.map(x=>x.id).sort();
 
 if(primarySources.length!==16) throw new Error(`PRIMARY_REGISTRY_COUNT:${primarySources.length}`);
-if(complementarySources.length!==6) throw new Error(`COMPLEMENTARY_REGISTRY_COUNT:${complementarySources.length}`);
-if(sourceIds.length!==22) throw new Error(`TOTAL_REGISTRY_COUNT:${sourceIds.length}`);
-if(JSON.stringify(sourceIds)!==JSON.stringify(adapterIds)) throw new Error('ADAPTER_IDS_DO_NOT_MATCH_22_SOURCE_REGISTRY');
-if(JSON.stringify(sourceIds)!==JSON.stringify(ownerIds)) throw new Error('OWNERSHIP_IDS_DO_NOT_MATCH_22_SOURCE_REGISTRY');
+// Preserve the historical six-source complementary set while accepting the expanded, pinned
+// 16-source set added by the active public-capability recovery front.
+const historicalComplementaryCount=6;
+const expandedComplementaryIds=[
+  'autogenesis','octos','hora-graph-core','mycelium','prime-agent','cuda-oxide',
+  'bijux-dag-runtime','ouro-loop','recuris','fedml','hivemind','temporal',
+  'cognitive-workspace','ravana','ray','nats-go'
+].sort();
+if(complementarySources.length!==historicalComplementaryCount && complementarySources.length!==expandedComplementaryIds.length)
+  throw new Error(`COMPLEMENTARY_REGISTRY_COUNT:${complementarySources.length}`);
+if(sourceIds.length!==primarySources.length+complementarySources.length)
+  throw new Error(`TOTAL_REGISTRY_COUNT_MISMATCH:${sourceIds.length}`);
+if(new Set(sourceIds).size!==sourceIds.length) throw new Error('DUPLICATE_SOURCE_IDS_IN_REGISTRY');
+if(complementarySources.length===expandedComplementaryIds.length) {
+  const actualComplementaryIds=complementarySources.map(x=>x.id).sort();
+  if(JSON.stringify(actualComplementaryIds)!==JSON.stringify(expandedComplementaryIds))
+    throw new Error('EXPANDED_COMPLEMENTARY_SOURCE_SET_MISMATCH');
+}
+for(const source of allSources) {
+  if(!/^[a-f0-9]{40}$/i.test(String(source.revision||'')))
+    throw new Error(`SOURCE_REVISION_NOT_PINNED_TO_COMMIT:${source.id}`);
+}
+if(JSON.stringify(sourceIds)!==JSON.stringify(adapterIds)) throw new Error('ADAPTER_IDS_DO_NOT_MATCH_SOURCE_REGISTRY');
+if(JSON.stringify(sourceIds)!==JSON.stringify(ownerIds)) throw new Error('OWNERSHIP_IDS_DO_NOT_MATCH_SOURCE_REGISTRY');
 if(adapters.canonical_control_plane!=='N07') throw new Error('ADAPTER_CONTROL_PLANE_INVALID');
 
 for(const p of adapters.providers){
@@ -30,8 +50,8 @@ for(const p of adapters.providers){
 console.log(JSON.stringify({
   ok:true,
   primary_upstreams:16,
-  complementary_sources:6,
-  total_sources:22,
+  complementary_sources:complementarySources.length,
+  total_sources:allSources.length,
   adapter_roots:'integrations/external/*',
   control_plane:'N07'
 },null,2));
