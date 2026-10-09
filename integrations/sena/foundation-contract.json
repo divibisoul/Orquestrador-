@@ -114,7 +114,8 @@
     "held_out_evaluation_required": true,
     "regression_and_safety_gates_required": true,
     "human_approval_required_for_policy_promotion": true,
-    "must_not_duplicate_existing_n07_neural_learning_pipeline": true
+    "must_not_duplicate_existing_n07_neural_learning_pipeline": true,
+    "allow_online_training": false
   },
   "hard_gates": [
     "N07 capability is registered through the canonical Mesh contract",
