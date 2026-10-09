@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/divibisoul/Orquestrador-/grf"
@@ -99,6 +100,25 @@ func TestGRCEExecutorRuntimeCompletesWithHTTPBoundaryFixture(t *testing.T) {
 	}
 	if len(result.Evidence) == 0 || len(result.Capabilities) == 0 {
 		t.Fatalf("expected evidence and capabilities, got evidence=%d capabilities=%d", len(result.Evidence), len(result.Capabilities))
+	}
+}
+
+
+func TestGRCEEthicalReviewInputPreservesContentAndStatesPrinciples(t *testing.T) {
+	const source = "a\na\na\nCOMPLEXIDADE_EXCESSIVA; original trace sha256:abc123"
+	review := grceEthicalReviewInput("validar o estado candidato antes da ativação", source)
+	for _, required := range []string{
+		"autonomia",
+		"transparência",
+		"responsabilidade",
+		"cuidado com a comunidade",
+		"histórico causal",
+		"proveniência",
+		source,
+	} {
+		if !strings.Contains(review, required) {
+			t.Fatalf("ethical review context lost required principle/source %q", required)
+		}
 	}
 }
 
