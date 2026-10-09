@@ -2,7 +2,9 @@ package orchestrator
 
 import (
 	"context"
+	"encoding/json"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -66,6 +68,27 @@ func TestExternalAdapterProbeRegistered(t *testing.T) {
 	}
 }
 
+func TestExternalAdapterProbeDoesNotClaimRuntimeWithoutSourceWorktree(t *testing.T) {
+	e, r := newExternalTestEngine(t)
+	result, err := e.Execute(context.Background(), "external.langgraph.probe@1.0.0", nil, nil)
+	if err != nil {
+		t.Fatalf("metadata probe failed: %v", err)
+	}
+	var details map[string]any
+	if err := json.Unmarshal([]byte(result.Metadata["external_result_json"]), &details); err != nil {
+		t.Fatalf("probe response is not valid JSON: %v", err)
+	}
+	if details["execution_proven"] != false {
+		t.Fatalf("probe must never claim source execution: %#v", details)
+	}
+	root := filepath.Join(repositoryRoot(), r.byID["langgraph"].Root)
+	if !sourceWorktreeIsGit(root) {
+		if details["state"] != "PROJECTED" || details["source_present"] != false || result.Status != "degraded" {
+			t.Fatalf("missing source must remain PROJECTED/degraded, not PASS: result=%#v details=%#v", result, details)
+		}
+	}
+}
+
 func TestExternalAdapterAllThirtyTwoProvidersProbe(t *testing.T) {
 	e, r := newExternalTestEngine(t)
 	for id := range r.byID {
@@ -117,10 +140,15 @@ func TestExternalAdapterTransportAuthorityCannotBeOverridden(t *testing.T) {
 }
 
 func TestExternalComplementaryDescribeContractsAreRegistered(t *testing.T) {
-	e,_:=newExternalTestEngine(t)
+	e,r:=newExternalTestEngine(t)
 	for _,id:=range []string{"autogenesis","octos","hora-graph-core","mycelium","prime-agent","cuda-oxide"} {
-		if _,err:=e.Execute(context.Background(),"external."+id+".describe@1.0.0",nil,nil);err!=nil {
+		result,err:=e.Execute(context.Background(),"external."+id+".describe@1.0.0",nil,nil)
+		if err!=nil {
 			t.Fatalf("complementary describe failed for %s: %v",id,err)
+		}
+		root:=filepath.Join(repositoryRoot(),r.byID[id].Root)
+		if !sourceWorktreeIsGit(root) && result.Status!="degraded" {
+			t.Fatalf("unmaterialized complementary source %s must remain degraded, got %q",id,result.Status)
 		}
 	}
 }
