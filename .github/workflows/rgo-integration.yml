@@ -9,7 +9,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          submodules: true
+          # This contract job tests N07 Go packages only. Recursive checkout of
+          # every public adapter is unnecessary here and fails on upstream
+          # nested datasets/hle metadata; source materialization is covered by
+          # the dedicated pinned-source verification workflow.
+          submodules: false
+          fetch-depth: 1
       - uses: actions/setup-go@v5
         with: {go-version: '1.25'}
       - run: go test ./rgo
