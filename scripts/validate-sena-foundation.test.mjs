@@ -1,0 +1,78 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import { validateFoundation } from "./validate-sena-foundation.mjs";
+
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const readJson = (relativePath) => JSON.parse(fs.readFileSync(path.join(ROOT, relativePath), "utf8"));
+
+function fixtures() {
+  return {
+    contract: readJson("integrations/sena/foundation-contract.json"),
+    crosswalk: readJson("integrations/sena/public-source-crosswalk.json"),
+    registry: readJson("integrations/external-capabilities.json")
+  };
+}
+
+test("SENA foundation is structurally valid while remaining disabled and SPEC_ONLY", () => {
+  const { contract, crosswalk, registry } = fixtures();
+  assert.deepEqual(validateFoundation(contract, crosswalk, registry), []);
+  assert.equal(contract.component.architectural_status, "SPEC_ONLY");
+  assert.equal(contract.deployment.enabled_by_default, false);
+  assert.equal(contract.deployment.production_mode, "BLOCKED");
+});
+
+test("validator rejects enabling production or introducing another Mesh", () => {
+  const { contract, crosswalk, registry } = fixtures();
+  const mutated = structuredClone(contract);
+  mutated.deployment.enabled_by_default = true;
+  mutated.transport.additional_mesh_allowed = true;
+  const errors = validateFoundation(mutated, crosswalk, registry);
+  assert.ok(errors.some((error) => error.includes("enabled_by_default")));
+  assert.ok(errors.some((error) => error.includes("second Mesh")));
+});
+
+test("validator requires tracing, correlation, hashes and bounded deadlines", () => {
+  const { contract, crosswalk, registry } = fixtures();
+  const mutated = structuredClone(contract);
+  mutated.request_contract.required_fields = ["operation", "payload"];
+  const errors = validateFoundation(mutated, crosswalk, registry);
+  assert.ok(errors.some((error) => error.includes("trace_id")));
+  assert.ok(errors.some((error) => error.includes("correlation_id")));
+  assert.ok(errors.some((error) => error.includes("input_hash")));
+  assert.ok(errors.some((error) => error.includes("deadline_unix_ms")));
+});
+
+test("validator rejects source duplicates, missing pins and registry drift", () => {
+  const { contract, crosswalk, registry } = fixtures();
+  const duplicated = structuredClone(crosswalk);
+  duplicated.current_mainline_source_ids.push(structuredClone(duplicated.current_mainline_source_ids[0]));
+  assert.ok(validateFoundation(contract, duplicated, registry).some((error) => error.includes("must be unique")));
+
+  const unpinned = structuredClone(registry);
+  const source = unpinned.repositories.find((entry) => entry.id === "whisper");
+  source.revision = "";
+  assert.ok(validateFoundation(contract, crosswalk, unpinned).some((error) => error.includes("revision-pinned: whisper")));
+
+  const missing = structuredClone(registry);
+  missing.repositories = missing.repositories.filter((entry) => entry.id !== "kokoro");
+  assert.ok(validateFoundation(contract, crosswalk, missing).some((error) => error.includes("does not contain kokoro")));
+});
+
+test("validator preserves explicitly open concurrent fronts and hard governance gates", () => {
+  const { contract, crosswalk, registry } = fixtures();
+  const noCorrelation = structuredClone(contract);
+  noCorrelation.transport.preserve_correlation_id = false;
+  const errors = validateFoundation(noCorrelation, crosswalk, registry);
+  assert.ok(errors.some((error) => error.includes("correlation_id preservation")));
+
+  const badFronts = structuredClone(crosswalk);
+  badFronts.active_integration_fronts[0].observed_state = "MERGED";
+  assert.ok(validateFoundation(contract, badFronts, registry).some((error) => error.includes("marked open")));
+
+  const noEtR = structuredClone(contract);
+  noEtR.hard_gates = noEtR.hard_gates.filter((gate) => !gate.includes("SARA ETR"));
+  assert.ok(validateFoundation(noEtR, crosswalk, registry).some((error) => error.includes("SARA ETR and JEV")));
+});
