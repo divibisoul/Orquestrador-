@@ -1,0 +1,39 @@
+name: SENA foundation contract
+
+on:
+  pull_request:
+    paths:
+      - "integrations/sena/**"
+      - "docs/SENA_SOUL_FUSION_AUDIT_2026-10-09.md"
+      - "scripts/validate-sena-foundation*"
+      - ".github/workflows/sena-foundation-contract.yml"
+  push:
+    branches: ["main"]
+    paths:
+      - "integrations/sena/**"
+      - "docs/SENA_SOUL_FUSION_AUDIT_2026-10-09.md"
+      - "scripts/validate-sena-foundation*"
+      - ".github/workflows/sena-foundation-contract.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  contract:
+    name: Validate SENA foundation boundaries
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Syntax checks
+        run: |
+          node --check scripts/validate-sena-foundation.mjs
+          node --check scripts/validate-sena-foundation.test.mjs
+      - name: Validate contract and pinned-source crosswalk
+        run: node scripts/validate-sena-foundation.mjs
+      - name: Run regression tests
+        run: node --test scripts/validate-sena-foundation.test.mjs
