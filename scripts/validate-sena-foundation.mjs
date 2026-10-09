@@ -69,6 +69,62 @@ export function validateFoundation(contract, crosswalk, canonicalRegistry, route
     }
   }
 
+  const expandedSources = crosswalk?.expanded_public_fusion_sources ?? [];
+  const expectedExpandedOwners = {
+    "autogenesis": "N07",
+    "octos": "N07",
+    "hora-graph-core": "N01",
+    "mycelium": "N04",
+    "prime-agent": "N06",
+    "cuda-oxide": "N07",
+    "bijux-dag-runtime": "N07",
+    "ouro-loop": "N07",
+    "recuris": "N06",
+    "fedml": "N07",
+    "hivemind": "N07",
+    "temporal": "N07",
+    "cognitive-workspace": "N06",
+    "ravana": "N06",
+    "ray": "N07",
+    "nats-go": "N07"
+  };
+  const expandedIds = expandedSources.map((source) => source?.id);
+  const expandedSet = new Set(expandedIds);
+  requireValue(expandedSources.length === Object.keys(expectedExpandedOwners).length,
+    "expanded public fusion map must account for all 16 pinned complementary sources from PR #152");
+  requireValue(expandedSet.size === expandedIds.length, "expanded public fusion source IDs must be unique");
+  const candidateSourceIds = new Set(
+    (crosswalk?.candidate_source_sets_in_open_prs ?? []).flatMap((set) => set?.source_ids ?? [])
+  );
+  for (const [id, expectedOwner] of Object.entries(expectedExpandedOwners)) {
+    requireValue(expandedSet.has(id), "expanded public fusion map is missing " + id);
+    const source = expandedSources.find((item) => item?.id === id);
+    if (!source) continue;
+    requireValue(source.owner === expectedOwner, "expanded source owner is invalid for " + id);
+    requireValue(typeof source.source_url === "string" && source.source_url.startsWith("https://github.com/"),
+      "expanded source URL must be explicit for " + id);
+    requireValue(/^[a-f0-9]{40}$/i.test(String(source.revision ?? "")),
+      "expanded source revision must be pinned to a commit for " + id);
+    requireValue(source.pin_source === "divibisoul/Orquestrador-#152",
+      "expanded source pin must be traceable to open federation PR #152 for " + id);
+    requireValue(source.pin_state === "PINNED_IN_OPEN_PR_NOT_CANONICAL_ON_SENA_BRANCH",
+      "expanded source must not be misrepresented as canonical/merged for " + id);
+    requireValue(Array.isArray(source.domains) && source.domains.length > 0,
+      "expanded source domains must be explicit for " + id);
+    requireValue(typeof source.sena_use === "string" && source.sena_use.trim().length > 0,
+      "expanded source must explain intended SENA improvement for " + id);
+    requireValue(typeof source.boundary === "string" && source.boundary.trim().length > 0,
+      "expanded source must state its SOUL ownership boundary for " + id);
+    requireValue(source.connection_rule?.includes("canonical VagusBus route"),
+      "expanded source must preserve the canonical VagusBus connection rule for " + id);
+    requireValue(candidateSourceIds.has(id),
+      "expanded source must remain linked to an existing open public-source front for " + id);
+  }
+  requireValue((crosswalk?.public_fusion_invariants ?? []).some((item) => item.includes("Every SENA-originated SuperGPU request/result and Prefrontal candidate must traverse")),
+    "public fusion map must preserve the VagusBus-only SENA/SuperGPU/Prefrontal route");
+  requireValue((crosswalk?.public_fusion_invariants ?? []).some((item) => item.includes("GPU resources are admitted only by SuperGPU")),
+    "public fusion map must preserve SuperGPU admission and SARA/JEV/HortaCore authority");
+
   const observedPullRequests = [
     ...(crosswalk?.candidate_source_sets_in_open_prs ?? []),
     ...(crosswalk?.active_integration_fronts ?? [])
