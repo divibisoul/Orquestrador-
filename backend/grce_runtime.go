@@ -472,7 +472,7 @@ func (r *GRCEExecutorRuntime) validateRGO(ctx context.Context, state grf.State, 
 		artifactStages = append(artifactStages, artifact.Stage)
 	}
 	description := fmt.Sprintf(
-		"Validate GRCE candidate envelope %s; candidate_hash=%s; original_state_hash=%s; artifact_count=%d; stages=%s. Original content remains preserved in hash-linked candidate artifacts and evidence references.",
+		"Validate GRCE candidate envelope %s; candidate_hash=%s; original_state_hash=%s; artifact_count=%d; stages=%s. Original content remains preserved in hash-linked candidate artifacts and evidence references. Criteria: autonomy, transparency, responsibility, and care for the community; provenance and original state remain intact; this check validates the envelope and hashes only.",
 		state.ID, inputHash, originalStateHash, len(rawArtifacts), strings.Join(artifactStages, ","),
 	)
 	finding := map[string]any{
