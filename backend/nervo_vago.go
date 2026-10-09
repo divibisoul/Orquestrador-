@@ -198,6 +198,16 @@ func sha256Hex(raw []byte) string {
 	return hex.EncodeToString(sum[:])
 }
 
+// HashNervoVagoValue hashes a JSON-serializable value using the canonical
+// Nervo Vago SHA-256 encoding. encoding/json sorts map keys deterministically.
+func HashNervoVagoValue(value any) (string, error) {
+	raw, err := json.Marshal(value)
+	if err != nil {
+		return "", fmt.Errorf("NERVO_VAGO_VALUE_HASH_ENCODE:%w", err)
+	}
+	return sha256Hex(raw), nil
+}
+
 func RegisterNervoVagoOperations(e *orchestrator.Engine, sara *SARAProxy) error {
 	if e == nil {
 		return errors.New("orchestrator engine is required")
