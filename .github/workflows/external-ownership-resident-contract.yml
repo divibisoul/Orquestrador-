@@ -14,8 +14,8 @@ jobs:
         with:
           submodules: false
 
-      - name: Materialize SOUL top-level submodules without recursion
-        run: node scripts/materialize-top-level-submodules.mjs
+      # This job validates JSON contracts only; source worktrees are verified
+      # in the dedicated pinned-source runtime workflow.
       - uses: actions/setup-node@v4
         with:
           node-version: 22
