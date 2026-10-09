@@ -539,7 +539,7 @@
         "request-reply"
       ],
       "status": "adapter-planned",
-      "mode": "transport-reinforcement"
+      "mode": "complementary"
     }
   ],
   "public_integration_rule": "All public sources are reachable through N07 canonical federation, with preferred affinity by function; no source becomes a SOUL authority."
