@@ -524,6 +524,11 @@ func decodeJSON(r *http.Request, limit int64, out any) error {
 	return decoder.Decode(out)
 }
 
+// DecodeJSON reuses the backend's bounded request decoder from other N07 handlers.
+func DecodeJSON(r *http.Request, limit int64, out any) error {
+	return decodeJSON(r, limit, out)
+}
+
 func writeJSON(w http.ResponseWriter, status int, body any) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
