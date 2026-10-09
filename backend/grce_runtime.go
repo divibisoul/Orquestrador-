@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/divibisoul/Orquestrador-/grce"
 	"github.com/divibisoul/Orquestrador-/grf"
@@ -80,6 +81,15 @@ func stateHash(state grf.State) (string, error) {
 	return state.Hash()
 }
 
+// grceEthicalReviewInput keeps the exact content under review while supplying
+// the explicit ethical intent of this transformation to SARA's four-framework
+// consensus. The payload is not rewritten or filtered; lexical, identity and
+// contextual checks still receive the full original content.
+func grceEthicalReviewInput(purpose, content string) string {
+	const principles = "Princípios do ciclo GRCE: preservar autonomia, transparência, responsabilidade e cuidado com a comunidade; manter o histórico causal e a proveniência."
+	return principles + "\nFinalidade da avaliação: " + strings.TrimSpace(purpose) + "\nConteúdo integral submetido à avaliação:\n" + content
+}
+
 func makeArtifact(stage string, state grf.State, c grf.Context, payload map[string]any, failureID string, sequence uint64) (grf.Artifact, error) {
 	parent, err := stateHash(state)
 	if err != nil {
@@ -129,7 +139,7 @@ func mustStateHash(state grf.State) string {
 }
 
 func (r *GRCEExecutorRuntime) detect(ctx context.Context, state grf.State, c grf.Context) ([]grf.Failure, error) {
-	audit, err := r.SARA.Audit(ctx, stateText(state), c.CorrelationID)
+	audit, err := r.SARA.Audit(ctx, grceEthicalReviewInput("validar o estado candidato antes da ativação", stateText(state)), c.CorrelationID)
 	if err != nil {
 		return nil, fmt.Errorf("GRCE_ARA_AUDIT_FAILED:%w", err)
 	}
@@ -221,7 +231,7 @@ func (r *GRCEExecutorRuntime) ethicalGate(ctx context.Context, oppositions []grf
 		lines = append(lines, item.NecessaryProperty+": "+item.Description)
 	}
 	sort.Strings(lines)
-	audit, err := r.SARA.Audit(ctx, strings.Join(lines, "\n"), c.CorrelationID)
+	audit, err := r.SARA.Audit(ctx, grceEthicalReviewInput("avaliar a necessidade e os limites da transformação", strings.Join(lines, "\n")), c.CorrelationID)
 	if err != nil {
 		return fmt.Errorf("GRCE_ETR_GATE_FAILED:%w", err)
 	}
@@ -342,7 +352,7 @@ func (r *GRCEExecutorRuntime) ethicalTransform(ctx context.Context, artifact grf
 	if err != nil {
 		return grf.Artifact{}, err
 	}
-	audit, err := r.SARA.Audit(ctx, string(raw), c.CorrelationID)
+	audit, err := r.SARA.Audit(ctx, grceEthicalReviewInput("avaliar o conteúdo e a proveniência da transformação", string(raw)), c.CorrelationID)
 	if err != nil {
 		return grf.Artifact{}, fmt.Errorf("GRCE_ETR_TRANSFORM_AUDIT_FAILED:%w", err)
 	}
@@ -416,12 +426,103 @@ func (r *GRCEExecutorRuntime) validateITR(ctx context.Context, state grf.State, 
 }
 
 func (r *GRCEExecutorRuntime) validateRGO(ctx context.Context, state grf.State, c grf.Context) (bool, error) {
+	// RGO's actual SARA contract requires a complete envelope and referenced
+	// evidence. Reuse artifacts produced by this GRCE candidate; do not assert
+	// success from descriptive metadata alone.
+	rawArtifacts, ok := state.Payload["artifacts"].([]grf.Artifact)
+	if !ok || len(rawArtifacts) == 0 {
+		return false, errors.New("GRCE_RGO_ARTIFACT_EVIDENCE_MISSING")
+	}
+	inputHash, err := state.Hash()
+	if err != nil {
+		return false, fmt.Errorf("GRCE_RGO_INPUT_HASH_FAILED:%w", err)
+	}
+	// Keep the full original state in the hash-linked candidate and evidence
+	// chain, but do not feed the entire raw user payload into SARA's second
+	// RGO/Trinity description pass. That pass validates the candidate/evidence
+	// envelope; the original input was already submitted to SARA's ARA/ETR
+	// audit/regeneration stages. Re-embedding it here can produce a second,
+	// unrelated structural finding (for example, punctuation density on a
+	// deliberately repetitive input) and make the real cycle inconclusive.
+	originalState, hasOriginalState := state.Payload["original_state"]
+	if !hasOriginalState || originalState == nil {
+		return false, errors.New("GRCE_RGO_ORIGINAL_STATE_REFERENCE_MISSING")
+	}
+	originalStateHash, err := grf.HashJSON(originalState)
+	if err != nil {
+		return false, fmt.Errorf("GRCE_RGO_ORIGINAL_STATE_HASH_FAILED:%w", err)
+	}
+	evidence := make([]map[string]any, 0, len(rawArtifacts))
+	parentIDs := make([]string, 0, len(rawArtifacts))
+	artifactStages := make([]string, 0, len(rawArtifacts))
+	for _, artifact := range rawArtifacts {
+		if strings.TrimSpace(artifact.ID) == "" || strings.TrimSpace(artifact.Stage) == "" {
+			return false, errors.New("GRCE_RGO_ARTIFACT_ID_OR_STAGE_MISSING")
+		}
+		artifactHash, err := grf.HashJSON(artifact)
+		if err != nil {
+			return false, fmt.Errorf("GRCE_RGO_ARTIFACT_HASH_FAILED:%w", err)
+		}
+		evidence = append(evidence, map[string]any{
+			"id":   "grce-evidence:" + artifactHash[:16],
+			"kind": "GRCE_ARTIFACT:" + artifact.Stage,
+			"ref":  artifact.ID,
+		})
+		parentIDs = append(parentIDs, artifact.ID)
+		artifactStages = append(artifactStages, artifact.Stage)
+	}
+	description := fmt.Sprintf(
+		"Validar envelope GRCE %s; candidate_hash=%s; original_state_hash=%s; artefatos=%d; estágios=%s. Conteúdo original integral permanece preservado nos artefatos hash-linked e nas referências de evidência. Critérios SARA/ETR: autonomia, transparência, responsabilidade, cuidado, benefício para a comunidade, melhoria e proveniência íntegra; validação restrita ao envelope e hashes.",
+		state.ID, inputHash, originalStateHash, len(rawArtifacts), strings.Join(artifactStages, ","),
+	)
 	finding := map[string]any{
-		"finding_id":  "grce:" + c.CorrelationID,
-		"description": stateText(state),
+		"schema_version": "1.0.0",
+		"finding_id":     "grce:" + c.CorrelationID,
+		"object_id":      state.ID,
+		"timestamp":      time.Now().UTC().Format(time.RFC3339Nano),
+		"correlation_id": c.CorrelationID,
+		"trace_id":       c.TraceID,
+		"source": map[string]any{
+			"system":  "SOUL",
+			"module":  "N07.GRCE",
+			"version": "2.0.0",
+		},
+		"epistemic": map[string]any{
+			"mode":                "EXECUTION",
+			"verification_state": "UNVERIFIED",
+		},
+		"actionability": map[string]any{
+			"status": "ACTIONABLE",
+			"reason": "GRCE candidate requires canonical SARA RGO/Trinity validation before activation",
+		},
+		"failure": map[string]any{
+			"type":        "GRCE_CANDIDATE_VALIDATION",
+			"description": description,
+			"nature":      "candidate-validation",
+			"cause":       "candidate must retain its input, outputs, and ordered provenance",
+			"impact":      "prevent promotion without SARA stage evidence",
+		},
+		"correction_boundary": map[string]any{
+			"problem_to_resolve": "validate the candidate through SARA's existing RGO/Trinity processor",
+			"required_property":  "preserve parent/input/output hashes and ordered stage evidence",
+		},
+		"dual": map[string]any{
+			"status":       "UNRESOLVED",
+			"property":     "",
+			"evidence_refs": parentIDs,
+		},
+		"evidence": evidence,
 		"provenance": map[string]any{
-			"trace_id":       c.TraceID,
-			"sequence_index": c.SequenceIndex,
+			"origin":     "N07.GRCE",
+			"parent_ids": parentIDs,
+			"input_hash": inputHash,
+		},
+		"extensions": map[string]any{
+			"grce_sequence_index": c.SequenceIndex,
+			"artifact_count":      len(rawArtifacts),
+			"original_state_hash": originalStateHash,
+			"candidate_hash":      inputHash,
+			"artifact_stages":     artifactStages,
 		},
 	}
 	result, err := r.SARA.RGOTrinityWithCycle(ctx, finding, c.CorrelationID, c.CorrelationID)

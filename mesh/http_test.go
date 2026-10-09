@@ -246,3 +246,70 @@ func TestCopyStructuredSuperAGIFabricMetadata(t *testing.T) {
 		t.Fatalf("unexpected compute values: %s", metadata["compute_values_json"])
 	}
 }
+
+
+func TestEnhancedFederatedGatewayAuthenticatedPingDoesNotReuseNonce(t *testing.T) {
+	t.Setenv("N07_MESH_HMAC_SECRET", testSecret)
+	t.Setenv("N07_MESH_ALLOW_UNAUTH_LOCAL", "false")
+
+	n, err := neural.New(8, .05)
+	if err != nil {
+		t.Fatal(err)
+	}
+	c, err := prefrontal.New(.10, 32)
+	if err != nil {
+		t.Fatal(err)
+	}
+	g := supergpuCompat.New(nil)
+	g.Discover()
+	engine, err := orchestrator.New(n, c, g)
+	if err != nil {
+		t.Fatal(err)
+	}
+	handler := NewEnhancedFederatedHTTPGateway(engine)
+
+	wire := canonicalRequest("request", "mesh.ping", "trace-enhanced-header-hmac", nil)
+	raw := canonicalWireEnvelope{
+		Protocol: wire["protocol"].(string),
+		ContractVersion: wire["contractVersion"].(string),
+		ID: wire["id"].(string),
+		CorrelationID: wire["correlationId"].(string),
+		Source: wire["source"].(string),
+		Target: wire["target"].(string),
+		Kind: wire["kind"].(string),
+		Capability: wire["capability"].(string),
+		Payload: wire["payload"].(map[string]any),
+		Timestamp: wire["timestamp"].(int64),
+		Nonce: wire["nonce"].(string),
+	}
+	canonical, err := canonicalN01Bytes(raw, raw.Nonce)
+	if err != nil {
+		t.Fatal(err)
+	}
+	mac := hmac.New(sha256.New, []byte(testSecret))
+	_, _ = mac.Write(canonical)
+	signature := hex.EncodeToString(mac.Sum(nil))
+	body, err := json.Marshal(wire)
+	if err != nil {
+		t.Fatal(err)
+	}
+	req := httptest.NewRequest(http.MethodPost, "/api/soul-mesh", bytes.NewReader(body))
+	req.Header.Set("x-soul-mesh-nonce", raw.Nonce)
+	req.Header.Set("x-soul-mesh-hmac", signature)
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("authenticated federated mesh.ping should pass one authentication boundary, got %d: %s", rec.Code, rec.Body.String())
+	}
+	var response map[string]any
+	if err := json.Unmarshal(rec.Body.Bytes(), &response); err != nil {
+		t.Fatal(err)
+	}
+	if response["correlationId"] != "trace-enhanced-header-hmac" || response["source"] != "N07" || response["target"] != "N01" || response["kind"] != "response" {
+		t.Fatalf("unexpected authenticated ping response: %#v", response)
+	}
+	if err := verifyResponseHMAC(response, testSecret); err != nil {
+		t.Fatalf("authenticated ping response HMAC did not validate: %v", err)
+	}
+}

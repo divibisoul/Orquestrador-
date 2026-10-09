@@ -3,6 +3,8 @@ package orchestrator
 import (
 	"context"
 	"os"
+	"os/exec"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -122,5 +124,51 @@ func TestExternalComplementaryDescribeContractsAreRegistered(t *testing.T) {
 		if _,err:=e.Execute(context.Background(),"external."+id+".describe@1.0.0",nil,nil);err!=nil {
 			t.Fatalf("complementary describe failed for %s: %v",id,err)
 		}
+	}
+}
+
+
+func TestInspectExternalSourceRequiresOwnGitWorktreeAndPinnedRevision(t *testing.T) {
+	root := t.TempDir()
+	runGit := func(args ...string) string {
+		t.Helper()
+		cmd := exec.Command("git", append([]string{"-C", root}, args...)...)
+		output, err := cmd.CombinedOutput()
+		if err != nil {
+			t.Fatalf("git %v failed: %v: %s", args, err, output)
+		}
+		return strings.TrimSpace(string(output))
+	}
+	if output, err := exec.Command("git", "init", root).CombinedOutput(); err != nil {
+		t.Fatalf("git init failed: %v: %s", err, output)
+	}
+	runGit("config", "user.name", "SOUL source status test")
+	runGit("config", "user.email", "soul-source-status@example.invalid")
+	if err := os.WriteFile(filepath.Join(root, "README.md"), []byte("committed source\n"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	runGit("add", "README.md")
+	runGit("commit", "-m", "fixture repository for Git-worktree status")
+	revision := runGit("rev-parse", "HEAD")
+
+	matched := inspectExternalSource(root, revision)
+	if !matched.Present || !matched.RevisionMatched || matched.State != "PIN_MATCH" || matched.ObservedRevision != revision {
+		t.Fatalf("matching source worktree misclassified: %#v", matched)
+	}
+	mismatch := inspectExternalSource(root, strings.Repeat("0", 40))
+	if !mismatch.Present || mismatch.RevisionMatched || mismatch.State != "REVISION_MISMATCH" {
+		t.Fatalf("revision mismatch misclassified: %#v", mismatch)
+	}
+
+	emptySubdirectory := filepath.Join(root, "uninitialized-submodule")
+	if err := os.Mkdir(emptySubdirectory, 0700); err != nil {
+		t.Fatal(err)
+	}
+	missing := inspectExternalSource(emptySubdirectory, revision)
+	if missing.Present || missing.RevisionMatched || missing.State != "MISSING_WORKTREE" || missing.ObservedRevision != "" {
+		t.Fatalf("empty subdirectory was misclassified as a source checkout: %#v", missing)
+	}
+	if inspectExternalSource(filepath.Join(root, "does-not-exist"), revision).Present {
+		t.Fatal("nonexistent external source reported present")
 	}
 }

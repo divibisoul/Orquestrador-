@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/divibisoul/Orquestrador-/grf"
@@ -36,9 +37,48 @@ func TestGRCEExecutorRuntimeCompletesWithHTTPBoundaryFixture(t *testing.T) {
 				"federated_context_hash": "sha256:test-context",
 			})
 		case "/v1/rgo/trinity":
+			// Assert the boundary validates the hash-linked candidate envelope,
+			// not a second copy of the entire original input. Original state must
+			// remain traceable through hashes and artifact evidence references.
+			var request map[string]any
+			if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+				t.Fatal(err)
+			}
+			finding, ok := request["finding"].(map[string]any)
+			if !ok {
+				t.Fatalf("RGO finding missing: %#v", request)
+			}
+			failure, ok := finding["failure"].(map[string]any)
+			if !ok {
+				t.Fatalf("RGO failure envelope missing: %#v", finding)
+			}
+			description, _ := failure["description"].(string)
+			if len(description) == 0 || len(description) > 1024 {
+				t.Fatalf("RGO description must be compact, got %d bytes", len(description))
+			}
+			if !strings.Contains(description, "original_state_hash=") {
+				t.Fatalf("RGO description does not bind the original state hash: %q", description)
+			}
+			extensions, ok := finding["extensions"].(map[string]any)
+			if !ok || extensions["original_state_hash"] == "" || extensions["candidate_hash"] == "" {
+				t.Fatalf("RGO extensions must preserve original and candidate hashes: %#v", finding["extensions"])
+			}
+			evidence, ok := finding["evidence"].([]any)
+			if !ok || len(evidence) == 0 {
+				t.Fatalf("RGO evidence references missing: %#v", finding["evidence"])
+			}
+			// Contract fixture mirrors the evidence fields returned by SARA's
+			// existing RGO/Trinity processor. Runtime validation still requires
+			// actual TRINITY, ERU, and MMD stage names; it must not infer them.
 			writeGRCEJSONTest(w, map[string]any{
 				"final_status": "VALIDATED",
 				"finding_id": "grce:corr-test",
+				"stages": []any{
+					map[string]any{"stage": "RGO", "finding_id": "grce:corr-test", "rgo_evidence_chain_hash": "sha256:rgo", "output_hash": "sha256:rgo-output"},
+					map[string]any{"stage": "TRINITY::ARA", "finding_id": "grce:corr-test", "rgo_evidence_chain_hash": "sha256:trinity", "output_hash": "sha256:trinity-output"},
+					map[string]any{"stage": "ERU", "finding_id": "grce:corr-test", "rgo_evidence_chain_hash": "sha256:eru", "output_hash": "sha256:eru-output"},
+					map[string]any{"stage": "MMD", "finding_id": "grce:corr-test", "rgo_evidence_chain_hash": "sha256:mmd", "output_hash": "sha256:mmd-output"},
+				},
 			})
 		default:
 			http.NotFound(w, r)
@@ -90,6 +130,25 @@ func TestGRCEExecutorRuntimeCompletesWithHTTPBoundaryFixture(t *testing.T) {
 	}
 	if len(result.Evidence) == 0 || len(result.Capabilities) == 0 {
 		t.Fatalf("expected evidence and capabilities, got evidence=%d capabilities=%d", len(result.Evidence), len(result.Capabilities))
+	}
+}
+
+
+func TestGRCEEthicalReviewInputPreservesContentAndStatesPrinciples(t *testing.T) {
+	const source = "a\na\na\nCOMPLEXIDADE_EXCESSIVA; original trace sha256:abc123"
+	review := grceEthicalReviewInput("validar o estado candidato antes da ativação", source)
+	for _, required := range []string{
+		"autonomia",
+		"transparência",
+		"responsabilidade",
+		"cuidado com a comunidade",
+		"histórico causal",
+		"proveniência",
+		source,
+	} {
+		if !strings.Contains(review, required) {
+			t.Fatalf("ethical review context lost required principle/source %q", required)
+		}
 	}
 }
 

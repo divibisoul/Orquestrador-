@@ -161,3 +161,37 @@ func TestNervoVagoStrictNumericParsing(t *testing.T) {
 		t.Fatal("ttl parser accepted trailing non-numeric data")
 	}
 }
+
+
+func TestHashNervoVagoValueDeterministic(t *testing.T) {
+	first := map[string]any{"b": 2, "a": 1}
+	second := map[string]any{}
+	second["a"] = 1
+	second["b"] = 2
+
+	firstHash, err := HashNervoVagoValue(first)
+	if err != nil {
+		t.Fatal(err)
+	}
+	secondHash, err := HashNervoVagoValue(second)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if firstHash == "" || firstHash != secondHash {
+		t.Fatalf("equivalent JSON objects must produce the same hash: %q != %q", firstHash, secondHash)
+	}
+
+	changedHash, err := HashNervoVagoValue(map[string]any{"a": 1, "b": 3})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if changedHash == firstHash {
+		t.Fatal("different JSON values must not produce the same hash")
+	}
+}
+
+func TestHashNervoVagoValueRejectsUnsupportedValue(t *testing.T) {
+	if _, err := HashNervoVagoValue(map[string]any{"unsupported": make(chan int)}); err == nil {
+		t.Fatal("unsupported JSON value must fail closed")
+	}
+}
