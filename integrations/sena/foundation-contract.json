@@ -1,0 +1,155 @@
+{
+  "schema_version": "1.0.0",
+  "snapshot_date": "2026-10-09",
+  "component": {
+    "id": "SENA",
+    "name": "Sistema Estelar Neural Adaptativo",
+    "capability_candidate": "sena.adaptive.evaluate@1.0.0",
+    "architectural_status": "SPEC_ONLY",
+    "integration_owner": "N07",
+    "new_nucleus": false,
+    "new_mesh": false,
+    "purpose": "Optional adaptive analysis capability coordinated by the existing SOUL control plane"
+  },
+  "deployment": {
+    "enabled_by_default": false,
+    "initial_mode": "shadow",
+    "production_mode": "BLOCKED",
+    "allow_host_output_mutation": false,
+    "allow_autonomous_external_actions": false,
+    "allow_online_training": false,
+    "fail_closed_for_decision_affecting_requests": true,
+    "health_is_execution_proof": false
+  },
+  "transport": {
+    "canonical_mesh_contract": "SOUL Mesh 1.1.0",
+    "authority": "N07",
+    "additional_mesh_allowed": false,
+    "integration_pattern": "registered N07 capability + bounded optional sidecar adapter",
+    "preserve_trace_id": true,
+    "preserve_correlation_id": true,
+    "preserve_source_revision": true,
+    "max_request_bytes": 1048576,
+    "require_deadline": true
+  },
+  "request_contract": {
+    "required_fields": [
+      "operation",
+      "trace_id",
+      "correlation_id",
+      "input_hash",
+      "deadline_unix_ms",
+      "mode",
+      "payload"
+    ],
+    "allowed_modes": [
+      "shadow",
+      "assist",
+      "offline_evaluation"
+    ],
+    "payload_schema_must_be_versioned": true,
+    "unknown_fields_policy": "reject_or_explicitly_preserve_by_versioned_contract"
+  },
+  "response_contract": {
+    "required_fields": [
+      "status",
+      "trace_id",
+      "correlation_id",
+      "input_hash",
+      "output_hash",
+      "evidence_state",
+      "source_revision"
+    ],
+    "evidence_states": [
+      "REAL",
+      "PROJECTED",
+      "BLOCKED",
+      "UNMEASURABLE"
+    ],
+    "no_synthetic_pass": true,
+    "shadow_output_must_not_replace_host_output": true,
+    "timeout_and_error_must_be_observable": true
+  },
+  "authority_boundaries": {
+    "orchestration_and_federation": "N07",
+    "state_identity_and_device_context": "N01",
+    "multiagent_native_execution": "N02",
+    "audio_and_speech": "N03",
+    "tools_documents_artifacts": "N04",
+    "conversation_retrieval_and_inference": "N05",
+    "cognition_planning_and_agent_execution": "N06",
+    "regeneration_governance_provenance": "SARA",
+    "typed_decision_and_guardrails": "JEV",
+    "ethics_gate": "SARA ETR + JEV guardrails; neural score is advisory, not authorization",
+    "regeneration_chain": "SARA ARA -> ETR -> ITR with existing ERU/RGO/MMD evidence",
+    "persistence": "Existing N01/SARA-owned boundaries; no second persistent-memory authority",
+    "compute_admission": "Existing N07 SuperGPU/Octacore/Prefrontal controls; no independent SENA scheduler",
+    "signal_transport": "Existing VagusBus; it is not a second Mesh",
+    "state_persistence": "Existing HortaCore authority; do not duplicate it"
+  },
+  "resource_policy": {
+    "admission_owner": "N07",
+    "require_budget_for_cpu_ram_vram_queue_and_deadline": true,
+    "thresholds_must_come_from_observed_configured_host_budgets": true,
+    "fixed_cpu_or_gpu_percentage_is_not_sufficient_evidence": true,
+    "bounded_queue": true,
+    "cooperative_cancellation": true,
+    "memory_limit_required": true,
+    "overload_behavior": "BLOCKED or UNMEASURABLE with evidence; original host path remains authoritative"
+  },
+  "memory_policy": {
+    "initial_access": "read_only",
+    "no_raw_sensitive_prompt_logging_by_default": true,
+    "direct_database_writes": false,
+    "no_second_persistent_memory_authority": true,
+    "retention_and_redaction_policy_required_before_shadow_data_capture": true,
+    "checkpoint_policy": "non-executable tensor/state format; reject untrusted pickle-based checkpoints"
+  },
+  "learning_policy": {
+    "current_algorithm_status": "UNVERIFIED_CANDIDATE_DESIGN",
+    "first_training_mode": "offline_evaluation_only",
+    "online_training_in_production": false,
+    "reward_definition_must_be_task_specific_and_versioned": true,
+    "action_space_must_match_policy_and_value_contracts": true,
+    "held_out_evaluation_required": true,
+    "regression_and_safety_gates_required": true,
+    "human_approval_required_for_policy_promotion": true,
+    "must_not_duplicate_existing_n07_neural_learning_pipeline": true
+  },
+  "hard_gates": [
+    "N07 capability is registered through the canonical Mesh contract",
+    "adapter and upstream revisions are explicitly pinned",
+    "runtime configuration and credentials are present",
+    "trace_id and correlation_id survive every hop",
+    "input and output hashes plus provenance are recorded",
+    "resource admission, queue limits, deadlines and cancellation are enforced",
+    "SARA ETR and applicable JEV guardrails accept decision-affecting outputs",
+    "SARA ARA->ETR->ITR and ERU/RGO/MMD evidence remain the governance authority",
+    "memory reads and writes respect N01/SARA ownership and retention policy",
+    "actual authenticated end-to-end evidence exists before state is marked REAL",
+    "all required CI and regression gates pass before promotion",
+    "human-approved rollback and kill-switch tests pass before production"
+  ],
+  "prohibited_shortcuts": [
+    "random tensors or invented sensor data used as production input",
+    "monkey-patching host methods as the integration contract",
+    "claiming idle-resource-only execution without RAM/VRAM/queue/deadline admission evidence",
+    "using model confidence as a substitute for semantic compatibility or ethical approval",
+    "allowing health checks or green CI alone to imply runtime execution is REAL",
+    "duplicating Mesh, HortaCore, VagusBus, SARA governance or persistent-memory authority",
+    "changing shared capability registries while related recovery/federation pull requests are unresolved"
+  ],
+  "state_semantics": {
+    "SPEC_ONLY": "Contract/design exists; SENA runtime is not integrated or verified",
+    "PROJECTED": "Adapter boundary is present but live authenticated execution is not proved",
+    "REAL": "An authenticated end-to-end run produced verifiable outputs and provenance",
+    "BLOCKED": "A required dependency, authorization, gate or runtime configuration is absent",
+    "UNMEASURABLE": "Evidence is insufficient to determine behavior or resource use",
+    "no_fake_pass": true
+  },
+  "source_inventory": {
+    "canonical_registry": "integrations/external-capabilities.json",
+    "ownership_registry": "integrations/external-capability-ownership.json",
+    "note": "Reuse registry entries and capability owners; do not copy upstream source trees or infer executability from registry presence"
+  }
+}
