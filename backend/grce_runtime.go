@@ -11,6 +11,7 @@ import (
 
 	"github.com/divibisoul/Orquestrador-/grce"
 	"github.com/divibisoul/Orquestrador-/grf"
+	"github.com/divibisoul/Orquestrador-/orchestrator"
 	"github.com/divibisoul/Orquestrador-/protocol"
 	"github.com/divibisoul/Orquestrador-/supergpu"
 )
@@ -633,30 +634,79 @@ func NewGRCEVagoFeedback(gateway *NervoVagoGateway, target, kind string) func(co
 }
 
 func (r *GRCEExecutorRuntime) extractCapabilities(ctx context.Context, state grf.State, prov []grf.Provenance, evidence []grf.Evidence, c grf.Context) ([]grf.Capability, error) {
-	_ = ctx
 	if len(prov) == 0 || len(evidence) == 0 {
 		return nil, errors.New("GRCE_CAPABILITY_EXTRACTION_INPUT_MISSING")
 	}
 	failureID := evidence[0].FailureID
+	stateHashValue, err := stateHash(state)
+	if err != nil {
+		return nil, fmt.Errorf("GRCE_CAPABILITY_STATE_HASH_FAILED:%w", err)
+	}
 	hash, err := grf.HashJSON(map[string]any{
-		"failure":    failureID,
+		"failure":     failureID,
 		"correlation": c.CorrelationID,
-		"state":      state.Payload,
+		"state":       state.Payload,
 	})
 	if err != nil {
 		return nil, err
 	}
-	return []grf.Capability{{
+	capabilities := []grf.Capability{{
 		ID:          "capability:" + hash[:16],
-		Description: "preserve-and-transform capability derived from observed failure",
+		Description: "preserve-and-transform capability derived from observed failure; external augmentation requires explicit component and capability",
 		State:       grf.PROJECTED,
 		Provenance: grf.Provenance{
-			ParentHash:       mustStateHash(state),
-			InputHash:        mustStateHash(state),
-			OutputHash:       hash,
-			SequenceIndex:    c.SequenceIndex + 3000,
-			Stage:            "EXTRACT",
-			CausalFailureID:  failureID,
+			ParentHash:      stateHashValue,
+			InputHash:       stateHashValue,
+			OutputHash:      hash,
+			SequenceIndex:   c.SequenceIndex + 3000,
+			Stage:           "EXTRACT",
+			CausalFailureID: failureID,
 		},
-	}}, nil
+	}}
+
+	// External providers are discovery candidates only. The canonical N07
+	// resolver remains the owner of affinity, pinned source metadata and
+	// routing policy; GRCE never executes a provider from capability extraction.
+	component, _ := state.Payload["component"].(string)
+	requestedCapability, _ := state.Payload["capability"].(string)
+	if strings.TrimSpace(component) == "" || strings.TrimSpace(requestedCapability) == "" {
+		return capabilities, nil
+	}
+	plan, err := orchestrator.ResolveCapabilityUpgrade(ctx, component, requestedCapability)
+	if err != nil {
+		return nil, fmt.Errorf("GRCE_EXTERNAL_CAPABILITY_RESOLUTION_FAILED:%w", err)
+	}
+	for index, provider := range plan.DirectAugmenters {
+		candidate := map[string]any{
+			"provider":           provider.ID,
+			"source":             provider.Source,
+			"revision":           provider.Revision,
+			"component":          plan.Component,
+			"capability":         plan.RequestedCapability,
+			"adapter_state":      provider.AdapterState,
+			"evidence_state":     provider.Evidence,
+			"requires_explicit_adapter": plan.RequiresExplicitAdapter,
+		}
+		candidateHash, hashErr := grf.HashJSON(candidate)
+		if hashErr != nil {
+			return nil, fmt.Errorf("GRCE_EXTERNAL_CAPABILITY_HASH_FAILED:%w", hashErr)
+		}
+		capabilities = append(capabilities, grf.Capability{
+			ID: "external:" + provider.ID + ":" + candidateHash[:16],
+			Description: fmt.Sprintf(
+				"PROJECTED upstream candidate %s matches %q for %s at pinned revision %s; adapter=%s; execution requires explicit activation",
+				provider.ID, plan.RequestedCapability, plan.Component, provider.Revision, provider.AdapterState,
+			),
+			State: grf.PROJECTED,
+			Provenance: grf.Provenance{
+				ParentHash:      stateHashValue,
+				InputHash:       hash,
+				OutputHash:      candidateHash,
+				SequenceIndex:   c.SequenceIndex + 3001 + uint64(index),
+				Stage:           "EXTERNAL_AFFINITY_RESOLUTION",
+				CausalFailureID: failureID,
+			},
+		})
+	}
+	return capabilities, nil
 }
