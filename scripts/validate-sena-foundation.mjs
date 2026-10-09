@@ -7,7 +7,7 @@ function readJson(relativePath) {
   return JSON.parse(fs.readFileSync(path.join(ROOT, relativePath), "utf8"));
 }
 
-export function validateFoundation(contract, crosswalk, canonicalRegistry) {
+export function validateFoundation(contract, crosswalk, canonicalRegistry, route) {
   const errors = [];
   const requireValue = (condition, message) => {
     if (!condition) errors.push(message);
@@ -98,6 +98,33 @@ export function validateFoundation(contract, crosswalk, canonicalRegistry) {
   requireValue(contract?.learning_policy?.human_approval_required_for_policy_promotion === true, "policy promotion requires human approval");
   requireValue(contract?.state_semantics?.no_fake_pass === true, "state semantics must prohibit synthetic PASS");
 
+  requireValue(route?.status === "SPEC_ONLY", "SENA integration route must remain SPEC_ONLY");
+  requireValue(route?.invariants?.some((item) => item.includes("Nervo Vago and VagusBus are one logical signal transport")), "route must preserve the single Nervo Vago/VagusBus transport");
+  requireValue(route?.invariants?.some((item) => item.includes("SuperGPU owns compute admission")), "route must keep compute admission under SuperGPU");
+  requireValue(route?.invariants?.some((item) => item.includes("Neocortex Prefrontal owns evaluation")), "route must keep candidate evaluation under Prefrontal");
+  requireValue(route?.invariants?.some((item) => item.includes("HortaCore remains the authoritative state persistence")), "route must preserve HortaCore/SARA/JEV ownership");
+  const hops = route?.route ?? [];
+  const expectedHops = [
+    ["N07 SOUL Mesh 1.1.0", "SENA adapter"],
+    ["SENA adapter", "Nervo Vago / VagusBus"],
+    ["Nervo Vago / VagusBus", "SuperGPU"],
+    ["SuperGPU", "SENA general core"],
+    ["SENA general core", "Neocortex Prefrontal"],
+    ["Neocortex Prefrontal", "SARA ETR + JEV"],
+    ["SARA/JEV accepted decision", "HortaCore via existing N07/N01 persistence path"]
+  ];
+  requireValue(hops.length === expectedHops.length, "route must contain exactly seven ordered hops");
+  for (let i = 0; i < expectedHops.length; i += 1) {
+    requireValue(hops[i]?.sequence === i + 1, "route hop sequence must be contiguous at " + (i + 1));
+    requireValue(hops[i]?.from === expectedHops[i][0] && hops[i]?.to === expectedHops[i][1], "route hop " + (i + 1) + " must preserve the canonical path");
+    requireValue(hops[i]?.status === "SPEC_ONLY", "route hop " + (i + 1) + " must not claim live execution");
+  }
+  for (const requiredPR of [152, 153, 130, 127, 128, 125]) {
+    requireValue((route?.front_dependencies ?? []).some((front) => front.pr === requiredPR), "route must account for active integration front #" + requiredPR);
+  }
+  requireValue((route?.forbidden ?? []).some((item) => item.includes("Second Mesh")), "route must prohibit a second Mesh");
+  requireValue((route?.promotion_gates ?? []).some((item) => item.includes("authenticated E2E")), "route promotion requires authenticated E2E evidence");
+
   return errors;
 }
 
@@ -106,13 +133,14 @@ function main() {
     const contract = readJson("integrations/sena/foundation-contract.json");
     const crosswalk = readJson("integrations/sena/public-source-crosswalk.json");
     const registry = readJson("integrations/external-capabilities.json");
-    const errors = validateFoundation(contract, crosswalk, registry);
+    const route = readJson("integrations/sena/vagus-supergpu-prefrontal-route.json");
+    const errors = validateFoundation(contract, crosswalk, registry, route);
     if (errors.length > 0) {
       for (const error of errors) console.error("FAIL:", error);
       process.exitCode = 1;
       return;
     }
-    console.log("PASS: SENA foundation contract, source crosswalk and authority boundaries are internally consistent.");
+    console.log("PASS: SENA contract, public-source crosswalk, VagusBus route and authority boundaries are internally consistent.");
     console.log("STATUS: SPEC_ONLY; runtime integration, source execution and production remain unverified/blocked.");
   } catch (error) {
     console.error("FAIL: unable to load/validate SENA foundation files:", error instanceof Error ? error.message : String(error));
