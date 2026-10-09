@@ -37,14 +37,18 @@ type CapabilityUpgradePlan struct {
 	NoFakeRuntimeSuccess    bool                        `json:"no_fake_runtime_success"`
 }
 
+type externalProviderRecord struct {
+	ID           string   `json:"id"`
+	Source       string   `json:"source"`
+	Revision     string   `json:"revision"`
+	Targets      []string `json:"targets"`
+	Capabilities []string `json:"capabilities"`
+	State        string   `json:"state,omitempty"`
+}
+
 type externalProviderManifest struct {
-	Repositories []struct {
-		ID           string   `json:"id"`
-		Source       string   `json:"source"`
-		Revision     string   `json:"revision"`
-		Targets      []string `json:"targets"`
-		Capabilities []string `json:"capabilities"`
-	} `json:"repositories"`
+	Repositories              []externalProviderRecord `json:"repositories"`
+	ComplementaryRepositories []externalProviderRecord `json:"complementary_repositories"`
 }
 
 var soulComponentAuthorities = map[string]string{
@@ -86,7 +90,27 @@ func loadExternalProviderManifest() (externalProviderManifest, error) {
 			continue
 		}
 		if len(manifest.Repositories) != 16 {
-			last = errors.New("expected exactly 16 external providers")
+			last = errors.New("expected exactly 16 primary external providers")
+			continue
+		}
+		all := append(append([]externalProviderRecord{}, manifest.Repositories...), manifest.ComplementaryRepositories...)
+		seen := make(map[string]struct{}, len(all))
+		valid := true
+		for _, provider := range all {
+			if strings.TrimSpace(provider.ID) == "" || strings.TrimSpace(provider.Source) == "" ||
+				len(strings.TrimSpace(provider.Revision)) != 40 || len(provider.Targets) == 0 || len(provider.Capabilities) == 0 {
+				last = errors.New("external capability provider record is incomplete")
+				valid = false
+				break
+			}
+			if _, exists := seen[strings.ToLower(strings.TrimSpace(provider.ID))]; exists {
+				last = errors.New("duplicate external capability provider: " + provider.ID)
+				valid = false
+				break
+			}
+			seen[strings.ToLower(strings.TrimSpace(provider.ID))] = struct{}{}
+		}
+		if !valid {
 			continue
 		}
 		return manifest, nil
@@ -125,8 +149,12 @@ func ResolveCapabilityUpgrade(ctx context.Context, component, capability string)
 		RequiresExplicitAdapter: true,
 		NoFakeRuntimeSuccess:    true,
 	}
-	for _, p := range manifest.Repositories {
-		state := "PROJECTED"
+	providers := append(append([]externalProviderRecord{}, manifest.Repositories...), manifest.ComplementaryRepositories...)
+	for _, p := range providers {
+		state := strings.ToUpper(strings.TrimSpace(p.State))
+		if state == "" {
+			state = "PROJECTED"
+		}
 		adapterState := "CATALOGED"
 		if p.ID == "superpowers" {
 			adapterState = "IMPLEMENTED_AT_N07"
