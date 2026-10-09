@@ -12,13 +12,14 @@ function fixtures() {
   return {
     contract: readJson("integrations/sena/foundation-contract.json"),
     crosswalk: readJson("integrations/sena/public-source-crosswalk.json"),
-    registry: readJson("integrations/external-capabilities.json")
+    registry: readJson("integrations/external-capabilities.json"),
+    route: readJson("integrations/sena/vagus-supergpu-prefrontal-route.json")
   };
 }
 
 test("SENA foundation is structurally valid while remaining disabled and SPEC_ONLY", () => {
-  const { contract, crosswalk, registry } = fixtures();
-  assert.deepEqual(validateFoundation(contract, crosswalk, registry), []);
+  const { contract, crosswalk, registry, route } = fixtures();
+  assert.deepEqual(validateFoundation(contract, crosswalk, registry, route), []);
   assert.equal(contract.component.architectural_status, "SPEC_ONLY");
   assert.equal(contract.deployment.enabled_by_default, false);
   assert.equal(contract.deployment.production_mode, "BLOCKED");
@@ -29,7 +30,7 @@ test("validator rejects enabling production or introducing another Mesh", () => 
   const mutated = structuredClone(contract);
   mutated.deployment.enabled_by_default = true;
   mutated.transport.additional_mesh_allowed = true;
-  const errors = validateFoundation(mutated, crosswalk, registry);
+  const errors = validateFoundation(mutated, crosswalk, registry, route);
   assert.ok(errors.some((error) => error.includes("enabled_by_default")));
   assert.ok(errors.some((error) => error.includes("second Mesh")));
 });
@@ -49,30 +50,41 @@ test("validator rejects source duplicates, missing pins and registry drift", () 
   const { contract, crosswalk, registry } = fixtures();
   const duplicated = structuredClone(crosswalk);
   duplicated.current_mainline_source_ids.push(structuredClone(duplicated.current_mainline_source_ids[0]));
-  assert.ok(validateFoundation(contract, duplicated, registry).some((error) => error.includes("must be unique")));
+  assert.ok(validateFoundation(contract, duplicated, registry, route).some((error) => error.includes("must be unique")));
 
   const unpinned = structuredClone(registry);
   const source = unpinned.repositories.find((entry) => entry.id === "whisper");
   source.revision = "";
-  assert.ok(validateFoundation(contract, crosswalk, unpinned).some((error) => error.includes("revision-pinned: whisper")));
+  assert.ok(validateFoundation(contract, crosswalk, unpinned, route).some((error) => error.includes("revision-pinned: whisper")));
 
   const missing = structuredClone(registry);
   missing.repositories = missing.repositories.filter((entry) => entry.id !== "kokoro");
-  assert.ok(validateFoundation(contract, crosswalk, missing).some((error) => error.includes("does not contain kokoro")));
+  assert.ok(validateFoundation(contract, crosswalk, missing, route).some((error) => error.includes("does not contain kokoro")));
 });
 
 test("validator preserves explicitly open concurrent fronts and hard governance gates", () => {
   const { contract, crosswalk, registry } = fixtures();
   const noCorrelation = structuredClone(contract);
   noCorrelation.transport.preserve_correlation_id = false;
-  const errors = validateFoundation(noCorrelation, crosswalk, registry);
+  const errors = validateFoundation(noCorrelation, crosswalk, registry, route);
   assert.ok(errors.some((error) => error.includes("correlation_id preservation")));
 
   const badFronts = structuredClone(crosswalk);
   badFronts.active_integration_fronts[0].observed_state = "MERGED";
-  assert.ok(validateFoundation(contract, badFronts, registry).some((error) => error.includes("marked open")));
+  assert.ok(validateFoundation(contract, badFronts, registry, route).some((error) => error.includes("marked open")));
 
   const noEtR = structuredClone(contract);
   noEtR.hard_gates = noEtR.hard_gates.filter((gate) => !gate.includes("SARA ETR"));
-  assert.ok(validateFoundation(noEtR, crosswalk, registry).some((error) => error.includes("SARA ETR and JEV")));
+  assert.ok(validateFoundation(noEtR, crosswalk, registry, route).some((error) => error.includes("SARA ETR and JEV")));
+});
+
+test("validator rejects route bypasses and ownership duplication", () => {
+  const { contract, crosswalk, registry, route } = fixtures();
+  const mutated = structuredClone(route);
+  mutated.route[2].to = "SENA general core";
+  mutated.route[4].to = "HortaCore";
+  mutated.invariants = mutated.invariants.filter((item) => !item.includes("SuperGPU owns compute admission"));
+  const errors = validateFoundation(contract, crosswalk, registry, mutated);
+  assert.ok(errors.some((error) => error.includes("canonical path")));
+  assert.ok(errors.some((error) => error.includes("SuperGPU")));
 });
