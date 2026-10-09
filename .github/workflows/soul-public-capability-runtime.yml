@@ -9,6 +9,7 @@ on:
       - "integrations/external-capability-ownership.json"
       - "integrations/soul-public-capability-fusion-v1.json"
       - "scripts/external-capability-adapter.py"
+      - ".github/workflows/soul-public-capability-runtime.yml"
       - "integrations/external/**"
   workflow_dispatch:
 
@@ -46,12 +47,16 @@ jobs:
         include:
           - provider: ouro-loop
             install: ""
+            python-version: "3.11"
           - provider: recuris
             install: "python -m pip install -e integrations/external/recuris"
+            python-version: "3.12"
           - provider: cognitive-workspace
             install: ""
+            python-version: "3.11"
           - provider: ravana
             install: ""
+            python-version: "3.11"
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -63,7 +68,7 @@ jobs:
         run: node scripts/materialize-top-level-submodules.mjs
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: ${{ matrix.python-version }}
       - name: Install source dependencies
         if: matrix.install != ''
         run: ${{ matrix.install }}
