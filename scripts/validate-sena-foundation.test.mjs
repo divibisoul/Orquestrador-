@@ -26,7 +26,7 @@ test("SENA foundation is structurally valid while remaining disabled and SPEC_ON
 });
 
 test("validator rejects enabling production or introducing another Mesh", () => {
-  const { contract, crosswalk, registry } = fixtures();
+  const { contract, crosswalk, registry, route } = fixtures();
   const mutated = structuredClone(contract);
   mutated.deployment.enabled_by_default = true;
   mutated.transport.additional_mesh_allowed = true;
@@ -36,10 +36,10 @@ test("validator rejects enabling production or introducing another Mesh", () => 
 });
 
 test("validator requires tracing, correlation, hashes and bounded deadlines", () => {
-  const { contract, crosswalk, registry } = fixtures();
+  const { contract, crosswalk, registry, route } = fixtures();
   const mutated = structuredClone(contract);
   mutated.request_contract.required_fields = ["operation", "payload"];
-  const errors = validateFoundation(mutated, crosswalk, registry);
+  const errors = validateFoundation(mutated, crosswalk, registry, route);
   assert.ok(errors.some((error) => error.includes("trace_id")));
   assert.ok(errors.some((error) => error.includes("correlation_id")));
   assert.ok(errors.some((error) => error.includes("input_hash")));
@@ -47,7 +47,7 @@ test("validator requires tracing, correlation, hashes and bounded deadlines", ()
 });
 
 test("validator rejects source duplicates, missing pins and registry drift", () => {
-  const { contract, crosswalk, registry } = fixtures();
+  const { contract, crosswalk, registry, route } = fixtures();
   const duplicated = structuredClone(crosswalk);
   duplicated.current_mainline_source_ids.push(structuredClone(duplicated.current_mainline_source_ids[0]));
   assert.ok(validateFoundation(contract, duplicated, registry, route).some((error) => error.includes("must be unique")));
@@ -63,7 +63,7 @@ test("validator rejects source duplicates, missing pins and registry drift", () 
 });
 
 test("validator preserves explicitly open concurrent fronts and hard governance gates", () => {
-  const { contract, crosswalk, registry } = fixtures();
+  const { contract, crosswalk, registry, route } = fixtures();
   const noCorrelation = structuredClone(contract);
   noCorrelation.transport.preserve_correlation_id = false;
   const errors = validateFoundation(noCorrelation, crosswalk, registry, route);
