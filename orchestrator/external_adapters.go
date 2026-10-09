@@ -125,6 +125,72 @@ func NewExternalAdapterRegistry() (ExternalAdapterRegistry, error) {
 	}
 	return ExternalAdapterRegistry{manifest: m, byID: by, revisions: revisions, manifestPath: path}, nil
 }
+type externalSourceObservation struct {
+	Present          bool
+	ExpectedRevision string
+	ObservedRevision string
+	RevisionMatched  bool
+	State            string
+}
+
+// inspectExternalSource treats a path as a source checkout only when it is the
+// root of its own Git worktree, then compares HEAD with the recorded pin.
+// os.Stat alone is insufficient: an uninitialized gitlink can appear as an
+// empty directory and must never be reported as a present upstream repository.
+func inspectExternalSource(root, expectedRevision string) externalSourceObservation {
+	observation := externalSourceObservation{
+		ExpectedRevision: strings.ToLower(strings.TrimSpace(expectedRevision)),
+		State:            "MISSING_WORKTREE",
+	}
+	absoluteRoot, err := filepath.Abs(filepath.Clean(root))
+	if err != nil {
+		return observation
+	}
+	resolvedRoot, err := filepath.EvalSymlinks(absoluteRoot)
+	if err != nil {
+		return observation
+	}
+	topCommand := exec.Command("git", "-C", resolvedRoot, "rev-parse", "--show-toplevel")
+	topBytes, err := topCommand.Output()
+	if err != nil {
+		return observation
+	}
+	resolvedTop, err := filepath.EvalSymlinks(strings.TrimSpace(string(topBytes)))
+	if err != nil || filepath.Clean(resolvedTop) != filepath.Clean(resolvedRoot) {
+		return observation
+	}
+	headCommand := exec.Command("git", "-C", resolvedRoot, "rev-parse", "--verify", "HEAD")
+	headBytes, err := headCommand.Output()
+	if err != nil {
+		return observation
+	}
+	observed := strings.ToLower(strings.TrimSpace(string(headBytes)))
+	if !isGitRevision(observed) {
+		return observation
+	}
+	observation.Present = true
+	observation.ObservedRevision = observed
+	observation.RevisionMatched = isGitRevision(observation.ExpectedRevision) && observed == observation.ExpectedRevision
+	if observation.RevisionMatched {
+		observation.State = "PIN_MATCH"
+	} else {
+		observation.State = "REVISION_MISMATCH"
+	}
+	return observation
+}
+
+func isGitRevision(revision string) bool {
+	if len(revision) != 40 {
+		return false
+	}
+	for _, char := range revision {
+		if !((char >= '0' && char <= '9') || (char >= 'a' && char <= 'f') || (char >= 'A' && char <= 'F')) {
+			return false
+		}
+	}
+	return true
+}
+
 func externalEnabled(provider string) bool {
 	key := "SOUL_EXTERNAL_EXECUTE_" + strings.ToUpper(strings.ReplaceAll(provider, "-", "_"))
 	v := strings.ToLower(strings.TrimSpace(os.Getenv(key)))
@@ -324,8 +390,14 @@ func RegisterExternalAdapterOperations(e *Engine, r ExternalAdapterRegistry) err
 			if !filepath.IsAbs(root) {
 				root = filepath.Join(repositoryRoot(), root)
 			}
-			_, err := os.Stat(filepath.Clean(root))
-			providers = append(providers, map[string]any{"id": p.ID, "owner": p.Owner, "kind": p.Kind, "root": root, "revision": r.revisions[p.ID], "operations": p.Operations, "sourcePresent": err == nil, "executionEnabled": externalEnabled(p.ID)})
+			observation := inspectExternalSource(filepath.Clean(root), r.revisions[p.ID])
+			providers = append(providers, map[string]any{
+				"id": p.ID, "owner": p.Owner, "kind": p.Kind, "root": root,
+				"revision": r.revisions[p.ID], "expectedRevision": observation.ExpectedRevision,
+				"observedRevision": observation.ObservedRevision, "revisionMatched": observation.RevisionMatched,
+				"sourceState": observation.State, "operations": p.Operations,
+				"sourcePresent": observation.Present, "executionEnabled": externalEnabled(p.ID),
+			})
 		}
 		raw, _ := json.Marshal(map[string]any{"state": "PASS", "control_plane": "N07", "provider_count": len(providers), "manifest": r.manifestPath, "providers": providers})
 		return protocol.Result{TraceID: m.TraceID, CorrelationID: m.CorrelationID, Source: "N07.external-federation", Target: m.Source, Status: "ok", Metadata: map[string]string{"federation_json": string(raw)}}, nil

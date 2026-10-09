@@ -33,9 +33,6 @@ jobs:
           fetch-depth: 0
           submodules: false
 
-      - name: Materialize SOUL top-level submodules without recursion
-        run: node scripts/materialize-top-level-submodules.mjs
-
       - name: Checkout SARA
         uses: actions/checkout@v4
         with:
@@ -105,15 +102,35 @@ jobs:
           print('GRF discovery: PASS')
           PY
 
-      - name: Assert 22-source federation
+      - name: Assert 22-provider inventory and exact source states
         run: |
           curl -fsS -H 'Authorization: Bearer e2e-n07-token-123456789' -H 'Content-Type: application/json' -X POST http://127.0.0.1:8080/v1/execute -d '{"operation":"external.federation.describe@1.0.0","metadata":{}}' | tee /tmp/federation.json
           python - <<'PY'
           import json
           outer=json.load(open('/tmp/federation.json'))
           raw=json.loads(next(v for k,v in outer['metadata'].items() if k.endswith('json')))
-          assert raw['provider_count']==22
-          print('22-source federation: PASS')
+          providers=raw['providers']
+          assert raw['control_plane']=='N07'
+          assert raw['provider_count']==22 and len(providers)==22
+          ids=[p['id'] for p in providers]
+          assert len(set(ids))==22
+          for p in providers:
+              assert len(p['expectedRevision'])==40, p['id']
+              assert p['sourceState'] in ('PIN_MATCH','REVISION_MISMATCH','MISSING_WORKTREE'), p
+              assert isinstance(p['sourcePresent'], bool), p['id']
+              assert isinstance(p['revisionMatched'], bool), p['id']
+              assert isinstance(p['executionEnabled'], bool), p['id']
+              if p['sourceState']=='PIN_MATCH':
+                  assert p['sourcePresent'] and p['revisionMatched']
+                  assert p['observedRevision']==p['expectedRevision'], p['id']
+              elif p['sourceState']=='REVISION_MISMATCH':
+                  assert p['sourcePresent'] and not p['revisionMatched'], p['id']
+              else:
+                  assert not p['sourcePresent'] and not p['revisionMatched']
+          counts={state:sum(p['sourceState']==state for p in providers) for state in ('PIN_MATCH','REVISION_MISMATCH','MISSING_WORKTREE')}
+          enabled=sum(p['executionEnabled'] for p in providers)
+          print(json.dumps({'providerInventory':'PASS','providerCount':len(providers),'sourceStates':counts,'executionEnabled':enabled,'runtimeExecutionProven':False},sort_keys=True))
+          print('22-provider inventory: PASS; source presence, exact pin, and execution enablement reported separately')
           PY
 
       - name: Execute full GRCE -> C1-C7-C1 with real SARA authority
