@@ -36,9 +36,18 @@ func TestGRCEExecutorRuntimeCompletesWithHTTPBoundaryFixture(t *testing.T) {
 				"federated_context_hash": "sha256:test-context",
 			})
 		case "/v1/rgo/trinity":
+			// Contract fixture mirrors the evidence fields returned by SARA's
+			// existing RGO/Trinity processor. Runtime validation still requires
+			// actual TRINITY, ERU, and MMD stage names; it must not infer them.
 			writeGRCEJSONTest(w, map[string]any{
 				"final_status": "VALIDATED",
 				"finding_id": "grce:corr-test",
+				"stages": []any{
+					map[string]any{"stage": "RGO", "finding_id": "grce:corr-test", "rgo_evidence_chain_hash": "sha256:rgo", "output_hash": "sha256:rgo-output"},
+					map[string]any{"stage": "TRINITY::ARA", "finding_id": "grce:corr-test", "rgo_evidence_chain_hash": "sha256:trinity", "output_hash": "sha256:trinity-output"},
+					map[string]any{"stage": "ERU", "finding_id": "grce:corr-test", "rgo_evidence_chain_hash": "sha256:eru", "output_hash": "sha256:eru-output"},
+					map[string]any{"stage": "MMD", "finding_id": "grce:corr-test", "rgo_evidence_chain_hash": "sha256:mmd", "output_hash": "sha256:mmd-output"},
+				},
 			})
 		default:
 			http.NotFound(w, r)
