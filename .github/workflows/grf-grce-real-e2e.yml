@@ -120,7 +120,9 @@ jobs:
         run: |
           python - <<'PY'
           import json
-          text = ("preservar autonomia, rastreabilidade e estado historico. " * 220)
+          # SARA's existing test_core.py confirms 11,000 repeated characters
+          # trigger a real ARA complexity finding; benign input correctly yields IDLE.
+          text = "a" * 11000
           body = {
               "operation": "grce.cycle.execute@2.0.0",
               "correlationId": "grce-full-e2e-001",
