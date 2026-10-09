@@ -102,3 +102,22 @@ test("validator requires the existing Vagus event protocol and pinned NATS trans
   assert.ok(errors.some((error) => error.includes("pinned to a commit")));
   assert.ok(errors.some((error) => error.includes("not a second Mesh")));
 });
+
+test("validator preserves the expanded pinned public-repository fusion without claiming merge/runtime", () => {
+  const { contract, crosswalk, registry, route } = fixtures();
+  assert.equal(crosswalk.expanded_public_fusion_sources.length, 16);
+  const badPin = structuredClone(crosswalk);
+  badPin.expanded_public_fusion_sources.find((source) => source.id === "nats-go").revision = "latest";
+  const pinErrors = validateFoundation(contract, badPin, registry, route);
+  assert.ok(pinErrors.some((error) => error.includes("expanded source revision must be pinned to a commit for nats-go")));
+
+  const badOwner = structuredClone(crosswalk);
+  badOwner.expanded_public_fusion_sources.find((source) => source.id === "hora-graph-core").owner = "N07";
+  const ownerErrors = validateFoundation(contract, badOwner, registry, route);
+  assert.ok(ownerErrors.some((error) => error.includes("expanded source owner is invalid for hora-graph-core")));
+
+  const badState = structuredClone(crosswalk);
+  badState.expanded_public_fusion_sources.find((source) => source.id === "nats-go").pin_state = "READY";
+  const stateErrors = validateFoundation(contract, badState, registry, route);
+  assert.ok(stateErrors.some((error) => error.includes("not be misrepresented as canonical/merged for nats-go")));
+});
