@@ -342,7 +342,11 @@
       ],
       "sena_use": "Propose optimization/evolution candidates for offline evaluation; never self-deploy or rewrite policy autonomously.",
       "boundary": "N07 admission; SARA/GRCE validation; Prefrontal decides promotion.",
-      "connection_rule": "SENA-originated requests/results stay on the canonical VagusBus route and pass the owning SOUL capability boundary."
+      "connection_rule": "SENA-originated requests/results stay on the canonical VagusBus route and pass the owning SOUL capability boundary.",
+      "source_url": "https://github.com/DVampire/Autogenesis",
+      "revision": "5b070d5cd497e951a188a01409138e8b530eaf4a",
+      "pin_source": "divibisoul/Orquestrador-#152",
+      "pin_state": "PINNED_IN_OPEN_PR_NOT_CANONICAL_ON_SENA_BRANCH"
     },
     {
       "id": "octos",
@@ -355,7 +359,11 @@
       ],
       "sena_use": "Fan out bounded helper tasks and coordinate agent swarms without creating another control plane.",
       "boundary": "N07 remains orchestration authority; outputs return as typed candidates via VagusBus.",
-      "connection_rule": "SENA-originated requests/results stay on the canonical VagusBus route and pass the owning SOUL capability boundary."
+      "connection_rule": "SENA-originated requests/results stay on the canonical VagusBus route and pass the owning SOUL capability boundary.",
+      "source_url": "https://github.com/lispking/octos",
+      "revision": "26a916be14dee49bcc48fbc048947d018c7de6ba",
+      "pin_source": "divibisoul/Orquestrador-#152",
+      "pin_state": "PINNED_IN_OPEN_PR_NOT_CANONICAL_ON_SENA_BRANCH"
     },
     {
       "id": "hora-graph-core",
@@ -367,7 +375,11 @@
       ],
       "sena_use": "Add graph/temporal retrieval projections to improve context linking and historical queries.",
       "boundary": "Projection/index only; N01 and HortaCore retain canonical identity/state persistence.",
-      "connection_rule": "SENA-originated requests/results stay on the canonical VagusBus route and pass the owning SOUL capability boundary."
+      "connection_rule": "SENA-originated requests/results stay on the canonical VagusBus route and pass the owning SOUL capability boundary.",
+      "source_url": "https://github.com/Vivien83/hora-graph-core",
+      "revision": "334f4f82d1c7525d29130ced9e6199e3633c0f61",
+      "pin_source": "divibisoul/Orquestrador-#152",
+      "pin_state": "PINNED_IN_OPEN_PR_NOT_CANONICAL_ON_SENA_BRANCH"
     },
     {
       "id": "mycelium",
@@ -379,7 +391,11 @@
       ],
       "sena_use": "Share task-scoped context and negotiated work between agents.",
       "boundary": "N04 tool/workspace ownership; all SENA-generated signals use canonical VagusBus route.",
-      "connection_rule": "SENA-originated requests/results stay on the canonical VagusBus route and pass the owning SOUL capability boundary."
+      "connection_rule": "SENA-originated requests/results stay on the canonical VagusBus route and pass the owning SOUL capability boundary.",
+      "source_url": "https://github.com/mycelium-io/mycelium",
+      "revision": "26156b5e9f169e74c73848908ad5e3bad76cd6fa",
+      "pin_source": "divibisoul/Orquestrador-#152",
+      "pin_state": "PINNED_IN_OPEN_PR_NOT_CANONICAL_ON_SENA_BRANCH"
     },
     {
       "id": "prime-agent",
@@ -391,7 +407,11 @@
       ],
       "sena_use": "Generate bounded recursive reasoning sub-tasks and evaluation proposals.",
       "boundary": "N06 owns cognition; no direct state mutation or autonomous policy promotion.",
-      "connection_rule": "SENA-originated requests/results stay on the canonical VagusBus route and pass the owning SOUL capability boundary."
+      "connection_rule": "SENA-originated requests/results stay on the canonical VagusBus route and pass the owning SOUL capability boundary.",
+      "source_url": "https://github.com/PrimeIntellect-ai/prime-agent",
+      "revision": "672085e883c25a8a5f10c77ad8e5d3fb38dd6584",
+      "pin_source": "divibisoul/Orquestrador-#152",
+      "pin_state": "PINNED_IN_OPEN_PR_NOT_CANONICAL_ON_SENA_BRANCH"
     },
     {
       "id": "cuda-oxide",
@@ -403,7 +423,11 @@
       ],
       "sena_use": "Explore a lower-level CUDA/PTX execution adapter for supported workloads.",
       "boundary": "SuperGPU alone owns resource admission and scheduling; no SENA direct device allocation.",
-      "connection_rule": "SENA-originated requests/results stay on the canonical VagusBus route and pass the owning SOUL capability boundary."
+      "connection_rule": "SENA-originated requests/results stay on the canonical VagusBus route and pass the owning SOUL capability boundary.",
+      "source_url": "https://github.com/SuperInstance/cuda-oxide",
+      "revision": "1ad9bfc5241322ceeccb3f9182f2a188a648bd08",
+      "pin_source": "divibisoul/Orquestrador-#152",
+      "pin_state": "PINNED_IN_OPEN_PR_NOT_CANONICAL_ON_SENA_BRANCH"
     },
     {
       "id": "bijux-dag-runtime",
@@ -415,7 +439,11 @@
       ],
       "sena_use": "Add deterministic dependency-graph execution and explicit stage lineage.",
       "boundary": "Complementary execution only; GRCE/SARA remain the validation/regeneration authorities.",
-      "connection_rule": "SENA-originated requests/results stay on the canonical VagusBus route and pass the owning SOUL capability boundary."
+      "connection_rule": "SENA-originated requests/results stay on the canonical VagusBus route and pass the owning SOUL capability boundary.",
+      "source_url": "https://github.com/bijux/bijux-core",
+      "revision": "f0f5f56b49f380196918c4c6910b725b2b30ab7d",
+      "pin_source": "divibisoul/Orquestrador-#152",
+      "pin_state": "PINNED_IN_OPEN_PR_NOT_CANONICAL_ON_SENA_BRANCH"
     },
     {
       "id": "ouro-loop",
@@ -427,7 +455,11 @@
       ],
       "sena_use": "Provide bounded verify/retry candidates and remediation evidence.",
       "boundary": "No automatic remediation commit; SARA/ETR and Prefrontal approval remain mandatory.",
-      "connection_rule": "SENA-originated requests/results stay on the canonical VagusBus route and pass the owning SOUL capability boundary."
+      "connection_rule": "SENA-originated requests/results stay on the canonical VagusBus route and pass the owning SOUL capability boundary.",
+      "source_url": "https://github.com/VictorVVedtion/ouro-loop",
+      "revision": "52f97e22dc2a72a45ffa025d452ea02c58cb6b94",
+      "pin_source": "divibisoul/Orquestrador-#152",
+      "pin_state": "PINNED_IN_OPEN_PR_NOT_CANONICAL_ON_SENA_BRANCH"
     },
     {
       "id": "recuris",
@@ -439,7 +471,11 @@
       ],
       "sena_use": "Improve failure localization and propose memory evolution from reviewed experience.",
       "boundary": "Read-only/proposal mode initially; N01/HortaCore remain authoritative memory/state.",
-      "connection_rule": "SENA-originated requests/results stay on the canonical VagusBus route and pass the owning SOUL capability boundary."
+      "connection_rule": "SENA-originated requests/results stay on the canonical VagusBus route and pass the owning SOUL capability boundary.",
+      "source_url": "https://github.com/Gen-Verse/Recuris",
+      "revision": "7d3745ab787b1206ccd981cb1511100476097266",
+      "pin_source": "divibisoul/Orquestrador-#152",
+      "pin_state": "PINNED_IN_OPEN_PR_NOT_CANONICAL_ON_SENA_BRANCH"
     },
     {
       "id": "fedml",
@@ -451,7 +487,11 @@
       ],
       "sena_use": "Enable offline federated experiments across eligible workers and compare evaluation metrics.",
       "boundary": "Online training/deployment remains disabled pending separate approval and verified privacy/security gates.",
-      "connection_rule": "SENA-originated requests/results stay on the canonical VagusBus route and pass the owning SOUL capability boundary."
+      "connection_rule": "SENA-originated requests/results stay on the canonical VagusBus route and pass the owning SOUL capability boundary.",
+      "source_url": "https://github.com/FedML-AI/FedML",
+      "revision": "03e11dfee69a458a9820ec4e05b531a5f935eb2b",
+      "pin_source": "divibisoul/Orquestrador-#152",
+      "pin_state": "PINNED_IN_OPEN_PR_NOT_CANONICAL_ON_SENA_BRANCH"
     },
     {
       "id": "hivemind",
@@ -463,7 +503,11 @@
       ],
       "sena_use": "Evaluate distributed aggregation and fault-tolerant experiments on permitted nodes.",
       "boundary": "Offline/research mode only until training authority, data policy and approval are explicitly established.",
-      "connection_rule": "SENA-originated requests/results stay on the canonical VagusBus route and pass the owning SOUL capability boundary."
+      "connection_rule": "SENA-originated requests/results stay on the canonical VagusBus route and pass the owning SOUL capability boundary.",
+      "source_url": "https://github.com/learning-at-home/hivemind",
+      "revision": "4bd43b77895019b20d18d81d0d0c1a5ab9a10847",
+      "pin_source": "divibisoul/Orquestrador-#152",
+      "pin_state": "PINNED_IN_OPEN_PR_NOT_CANONICAL_ON_SENA_BRANCH"
     },
     {
       "id": "temporal",
@@ -475,7 +519,11 @@
       ],
       "sena_use": "Evaluate durable job execution, retry policy, deadlines and recovery for long-running SENA tasks.",
       "boundary": "Optional execution substrate; cannot replace N07 Mesh/control plane or canonical HortaCore state.",
-      "connection_rule": "SENA-originated requests/results stay on the canonical VagusBus route and pass the owning SOUL capability boundary."
+      "connection_rule": "SENA-originated requests/results stay on the canonical VagusBus route and pass the owning SOUL capability boundary.",
+      "source_url": "https://github.com/temporalio/temporal",
+      "revision": "6319f845fe9c813a2022389a5dd64b9d408dd72e",
+      "pin_source": "divibisoul/Orquestrador-#152",
+      "pin_state": "PINNED_IN_OPEN_PR_NOT_CANONICAL_ON_SENA_BRANCH"
     },
     {
       "id": "cognitive-workspace",
@@ -487,7 +535,11 @@
       ],
       "sena_use": "Provide controlled context sharing between cognitive workers with explicit scopes.",
       "boundary": "Use typed, bounded messages; SENA signals traverse VagusBus; no implicit memory writes.",
-      "connection_rule": "SENA-originated requests/results stay on the canonical VagusBus route and pass the owning SOUL capability boundary."
+      "connection_rule": "SENA-originated requests/results stay on the canonical VagusBus route and pass the owning SOUL capability boundary.",
+      "source_url": "https://github.com/tao-hpu/cognitive-workspace",
+      "revision": "6740fc3b69a842ccc49663ac6c371600d0d9fc2e",
+      "pin_source": "divibisoul/Orquestrador-#152",
+      "pin_state": "PINNED_IN_OPEN_PR_NOT_CANONICAL_ON_SENA_BRANCH"
     },
     {
       "id": "ravana",
@@ -499,7 +551,11 @@
       ],
       "sena_use": "Test proactive task proposals and reflection workflows as bounded candidates.",
       "boundary": "No autonomous external actions; JEV/SARA gate side effects and N01 owns persistent state.",
-      "connection_rule": "SENA-originated requests/results stay on the canonical VagusBus route and pass the owning SOUL capability boundary."
+      "connection_rule": "SENA-originated requests/results stay on the canonical VagusBus route and pass the owning SOUL capability boundary.",
+      "source_url": "https://github.com/OpenSource-Syndicate/RAVANA",
+      "revision": "c5d5095b2f918657b9261a6b958e2f4f013305cb",
+      "pin_source": "divibisoul/Orquestrador-#152",
+      "pin_state": "PINNED_IN_OPEN_PR_NOT_CANONICAL_ON_SENA_BRANCH"
     },
     {
       "id": "ray",
@@ -511,7 +567,11 @@
       ],
       "sena_use": "Distribute eligible CPU/worker tasks and parallel evaluation under explicit quotas.",
       "boundary": "GPU work still requires SuperGPU admission; Ray does not become a second scheduler authority for GPU.",
-      "connection_rule": "SENA-originated requests/results stay on the canonical VagusBus route and pass the owning SOUL capability boundary."
+      "connection_rule": "SENA-originated requests/results stay on the canonical VagusBus route and pass the owning SOUL capability boundary.",
+      "source_url": "https://github.com/ray-project/ray",
+      "revision": "378b6b1bfb7c51da47d5539423430af359b76e92",
+      "pin_source": "divibisoul/Orquestrador-#152",
+      "pin_state": "PINNED_IN_OPEN_PR_NOT_CANONICAL_ON_SENA_BRANCH"
     },
     {
       "id": "nats-go",
@@ -523,7 +583,11 @@
       ],
       "sena_use": "Candidate durable transport for the single existing Nervo Vago/VagusBus event contract, with correlation, ordering, idempotency and replay handling.",
       "boundary": "PROJECTED only; transport implementation, not a second Mesh or logical VagusBus. Must pass authenticated end-to-end tests.",
-      "connection_rule": "SENA-originated requests/results stay on the canonical VagusBus route and pass the owning SOUL capability boundary."
+      "connection_rule": "SENA-originated requests/results stay on the canonical VagusBus route and pass the owning SOUL capability boundary.",
+      "source_url": "https://github.com/nats-io/nats.go",
+      "revision": "f90b0a9f9df8f42a634a4f5351df1594dada4184",
+      "pin_source": "divibisoul/Orquestrador-#152",
+      "pin_state": "PINNED_IN_OPEN_PR_NOT_CANONICAL_ON_SENA_BRANCH"
     }
   ],
   "public_fusion_invariants": [
