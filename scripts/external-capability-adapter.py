@@ -42,7 +42,10 @@ def root(v):
         emit({"state":"BLOCKED","code":"EXTERNAL_ROOT_ESCAPE","provider":provider,"root":str(p)},2)
     if p != expected:
         emit({"state":"BLOCKED","code":"EXTERNAL_ROOT_NOT_CANONICAL","provider":provider,"expected":str(expected),"requested":str(p)},2)
-    if not p.exists() and str(v.get("mode") or "").strip().lower() != "probe":
+    mode=str(v.get("mode") or "probe").strip().lower()
+    # Probe/describe report registration and source presence independently.
+    # Only execute/verify operations require a materialized source directory.
+    if not p.exists() and mode not in {"probe","describe"}:
         emit({"state":"BLOCKED","code":"EXTERNAL_SOURCE_NOT_PRESENT","root":str(p)},2)
     return p
 
