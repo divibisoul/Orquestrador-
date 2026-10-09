@@ -208,5 +208,31 @@
     "SENA writing directly to HortaCore or bypassing Prefrontal, SARA ETR, or JEV.",
     "Direct GPU allocation by SENA outside SuperGPU admission.",
     "Treating model confidence, unit tests, registry presence or health status as E2E proof."
-  ]
+  ],
+  "transport_binding": {
+    "id": "nervo-vago",
+    "owner": "N07",
+    "protocol": "soul.vagus.event.v1",
+    "publish_operation": "nervo-vago.event@1.0.0",
+    "describe_operation": "nervo-vago.describe@1.0.0",
+    "delivery_gate": "SARA/ETR before consumer delivery",
+    "request_response_contract": "SOUL Mesh 1.1.0 remains the canonical request/response and federation contract",
+    "preserve_existing_components": [
+      "N01 local Nervo Vago facade over its existing EventBus",
+      "SARA shared VagusNerveBus instance",
+      "existing N07 Mesh gateway and request/response contract"
+    ],
+    "transport_candidate": {
+      "id": "nats-go",
+      "repository": "https://github.com/nats-io/nats.go",
+      "revision": "f90b0a9f9df8f42a634a4f5351df1594dada4184",
+      "state": "PROJECTED",
+      "role": "durable event transport only; not a second Mesh and not a second logical VagusBus"
+    },
+    "preserve_correlation_and_idempotency": true,
+    "no_second_mesh": true,
+    "no_second_vagus": true,
+    "no_direct_sena_bypass": true,
+    "status": "SPEC_ONLY"
+  }
 }
