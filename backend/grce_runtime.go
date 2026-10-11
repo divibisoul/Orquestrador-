@@ -625,7 +625,7 @@ func NewGRCEVagoFeedback(gateway *NervoVagoGateway, target, kind string) func(co
 		}
 		messageID := protocol.NewTraceID()
 		traceID := protocol.NewTraceID()
-		_, err = gateway.Publish(ctx, NervoVagoEnvelope{
+		_, err = gateway.PublishGRCEFeedback(ctx, NervoVagoEnvelope{
 			VagusVersion:  "1.0",
 			MessageID:     messageID,
 			CorrelationID: c.CorrelationID,
