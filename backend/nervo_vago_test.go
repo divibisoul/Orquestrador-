@@ -157,7 +157,7 @@ func TestNervoVagoPublishRunsETRBeforeVagusDelivery(t *testing.T) {
 			for _, required := range []string{
 				"Princípios do ciclo GRCE",
 				"Finalidade da avaliação",
-				"evento interno do Nervo Vago",
+				"evento do Nervo Vago",
 				`"message_id":"m-1"`,
 			} {
 				if !strings.Contains(input, required) {
