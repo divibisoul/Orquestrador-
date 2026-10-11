@@ -45,6 +45,7 @@ type Hooks struct {
 	Vagus FeedbackFunc
 	Mesh FeedbackFunc
 	ExtractCapabilities ExtractFunc
+	SOUL28Bridge *SOUL28ParticipantBridge
 }
 
 type Executor struct {
@@ -110,6 +111,19 @@ func (e *Executor) Run(ctx context.Context, state grf.State, c grf.Context) (Res
 	for _,o:=range opps{if !o.PropertyDeclared||o.NecessaryProperty==""{return e.preserve(ctx,state,prov,evidence,c,errors.New("GRCE_DUAL_NOT_DECLARED"),"DUALIZE")}}
 	if err:=e.hooks.EthicalGate(ctx,opps,c);err!=nil{return e.preserve(ctx,state,prov,evidence,c,err,"ETR_GATE")}
 	prov=append(prov,grf.Provenance{ParentHash:parentHash,InputHash:parentHash,OutputHash:parentHash,SequenceIndex:c.SequenceIndex+30,Stage:"DUALIZE_ETR"})
+
+	// The SOUL-28 bridge is optional and only wired when a runtime command was
+	// explicitly configured. It runs after the ethical gate; any failure keeps
+	// the original state and carries BLOCKED evidence into the rollback result.
+	if e.hooks.SOUL28Bridge != nil {
+		bridgedState, participantProvenance, participantEvidence, bridgeErr := e.hooks.SOUL28Bridge.Run(ctx, state, c)
+		prov = append(prov, participantProvenance...)
+		evidence = append(evidence, participantEvidence...)
+		if bridgeErr != nil {
+			return e.preserve(ctx, state, prov, evidence, c, bridgeErr, "SOUL28_PARTICIPANTS")
+		}
+		state = bridgedState
+	}
 
 	ag,ac,err:=parallelAnalyze(ctx,e.hooks.AnalyzeGPU,e.hooks.AnalyzeCPU,opps,c)
 	if err!=nil{return e.preserve(ctx,state,prov,evidence,c,err,"ANALYZE")}

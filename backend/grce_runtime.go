@@ -60,6 +60,7 @@ func NewGRCEExecutorRuntime(sara *SARAProxy, compute *supergpu.Runtime, feedback
 		Vagus:               r.feedback("vagus"),
 		Mesh:                r.feedback("mesh"),
 		ExtractCapabilities: r.extractCapabilities,
+		SOUL28Bridge:        grce.NewSOUL28ParticipantBridgeIfConfigured(),
 	}
 	return grce.New(grf.CanonicalInvariantSet(), hooks)
 }
