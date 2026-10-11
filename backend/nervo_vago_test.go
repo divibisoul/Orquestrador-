@@ -27,7 +27,7 @@ func TestNervoVagoPublishRunsETRBeforeVagusDelivery(t *testing.T) {
 				"Princípios do ciclo GRCE",
 				"Finalidade da avaliação",
 				"evento interno do Nervo Vago",
-				"\\"message_id\\":\\"m-1\\"",
+				`"message_id":"m-1"`,
 			} {
 				if !strings.Contains(input, required) {
 					t.Fatalf("ETR input does not preserve required context %q", required)
