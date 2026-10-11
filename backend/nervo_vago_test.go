@@ -9,10 +9,6 @@ import (
 	"testing"
 )
 
-func TestNervoVagoPublishRunsETRBeforeVagusDelivery(t *testing.T) {
-	var calls []string
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		switch r.URL.Path {
 func TestNervoVagoGRCEFeedbackAuditsHashLinkedSummaryAndPublishesFullEvidence(t *testing.T) {
 	var auditedInput string
 	var deliveredPayload map[string]any
@@ -27,7 +23,7 @@ func TestNervoVagoGRCEFeedbackAuditsHashLinkedSummaryAndPublishesFullEvidence(t 
 				t.Fatal(err)
 			}
 			auditedInput, _ = body["input"].(string)
-			_, _ = w.Write([]byte(`{"ethical":{"approved":true},"operation":"audit"}`))
+			_, _ = w.Write([]byte("{\"ethical\":{\"approved\":true},\"operation\":\"audit\"}"))
 		case "/v1/vagus":
 			calls = append(calls, "vagus")
 			var body map[string]any
@@ -35,7 +31,7 @@ func TestNervoVagoGRCEFeedbackAuditsHashLinkedSummaryAndPublishesFullEvidence(t 
 				t.Fatal(err)
 			}
 			deliveredPayload, _ = body["payload"].(map[string]any)
-			_, _ = w.Write([]byte(`{"operation":"vagus","state":"REAL"}`))
+			_, _ = w.Write([]byte("{\"operation\":\"vagus\",\"state\":\"REAL\"}"))
 		default:
 			http.NotFound(w, r)
 		}
@@ -105,10 +101,10 @@ func TestNervoVagoGRCEFeedbackStillBlocksWhenETRRejects(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case "/v1/audit":
-			_, _ = w.Write([]byte(`{"ethical":{"approved":false},"operation":"audit"}`))
+			_, _ = w.Write([]byte("{\"ethical\":{\"approved\":false},\"operation\":\"audit\"}"))
 		case "/v1/vagus":
 			vagusCalls++
-			_, _ = w.Write([]byte(`{"operation":"vagus"}`))
+			_, _ = w.Write([]byte("{\"operation\":\"vagus\"}"))
 		default:
 			http.NotFound(w, r)
 		}
@@ -144,6 +140,10 @@ func TestNervoVagoGRCEFeedbackStillBlocksWhenETRRejects(t *testing.T) {
 	}
 }
 
+func TestNervoVagoPublishRunsETRBeforeVagusDelivery(t *testing.T) {
+	var calls []string
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
 		case "/v1/audit":
 			calls = append(calls, "audit")
 			var body map[string]any
