@@ -19,8 +19,19 @@ func TestNervoVagoPublishRunsETRBeforeVagusDelivery(t *testing.T) {
 			if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 				t.Fatal(err)
 			}
-			if _, ok := body["input"]; !ok {
-				t.Fatal("audit input missing")
+			input, ok := body["input"].(string)
+			if !ok || input == "" {
+				t.Fatal("audit input missing or not a string")
+			}
+			for _, required := range []string{
+				"Princípios do ciclo GRCE",
+				"Finalidade da avaliação",
+				"evento interno do Nervo Vago",
+				"\\"message_id\\":\\"m-1\\"",
+			} {
+				if !strings.Contains(input, required) {
+					t.Fatalf("ETR input does not preserve required context %q", required)
+				}
 			}
 			_, _ = w.Write([]byte(`{"ethical":{"approved":true},"operation":"audit"}`))
 		case "/v1/vagus":

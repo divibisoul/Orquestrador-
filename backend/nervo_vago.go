@@ -103,7 +103,14 @@ func (g *NervoVagoGateway) Publish(ctx context.Context, envelope NervoVagoEnvelo
 	if err != nil {
 		return nil, fmt.Errorf("NERVO_VAGO_ENVELOPE_ENCODE:%w", err)
 	}
-	audit, err := g.sara.Audit(ctx, string(raw), envelope.CorrelationID)
+	// The event is a protocol object, not free-form user content. Supply the
+	// same explicit principles and purpose used by the GRCE ETR gate while
+	// retaining the complete serialized envelope for SARA's actual decision.
+	auditInput := grceEthicalReviewInput(
+		"avaliar integridade, finalidade e limites de publicação do evento interno do Nervo Vago; encaminhar somente após aprovação ética",
+		string(raw),
+	)
+	audit, err := g.sara.Audit(ctx, auditInput, envelope.CorrelationID)
 	if err != nil {
 		return nil, fmt.Errorf("NERVO_VAGO_BLOCKED:ETR_AUDIT_FAILED:%w", err)
 	}
