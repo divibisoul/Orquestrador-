@@ -45,6 +45,7 @@ type Hooks struct {
 	Vagus FeedbackFunc
 	Mesh FeedbackFunc
 	ExtractCapabilities ExtractFunc
+	SOUL28Bridge *SOUL28ParticipantBridge
 }
 
 type Executor struct {
@@ -82,57 +83,71 @@ func (e *Executor) Run(ctx context.Context, state grf.State, c grf.Context) (Res
 	if ctx==nil { return Result{NextState:state,EpistemicState:grf.PRESERVED,Outcome:"ABORT_PRESERVED"},errors.New("GRCE context is nil") }
 	if err:=c.Validate();err!=nil{return Result{NextState:state,EpistemicState:grf.PRESERVED,Outcome:"ABORT_PRESERVED"},err}
 	if err:=grf.ValidateInvariantSet(e.invariants);err!=nil{return Result{NextState:state,EpistemicState:grf.PRESERVED,Outcome:"ABORT_PRESERVED"},err}
+	originalState := state
 	parentHash,err:=state.Hash();if err!=nil{return Result{NextState:state,EpistemicState:grf.PRESERVED,Outcome:"ABORT_PRESERVED"},err}
 	var prov []grf.Provenance
 	var evidence []grf.Evidence
 	snapshot,err:=e.hooks.Snapshot(ctx,state,c)
-	if err!=nil{return e.preserve(ctx,state,prov,evidence,c,err,"PREFLIGHT")}
+	if err!=nil{return e.preserve(ctx,originalState,prov,evidence,c,err,"PREFLIGHT")}
 	prov=append(prov,snapshot.Provenance)
 
 	gpu,cpu,err:=parallelDetect(ctx,e.hooks.DetectGPU,e.hooks.DetectCPU,state,c)
-	if err!=nil{return e.preserve(ctx,state,prov,evidence,c,err,"DETECT")}
+	if err!=nil{return e.preserve(ctx,originalState,prov,evidence,c,err,"DETECT")}
 	failures:=mergeFailures(gpu,cpu)
 	if len(failures)==0{return Result{NextState:state,Provenance:prov,Evidence:evidence,EpistemicState:grf.IDLE,Outcome:"IDLE"},nil}
 
 	for i,f:=range failures{
 		art:=grf.Artifact{ID:"failure:"+f.ID,Stage:"DETECT",State:f.State,Payload:map[string]any{"failure":f},Provenance:grf.Provenance{ParentHash:parentHash,SequenceIndex:c.SequenceIndex+uint64(i)+1,Stage:"DETECT",CausalFailureID:f.ID}}
 		ev,evErr:=grf.NewEvidence(f,state,art,c.SequenceIndex+uint64(i)+1)
-		if evErr!=nil{return e.preserve(ctx,state,prov,evidence,c,evErr,"EVIDENCE")}
+		if evErr!=nil{return e.preserve(ctx,originalState,prov,evidence,c,evErr,"EVIDENCE")}
 		evidence=append(evidence,ev)
 	}
 	prov=append(prov,grf.Provenance{ParentHash:parentHash,InputHash:parentHash,OutputHash:parentHash,SequenceIndex:c.SequenceIndex+10,Stage:"EVIDENCE"})
 
 	char,err:=e.hooks.Characterize(ctx,evidence,c)
-	if err!=nil{return e.preserve(ctx,state,prov,evidence,c,err,"CHARACTERIZE")}
-	for _,item:=range char{if item.State==grf.UNRESOLVED{return e.preserve(ctx,state,prov,evidence,c,errors.New("GRCE_CHARACTERIZATION_UNRESOLVED"),"CHARACTERIZE")}}
+	if err!=nil{return e.preserve(ctx,originalState,prov,evidence,c,err,"CHARACTERIZE")}
+	for _,item:=range char{if item.State==grf.UNRESOLVED{return e.preserve(ctx,originalState,prov,evidence,c,errors.New("GRCE_CHARACTERIZATION_UNRESOLVED"),"CHARACTERIZE")}}
 	opps,err:=e.hooks.Dualize(ctx,char,c)
-	if err!=nil{return e.preserve(ctx,state,prov,evidence,c,err,"DUALIZE")}
-	for _,o:=range opps{if !o.PropertyDeclared||o.NecessaryProperty==""{return e.preserve(ctx,state,prov,evidence,c,errors.New("GRCE_DUAL_NOT_DECLARED"),"DUALIZE")}}
-	if err:=e.hooks.EthicalGate(ctx,opps,c);err!=nil{return e.preserve(ctx,state,prov,evidence,c,err,"ETR_GATE")}
+	if err!=nil{return e.preserve(ctx,originalState,prov,evidence,c,err,"DUALIZE")}
+	for _,o:=range opps{if !o.PropertyDeclared||o.NecessaryProperty==""{return e.preserve(ctx,originalState,prov,evidence,c,errors.New("GRCE_DUAL_NOT_DECLARED"),"DUALIZE")}}
+	if err:=e.hooks.EthicalGate(ctx,opps,c);err!=nil{return e.preserve(ctx,originalState,prov,evidence,c,err,"ETR_GATE")}
 	prov=append(prov,grf.Provenance{ParentHash:parentHash,InputHash:parentHash,OutputHash:parentHash,SequenceIndex:c.SequenceIndex+30,Stage:"DUALIZE_ETR"})
 
+	// The SOUL-28 bridge is optional and only wired when a runtime command was
+	// explicitly configured. It runs after the ethical gate; any failure keeps
+	// the original state and carries BLOCKED evidence into the rollback result.
+	if e.hooks.SOUL28Bridge != nil {
+		bridgedState, participantProvenance, participantEvidence, bridgeErr := e.hooks.SOUL28Bridge.Run(ctx, state, c)
+		prov = append(prov, participantProvenance...)
+		evidence = append(evidence, participantEvidence...)
+		if bridgeErr != nil {
+			return e.preserve(ctx, state, prov, evidence, c, bridgeErr, "SOUL28_PARTICIPANTS")
+		}
+		state = bridgedState
+	}
+
 	ag,ac,err:=parallelAnalyze(ctx,e.hooks.AnalyzeGPU,e.hooks.AnalyzeCPU,opps,c)
-	if err!=nil{return e.preserve(ctx,state,prov,evidence,c,err,"ANALYZE")}
+	if err!=nil{return e.preserve(ctx,originalState,prov,evidence,c,err,"ANALYZE")}
 	integrated,err:=e.hooks.Mediate(ctx,append(ag,ac...),state,c)
-	if err!=nil{return e.preserve(ctx,state,prov,evidence,c,err,"INTEGRATE")}
+	if err!=nil{return e.preserve(ctx,originalState,prov,evidence,c,err,"INTEGRATE")}
 	prov=append(prov,grf.Provenance{ParentHash:parentHash,InputHash:parentHash,OutputHash:parentHash,SequenceIndex:c.SequenceIndex+40,Stage:"ANALYZE_INTEGRATE"})
 
-	baseSize,err:=state.Size();if err!=nil{return e.preserve(ctx,state,prov,evidence,c,err,"TRANSFORM")}
+	baseSize,err:=state.Size();if err!=nil{return e.preserve(ctx,originalState,prov,evidence,c,err,"TRANSFORM")}
 	transformed:=make([]grf.Artifact,0,len(integrated))
 	for _,in:=range integrated{
-		t1,err:=e.hooks.Regenerate(ctx,in,state,c);if err!=nil{return e.preserve(ctx,state,prov,evidence,c,err,"ARA")}
-		s1,err:=t1.Size();if err!=nil{return e.preserve(ctx,state,prov,evidence,c,err,"ARA")}
-		if s1<baseSize{return e.preserve(ctx,state,prov,evidence,c,errors.New("GRCE_MONOTONICITY_VIOLATION"),"ARA")}
-		t2,err:=e.hooks.EthicalTransform(ctx,t1,state,c);if err!=nil{return e.preserve(ctx,state,prov,evidence,c,err,"ETR")}
-		t3,err:=e.hooks.Innovate(ctx,t2,state,c);if err!=nil{return e.preserve(ctx,state,prov,evidence,c,err,"ITR")}
+		t1,err:=e.hooks.Regenerate(ctx,in,state,c);if err!=nil{return e.preserve(ctx,originalState,prov,evidence,c,err,"ARA")}
+		s1,err:=t1.Size();if err!=nil{return e.preserve(ctx,originalState,prov,evidence,c,err,"ARA")}
+		if s1<baseSize{return e.preserve(ctx,originalState,prov,evidence,c,errors.New("GRCE_MONOTONICITY_VIOLATION"),"ARA")}
+		t2,err:=e.hooks.EthicalTransform(ctx,t1,state,c);if err!=nil{return e.preserve(ctx,originalState,prov,evidence,c,err,"ETR")}
+		t3,err:=e.hooks.Innovate(ctx,t2,state,c);if err!=nil{return e.preserve(ctx,originalState,prov,evidence,c,err,"ITR")}
 		transformed=append(transformed,t3);prov=append(prov,t1.Provenance,t2.Provenance,t3.Provenance)
 	}
 
-	candidate,err:=e.hooks.Form(ctx,transformed,state,c);if err!=nil{return e.preserve(ctx,state,prov,evidence,c,err,"FORM")}
+	candidate,err:=e.hooks.Form(ctx,transformed,state,c);if err!=nil{return e.preserve(ctx,originalState,prov,evidence,c,err,"FORM")}
 	candidate.ParentHash=parentHash
-	vet,err:=e.hooks.ValidateETR(ctx,candidate,c);if err!=nil{return e.preserve(ctx,state,prov,evidence,c,err,"VALIDATE_ETR")}
-	vit,err:=e.hooks.ValidateITR(ctx,candidate,c);if err!=nil{return e.preserve(ctx,state,prov,evidence,c,err,"VALIDATE_ITR")}
-	vrgo,err:=e.hooks.ValidateRGO(ctx,candidate,c);if err!=nil{return e.preserve(ctx,state,prov,evidence,c,err,"VALIDATE_RGO")}
+	vet,err:=e.hooks.ValidateETR(ctx,candidate,c);if err!=nil{return e.preserve(ctx,originalState,prov,evidence,c,err,"VALIDATE_ETR")}
+	vit,err:=e.hooks.ValidateITR(ctx,candidate,c);if err!=nil{return e.preserve(ctx,originalState,prov,evidence,c,err,"VALIDATE_ITR")}
+	vrgo,err:=e.hooks.ValidateRGO(ctx,candidate,c);if err!=nil{return e.preserve(ctx,originalState,prov,evidence,c,err,"VALIDATE_RGO")}
 	if !vet || !vit || !vrgo {
 		// Keep the promotion gate fail-closed while preserving which independent
 		// validator rejected the candidate; a generic error hid real SARA/E2E causes.
@@ -140,17 +155,17 @@ func (e *Executor) Run(ctx context.Context, state grf.State, c grf.Context) (Res
 			fmt.Errorf("GRCE_VALIDATION_FAILED:ETR=%t:ITR=%t:RGO=%t", vet, vit, vrgo), "VALIDATE")
 	}
 
-	caps,err:=e.hooks.ExtractCapabilities(ctx,candidate,prov,evidence,c);if err!=nil{return e.preserve(ctx,state,prov,evidence,c,err,"EXTRACT")}
+	caps,err:=e.hooks.ExtractCapabilities(ctx,candidate,prov,evidence,c);if err!=nil{return e.preserve(ctx,originalState,prov,evidence,c,err,"EXTRACT")}
 	for _,cap:=range caps{
 		if cap.ID=="" || cap.Provenance.CausalFailureID=="" {
-			return e.preserve(ctx,state,prov,evidence,c,errors.New("GRCE_CAPABILITY_CAUSAL_TRACE_MISSING"),"EXTRACT")
+			return e.preserve(ctx,originalState,prov,evidence,c,errors.New("GRCE_CAPABILITY_CAUSAL_TRACE_MISSING"),"EXTRACT")
 		}
 	}
-	if err:=validateProvenanceChain(parentHash,prov,candidate);err!=nil{return e.preserve(ctx,state,prov,evidence,c,err,"PROVENANCE")}
+	if err:=validateProvenanceChain(parentHash,prov,candidate);err!=nil{return e.preserve(ctx,originalState,prov,evidence,c,err,"PROVENANCE")}
 	candidate.EpistemicState=grf.ACTIVE
-	if err:=e.hooks.Horta(ctx,candidate,prov,evidence,caps,c);err!=nil{return e.preserve(ctx,state,prov,evidence,c,err,"HORTA_FEEDBACK")}
-	if err:=e.hooks.Vagus(ctx,candidate,prov,evidence,caps,c);err!=nil{return e.preserve(ctx,state,prov,evidence,c,err,"VAGUS_FEEDBACK")}
-	if err:=e.hooks.Mesh(ctx,candidate,prov,evidence,caps,c);err!=nil{return e.preserve(ctx,state,prov,evidence,c,err,"MESH_FEEDBACK")}
+	if err:=e.hooks.Horta(ctx,candidate,prov,evidence,caps,c);err!=nil{return e.preserve(ctx,originalState,prov,evidence,c,err,"HORTA_FEEDBACK")}
+	if err:=e.hooks.Vagus(ctx,candidate,prov,evidence,caps,c);err!=nil{return e.preserve(ctx,originalState,prov,evidence,c,err,"VAGUS_FEEDBACK")}
+	if err:=e.hooks.Mesh(ctx,candidate,prov,evidence,caps,c);err!=nil{return e.preserve(ctx,originalState,prov,evidence,c,err,"MESH_FEEDBACK")}
 	return Result{NextState:candidate,Provenance:prov,Evidence:evidence,Capabilities:caps,EpistemicState:grf.ACTIVE,Outcome:"ACTIVE"},nil
 }
 

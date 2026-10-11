@@ -9,6 +9,137 @@ import (
 	"testing"
 )
 
+func TestNervoVagoGRCEFeedbackAuditsHashLinkedSummaryAndPublishesFullEvidence(t *testing.T) {
+	var auditedInput string
+	var deliveredPayload map[string]any
+	var calls []string
+	longInput := strings.Repeat("a", 11000)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/v1/audit":
+			calls = append(calls, "audit")
+			var body map[string]any
+			if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+				t.Fatal(err)
+			}
+			auditedInput, _ = body["input"].(string)
+			_, _ = w.Write([]byte("{\"ethical\":{\"approved\":true},\"operation\":\"audit\"}"))
+		case "/v1/vagus":
+			calls = append(calls, "vagus")
+			var body map[string]any
+			if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+				t.Fatal(err)
+			}
+			deliveredPayload, _ = body["payload"].(map[string]any)
+			_, _ = w.Write([]byte("{\"operation\":\"vagus\",\"state\":\"REAL\"}"))
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer server.Close()
+
+	gateway, err := NewNervoVagoGateway(NewSARAProxy(Config{
+		SARAServiceURL: server.URL, SARAServiceToken: "test-token",
+	}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	envelope := NervoVagoEnvelope{
+		VagusVersion: "1.0", MessageID: "grce-message-1", CorrelationID: "grce-correlation-1",
+		Source: "N07.GRCE", Target: "AETERNUM_HORTACORE", Priority: 100, TTL: 5000,
+		Type: "nervo.grce.feedback.horta",
+		Payload: map[string]any{
+			"kind": "horta", "state_id": "state-grce-1", "feedback": "GRCE",
+			"provenance": []map[string]any{{
+				"parent_hash": "parent-hash", "input_hash": "input-hash", "output_hash": "output-hash",
+				"sequence_index": 3, "stage": "ARA", "causal_failure_id": "failure-1",
+			}},
+			"evidence": []map[string]any{{
+				"id": "evidence-1", "failure_id": "failure-1", "state": "PROJECTED",
+				"hash": "evidence-hash", "input_hash": "input-hash", "output_hash": "output-hash",
+				"sequence_index": 3, "payload": map[string]any{"input": longInput, "detail": "full original evidence"},
+			}},
+			"capabilities": []map[string]any{{"id": "capability-1", "state": "PROJECTED"}},
+		},
+		Provenance: NervoVagoProvenance{
+			TraceID: "grce-trace-1", CorrelationID: "grce-correlation-1", MessageID: "grce-message-1",
+			SequenceIndex: 4, ParentHash: "parent-hash", InputHash: "input-hash",
+		},
+	}
+	_, err = gateway.PublishGRCEFeedback(context.Background(), envelope)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got, want := strings.Join(calls, ","), "audit,vagus"; got != want {
+		t.Fatalf("delivery order = %q, want %q", got, want)
+	}
+	if !strings.Contains(auditedInput, "payload_sha256") || !strings.Contains(auditedInput, "envelope_sha256") {
+		t.Fatalf("ETR audit did not receive payload and envelope hashes: %s", auditedInput)
+	}
+	if strings.Contains(auditedInput, longInput) {
+		t.Fatal("ETR summary must not duplicate long user content into the transport-policy review")
+	}
+	if deliveredPayload == nil {
+		t.Fatal("full GRCE payload was not delivered")
+	}
+	deliveredEvidence, ok := deliveredPayload["evidence"].([]any)
+	if !ok || len(deliveredEvidence) != 1 {
+		t.Fatalf("full evidence list was not preserved: %#v", deliveredPayload["evidence"])
+	}
+	item, ok := deliveredEvidence[0].(map[string]any)
+	if !ok {
+		t.Fatalf("unexpected evidence payload type: %#v", deliveredEvidence[0])
+	}
+	preserved, ok := item["payload"].(map[string]any)
+	if !ok || preserved["input"] != longInput {
+		t.Fatal("full original evidence payload was not preserved through delivery")
+	}
+}
+
+func TestNervoVagoGRCEFeedbackStillBlocksWhenETRRejects(t *testing.T) {
+	var vagusCalls int
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/v1/audit":
+			_, _ = w.Write([]byte("{\"ethical\":{\"approved\":false},\"operation\":\"audit\"}"))
+		case "/v1/vagus":
+			vagusCalls++
+			_, _ = w.Write([]byte("{\"operation\":\"vagus\"}"))
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer server.Close()
+	gateway, err := NewNervoVagoGateway(NewSARAProxy(Config{
+		SARAServiceURL: server.URL, SARAServiceToken: "test-token",
+	}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	envelope := NervoVagoEnvelope{
+		VagusVersion: "1.0", MessageID: "grce-message-reject", CorrelationID: "grce-correlation-reject",
+		Source: "N07.GRCE", Target: "AETERNUM_HORTACORE", Priority: 100, TTL: 5000,
+		Type: "nervo.grce.feedback.horta",
+		Payload: map[string]any{
+			"kind": "horta", "state_id": "state-grce-reject", "feedback": "GRCE",
+			"provenance": []map[string]any{{"parent_hash": "p", "input_hash": "i", "output_hash": "o", "sequence_index": 1, "stage": "ARA"}},
+			"evidence": []map[string]any{{"id": "e", "failure_id": "f", "hash": "h", "input_hash": "i", "output_hash": "o", "state": "PROJECTED", "sequence_index": 1}},
+			"capabilities": []map[string]any{},
+		},
+		Provenance: NervoVagoProvenance{
+			TraceID: "grce-trace-reject", CorrelationID: "grce-correlation-reject", MessageID: "grce-message-reject",
+			SequenceIndex: 2, ParentHash: "p", InputHash: "i",
+		},
+	}
+	_, err = gateway.PublishGRCEFeedback(context.Background(), envelope)
+	if err == nil || !strings.Contains(err.Error(), "NERVO_VAGO_BLOCKED:ETR_REJECTED") {
+		t.Fatalf("expected ethical rejection, got %v", err)
+	}
+	if vagusCalls != 0 {
+		t.Fatalf("Vagus delivered an ethically rejected event %d times", vagusCalls)
+	}
+}
+
 func TestNervoVagoPublishRunsETRBeforeVagusDelivery(t *testing.T) {
 	var calls []string
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -19,8 +150,19 @@ func TestNervoVagoPublishRunsETRBeforeVagusDelivery(t *testing.T) {
 			if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 				t.Fatal(err)
 			}
-			if _, ok := body["input"]; !ok {
-				t.Fatal("audit input missing")
+			input, ok := body["input"].(string)
+			if !ok || input == "" {
+				t.Fatal("audit input missing or not a string")
+			}
+			for _, required := range []string{
+				"Princípios do ciclo GRCE",
+				"Finalidade da avaliação",
+				"evento do Nervo Vago",
+				`"message_id":"m-1"`,
+			} {
+				if !strings.Contains(input, required) {
+					t.Fatalf("ETR input does not preserve required context %q", required)
+				}
 			}
 			_, _ = w.Write([]byte(`{"ethical":{"approved":true},"operation":"audit"}`))
 		case "/v1/vagus":

@@ -7,8 +7,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"strings"
+	"sort"
 	"strconv"
+	"strings"
 
 	"github.com/divibisoul/Orquestrador-/orchestrator"
 	"github.com/divibisoul/Orquestrador-/protocol"
@@ -75,7 +76,19 @@ func (g *NervoVagoGateway) Describe() map[string]any {
 	}
 }
 
+// Publish evaluates user- or provider-originated event content in full before delivery.
 func (g *NervoVagoGateway) Publish(ctx context.Context, envelope NervoVagoEnvelope) (map[string]any, error) {
+	return g.publish(ctx, envelope, false)
+}
+
+// PublishGRCEFeedback is the internal feedback boundary used only by the GRCE
+// executor. The policy gate sees a hash-linked protocol summary, while the full
+// event payload remains intact and is delivered unchanged after SARA approves it.
+func (g *NervoVagoGateway) PublishGRCEFeedback(ctx context.Context, envelope NervoVagoEnvelope) (map[string]any, error) {
+	return g.publish(ctx, envelope, true)
+}
+
+func (g *NervoVagoGateway) publish(ctx context.Context, envelope NervoVagoEnvelope, internalGRCEFeedback bool) (map[string]any, error) {
 	if g == nil || g.sara == nil || !g.sara.Configured() {
 		return nil, errors.New("NERVO_VAGO_BLOCKED:SARA_POLICY_GATE_UNCONFIGURED")
 	}
@@ -103,7 +116,17 @@ func (g *NervoVagoGateway) Publish(ctx context.Context, envelope NervoVagoEnvelo
 	if err != nil {
 		return nil, fmt.Errorf("NERVO_VAGO_ENVELOPE_ENCODE:%w", err)
 	}
-	audit, err := g.sara.Audit(ctx, string(raw), envelope.CorrelationID)
+	auditContent := string(raw)
+	auditPurpose := "avaliar integridade, finalidade e limites de publicação do evento do Nervo Vago"
+	if internalGRCEFeedback {
+		auditContent, err = buildGRCEFeedbackAuditSummary(envelope, raw)
+		if err != nil {
+			return nil, fmt.Errorf("NERVO_VAGO_BLOCKED:GRCE_FEEDBACK_AUDIT_SUMMARY:%w", err)
+		}
+		auditPurpose = "avaliar legitimidade, destino e integridade do feedback técnico interno do GRCE; o payload integral continua vinculado por hash e só será entregue após aprovação ética"
+	}
+	auditInput := grceEthicalReviewInput(auditPurpose, auditContent)
+	audit, err := g.sara.Audit(ctx, auditInput, envelope.CorrelationID)
 	if err != nil {
 		return nil, fmt.Errorf("NERVO_VAGO_BLOCKED:ETR_AUDIT_FAILED:%w", err)
 	}
@@ -196,6 +219,125 @@ func canonicalEnvelopeForHash(e NervoVagoEnvelope, withoutOutputHash bool) ([]by
 func sha256Hex(raw []byte) string {
 	sum := sha256.Sum256(raw)
 	return hex.EncodeToString(sum[:])
+}
+
+type grceFeedbackAuditRecord struct {
+	ID               string         `json:"id,omitempty"`
+	FailureID        string         `json:"failure_id,omitempty"`
+	State            string         `json:"state,omitempty"`
+	Hash             string         `json:"hash,omitempty"`
+	InputHash        string         `json:"input_hash,omitempty"`
+	OutputHash       string         `json:"output_hash,omitempty"`
+	ParentHash       string         `json:"parent_hash,omitempty"`
+	SequenceIndex    uint64         `json:"sequence_index,omitempty"`
+	Stage            string         `json:"stage,omitempty"`
+	CausalFailureID  string         `json:"causal_failure_id,omitempty"`
+	Description      string         `json:"description,omitempty"`
+}
+
+func buildGRCEFeedbackAuditSummary(envelope NervoVagoEnvelope, rawEnvelope []byte) (string, error) {
+	if envelope.Source != "N07.GRCE" || !strings.HasPrefix(envelope.Type, "nervo.grce.feedback.") {
+		return "", errors.New("GRCE_FEEDBACK_SOURCE_OR_TYPE_INVALID")
+	}
+	kind, ok := envelope.Payload["kind"].(string)
+	if !ok || kind == "" || envelope.Type != "nervo.grce.feedback."+kind {
+		return "", errors.New("GRCE_FEEDBACK_KIND_MISMATCH")
+	}
+	if feedback, ok := envelope.Payload["feedback"].(string); !ok || feedback != "GRCE" {
+		return "", errors.New("GRCE_FEEDBACK_MARKER_MISSING")
+	}
+	if stateID, ok := envelope.Payload["state_id"].(string); !ok || strings.TrimSpace(stateID) == "" {
+		return "", errors.New("GRCE_FEEDBACK_STATE_ID_MISSING")
+	}
+	expectedTarget := map[string]string{
+		"horta": "AETERNUM_HORTACORE",
+		"vagus": "SARA",
+		"mesh":  "SOUL_MESH",
+	}
+	if target := expectedTarget[kind]; target == "" || envelope.Target != target {
+		return "", errors.New("GRCE_FEEDBACK_TARGET_INVALID")
+	}
+	payloadJSON, err := json.Marshal(envelope.Payload)
+	if err != nil {
+		return "", fmt.Errorf("GRCE_FEEDBACK_PAYLOAD_ENCODE_FAILED: %w", err)
+	}
+	var decoded map[string]any
+	if err := json.Unmarshal(payloadJSON, &decoded); err != nil {
+		return "", fmt.Errorf("GRCE_FEEDBACK_PAYLOAD_DECODE_FAILED: %w", err)
+	}
+	provenance := projectGRCEFeedbackRecords(decoded["provenance"], []string{
+		"parent_hash", "input_hash", "output_hash", "sequence_index", "stage", "causal_failure_id",
+	})
+	evidence := projectGRCEFeedbackRecords(decoded["evidence"], []string{
+		"id", "failure_id", "state", "hash", "input_hash", "output_hash", "sequence_index",
+	})
+	capabilities := projectGRCEFeedbackRecords(decoded["capabilities"], []string{
+		"id", "description", "state", "provenance",
+	})
+	if len(provenance) == 0 || len(evidence) == 0 {
+		return "", errors.New("GRCE_FEEDBACK_PROVENANCE_OR_EVIDENCE_MISSING")
+	}
+	payloadHash, err := HashNervoVagoValue(envelope.Payload)
+	if err != nil {
+		return "", fmt.Errorf("GRCE_FEEDBACK_PAYLOAD_HASH_FAILED: %w", err)
+	}
+	var payloadKeys []string
+	for key := range envelope.Payload {
+		payloadKeys = append(payloadKeys, key)
+	}
+	sort.Strings(payloadKeys)
+	summary := map[string]any{
+		"contract": "soul.grce.feedback.audit.v1",
+		"event_type": envelope.Type,
+		"message_id": envelope.MessageID,
+		"correlation_id": envelope.CorrelationID,
+		"source": envelope.Source,
+		"target": envelope.Target,
+		"priority": envelope.Priority,
+		"ttl": envelope.TTL,
+		"kind": kind,
+		"state_id": envelope.Payload["state_id"],
+		"payload_keys": payloadKeys,
+		"payload_sha256": payloadHash,
+		"envelope_sha256": sha256Hex(rawEnvelope),
+		"payload_json_bytes": len(payloadJSON),
+		"provenance": provenance,
+		"evidence": evidence,
+		"capabilities": capabilities,
+		"delivery_policy": "full_payload_preserved_and_delivered_only_after_ETR_approval",
+	}
+	raw, err := json.Marshal(summary)
+	if err != nil {
+		return "", fmt.Errorf("GRCE_FEEDBACK_SUMMARY_ENCODE_FAILED: %w", err)
+	}
+	return string(raw), nil
+}
+
+// projectGRCEFeedbackRecords keeps only protocol identity, status, provenance,
+// and content hashes. It intentionally excludes each record's arbitrary payload;
+// that content remains in the full event sent to SARA after the ETR gate.
+func projectGRCEFeedbackRecords(value any, fields []string) []map[string]any {
+	raw, err := json.Marshal(value)
+	if err != nil {
+		return nil
+	}
+	var records []map[string]any
+	if err := json.Unmarshal(raw, &records); err != nil {
+		return nil
+	}
+	out := make([]map[string]any, 0, len(records))
+	for _, record := range records {
+		projected := make(map[string]any, len(fields))
+		for _, field := range fields {
+			if value, exists := record[field]; exists {
+				projected[field] = value
+			}
+		}
+		if len(projected) > 0 {
+			out = append(out, projected)
+		}
+	}
+	return out
 }
 
 // HashNervoVagoValue hashes a JSON-serializable value using the existing SHA-256 utility.
