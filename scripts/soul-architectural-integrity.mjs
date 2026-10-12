@@ -196,10 +196,11 @@ const n06EngineFiles = n06Source
 if (n06Source && !n06EngineFiles.length) add(report.contractConflicts,{nucleus:'N06',type:'canonical-capability-engine-not-found'});
 
 const n03Source = sourceResults.find(source => source.id === 'N03');
+const n03CanonicalPaths = new Set(n03Source?.nucleus.contractEvidencePaths??[]);
 const n03Legacy = n03Source
-  ? n03Source.files.filter(f=>/(^|\/)soul-mesh\/SoulMeshProtocol\.(ts|tsx|js|mjs)$/.test(f.file) && !isAdapter(f.file,f.content))
+  ? n03Source.files.filter(f=>/(^|\/)soul-mesh\/SoulMeshProtocol\.(ts|tsx|js|mjs)$/.test(f.file) && !n03CanonicalPaths.has(f.file) && !isAdapter(f.file,f.content))
   : [];
-if (n03Legacy.length) add(report.duplicateProtocols,{family:'mesh-protocol',canonical:'lib/soul-mesh/SoulMeshProtocol.ts',authorities:n03Legacy.map(f=>({nucleus:'N03',file:f.file,reason:'legacy protocol is active, not adapter'}))});
+if (n03Legacy.length) add(report.duplicateProtocols,{family:'mesh-protocol',canonical:'lib/soul-mesh/SoulMeshProtocol.ts',authorities:n03Legacy.map(f=>({nucleus:'N03',file:f.file,reason:'undeclared active protocol implementation'}))});
 
 const critical=[...report.duplicateAuthorities,...report.duplicateRegistries,...report.duplicateProtocols,...report.topologyConflicts,...report.contractConflicts,...report.orphanCapabilities];
 if (critical.length) report.state='FAIL'; else if (report.degraded.length) report.state='DEGRADED';
