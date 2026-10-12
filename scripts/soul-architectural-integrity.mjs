@@ -40,7 +40,7 @@ function isAdapter(file, content='') {
   return p.includes('/legacy/') || p.includes('adapter') || /@deprecated[\s\S]{0,120}compatibility/i.test(content);
 }
 
-const report={system:'SOUL',checker:'SOUL Architectural Integrity Engine',schemaVersion:'3.0.0',generatedAt:new Date().toISOString(),state:'PASS',duplicateAuthorities:[],duplicateProtocols:[],duplicateRegistries:[],topologyConflicts:[],contractConflicts:[],orphanCapabilities:[],legacyAdapters:[],canonicalAuthorities:[],degraded:[],remoteProvenance:[],promptContract:[],headSnapshot:[]};
+const report={system:'SOUL',checker:'SOUL Architectural Integrity Engine',schemaVersion:'3.0.0',generatedAt:new Date().toISOString(),state:'PASS',duplicateAuthorities:[],duplicateProtocols:[],protocolImplementations:[],duplicateRegistries:[],topologyConflicts:[],contractConflicts:[],orphanCapabilities:[],legacyAdapters:[],canonicalAuthorities:[],degraded:[],remoteProvenance:[],promptContract:[],headSnapshot:[]};
 const matrix=await readJson(MATRIX_PATH);
 
 if (matrix?.system!=='SOUL') add(report.contractConflicts,{type:'system-invalid'});
@@ -133,6 +133,11 @@ for (const [id,nucleus] of Object.entries(matrix.nuclei??{})) {
 }
 
 for (const family of DUPLICATION_FAMILIES) {
+  // A shared wire protocol is implemented at each nucleus boundary. Identical
+  // protocol symbols in separate repositories are implementations, not multiple
+  // global authorities. N07's declarative canonicalMesh remains the one authority.
+  if (family.id==='mesh-protocol') continue;
+
   const authorities=[];
   for (const source of sourceResults) for (const file of source.files) {
     if (isAdapter(file.file,file.content)) {
@@ -144,11 +149,45 @@ for (const family of DUPLICATION_FAMILIES) {
   }
   if (authorities.length>1) {
     const issue={family:family.id,canonical:family.canonical,authorities};
-    if (family.id==='mesh-protocol') add(report.duplicateProtocols,issue);
-    else if (family.id==='n06-tool-registry') add(report.duplicateRegistries,issue);
+    if (family.id==='n06-tool-registry') add(report.duplicateRegistries,issue);
     else add(report.duplicateAuthorities,issue);
   }
 }
+
+// Record distributed Mesh implementations separately and validate their declared
+// wire values against the canonical contract instead of calling every peer
+// implementation a second global authority.
+const protocolFamily=DUPLICATION_FAMILIES.find(f=>f.id==='mesh-protocol');
+const protocolImplementations=[];
+for (const source of sourceResults) {
+  const declaredPaths=new Set(source.nucleus.contractEvidencePaths??[]);
+  for (const file of source.files) {
+    if (!protocolFamily.patterns.some(p=>p.test(file.content))) continue;
+    if (isAdapter(file.file,file.content)) {
+      report.legacyAdapters.push({nucleus:source.id,family:protocolFamily.id,file:file.file});
+      continue;
+    }
+    const protocolMatch=file.content.match(/(?:export\s+)?const\s+SOUL_MESH_PROTOCOL\s*=\s*['"]([^'"]+)['"]/);
+    const versionMatch=file.content.match(/(?:export\s+)?const\s+SOUL_MESH_CONTRACT_VERSION\s*=\s*['"]([^'"]+)['"]/);
+    protocolImplementations.push({
+      nucleus:source.id,
+      file:file.file,
+      role:declaredPaths.has(file.file)?'declared-contract-evidence':'peer-implementation',
+      protocol:protocolMatch?.[1]??null,
+      contractVersion:versionMatch?.[1]??null,
+    });
+    if (protocolMatch && protocolMatch[1]!==matrix.canonicalMesh.protocol) {
+      add(report.contractConflicts,{nucleus:source.id,file:file.file,type:'mesh-protocol-version-mismatch',expected:matrix.canonicalMesh.protocol,actual:protocolMatch[1]});
+    }
+    if (versionMatch && versionMatch[1]!==matrix.canonicalMesh.contractVersion) {
+      add(report.contractConflicts,{nucleus:source.id,file:file.file,type:'mesh-contract-version-mismatch',expected:matrix.canonicalMesh.contractVersion,actual:versionMatch[1]});
+    }
+    if (/(?:interface|type)\s+SoulMeshMessage\b/.test(file.content) && !/\bcontractVersion\b/.test(file.content)) {
+      add(report.contractConflicts,{nucleus:source.id,file:file.file,type:'mesh-contract-version-missing',expected:matrix.canonicalMesh.contractVersion});
+    }
+  }
+}
+report.protocolImplementations=protocolImplementations;
 
 const n06Source = sourceResults.find(source => source.id === 'N06');
 const n06EngineFiles = n06Source
