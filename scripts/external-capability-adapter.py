@@ -33,7 +33,7 @@ def load():
             emit({"state":"BLOCKED","code":"EXTERNAL_ADAPTER_PAYLOAD_JSON_INVALID","detail":str(e)},2)
         if not isinstance(payload,dict):
             emit({"state":"BLOCKED","code":"EXTERNAL_ADAPTER_PAYLOAD_NOT_OBJECT"},2)
-        reserved={"provider","mode","operation","root","metadata","payload_json","external_operation","native_owner","provider_revision"}
+        reserved={"provider","mode","operation","root","metadata","payload_json","external_operation","native_owner","provider_revision","timeout_seconds"}
         for key,value in payload.items():
             if isinstance(key,str) and key not in reserved:
                 v[key]=value
