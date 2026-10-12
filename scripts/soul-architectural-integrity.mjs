@@ -40,7 +40,7 @@ function isAdapter(file, content='') {
   return p.includes('/legacy/') || p.includes('adapter') || /@deprecated[\s\S]{0,120}compatibility/i.test(content);
 }
 
-const report={system:'SOUL',checker:'SOUL Architectural Integrity Engine',schemaVersion:'3.0.0',generatedAt:new Date().toISOString(),state:'PASS',duplicateAuthorities:[],duplicateProtocols:[],protocolImplementations:[],duplicateRegistries:[],topologyConflicts:[],contractConflicts:[],orphanCapabilities:[],legacyAdapters:[],canonicalAuthorities:[],degraded:[],remoteProvenance:[],promptContract:[],headSnapshot:[]};
+const report={system:'SOUL',checker:'SOUL Architectural Integrity Engine',schemaVersion:'3.0.0',generatedAt:new Date().toISOString(),state:'PASS',duplicateAuthorities:[],duplicateProtocols:[],protocolImplementations:[],duplicateRegistries:[],topologyConflicts:[],contractConflicts:[],orphanCapabilities:[],legacyAdapters:[],canonicalAuthorities:[],degraded:[],remoteProvenance:[],promptContract:[],headSnapshot:[],canonicalMeshContracts:[],nonCanonicalProtocolCopies:[],protocolImplementations:[]};
 const matrix=await readJson(MATRIX_PATH);
 
 if (matrix?.system!=='SOUL') add(report.contractConflicts,{type:'system-invalid'});
@@ -154,40 +154,147 @@ for (const family of DUPLICATION_FAMILIES) {
   }
 }
 
-// Record distributed Mesh implementations separately and validate their declared
-// wire values against the canonical contract instead of calling every peer
-// implementation a second global authority.
-const protocolFamily=DUPLICATION_FAMILIES.find(f=>f.id==='mesh-protocol');
-const protocolImplementations=[];
+// The cross-nucleus protocol is one wire contract with a canonical implementation
+// per independent runtime. Validate each declared canonical module; do not mistake
+// identical symbol names in separate repositories for duplicate global authorities.
+const protocolFamily = DUPLICATION_FAMILIES.find(f => f.id === 'mesh-protocol');
+const protocolImplementations = [];
+const canonicalMeshContracts = [];
+const nonCanonicalProtocolCopies = [];
+const normalizeRepoPath = value => String(value ?? '').replaceAll('\\', '/').replace(/^\.\/+/, '');
+const expectedMeshKinds = ['request', 'response', 'event', 'error'];
 for (const source of sourceResults) {
-  const declaredPaths=new Set(source.nucleus.contractEvidencePaths??[]);
+  // N07's canonical Mesh envelope is Go-owned; the TypeScript contract gate applies to N01-N06.
+  if (source.id === 'N07') continue;
+
+  const canonicalPath = normalizeRepoPath(source.nucleus.canonicalMeshContractPath);
+  if (!canonicalPath) {
+    add(report.contractConflicts, { nucleus: source.id, type: 'canonical-mesh-contract-path-missing' });
+    continue;
+  }
+
+  const canonicalFile = source.files.find(file => normalizeRepoPath(file.file) === canonicalPath);
+  if (!canonicalFile) {
+    add(report.contractConflicts, {
+      nucleus: source.id,
+      type: 'canonical-mesh-contract-file-missing',
+      path: canonicalPath,
+      commit: source.commit ?? null,
+    });
+    canonicalMeshContracts.push({ nucleus: source.id, file: canonicalPath, state: 'MISSING' });
+    continue;
+  }
+
+  const content = canonicalFile.content;
+  const protocolMatch = content.match(/(?:export\s+)?const\s+SOUL_MESH_PROTOCOL\s*=\s*['"]([^'"]+)['"]/);
+  const versionMatch = content.match(/(?:export\s+)?const\s+SOUL_MESH_CONTRACT_VERSION\s*=\s*['"]([^'"]+)['"]/);
+  const kindMatch = content.match(/\btype\s+SoulMeshKind\s*=\s*([^;\n]+)/);
+  const kinds = kindMatch ? Array.from(kindMatch[1].matchAll(/['"]([^'"]+)['"]/g), match => match[1]) : [];
+  const nucleiMatch = content.match(/(?:export\s+)?const\s+SOUL_NUCLEI\b[^=]*=\s*\[([^\]]+)\]/);
+  const nuclei = nucleiMatch ? Array.from(nucleiMatch[1].matchAll(/['"](N0[1-7])['"]/g), match => match[1]) : [];
+  const checks = {
+    protocol: protocolMatch?.[1] === matrix.canonicalMesh.protocol,
+    contractVersion: versionMatch?.[1] === matrix.canonicalMesh.contractVersion,
+    canonicalKinds: JSON.stringify([...kinds].sort()) === JSON.stringify([...expectedMeshKinds].sort()),
+    numericTimestamp: /\btimestamp\s*:\s*number\b/.test(content),
+    completeNucleusSet: JSON.stringify(nuclei) === JSON.stringify(IDS),
+    messageFactory: /\bfunction\s+createSoulMeshMessage\b/.test(content),
+    messageValidator: /\b(?:function|const)\s+(?:validateSoulMeshMessage|validateMessage|isSoulMeshMessage)\b/.test(content),
+    messageEnvelopeFields: /\bid\s*:\s*string\b/.test(content)
+      && /\bcorrelationId\s*:\s*string\b/.test(content)
+      && /\bsource\s*:/.test(content)
+      && /\btarget\s*:/.test(content)
+      && /\bkind\s*:/.test(content)
+      && /\bpayload\s*:/.test(content)
+      && /\btimestamp\s*:/.test(content),
+  };
+  const failedChecks = Object.entries(checks).filter(([, passed]) => !passed).map(([name]) => name);
+  canonicalMeshContracts.push({
+    nucleus: source.id,
+    file: canonicalPath,
+    protocol: protocolMatch?.[1] ?? null,
+    contractVersion: versionMatch?.[1] ?? null,
+    kinds,
+    nuclei,
+    checks,
+    state: failedChecks.length ? 'FAIL' : 'PASS',
+  });
+  if (failedChecks.length) {
+    add(report.contractConflicts, {
+      nucleus: source.id,
+      file: canonicalPath,
+      type: 'canonical-mesh-contract-invalid',
+      failedChecks,
+      expectedProtocol: matrix.canonicalMesh.protocol,
+      expectedContractVersion: matrix.canonicalMesh.contractVersion,
+      expectedKinds: expectedMeshKinds,
+      expectedNuclei: IDS,
+    });
+  }
+
+  const activePaths = new Set([
+    ...(source.nucleus.entrypoints ?? []),
+    ...(source.nucleus.contractEvidencePaths ?? []),
+  ].map(normalizeRepoPath));
+
   for (const file of source.files) {
-    if (!protocolFamily.patterns.some(p=>p.test(file.content))) continue;
-    if (isAdapter(file.file,file.content)) {
-      report.legacyAdapters.push({nucleus:source.id,family:protocolFamily.id,file:file.file});
+    const relativePath = normalizeRepoPath(file.file);
+    const definitions = protocolFamily.patterns.filter(pattern => pattern.test(file.content)).map(String);
+    if (!definitions.length) continue;
+
+    if (isAdapter(file.file, file.content)) {
+      report.legacyAdapters.push({ nucleus: source.id, family: protocolFamily.id, file: relativePath });
       continue;
     }
-    const protocolMatch=file.content.match(/(?:export\s+)?const\s+SOUL_MESH_PROTOCOL\s*=\s*['"]([^'"]+)['"]/);
-    const versionMatch=file.content.match(/(?:export\s+)?const\s+SOUL_MESH_CONTRACT_VERSION\s*=\s*['"]([^'"]+)['"]/);
+
+    const fileProtocol = file.content.match(/(?:export\s+)?const\s+SOUL_MESH_PROTOCOL\s*=\s*['"]([^'"]+)['"]/);
+    const fileVersion = file.content.match(/(?:export\s+)?const\s+SOUL_MESH_CONTRACT_VERSION\s*=\s*['"]([^'"]+)['"]/);
+    const isCanonical = relativePath === canonicalPath;
+    const isActiveBinding = activePaths.has(relativePath);
+    const role = isCanonical ? 'canonical-contract' : (isActiveBinding ? 'active-runtime-binding' : 'non-canonical-copy');
     protocolImplementations.push({
-      nucleus:source.id,
-      file:file.file,
-      role:declaredPaths.has(file.file)?'declared-contract-evidence':'peer-implementation',
-      protocol:protocolMatch?.[1]??null,
-      contractVersion:versionMatch?.[1]??null,
+      nucleus: source.id,
+      file: relativePath,
+      role,
+      protocol: fileProtocol?.[1] ?? null,
+      contractVersion: fileVersion?.[1] ?? null,
+      definitions,
     });
-    if (protocolMatch && protocolMatch[1]!==matrix.canonicalMesh.protocol) {
-      add(report.contractConflicts,{nucleus:source.id,file:file.file,type:'mesh-protocol-version-mismatch',expected:matrix.canonicalMesh.protocol,actual:protocolMatch[1]});
+
+    if (isCanonical) continue;
+
+    if (isActiveBinding) {
+      // A declared active route must import/re-export its canonical schema, not define another one.
+      add(report.duplicateProtocols, {
+        family: protocolFamily.id,
+        canonical: canonicalPath,
+        authorities: [{
+          nucleus: source.id,
+          file: relativePath,
+          definitions,
+          reason: 'active entrypoint declares Mesh protocol symbols outside its canonical module',
+        }],
+      });
+      continue;
     }
-    if (versionMatch && versionMatch[1]!==matrix.canonicalMesh.contractVersion) {
-      add(report.contractConflicts,{nucleus:source.id,file:file.file,type:'mesh-contract-version-mismatch',expected:matrix.canonicalMesh.contractVersion,actual:versionMatch[1]});
-    }
-    if (/(?:interface|type)\s+SoulMeshMessage\b/.test(file.content) && !/\bcontractVersion\b/.test(file.content)) {
-      add(report.contractConflicts,{nucleus:source.id,file:file.file,type:'mesh-contract-version-missing',expected:matrix.canonicalMesh.contractVersion});
-    }
+
+    // Keep old or auxiliary copies visible for later adapter reconciliation; their presence
+    // alone is not evidence of a second active authority in the declared runtime path.
+    nonCanonicalProtocolCopies.push({
+      nucleus: source.id,
+      file: relativePath,
+      canonical: canonicalPath,
+      protocol: fileProtocol?.[1] ?? null,
+      contractVersion: fileVersion?.[1] ?? null,
+      containsLegacyAck: /\b(?:kind\s*:\s*[^;\n]*|type\s+\w*MeshKind\s*=)\s*[^;\n]*['"]ack['"]/.test(file.content),
+      containsStringTimestamp: /\btimestamp\s*:\s*string\b/.test(file.content),
+      state: 'NON_CANONICAL_COPY_RETAINED',
+    });
   }
 }
-report.protocolImplementations=protocolImplementations;
+report.canonicalMeshContracts = canonicalMeshContracts;
+report.nonCanonicalProtocolCopies = nonCanonicalProtocolCopies;
+report.protocolImplementations = protocolImplementations;
 
 const n06Source = sourceResults.find(source => source.id === 'N06');
 const n06EngineFiles = n06Source
@@ -196,11 +303,24 @@ const n06EngineFiles = n06Source
 if (n06Source && !n06EngineFiles.length) add(report.contractConflicts,{nucleus:'N06',type:'canonical-capability-engine-not-found'});
 
 const n03Source = sourceResults.find(source => source.id === 'N03');
-const n03CanonicalPaths = new Set(n03Source?.nucleus.contractEvidencePaths??[]);
+const n03CanonicalPath = normalizeRepoPath(n03Source?.nucleus.canonicalMeshContractPath);
+const n03ActivePaths = new Set([
+  ...(n03Source?.nucleus.entrypoints ?? []),
+  ...(n03Source?.nucleus.contractEvidencePaths ?? []),
+].map(normalizeRepoPath));
 const n03Legacy = n03Source
-  ? n03Source.files.filter(f=>/(^|\/)soul-mesh\/SoulMeshProtocol\.(ts|tsx|js|mjs)$/.test(f.file) && !n03CanonicalPaths.has(f.file) && !isAdapter(f.file,f.content) && protocolFamily.patterns.some(p=>p.test(f.content)))
+  ? n03Source.files.filter(f =>
+      /(^|\/)soul-mesh\/SoulMeshProtocol\.(ts|tsx|js|mjs)$/.test(normalizeRepoPath(f.file))
+      && normalizeRepoPath(f.file) !== n03CanonicalPath
+      && n03ActivePaths.has(normalizeRepoPath(f.file))
+      && !isAdapter(f.file, f.content)
+      && protocolFamily.patterns.some(p => p.test(f.content)))
   : [];
-if (n03Legacy.length) add(report.duplicateProtocols,{family:'mesh-protocol',canonical:'lib/soul-mesh/SoulMeshProtocol.ts',authorities:n03Legacy.map(f=>({nucleus:'N03',file:f.file,reason:'undeclared active protocol implementation'}))});
+if (n03Legacy.length) add(report.duplicateProtocols, {
+  family: 'mesh-protocol',
+  canonical: n03CanonicalPath,
+  authorities: n03Legacy.map(f => ({ nucleus: 'N03', file: f.file, reason: 'active N03 entrypoint declares a second protocol schema' })),
+});
 
 const critical=[...report.duplicateAuthorities,...report.duplicateRegistries,...report.duplicateProtocols,...report.topologyConflicts,...report.contractConflicts,...report.orphanCapabilities];
 if (critical.length) report.state='FAIL'; else if (report.degraded.length) report.state='DEGRADED';

@@ -76,7 +76,8 @@
           "observed": "2026-10-06/live-mainline",
           "state": "CURRENT"
         }
-      ]
+      ],
+      "canonicalMeshContractPath": "src/core/mesh/SoulMeshProtocol.ts"
     },
     "N02": {
       "repository": "divibisoul/Eternium-",
@@ -115,7 +116,8 @@
           "observed": "2026-10-06/live-mainline",
           "state": "CURRENT"
         }
-      ]
+      ],
+      "canonicalMeshContractPath": "src/soul-mesh/SoulMeshProtocol.ts"
     },
     "N03": {
       "repository": "divibisoul/nexus-aeternum-fusion",
@@ -165,7 +167,8 @@
           "observed": "2026-10-12/verified-main-head",
           "state": "CURRENT"
         }
-      ]
+      ],
+      "canonicalMeshContractPath": "lib/soul-mesh/SoulMeshProtocol.ts"
     },
     "N04": {
       "repository": "divibisoul/nextjs-ai-chatbots",
@@ -214,7 +217,8 @@
           "observed": "2026-10-12/verified-main-head",
           "state": "CURRENT"
         }
-      ]
+      ],
+      "canonicalMeshContractPath": "lib/soul-mesh/SoulMeshProtocol.ts"
     },
     "N05": {
       "repository": "divibisoul/nextjs-ai-chatbot",
@@ -255,7 +259,8 @@
           "observed": "2026-10-06/live-mainline",
           "state": "CURRENT"
         }
-      ]
+      ],
+      "canonicalMeshContractPath": "lib/soul-mesh/SoulMeshProtocol.ts"
     },
     "N06": {
       "repository": "divibisoul/nextjs-ai-chatbot-2000",
@@ -295,7 +300,8 @@
           "observed": "2026-10-06/live-mainline",
           "state": "CURRENT"
         }
-      ]
+      ],
+      "canonicalMeshContractPath": "lib/soul-mesh/SoulMeshProtocol.ts"
     },
     "N07": {
       "repository": "divibisoul/Orquestrador-",
