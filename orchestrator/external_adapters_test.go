@@ -103,14 +103,26 @@ func TestExternalFederationExecutionRequiresCanonicalNativeOwner(t *testing.T) {
 		t.Fatalf("wrong native owner did not fail closed: %v", err)
 	}
 
+	wrongRevision := map[string]string{
+		"provider":           "langgraph",
+		"external_operation": "workflow.invoke",
+		"native_owner":       "N07",
+		"provider_revision":  strings.Repeat("0", 40),
+	}
+	_, err = e.Execute(context.Background(), ExternalFederationExecuteOperation, nil, wrongRevision)
+	if err == nil || !strings.Contains(err.Error(), "EXTERNAL_PROVIDER_REVISION_MISMATCH") {
+		t.Fatalf("provider revision drift did not fail closed: %v", err)
+	}
+
 	canonicalOwner := map[string]string{
 		"provider":           "langgraph",
 		"external_operation": "workflow.invoke",
 		"native_owner":       "N07",
+		"provider_revision":  "2d942085e214ef6b99b6f54ed4d544a7c7c5ac56",
 	}
 	_, err = e.Execute(context.Background(), ExternalFederationExecuteOperation, nil, canonicalOwner)
 	if err == nil || !strings.Contains(err.Error(), "EXTERNAL_ADAPTER_DISABLED") {
-		t.Fatalf("canonical owner must still respect the default-disabled adapter gate: %v", err)
+		t.Fatalf("canonical owner and revision must still respect the default-disabled adapter gate: %v", err)
 	}
 }
 
