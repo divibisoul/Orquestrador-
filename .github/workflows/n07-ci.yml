@@ -111,8 +111,8 @@ jobs:
           fetch-depth: 0
           submodules: false
 
-      - name: Materialize top-level SOUL submodules without unsafe recursion
-        run: node scripts/materialize-top-level-submodules.mjs
+      - name: Assert source audit credentials are available
+        run: test -n "$SOUL_GITHUB_AUDIT_TOKEN"
 
       - uses: actions/setup-node@v4
         with:
