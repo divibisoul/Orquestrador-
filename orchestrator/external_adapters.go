@@ -407,8 +407,19 @@ func RegisterExternalAdapterOperations(e *Engine, r ExternalAdapterRegistry) err
 	if err := e.Register(ExternalFederationExecuteOperation, func(ctx context.Context, m protocol.Message) (protocol.Result, error) {
 		provider := strings.TrimSpace(m.Metadata["provider"])
 		op := strings.TrimSpace(m.Metadata["external_operation"])
+		nativeOwner := strings.TrimSpace(m.Metadata["native_owner"])
 		if provider == "" || op == "" {
 			return externalAdapterFailure(m, "EXTERNAL_PROVIDER_AND_OPERATION_REQUIRED")
+		}
+		spec, ok := r.byID[strings.ToLower(provider)]
+		if !ok {
+			return externalAdapterFailure(m, "EXTERNAL_PROVIDER_UNKNOWN:"+provider)
+		}
+		if nativeOwner == "" {
+			return externalAdapterFailure(m, "EXTERNAL_NATIVE_OWNER_REQUIRED")
+		}
+		if nativeOwner != spec.Owner {
+			return externalAdapterFailure(m, "EXTERNAL_NATIVE_OWNER_MISMATCH:"+provider)
 		}
 		if !externalEnabled(provider) {
 			return externalAdapterFailure(m, "EXTERNAL_ADAPTER_DISABLED")
