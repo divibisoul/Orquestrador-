@@ -7,9 +7,14 @@ jobs:
   verify:
     runs-on: ubuntu-latest
     steps:
+      # This workflow tests in-repository Go packages only. The public upstream
+      # gitlinks and their pinned revisions remain tracked and are materialized
+      # by the dedicated external-integration/container workflows. Avoid recursive
+      # checkout here: an upstream repository currently has an incomplete nested
+      # .gitmodules mapping for a dataset submodule, unrelated to these Go tests.
       - uses: actions/checkout@v4
         with:
-          submodules: true
+          submodules: false
       - uses: actions/setup-go@v5
         with: {go-version: '1.25'}
       - run: go test ./rgo
