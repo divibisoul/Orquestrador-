@@ -1,5 +1,6 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { execFileSync } from 'node:child_process';
 
 const ROOT = process.cwd();
 const MATRIX_PATH = path.join(ROOT, 'soul-nuclei.json');
@@ -67,30 +68,67 @@ for (const [id,n] of Object.entries(matrix.nuclei??{})) for (const peer of n.pee
 }
 
 async function remoteSnapshot(id,nucleus) {
-  const token=String(process.env.SOUL_GITHUB_AUDIT_TOKEN || '').trim();
-  if (!token) { add(report.degraded,{nucleus:id,type:'remote-provenance-unverified',requiredEnv:'GITHUB_TOKEN'}); return null; }
+  const token=String(process.env.SOUL_GITHUB_AUDIT_TOKEN || process.env.GITHUB_TOKEN || '').trim();
+  if (!token) { add(report.degraded,{nucleus:id,type:'remote-provenance-unverified',requiredEnv:'SOUL_GITHUB_AUDIT_TOKEN'}); return null; }
   const headers={accept:'application/vnd.github+json',authorization:`Bearer ${token}`,'x-github-api-version':'2022-11-28','user-agent':'SOUL-Architectural-Integrity-Engine'};
-  const repoResponse=await fetch(`${API}/repos/${nucleus.repository}`,{headers});
-  if (!repoResponse.ok) throw new Error(`REMOTE_REPO_LOOKUP_FAILED:${id}:${repoResponse.status}`);
-  const repo=await repoResponse.json(); const branch=repo.default_branch;
-  const refResponse=await fetch(`${API}/repos/${nucleus.repository}/git/ref/heads/${encodeURIComponent(branch)}`,{headers});
-  if (!refResponse.ok) throw new Error(`REMOTE_REF_LOOKUP_FAILED:${id}:${refResponse.status}`);
-  const ref=await refResponse.json(); const actualSha=ref?.object?.sha; const expectedSha=nucleus.sourceRef;
-  const provenance={nucleus:id,repository:nucleus.repository,branch,expectedSha,actualSha,state:actualSha===expectedSha?'MATCH':'DRIFT'}; report.remoteProvenance.push(provenance);
-  if (id!=='N07' && actualSha!==expectedSha) add(report.contractConflicts,{nucleus:id,type:'source-ref-drift',expectedSha,actualSha});
-  return {id,nucleus,origin:'remote',commit:actualSha,files:[]};
+  const readRemote=async(url)=>{const response=await fetch(url,{headers});if(!response.ok)throw new Error('REMOTE_API_FAILED:'+id+':'+response.status+':'+url);return response.json();};
+  const repo=await readRemote(`${API}/repos/${nucleus.repository}`);
+  const branch=repo.default_branch;
+  const ref=await readRemote(`${API}/repos/${nucleus.repository}/git/ref/heads/${encodeURIComponent(branch)}`);
+  const actualSha=ref?.object?.sha;
+  if (!actualSha) throw new Error('REMOTE_HEAD_SHA_MISSING:'+id);
+  const expectedSha=String(nucleus.sourceRef??'');
+  report.remoteProvenance.push({nucleus:id,repository:nucleus.repository,branch,expectedSha,actualSha,state:actualSha===expectedSha?'MATCH':'DRIFT'});
+  if (id!=='N07' && /^[0-9a-f]{40}$/.test(expectedSha) && actualSha!==expectedSha) add(report.contractConflicts,{nucleus:id,type:'source-ref-drift',expectedSha,actualSha});
+  const snapshotSha=/^[0-9a-f]{40}$/.test(expectedSha)?expectedSha:actualSha;
+  const tree=await readRemote(`${API}/repos/${nucleus.repository}/git/trees/${snapshotSha}?recursive=1`);
+  if (tree.truncated) throw new Error('REMOTE_TREE_TRUNCATED:'+id+':'+snapshotSha);
+  const evidencePaths=new Set([...(nucleus.entrypoints??[]),...(nucleus.contractEvidencePaths??[])]);
+  const relevantPath=/(?:SoulMeshProtocol|soul-mesh|N06|N06ToolRegistry|createN06Tools|createNucleus06Tools)/i;
+  const candidates=(tree.tree??[]).filter(entry=>entry.type==='blob'&&TS_EXTENSIONS.has(path.extname(entry.path))&&(evidencePaths.has(entry.path)||relevantPath.test(entry.path)));
+  if (candidates.length===0) throw new Error('REMOTE_SNAPSHOT_EMPTY:'+id+':'+snapshotSha);
+  if (candidates.length>180) throw new Error('REMOTE_SNAPSHOT_CANDIDATE_LIMIT_EXCEEDED:'+id+':'+candidates.length);
+  const files=[];
+  for (const entry of candidates) {
+    if (!entry.sha) throw new Error('REMOTE_BLOB_SHA_MISSING:'+id+':'+entry.path);
+    const blob=await readRemote(`${API}/repos/${nucleus.repository}/git/blobs/${entry.sha}`);
+    if (blob.encoding!=='base64'||typeof blob.content!=='string') throw new Error('REMOTE_BLOB_CONTENT_INVALID:'+id+':'+entry.path);
+    files.push({file:entry.path,content:Buffer.from(blob.content,'base64').toString('utf8')});
+  }
+  if (!files.length) throw new Error('REMOTE_SNAPSHOT_EMPTY:'+id+':'+snapshotSha);
+  return {id,nucleus,origin:'remote',commit:snapshotSha,files};
+}
+
+async function workspaceSnapshot(nucleus) {
+  const commit=execFileSync('git',['rev-parse','HEAD'],{cwd:ROOT,encoding:'utf8'}).trim();
+  const tracked=execFileSync('git',['ls-files','-z'],{cwd:ROOT,encoding:'utf8'}).split('\0').filter(Boolean);
+  const files=[];
+  for (const file of tracked) {
+    if (!TS_EXTENSIONS.has(path.extname(file))) continue;
+    files.push({file,content:await fs.readFile(path.join(ROOT,file),'utf8')});
+  }
+  if (!files.length) throw new Error('WORKSPACE_SNAPSHOT_EMPTY:N07:'+commit);
+  return {id:'N07',nucleus,origin:'working-tree',commit,files};
 }
 
 const sourceResults=[];
 for (const [id,nucleus] of Object.entries(matrix.nuclei??{})) {
   const root=path.join(SOURCES_ROOT,id); let local=null;
-  if (await fs.stat(root).then(s=>s.isDirectory()).catch(()=>false)) {
+  if (id==='N07') {
+    try { local=await workspaceSnapshot(nucleus); }
+    catch (error) { add(report.degraded,{nucleus:id,type:'workspace-snapshot-unavailable',error:String(error)}); }
+  } else if (await fs.stat(root).then(s=>s.isDirectory()).catch(()=>false)) {
     const files=[]; for (const f of await walk(root)) files.push({file:path.relative(root,f),content:await fs.readFile(f,'utf8')});
     local={id,nucleus,origin:'snapshot',commit:nucleus.sourceRef??null,files};
   }
-  const remote=process.env.SOUL_GITHUB_AUDIT_TOKEN ? await remoteSnapshot(id,nucleus) : null;
-  const selected=remote ?? local;
+  let remote=null;
+  if (id!=='N07') {
+    try { remote=await remoteSnapshot(id,nucleus); }
+    catch (error) { add(report.degraded,{nucleus:id,type:'remote-snapshot-unavailable',error:String(error)}); }
+  }
+  const selected=id==='N07'?local:(remote??local);
   if (!selected) add(report.degraded,{nucleus:id,type:'source-snapshot-unavailable'});
+  else if (!Array.isArray(selected.files)||selected.files.length===0) add(report.degraded,{nucleus:id,type:'source-snapshot-empty',origin:selected.origin??'unknown',commit:selected.commit??null});
   else sourceResults.push(selected);
 }
 
