@@ -421,6 +421,14 @@ func RegisterExternalAdapterOperations(e *Engine, r ExternalAdapterRegistry) err
 		if nativeOwner != spec.Owner {
 			return externalAdapterFailure(m, "EXTERNAL_NATIVE_OWNER_MISMATCH:"+provider)
 		}
+		providerRevision := strings.TrimSpace(m.Metadata["provider_revision"])
+		expectedRevision := strings.TrimSpace(r.revisions[spec.ID])
+		if providerRevision == "" {
+			return externalAdapterFailure(m, "EXTERNAL_PROVIDER_REVISION_REQUIRED")
+		}
+		if expectedRevision == "" || providerRevision != expectedRevision {
+			return externalAdapterFailure(m, "EXTERNAL_PROVIDER_REVISION_MISMATCH:"+provider)
+		}
 		if !externalEnabled(provider) {
 			return externalAdapterFailure(m, "EXTERNAL_ADAPTER_DISABLED")
 		}
