@@ -294,6 +294,7 @@ func TestHTTPGatewayExternalFederationExecutionFailsClosedWhenAdapterDisabled(t 
 			"provider":           "langgraph",
 			"external_operation": "workflow.invoke",
 			"native_owner":       "N07",
+			"provider_revision":  "2d942085e214ef6b99b6f54ed4d544a7c7c5ac56",
 		},
 	}
 	got, code := postWire(t, h, wire)
