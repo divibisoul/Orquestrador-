@@ -19,6 +19,24 @@ def load():
     try: v=json.loads(raw)
     except Exception as e: emit({"state":"BLOCKED","code":"EXTERNAL_ADAPTER_INVALID_JSON","detail":str(e)},2)
     if not isinstance(v,dict): emit({"state":"BLOCKED","code":"EXTERNAL_ADAPTER_REQUEST_NOT_OBJECT"},2)
+
+    # N07 receives structured Mesh payload in payload_json. Merge user input
+    # only after preserving transport authority, then normal provider handlers
+    # can consume native fields such as prompt, query, roles, or audio_path.
+    payload_raw=v.get("payload_json")
+    if payload_raw is not None:
+        if not isinstance(payload_raw,str):
+            emit({"state":"BLOCKED","code":"EXTERNAL_ADAPTER_PAYLOAD_JSON_TYPE_INVALID"},2)
+        try:
+            payload=json.loads(payload_raw)
+        except Exception as e:
+            emit({"state":"BLOCKED","code":"EXTERNAL_ADAPTER_PAYLOAD_JSON_INVALID","detail":str(e)},2)
+        if not isinstance(payload,dict):
+            emit({"state":"BLOCKED","code":"EXTERNAL_ADAPTER_PAYLOAD_NOT_OBJECT"},2)
+        reserved={"provider","mode","operation","root","metadata","payload_json","external_operation","native_owner","provider_revision"}
+        for key,value in payload.items():
+            if isinstance(key,str) and key not in reserved:
+                v[key]=value
     return v
 
 def root(v):
