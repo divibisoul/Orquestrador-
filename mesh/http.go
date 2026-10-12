@@ -381,11 +381,11 @@ func copyStructuredCapabilityMetadata(metadata map[string]string, capability str
 		return copySuperAGIFabricMetadata(metadata, payload)
 	case "superagi.fabric.describe@1.0.0", "superagi.fabric.describe":
 		return nil
-	case ExternalFederationDescribeOperation:
+	case orchestrator.ExternalFederationDescribeOperation:
 		// The global registry describe operation requires no caller-supplied owner
 		// or provider selector; it reports the canonical N07 registry and evidence.
 		return nil
-	case ExternalFederationExecuteOperation:
+	case orchestrator.ExternalFederationExecuteOperation:
 		provider := strings.TrimSpace(metadata["provider"])
 		operation := strings.TrimSpace(metadata["external_operation"])
 		nativeOwner := strings.TrimSpace(metadata["native_owner"])
