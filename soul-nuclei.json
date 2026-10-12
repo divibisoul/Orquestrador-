@@ -141,7 +141,7 @@
       "sourceRef": "8deb6e86c33cb29674b99913ed4f86141086ba5e",
       "status": "main-live-source-ref-reconciled-2026-10-12",
       "contractEvidencePaths": [
-        "src/mesh/SoulMeshProtocol.ts"
+        "lib/soul-mesh/SoulMeshProtocol.ts"
       ],
       "previousSourceRef": "a8068ce15977a9624d9f2e11b7a4731c5bca0f9f",
       "sourceRefHistory": [
