@@ -7,15 +7,25 @@ jobs:
   verify:
     runs-on: ubuntu-latest
     steps:
-      # This workflow tests in-repository Go packages only. The public upstream
-      # gitlinks and their pinned revisions remain tracked and are materialized
-      # by the dedicated external-integration/container workflows. Avoid recursive
-      # checkout here: an upstream repository currently has an incomplete nested
-      # .gitmodules mapping for a dataset submodule, unrelated to these Go tests.
+      # These Go checks probe the pinned first-level upstream repositories, so
+      # keep those checkouts materialized through the tests. A nested dataset in
+      # one upstream has incomplete .gitmodules metadata; deinitialize the
+      # first-level worktrees after validation so checkout cleanup does not
+      # recursively traverse that unrelated nested dataset.
       - uses: actions/checkout@v4
         with:
-          submodules: false
+          submodules: true
       - uses: actions/setup-go@v5
         with: {go-version: '1.25'}
       - run: go test ./rgo
       - run: go test ./orchestrator
+      - name: Deinitialize external worktrees after pinned revision checks
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          for path in integrations/external/*; do
+            if git config -f .gitmodules --get "submodule.$path.url" >/dev/null; then
+              git submodule deinit --force -- "$path"
+            fi
+          done
