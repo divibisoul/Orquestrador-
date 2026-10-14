@@ -260,7 +260,8 @@
           "state": "CURRENT"
         }
       ],
-      "canonicalMeshContractPath": "lib/soul-mesh/SoulMeshProtocol.ts"
+      "canonicalMeshContractPath": "lib/soul-mesh/SoulMeshProtocol.ts",
+      "validationPullRequest": 49
     },
     "N06": {
       "repository": "divibisoul/nextjs-ai-chatbot-2000",
