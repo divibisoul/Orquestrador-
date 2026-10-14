@@ -140,12 +140,12 @@
         "N04"
       ],
       "manifestAuthority": "SOUL-FUSION-MANIFEST.json",
-      "sourceRef": "8deb6e86c33cb29674b99913ed4f86141086ba5e",
-      "status": "main-live-source-ref-reconciled-2026-10-12",
+      "sourceRef": "eda84858b87a612c5d544c5de0893e681a79b591",
+      "status": "main-live-source-ref-reconciled-2026-10-14",
       "contractEvidencePaths": [
         "lib/soul-mesh/SoulMeshProtocol.ts"
       ],
-      "previousSourceRef": "a8068ce15977a9624d9f2e11b7a4731c5bca0f9f",
+      "previousSourceRef": "8deb6e86c33cb29674b99913ed4f86141086ba5e",
       "sourceRefHistory": [
         {
           "sourceRef": "7a56c4d07d31e3dacfb0fa8ef3114ab0c253a49c",
@@ -165,6 +165,16 @@
         {
           "sourceRef": "8deb6e86c33cb29674b99913ed4f86141086ba5e",
           "observed": "2026-10-12/verified-main-head",
+          "state": "CURRENT"
+        },
+        {
+          "sourceRef": "8deb6e86c33cb29674b99913ed4f86141086ba5e",
+          "observed": "2026-10-14/source-ref-drift-detected",
+          "state": "PRESERVED"
+        },
+        {
+          "sourceRef": "eda84858b87a612c5d544c5de0893e681a79b591",
+          "observed": "2026-10-14/verified-main-head",
           "state": "CURRENT"
         }
       ],
