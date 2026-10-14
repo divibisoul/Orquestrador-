@@ -178,13 +178,7 @@ func ResolveCapabilityUpgrade(ctx context.Context, component, capability string)
 	return plan, nil
 }
 
-func providerSupportsCapability(p struct {
-	ID           string   `json:"id"`
-	Source       string   `json:"source"`
-	Revision     string   `json:"revision"`
-	Targets      []string `json:"targets"`
-	Capabilities []string `json:"capabilities"`
-}, capability string) bool {
+func providerSupportsCapability(p externalProviderRecord, capability string) bool {
 	query := strings.ToLower(strings.TrimSpace(capability))
 	for _, candidate := range p.Capabilities {
 		c := strings.ToLower(strings.TrimSpace(candidate))
