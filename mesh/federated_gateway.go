@@ -61,6 +61,14 @@ func (g *FederatedGateway) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		g.base.Handler(w, r)
 		return
 	}
+	// Local wire capabilities must be authenticated by HTTPGateway.Handler only once.
+	// If the federated wrapper authenticates first, the base handler correctly rejects
+	// the same nonce as replay. Route these local capabilities before wrapper auth.
+	if capability == "mesh.ping" || capability == "mesh.describe" || capability == "core.health" {
+		r.Body = ioNopCloser(bytes.NewReader(body))
+		g.base.Handler(w, r)
+		return
+	}
 	envelope := normalizedMeshEnvelope(wire)
 	if err := envelope.Validate(); err != nil {
 		g.base.Handler(w, r)
