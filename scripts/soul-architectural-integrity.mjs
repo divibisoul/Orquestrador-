@@ -40,7 +40,7 @@ function isAdapter(file, content='') {
   return p.includes('/legacy/') || p.includes('adapter') || /@deprecated[\s\S]{0,120}compatibility/i.test(content);
 }
 
-const report={system:'SOUL',checker:'SOUL Architectural Integrity Engine',schemaVersion:'3.0.0',generatedAt:new Date().toISOString(),state:'PASS',duplicateAuthorities:[],duplicateProtocols:[],protocolImplementations:[],duplicateRegistries:[],topologyConflicts:[],contractConflicts:[],orphanCapabilities:[],legacyAdapters:[],canonicalAuthorities:[],degraded:[],remoteProvenance:[],promptContract:[],headSnapshot:[],canonicalMeshContracts:[],nonCanonicalProtocolCopies:[],protocolImplementations:[]};
+const report={system:'SOUL',checker:'SOUL Architectural Integrity Engine',schemaVersion:'3.0.0',generatedAt:new Date().toISOString(),state:'PASS',duplicateAuthorities:[],duplicateProtocols:[],protocolImplementations:[],duplicateRegistries:[],topologyConflicts:[],contractConflicts:[],orphanCapabilities:[],legacyAdapters:[],canonicalAuthorities:[],degraded:[],remoteProvenance:[],candidateProvenance:[],promptContract:[],headSnapshot:[],canonicalMeshContracts:[],nonCanonicalProtocolCopies:[],protocolImplementations:[]};
 const matrix=await readJson(MATRIX_PATH);
 
 if (matrix?.system!=='SOUL') add(report.contractConflicts,{type:'system-invalid'});
@@ -80,7 +80,33 @@ async function remoteSnapshot(id,nucleus) {
   const expectedSha=String(nucleus.sourceRef??'');
   report.remoteProvenance.push({nucleus:id,repository:nucleus.repository,branch,expectedSha,actualSha,state:actualSha===expectedSha?'MATCH':'DRIFT'});
   if (id!=='N07' && /^[0-9a-f]{40}$/.test(expectedSha) && actualSha!==expectedSha) add(report.contractConflicts,{nucleus:id,type:'source-ref-drift',expectedSha,actualSha});
-  const snapshotSha=/^[0-9a-f]{40}$/.test(expectedSha)?expectedSha:actualSha;
+  let snapshotSha=/^[0-9a-f]{40}$/.test(expectedSha)?expectedSha:actualSha;
+  const validationPullRequest=Number(nucleus.validationPullRequest??0);
+  if (validationPullRequest > 0) {
+    if (!Number.isInteger(validationPullRequest)) throw new Error('VALIDATION_PULL_REQUEST_INVALID:'+id);
+    const candidate=await readRemote(`${API}/repos/${nucleus.repository}/pulls/${validationPullRequest}`);
+    const candidateSha=String(candidate?.head?.sha??'');
+    const candidateRepo=String(candidate?.head?.repo?.full_name??'');
+    if (!/^[0-9a-f]{40}$/.test(candidateSha) || candidateRepo!==nucleus.repository) {
+      throw new Error('VALIDATION_PULL_REQUEST_HEAD_INVALID:'+id+':'+validationPullRequest);
+    }
+    if (candidate.state!=='open' && candidate.merged!==true) {
+      throw new Error('VALIDATION_PULL_REQUEST_NOT_ACTIVE:'+id+':'+validationPullRequest);
+    }
+    report.candidateProvenance.push({
+      nucleus:id,
+      repository:nucleus.repository,
+      pullRequest:validationPullRequest,
+      headRef:String(candidate?.head?.ref??''),
+      candidateSha,
+      mainBranch:branch,
+      expectedMainSha:expectedSha,
+      actualMainSha:actualSha,
+      draft:Boolean(candidate?.draft),
+      state:candidate?.merged===true?'MERGED_CANDIDATE':'OPEN_PR_CANDIDATE',
+    });
+    snapshotSha=candidateSha;
+  }
   const tree=await readRemote(`${API}/repos/${nucleus.repository}/git/trees/${snapshotSha}?recursive=1`);
   if (tree.truncated) throw new Error('REMOTE_TREE_TRUNCATED:'+id+':'+snapshotSha);
   const evidencePaths=new Set([...(nucleus.entrypoints??[]),...(nucleus.contractEvidencePaths??[])]);
