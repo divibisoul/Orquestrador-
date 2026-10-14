@@ -1,0 +1,388 @@
+# SOUL — livro de controle da fusão das 291 PRs originais
+
+**Data do inventário:** 2026-10-14 (UTC)  
+**Escopo reconciliado:** 291 PRs de origem abertas, distribuídas por 9 repositórios. A busca atual da organização inclui também 3 PRs candidatas de fusão criadas durante o trabalho (#105 N01, #51 N05, #59 N02); elas ficam fora da contagem original para não alterar o denominador.  
+**Objetivo final:** revisar todas as 291 PRs por função, afinidade, dependências e sinergia; consolidar contribuições compatíveis sem excluir funcionalidades, arquivos, histórico ou branches de origem; corrigir primeiro a comunicação real dos núcleos, depois validar o fluxo, e só então exigir CI verde no SHA final.
+
+## Regras imutáveis
+
+- Não deletar, simplificar, soterrar nem invalidar funcionalidade já existente. Manter branches e PRs de origem como proveniência até a decisão final explícita.
+- Não escrever diretamente em `main`, não fazer force-push e não declarar conclusão com base apenas em código adicionado, testes simulados, PR aberta ou CI de SHA diferente.
+- PRs empilhadas devem ser rastreadas como cadeia de dependência; não copiar APIs antigas por cima de contratos atuais.
+- Testes: reutilizar a suíte existente; adicionar apenas a evidência que cubra uma lacuna distinta. Teste de unidade não prova comunicação real entre processos.
+- Estados de evidência: **REAL**, **PROJETADO**, **BLOQUEADO**, **UNMEASURABLE**. Ausência de evidência não vira PASS.
+- Cada cluster precisa de começo, meio e fim: origem/objetivo; análise e implementação; validação no SHA exato e fechamento ou bloqueio explícito.
+
+## Resumo de execução
+
+| Medida | Estado atual |
+|---|---|
+| PRs originais inventariadas | 291/291 |
+| PRs de origem com diffs já analisados parcialmente | subconjunto; a classificação funcional completa continua aberta |
+| Candidatas de fusão criadas | 3 — N01 #105, N05 #51, N02 #59 |
+| Candidatas efetivamente mescladas em `main` | 0 |
+| Fusão integral das 291 | NÃO CONCLUÍDA |
+| Prioridade técnica | confirmar comunicação real bidirecional núcleo-a-núcleo; em seguida ampliar para os demais núcleos e frentes transversais |
+
+## Candidatas existentes e sua evidência
+
+- **N01 #105** — combina contribuições de #101/#102/#103; SHA `528fa464e47264a58ed44e4a4515415711c7a684`. A maioria das verificações estava verde, com `Soul N01 Full Build` ainda em execução na última leitura. Não considerar tudo verde até finalizar.
+- **N05 #51** — combina #49/#50; SHA `4fbd7e0b2227d2c5db191c08ad80edcbfcd2fb61`. As 6 verificações reportadas na última leitura estavam verdes. A PR segue draft e não foi mesclada.
+- **N02 #59** — combina a política HMAC atual de #58 com a parte compatível do E2E/runtime de #57, mantendo a API de resiliência mais recente e os ramos originais intactos. O processo-pair E2E passou na execução inicial; um teste auxiliar falhou por exigir um nome de agente não garantido pelo contrato e foi corrigido para verificar posse funcional da capacidade. A nova CI está rodando no SHA `85da61a0e8674abb7d12006634bc345a20d4ef56`; resultado final pendente.
+
+## Clusters que merecem análise de sinergia (não são fusões aprovadas automaticamente)
+
+- **N03:** #45 registry/runtime de áudio + #46 fixture Gemini TTS + #47 HMAC/canonical Mesh. Analisar sobreposição em `SoulMeshPeerClient`, `peer-client`, runtime e workflows antes de escolher a ordem de cherry-pick.
+- **N04:** #48 reativação de E2E + #49 política HMAC. Preservar pnpm lock/audit e verificar regressão dos testes E2E.
+- **N06:** #43 reativação de E2E + #44 política HMAC. Preservar lockfile/dependency gates e a bridge N06↔N07.
+- **N07:** #139 autenticação de resposta antes do tratamento de status + #151 identidade estável da operação em retries; ambos tocam `mesh/peers.go`. #151 é empilhada sobre uma branch de recovery e requer comparação de ancestrais/escopo, não aplicação cega.
+- **N07/GRCE:** #147/#148/#149/#153/#156 são reconciliações grandes com sobreposição provável. Fazer análise de ancestralidade, arquivos e funcionalidades antes de qualquer consolidação.
+- **SARA:** #40 provenance do Vagus + #41 autoridade NervoVago/VagusBus + #42 reconciliação + #43 evidência de execução real da regeneração; distinguir correção transversal de integração/runtime.
+
+## Registro completo das PRs de origem
+
+### JEV — decisões e guardrails — 2 PRs
+
+| PR | Título | Estado de trabalho |
+|---|---|---|
+| [#4](https://github.com/divibisoul/jev-api/pull/4) | feat(JEV): integrate 25-source decision and guardrail capability fabric | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#5](https://github.com/divibisoul/jev-api/pull/5) | reconcile: complete current JEV decision and guardrail frontier | INVENTARIADA — diff/ancestralidade ainda a classificar |
+
+### N01 — aeternum-core-29 — 38 PRs
+
+| PR | Título | Estado de trabalho |
+|---|---|---|
+| [#25](https://github.com/divibisoul/aeternum-core-29/pull/25) | [N01] Consolidação final – unificação de todas as capacidades na linha canónica #15→#24 | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#27](https://github.com/divibisoul/aeternum-core-29/pull/27) | ERU ↔ SOUL ↔ SARA: audited fusion contract and execution governance | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#29](https://github.com/divibisoul/aeternum-core-29/pull/29) | feat(android): Soul Admin Plus — N01-N07 + SARA fusion | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#30](https://github.com/divibisoul/aeternum-core-29/pull/30) | docs: define SOUL as hybrid web and app system | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#31](https://github.com/divibisoul/aeternum-core-29/pull/31) | Octacore G1: N01 host gateway adapter | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#32](https://github.com/divibisoul/aeternum-core-29/pull/32) | Octacore G1: Android Admin bridge | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#33](https://github.com/divibisoul/aeternum-core-29/pull/33) | feat(aeternum): establish eight-module architecture contract | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#34](https://github.com/divibisoul/aeternum-core-29/pull/34) | Federation: expose SARA OctaCore fusion capabilities in Mesh | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#35](https://github.com/divibisoul/aeternum-core-29/pull/35) | feat: make N01 hybrid gateway context-aware | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#36](https://github.com/divibisoul/aeternum-core-29/pull/36) | Forensic infrastructure reconciliation: Clareira + N01 Mesh | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#39](https://github.com/divibisoul/aeternum-core-29/pull/39) | forensic: harden N01 SuperGPU local execution and current infrastructure map | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#45](https://github.com/divibisoul/aeternum-core-29/pull/45) | fix(N01): elimina telemetria artificial e caminhos false-green | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#47](https://github.com/divibisoul/aeternum-core-29/pull/47) | fix: reconcile N01 Mesh security and execution state | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#48](https://github.com/divibisoul/aeternum-core-29/pull/48) | feat: structure neural management core and canonical parameters | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#49](https://github.com/divibisoul/aeternum-core-29/pull/49) | Fase 0 — auditoria forense N01 antes da reintegração | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#50](https://github.com/divibisoul/aeternum-core-29/pull/50) | feat: reintegrate historical NeuralManagementCore into N01 | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#52](https://github.com/divibisoul/aeternum-core-29/pull/52) | fix: replace simulated neural/resource telemetry with real sources | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#56](https://github.com/divibisoul/aeternum-core-29/pull/56) | feat: add real-time EngineeringPanel from heartbeat aggregate | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#57](https://github.com/divibisoul/aeternum-core-29/pull/57) | feat: RGO integration boundary — N01 | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#58](https://github.com/divibisoul/aeternum-core-29/pull/58) | feat(Aeternum): connect recovered modules to current HortaCore | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#62](https://github.com/divibisoul/aeternum-core-29/pull/62) | feat(N01): connect recovered Aeternum modules to current HortaCore | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#64](https://github.com/divibisoul/aeternum-core-29/pull/64) | fix: remove fabricated causal dashboard telemetry | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#67](https://github.com/divibisoul/aeternum-core-29/pull/67) | fix: remove fake transport from HortaCore bridge test | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#68](https://github.com/divibisoul/aeternum-core-29/pull/68) | fix: make GEM-Health telemetry truthful when wearable is absent | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#78](https://github.com/divibisoul/aeternum-core-29/pull/78) | fix(n01): preserve correlation through external capability delegation | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#82](https://github.com/divibisoul/aeternum-core-29/pull/82) | fix(mesh): align N01 local contract health/discovery aliases | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#85](https://github.com/divibisoul/aeternum-core-29/pull/85) | feat(N01): integrate 25-source capability fabric without replacing native runtime | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#86](https://github.com/divibisoul/aeternum-core-29/pull/86) | feat(n01): standardize readiness probe | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#95](https://github.com/divibisoul/aeternum-core-29/pull/95) | recovery(N01): restore canonical HortaCore facade | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#96](https://github.com/divibisoul/aeternum-core-29/pull/96) | recovery(N01): restore truthful anti-fabrication semantics | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#97](https://github.com/divibisoul/aeternum-core-29/pull/97) | recovery(N01): restore Digital Vagus and Clareira native integrations | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#98](https://github.com/divibisoul/aeternum-core-29/pull/98) | recovery(N01): unify HortaCore into one vascular authority with synergistic branching | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#99](https://github.com/divibisoul/aeternum-core-29/pull/99) | test: reconcile dual Mesh runtimes on canonical 1.1.0 contract | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#100](https://github.com/divibisoul/aeternum-core-29/pull/100) | reconcile: complete current N01 HortaCore, Vagus and Mesh frontiers | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#101](https://github.com/divibisoul/aeternum-core-29/pull/101) | fix(n01): repair Mesh Android instrumentation compilation | ORIGEM preservada — candidata reunida em #105; validar CI/escopo |
+| [#102](https://github.com/divibisoul/aeternum-core-29/pull/102) | fix(N01): align active Mesh channels and preserve structural N07 | ORIGEM preservada — candidata reunida em #105; validar CI/escopo |
+| [#103](https://github.com/divibisoul/aeternum-core-29/pull/103) | fix(N01): align Android Mesh instrumentation fixtures with contracts | ORIGEM preservada — candidata reunida em #105; validar CI/escopo |
+| [#104](https://github.com/divibisoul/aeternum-core-29/pull/104) | infra(N01): add portable Mesh container publication | INVENTARIADA — diff/ancestralidade ainda a classificar |
+
+### N02 — Eternium- — 33 PRs
+
+| PR | Título | Estado de trabalho |
+|---|---|---|
+| [#1](https://github.com/divibisoul/Eternium-/pull/1) | N02 upgrade: hybrid Soul Mesh capability runtime | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#3](https://github.com/divibisoul/Eternium-/pull/3) | feat(mesh): adopt N04 communication architecture | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#4](https://github.com/divibisoul/Eternium-/pull/4) | feat(mesh): upgrade N02 into connected executable nucleus | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#5](https://github.com/divibisoul/Eternium-/pull/5) | N02: capability discovery foundation | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#7](https://github.com/divibisoul/Eternium-/pull/7) | feat(n02): add autonomous Soul Mesh execution boundary | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#8](https://github.com/divibisoul/Eternium-/pull/8) | hotfix: add Mesh environment template | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#9](https://github.com/divibisoul/Eternium-/pull/9) | feat: add hybrid Supabase and IPFS storage | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#10](https://github.com/divibisoul/Eternium-/pull/10) | feat(n02): add Groq Super GPU inference | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#11](https://github.com/divibisoul/Eternium-/pull/11) | fix(ci): standardize N02 environment | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#12](https://github.com/divibisoul/Eternium-/pull/12) | audit(n02): complete empty components and strengthen CI | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#14](https://github.com/divibisoul/Eternium-/pull/14) | ci: enforce N02 validation gate | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#15](https://github.com/divibisoul/Eternium-/pull/15) | N02 forensic resilience generative hardening | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#16](https://github.com/divibisoul/Eternium-/pull/16) | N02 ↔ Clareira: consume audited SARA frontier | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#17](https://github.com/divibisoul/Eternium-/pull/17) | Octacore G2: N02 execution adapter | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#18](https://github.com/divibisoul/Eternium-/pull/18) | feat(aeternum): L5 monitor projections | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#22](https://github.com/divibisoul/Eternium-/pull/22) | fix(N02): reconcilia integração Clareira no runtime atual | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#23](https://github.com/divibisoul/Eternium-/pull/23) | feat: expose canonical neural parameters to N02 | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#25](https://github.com/divibisoul/Eternium-/pull/25) | feat: RGO integration boundary — N02 | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#30](https://github.com/divibisoul/Eternium-/pull/30) | feat: expand canonical Gemini capabilities in N02 | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#38](https://github.com/divibisoul/Eternium-/pull/38) | feat(n02): finalize pinned OSS adapters and xun-agent provenance | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#39](https://github.com/divibisoul/Eternium-/pull/39) | fix(n02): preserve correlation through orbital preflight | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#43](https://github.com/divibisoul/Eternium-/pull/43) | fix(ci): verify N02 submodule gitlink pins without recursive-status false negatives | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#45](https://github.com/divibisoul/Eternium-/pull/45) | feat(N02): integrate 25-source capability fabric and external inference backends | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#46](https://github.com/divibisoul/Eternium-/pull/46) | feat(n02): add standalone HTTP Mesh listener | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#50](https://github.com/divibisoul/Eternium-/pull/50) | recovery(N02): restore SARA Clareira audit capability | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#51](https://github.com/divibisoul/Eternium-/pull/51) | recovery(N02): complete Mesh resilience and forensic semantics | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#52](https://github.com/divibisoul/Eternium-/pull/52) | ci: establish SOUL v1 N02 foundation gate | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#53](https://github.com/divibisoul/Eternium-/pull/53) | reconcile: complete current N02 Mesh, Clareira and Vagus frontiers | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#54](https://github.com/divibisoul/Eternium-/pull/54) | fix(N02): reconcile Mesh diagnostics and resilience contracts | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#55](https://github.com/divibisoul/Eternium-/pull/55) | N02: remove duplicate Mesh idempotency export | ORIGEM preservada — candidata reunida em #59; validar CI/escopo |
+| [#56](https://github.com/divibisoul/Eternium-/pull/56) | N02: make Mesh recovery test respect reset timeout | ORIGEM preservada — candidata reunida em #59; validar CI/escopo |
+| [#57](https://github.com/divibisoul/Eternium-/pull/57) | fix(N02): wire live E2E configuration and fail closed | ORIGEM preservada — candidata reunida em #59; validar CI/escopo |
+| [#58](https://github.com/divibisoul/Eternium-/pull/58) | fix(mesh): enforce secure N02 identity and HMAC contracts | ORIGEM preservada — candidata reunida em #59; validar CI/escopo |
+
+### N03 — nexus-aeternum-fusion — 25 PRs
+
+| PR | Título | Estado de trabalho |
+|---|---|---|
+| [#1](https://github.com/divibisoul/nexus-aeternum-fusion/pull/1) | N03 hybrid AI runtime + executable Soul Mesh upgrade | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#2](https://github.com/divibisoul/nexus-aeternum-fusion/pull/2) | feat(mesh): adopt N04 communication architecture | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#3](https://github.com/divibisoul/nexus-aeternum-fusion/pull/3) | fix(n03): align package.json and validate Mesh foundation | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#5](https://github.com/divibisoul/nexus-aeternum-fusion/pull/5) | hotfix: normalize Mesh HMAC placeholder | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#6](https://github.com/divibisoul/nexus-aeternum-fusion/pull/6) | feat: configure hybrid web3 storage | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#7](https://github.com/divibisoul/nexus-aeternum-fusion/pull/7) | fix(ci): standardize N03 environment | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#8](https://github.com/divibisoul/nexus-aeternum-fusion/pull/8) | audit(n03): harden peer timeout and sync capability state | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#9](https://github.com/divibisoul/nexus-aeternum-fusion/pull/9) | fix(n03): synchronize package-lock with package.json | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#10](https://github.com/divibisoul/nexus-aeternum-fusion/pull/10) | refactor(soul): converge N03 Mesh protocol on canonical implementation | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#12](https://github.com/divibisoul/nexus-aeternum-fusion/pull/12) | N03 ↔ Clareira: audited SARA frontier symbiosis | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#13](https://github.com/divibisoul/nexus-aeternum-fusion/pull/13) | Octacore G3: N03 execution adapter | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#18](https://github.com/divibisoul/nexus-aeternum-fusion/pull/18) | fix: finish N03 security and federation remediation | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#22](https://github.com/divibisoul/nexus-aeternum-fusion/pull/22) | feat: expose canonical neural parameters to N03 | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#23](https://github.com/divibisoul/nexus-aeternum-fusion/pull/23) | feat: RGO integration boundary — N03 | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#29](https://github.com/divibisoul/nexus-aeternum-fusion/pull/29) | fix: reconcile N03 legacy Mesh adapter with N07 | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#30](https://github.com/divibisoul/nexus-aeternum-fusion/pull/30) | feat(N03): activate external capability consumers with orbital preflight | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#34](https://github.com/divibisoul/nexus-aeternum-fusion/pull/34) | fix(ci): use canonical Bun lock and audited dependency overrides | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#37](https://github.com/divibisoul/nexus-aeternum-fusion/pull/37) | feat(N03): integrate 25-source perception and multimodal capability fabric | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#38](https://github.com/divibisoul/nexus-aeternum-fusion/pull/38) | fix(n03): close P0 registry, dependency and HTTP Mesh listener gaps | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#42](https://github.com/divibisoul/nexus-aeternum-fusion/pull/42) | fix(N03): correct current audio capability count | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#43](https://github.com/divibisoul/nexus-aeternum-fusion/pull/43) | ci: establish SOUL v1 N03 foundation gate | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#44](https://github.com/divibisoul/nexus-aeternum-fusion/pull/44) | reconcile: complete current N03 foundation and audio registry frontiers | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#45](https://github.com/divibisoul/nexus-aeternum-fusion/pull/45) | fix(n03): reconcile audio registry test with real capability count | CANDIDATA DE SINERGIA — precisa de diff/ancestralidade |
+| [#46](https://github.com/divibisoul/nexus-aeternum-fusion/pull/46) | test(N03): align Gemini TTS unit fixture with audio response contract | CANDIDATA DE SINERGIA — precisa de diff/ancestralidade |
+| [#47](https://github.com/divibisoul/nexus-aeternum-fusion/pull/47) | fix(mesh): align N03 HMAC with canonical N07 contract | CANDIDATA DE SINERGIA — precisa de diff/ancestralidade |
+
+### N04 — nextjs-ai-chatbots — 26 PRs
+
+| PR | Título | Estado de trabalho |
+|---|---|---|
+| [#2](https://github.com/divibisoul/nextjs-ai-chatbots/pull/2) | fix(N04): harden hybrid Soul Mesh and restore CI | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#3](https://github.com/divibisoul/nextjs-ai-chatbots/pull/3) | feat(N04): align hybrid Mesh with N01 reference contract | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#4](https://github.com/divibisoul/nextjs-ai-chatbots/pull/4) | feat(n04): Super GPU execution layer | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#5](https://github.com/divibisoul/nextjs-ai-chatbots/pull/5) | feat(n04): structural close and real runtime bridge | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#6](https://github.com/divibisoul/nextjs-ai-chatbots/pull/6) | feat(n04): cooperative Super GPU hardening | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#11](https://github.com/divibisoul/nextjs-ai-chatbots/pull/11) | fix(n04): final CI-clean cooperative Super GPU v3 | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#12](https://github.com/divibisoul/nextjs-ai-chatbots/pull/12) | feat(n04): cooperative hybrid execution hardening | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#13](https://github.com/divibisoul/nextjs-ai-chatbots/pull/13) | hotfix: normalize Mesh environment security | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#14](https://github.com/divibisoul/nextjs-ai-chatbots/pull/14) | feat: add hybrid Supabase and IPFS storage | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#15](https://github.com/divibisoul/nextjs-ai-chatbots/pull/15) | fix(ci): standardize N04 environment | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#16](https://github.com/divibisoul/nextjs-ai-chatbots/pull/16) | audit(n04): add application typecheck gate | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#17](https://github.com/divibisoul/nextjs-ai-chatbots/pull/17) | N04 ↔ Clareira: consume audited SARA frontier | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#18](https://github.com/divibisoul/nextjs-ai-chatbots/pull/18) | feat: add SARA-aware collaboration session runner | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#19](https://github.com/divibisoul/nextjs-ai-chatbots/pull/19) | Octacore G4: N04 execution adapter | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#20](https://github.com/divibisoul/nextjs-ai-chatbots/pull/20) | feat(aeternum): L5 UI and core-module projections | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#21](https://github.com/divibisoul/nextjs-ai-chatbots/pull/21) | feat: restore N04 context pipeline and collaboration session parity | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#22](https://github.com/divibisoul/nextjs-ai-chatbots/pull/22) | N04 — tools — integração não destrutiva da Clareira | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#26](https://github.com/divibisoul/nextjs-ai-chatbots/pull/26) | feat: expose canonical neural parameters to N04 | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#27](https://github.com/divibisoul/nextjs-ai-chatbots/pull/27) | feat: RGO integration boundary — N04 | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#30](https://github.com/divibisoul/nextjs-ai-chatbots/pull/30) | fix: remove N04 workflow non-null assertion | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#31](https://github.com/divibisoul/nextjs-ai-chatbots/pull/31) | fix: fail closed on unknown N04 Mesh capabilities | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#43](https://github.com/divibisoul/nextjs-ai-chatbots/pull/43) | feat(N04): integrate 25-source tool and document capability fabric | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#44](https://github.com/divibisoul/nextjs-ai-chatbots/pull/44) | feat(n04): standardize readiness probe | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#47](https://github.com/divibisoul/nextjs-ai-chatbots/pull/47) | reconcile: complete current N04 capability, Mesh and readiness frontiers | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#48](https://github.com/divibisoul/nextjs-ai-chatbots/pull/48) | fix(n04): re-enable previously disabled E2E coverage | CANDIDATA DE SINERGIA — precisa de diff/ancestralidade |
+| [#49](https://github.com/divibisoul/nextjs-ai-chatbots/pull/49) | fix(mesh): enforce N04 HMAC minimum and production authentication | CANDIDATA DE SINERGIA — precisa de diff/ancestralidade |
+
+### N05 — nextjs-ai-chatbot — 23 PRs
+
+| PR | Título | Estado de trabalho |
+|---|---|---|
+| [#1](https://github.com/divibisoul/nextjs-ai-chatbot/pull/1) | feat(soul): unify nucleus transport with Soul Mesh | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#2](https://github.com/divibisoul/nextjs-ai-chatbot/pull/2) | feat(mesh): adopt N04 communication architecture | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#4](https://github.com/divibisoul/nextjs-ai-chatbot/pull/4) | N05: complete provider-agnostic hybrid Soul interoperability layer | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#8](https://github.com/divibisoul/nextjs-ai-chatbot/pull/8) | hotfix: normalize Mesh environment security | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#9](https://github.com/divibisoul/nextjs-ai-chatbot/pull/9) | feat: configure hybrid web3 storage | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#10](https://github.com/divibisoul/nextjs-ai-chatbot/pull/10) | feat(n05): add Groq Super GPU inference | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#11](https://github.com/divibisoul/nextjs-ai-chatbot/pull/11) | fix(ci): standardize N05 environment | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#12](https://github.com/divibisoul/nextjs-ai-chatbot/pull/12) | audit(n05): fix dependency security gate | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#13](https://github.com/divibisoul/nextjs-ai-chatbot/pull/13) | fix(ci): execute N05 N07 bridge HMAC on ubuntu-22.04 | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#15](https://github.com/divibisoul/nextjs-ai-chatbot/pull/15) | fix(soul): reconcile N05 topology and add N07 commissioning diagnostic | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#16](https://github.com/divibisoul/nextjs-ai-chatbot/pull/16) | N05 ↔ Clareira: consume audited SARA frontier | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#17](https://github.com/divibisoul/nextjs-ai-chatbot/pull/17) | Octacore G5: N05 execution adapter | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#18](https://github.com/divibisoul/nextjs-ai-chatbot/pull/18) | feat(L6): federate system components index | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#19](https://github.com/divibisoul/nextjs-ai-chatbot/pull/19) | feat: propagate federated context through N05 SARA client | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#24](https://github.com/divibisoul/nextjs-ai-chatbot/pull/24) | Add optional server-side OpenAI provider for SOUL | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#29](https://github.com/divibisoul/nextjs-ai-chatbot/pull/29) | feat: RGO integration boundary — N05 | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#43](https://github.com/divibisoul/nextjs-ai-chatbot/pull/43) | feat(N05): integrate 25-source conversation and retrieval capability fabric | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#44](https://github.com/divibisoul/nextjs-ai-chatbot/pull/44) | feat(n05): standardize readiness probe | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#46](https://github.com/divibisoul/nextjs-ai-chatbot/pull/46) | ci: establish SOUL v1 N05 foundation gate | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#47](https://github.com/divibisoul/nextjs-ai-chatbot/pull/47) | reconcile: complete current N05 fabric, Mesh and readiness frontiers | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#48](https://github.com/divibisoul/nextjs-ai-chatbot/pull/48) | fix(n05): restore disabled E2E coverage and remove type suppression | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#49](https://github.com/divibisoul/nextjs-ai-chatbot/pull/49) | fix(mesh): require bidirectional N05 HMAC authentication | ORIGEM preservada — candidata reunida em #51; validar CI/escopo |
+| [#50](https://github.com/divibisoul/nextjs-ai-chatbot/pull/50) | fix(mesh): bind active N05 endpoint to canonical protocol | ORIGEM preservada — candidata reunida em #51; validar CI/escopo |
+
+### N06 — nextjs-ai-chatbot-2000 — 22 PRs
+
+| PR | Título | Estado de trabalho |
+|---|---|---|
+| [#1](https://github.com/divibisoul/nextjs-ai-chatbot-2000/pull/1) | feat: upgrade N06 Soul Mesh runtime and peer connectivity | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#2](https://github.com/divibisoul/nextjs-ai-chatbot-2000/pull/2) | N06: hybrid AI fusion boundary with N01 | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#3](https://github.com/divibisoul/nextjs-ai-chatbot-2000/pull/3) | feat(mesh): adopt N04 communication architecture | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#4](https://github.com/divibisoul/nextjs-ai-chatbot-2000/pull/4) | N06: complete provider-agnostic hybrid Soul interoperability foundation | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#7](https://github.com/divibisoul/nextjs-ai-chatbot-2000/pull/7) | hotfix: complete N06 Mesh environment topology | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#8](https://github.com/divibisoul/nextjs-ai-chatbot-2000/pull/8) | feat: add N06 hybrid audit storage | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#9](https://github.com/divibisoul/nextjs-ai-chatbot-2000/pull/9) | fix(ci): standardize N06 environment | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#10](https://github.com/divibisoul/nextjs-ai-chatbot-2000/pull/10) | audit(n06): harden typing and CI | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#12](https://github.com/divibisoul/nextjs-ai-chatbot-2000/pull/12) | N06 ↔ Clareira: consume audited SARA frontier | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#13](https://github.com/divibisoul/nextjs-ai-chatbot-2000/pull/13) | Octacore G6: N06 execution adapter | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#14](https://github.com/divibisoul/nextjs-ai-chatbot-2000/pull/14) | feat(aeternum): add M4 cognition adapter | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#15](https://github.com/divibisoul/nextjs-ai-chatbot-2000/pull/15) | feat: propagate federated context through N06 SARA client | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#16](https://github.com/divibisoul/nextjs-ai-chatbot-2000/pull/16) | N06 — sessão/contexto — integração não destrutiva da Clareira | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#20](https://github.com/divibisoul/nextjs-ai-chatbot-2000/pull/20) | feat: expose canonical neural parameters to N06 | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#22](https://github.com/divibisoul/nextjs-ai-chatbot-2000/pull/22) | feat: RGO integration boundary — N06 | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#30](https://github.com/divibisoul/nextjs-ai-chatbot-2000/pull/30) | feat: add N06↔N07 cooperative control-plane bridge | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#37](https://github.com/divibisoul/nextjs-ai-chatbot-2000/pull/37) | feat(N06): add provider agents for OpenHands, smolagents and DSPy | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#39](https://github.com/divibisoul/nextjs-ai-chatbot-2000/pull/39) | feat(N06): add executable MetaGPT runtime adapter | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#40](https://github.com/divibisoul/nextjs-ai-chatbot-2000/pull/40) | feat(n06): standardize readiness probe | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#42](https://github.com/divibisoul/nextjs-ai-chatbot-2000/pull/42) | reconcile: complete current N06 cognition, provider and cooperation frontiers | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#43](https://github.com/divibisoul/nextjs-ai-chatbot-2000/pull/43) | fix(n06): re-enable previously disabled E2E coverage | CANDIDATA DE SINERGIA — precisa de diff/ancestralidade |
+| [#44](https://github.com/divibisoul/nextjs-ai-chatbot-2000/pull/44) | fix(mesh): enforce N06 HMAC strength and production auth | CANDIDATA DE SINERGIA — precisa de diff/ancestralidade |
+
+### N07 — Orquestrador- — 97 PRs
+
+| PR | Título | Estado de trabalho |
+|---|---|---|
+| [#1](https://github.com/divibisoul/Orquestrador-/pull/1) | feat: complete executable Orchestrator-Nexus foundation | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#2](https://github.com/divibisoul/Orquestrador-/pull/2) | feat(gemini): integrate Google Gemini provider | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#3](https://github.com/divibisoul/Orquestrador-/pull/3) | Recovery: consolidate and operationalize Orquestrador-Nexus | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#4](https://github.com/divibisoul/Orquestrador-/pull/4) | feat(orchestrator): integrate SOUL six-nucleus fabric | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#5](https://github.com/divibisoul/Orquestrador-/pull/5) | feat: implement Trinity Fundamental PFC + Neural Fabric + Transcendental Compute | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#6](https://github.com/divibisoul/Orquestrador-/pull/6) | fix(trinity): production hardening and real compute boundary | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#8](https://github.com/divibisoul/Orquestrador-/pull/8) | docs: add Nexus readiness dashboard | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#9](https://github.com/divibisoul/Orquestrador-/pull/9) | feat: Nexus finalization — continuous audit and hardening | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#10](https://github.com/divibisoul/Orquestrador-/pull/10) | feat: Nexus finalization — consolidated activation hardening | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#13](https://github.com/divibisoul/Orquestrador-/pull/13) | feat(n07): hybrid federation, discovery and capability execution | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#14](https://github.com/divibisoul/Orquestrador-/pull/14) | feat(n07): fuse N01 and N06 capabilities through N07 Mesh | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#15](https://github.com/divibisoul/Orquestrador-/pull/15) | feat(n07): hybrid federation, topology and SOUL supercompute | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#16](https://github.com/divibisoul/Orquestrador-/pull/16) | feat(n07): complete active federation and SuperCompute fusion | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#17](https://github.com/divibisoul/Orquestrador-/pull/17) | feat(n07): complete active federation and SuperCompute fusion | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#18](https://github.com/divibisoul/Orquestrador-/pull/18) | test(backend): add Supabase and Web3 Storage regression coverage | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#20](https://github.com/divibisoul/Orquestrador-/pull/20) | fix(n07): harden Storacha storage adapter runtime | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#21](https://github.com/divibisoul/Orquestrador-/pull/21) | feat: N07 online com E2E validado e deploy real em staging | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#22](https://github.com/divibisoul/Orquestrador-/pull/22) | feat: executor runner diagnostics and N01-N07 E2E validation | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#23](https://github.com/divibisoul/Orquestrador-/pull/23) | feat: Front 4 resilient staging and degraded secrets mode | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#24](https://github.com/divibisoul/Orquestrador-/pull/24) | ci(n07): Front 3 certification gates and dependency hardening | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#26](https://github.com/divibisoul/Orquestrador-/pull/26) | fix(supergpu): correct BatchParallel select syntax | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#27](https://github.com/divibisoul/Orquestrador-/pull/27) | fix: repair supergpu BatchParallel select syntax | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#28](https://github.com/divibisoul/Orquestrador-/pull/28) | feat: integrate Aeternum HortaCore with canonical N07/SARA boundaries | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#29](https://github.com/divibisoul/Orquestrador-/pull/29) | fix: preserve execute correlation for SARA federation | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#30](https://github.com/divibisoul/Orquestrador-/pull/30) | Octacore: system processor over eight SOUL domains | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#31](https://github.com/divibisoul/Orquestrador-/pull/31) | feat(L6): add omni mode coordination surface | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#32](https://github.com/divibisoul/Orquestrador-/pull/32) | feat: preserve federated context at N07 SARA boundary | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#33](https://github.com/divibisoul/Orquestrador-/pull/33) | fix: reconcile SOUL nucleus source refs with current heads | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#34](https://github.com/divibisoul/Orquestrador-/pull/34) | N07 — orquestração + SARA — integração não destrutiva da Clareira | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#35](https://github.com/divibisoul/Orquestrador-/pull/35) | feat: integrate Jev as N07 decision capability | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#38](https://github.com/divibisoul/Orquestrador-/pull/38) | forensic: reject implicit SuperGPU/cognitive identity fallback | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#41](https://github.com/divibisoul/Orquestrador-/pull/41) | Phase 1: replace synthetic Mesh E2E with real federation gate | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#42](https://github.com/divibisoul/Orquestrador-/pull/42) | feat: SOUL cognitive capabilities R1 over existing federation | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#43](https://github.com/divibisoul/Orquestrador-/pull/43) | Reconcile current Mesh + Octacore + Cognitive R1 without replacing existing runtimes | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#44](https://github.com/divibisoul/Orquestrador-/pull/44) | Foundation: close Super AGI gap map and unfreeze downstream engineering | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#45](https://github.com/divibisoul/Orquestrador-/pull/45) | feat: expose canonical neural runtime parameters | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#46](https://github.com/divibisoul/Orquestrador-/pull/46) | Tarefa 1: auditoria arqueológica dos subsistemas | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#47](https://github.com/divibisoul/Orquestrador-/pull/47) | feat: reintegrate historical HortaCore processors into N07 | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#49](https://github.com/divibisoul/Orquestrador-/pull/49) | feat: integrate SuperAGI through explicit N07 bridge | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#50](https://github.com/divibisoul/Orquestrador-/pull/50) | feat: RGO integration boundary — N07 | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#51](https://github.com/divibisoul/Orquestrador-/pull/51) | recovery: restore buried N07 neural and prefrontal runtime | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#62](https://github.com/divibisoul/Orquestrador-/pull/62) | feat: install ATLAS OMEGA FLUX functional affinity layer | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#63](https://github.com/divibisoul/Orquestrador-/pull/63) | feat: connect SuperGPU to Clareira and Vagus control plane | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#65](https://github.com/divibisoul/Orquestrador-/pull/65) | feat: forensic correction of neural math, SuperGPU lifecycle, and OctaCore admission | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#66](https://github.com/divibisoul/Orquestrador-/pull/66) | feat: route Gemini through N07 prefrontal and Clareira | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#69](https://github.com/divibisoul/Orquestrador-/pull/69) | feat: integrate canonical learning machine across Mesh and prefrontal | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#79](https://github.com/divibisoul/Orquestrador-/pull/79) | rescue(N07): reactivate buried prefrontal executive controls | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#87](https://github.com/divibisoul/Orquestrador-/pull/87) | feat: operationalize primordial independent-AI composition | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#89](https://github.com/divibisoul/Orquestrador-/pull/89) | rescue: restore N07 mainline coherence | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#90](https://github.com/divibisoul/Orquestrador-/pull/90) | feat: cooperative control plane on coherent N07 base | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#91](https://github.com/divibisoul/Orquestrador-/pull/91) | feat(cognitive): catalog external planning primitives | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#92](https://github.com/divibisoul/Orquestrador-/pull/92) | feat(mesh): route OSS capabilities by functional affinity | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#93](https://github.com/divibisoul/Orquestrador-/pull/93) | feat: connect OSS affinity and external planning capabilities | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#94](https://github.com/divibisoul/Orquestrador-/pull/94) | feat(octacore): unify prefrontal orbital SuperGPU fusion over Mesh | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#95](https://github.com/divibisoul/Orquestrador-/pull/95) | feat(octacore): unify prefrontal orbital SuperGPU fusion over Mesh | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#96](https://github.com/divibisoul/Orquestrador-/pull/96) | feat(n07): activate OSS functional-affinity resolution on current main | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#97](https://github.com/divibisoul/Orquestrador-/pull/97) | fix(n07): preserve correlation through canonical execute boundary | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#98](https://github.com/divibisoul/Orquestrador-/pull/98) | feat: integrate Superpowers, ECC and Ruflo agent arsenal into SOUL | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#112](https://github.com/divibisoul/Orquestrador-/pull/112) | feat(N07): fuse OSS agent, memory, eval and GPU stack | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#114](https://github.com/divibisoul/Orquestrador-/pull/114) | fix: reconcile canonical SOUL nucleus heads after SuperGPU integration | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#115](https://github.com/divibisoul/Orquestrador-/pull/115) | fix: reconcile current SOUL nucleus heads after provider expansion | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#117](https://github.com/divibisoul/Orquestrador-/pull/117) | feat(n07): standardize readiness probe | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#118](https://github.com/divibisoul/Orquestrador-/pull/118) | ci(ownership): repair external ownership release gate | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#123](https://github.com/divibisoul/Orquestrador-/pull/123) | fix(N07): restore green Pages and container CI | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#124](https://github.com/divibisoul/Orquestrador-/pull/124) | recovery(N07): restore missing native public APIs | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#125](https://github.com/divibisoul/Orquestrador-/pull/125) | test: prove N07 -> N01 RGO HortaCore E2E | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#126](https://github.com/divibisoul/Orquestrador-/pull/126) | fix: preserve cancellation evidence in Octacore barrier plans | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#127](https://github.com/divibisoul/Orquestrador-/pull/127) | fix: reactivate Prefrontal decision telemetry | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#128](https://github.com/divibisoul/Orquestrador-/pull/128) | fix: make HortaCore health reflect adapter availability | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#129](https://github.com/divibisoul/Orquestrador-/pull/129) | recovery: materialize and verify SOUL-25 external submodules | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#130](https://github.com/divibisoul/Orquestrador-/pull/130) | fix: restore executable multilayer neural learning | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#131](https://github.com/divibisoul/Orquestrador-/pull/131) | fix: preserve same-owner SuperGPU lease integrity | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#132](https://github.com/divibisoul/Orquestrador-/pull/132) | fix: prevent N07 self-selection in neural federation | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#133](https://github.com/divibisoul/Orquestrador-/pull/133) | fix: isolate request rejection from execution circuit breaker | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#134](https://github.com/divibisoul/Orquestrador-/pull/134) | fix: account concurrent SuperGPU work before shutdown | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#135](https://github.com/divibisoul/Orquestrador-/pull/135) | fix: make Prefrontal working-memory retention deterministic | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#136](https://github.com/divibisoul/Orquestrador-/pull/136) | fix: enforce Semantic Versioning precedence in operation routing | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#137](https://github.com/divibisoul/Orquestrador-/pull/137) | fix: preserve multiple Octacore barrier signals | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#138](https://github.com/divibisoul/Orquestrador-/pull/138) | fix: preserve invalid Prefrontal candidate evidence | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#139](https://github.com/divibisoul/Orquestrador-/pull/139) | fix: authenticate Mesh responses before status handling | CANDIDATA DE SINERGIA — precisa de diff/ancestralidade |
+| [#140](https://github.com/divibisoul/Orquestrador-/pull/140) | fix: bound Octacore wave workers by admission capacity | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#141](https://github.com/divibisoul/Orquestrador-/pull/141) | fix: preserve backend persistence failure evidence | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#142](https://github.com/divibisoul/Orquestrador-/pull/142) | fix: make Neural normalization overflow-safe | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#143](https://github.com/divibisoul/Orquestrador-/pull/143) | fix: reject ambiguous trailing JSON request values | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#144](https://github.com/divibisoul/Orquestrador-/pull/144) | feat(grf): add Golden Rule Framework, GRCE and verified upstream wave | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#145](https://github.com/divibisoul/Orquestrador-/pull/145) | fix: classify cooperative audit rate limits as unmeasurable | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#146](https://github.com/divibisoul/Orquestrador-/pull/146) | feat(grce): integrate SOUL-28 complementary execution, healing and memory | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#147](https://github.com/divibisoul/Orquestrador-/pull/147) | feat: consolidate SOUL v1 foundation and GRCE runtime | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#148](https://github.com/divibisoul/Orquestrador-/pull/148) | restructure: SOUL v2 foundation consolidation and canonical Mesh repair | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#149](https://github.com/divibisoul/Orquestrador-/pull/149) | reconcile: complete current SOUL/N07 open frontiers | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#150](https://github.com/divibisoul/Orquestrador-/pull/150) | fix(n07): prevent vendored upstream docs from breaking Pages | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#151](https://github.com/divibisoul/Orquestrador-/pull/151) | fix(mesh): preserve operation identity across retries | CANDIDATA DE SINERGIA — precisa de diff/ancestralidade |
+| [#152](https://github.com/divibisoul/Orquestrador-/pull/152) | feat(external): materialize and connect public capability federation | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#153](https://github.com/divibisoul/Orquestrador-/pull/153) | fix(N07): unblock GRCE compile boundary | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#154](https://github.com/divibisoul/Orquestrador-/pull/154) | feat(sena): add non-destructive SOUL integration foundation | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#155](https://github.com/divibisoul/Orquestrador-/pull/155) | feat(GRCE): link explicit capabilities to public upstream affinity | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#156](https://github.com/divibisoul/Orquestrador-/pull/156) | feat(GRCE): reconcile SOUL-28 and canonical N07 contracts | INVENTARIADA — diff/ancestralidade ainda a classificar |
+
+### SARA — transversal regenerativo — 25 PRs
+
+| PR | Título | Estado de trabalho |
+|---|---|---|
+| [#1](https://github.com/divibisoul/SARA/pull/1) | feat: close HTTP runtime gate and integrate fusion state | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#2](https://github.com/divibisoul/SARA/pull/2) | validation: SARA HTTP + N07 current runtime | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#3](https://github.com/divibisoul/SARA/pull/3) | feat: additive Trinity self-optimization layer | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#4](https://github.com/divibisoul/SARA/pull/4) | feat: integrated ARA ETR ITR ERU engineering gate | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#5](https://github.com/divibisoul/SARA/pull/5) | ERU ↔ SOUL: adopt expanded audited fusion contract | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#7](https://github.com/divibisoul/SARA/pull/7) | feat: integrated ARA ETR ITR ERU engineering gate | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#8](https://github.com/divibisoul/SARA/pull/8) | feat: add measurable Bayesian and probabilistic neural context to SARA | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#9](https://github.com/divibisoul/SARA/pull/9) | fix(e2e): validate SARA against current N07 correlation contract | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#10](https://github.com/divibisoul/SARA/pull/10) | Octacore G0: expose SARA as authoritative kernel | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#11](https://github.com/divibisoul/SARA/pull/11) | feat: current-main ARA ETR ITR ERU engineering gate | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#12](https://github.com/divibisoul/SARA/pull/12) | feat(aeternum): overlay eight modules on SARA authorities | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#13](https://github.com/divibisoul/SARA/pull/13) | Fusion: OctaCore + HortaCore + VagusBus + Soul Mesh | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#14](https://github.com/divibisoul/SARA/pull/14) | Forensic: transversal VagusBus binding and module audit | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#15](https://github.com/divibisoul/SARA/pull/15) | feat: propagate probabilistic context across current SARA core | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#16](https://github.com/divibisoul/SARA/pull/16) | SARA — boundary regenerativo — integração não destrutiva da Clareira | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#17](https://github.com/divibisoul/SARA/pull/17) | Octacore Stage 1 — G0 boundary and Vagus control integration | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#20](https://github.com/divibisoul/SARA/pull/20) | feat: RGO integration boundary — G0/SARA | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#26](https://github.com/divibisoul/SARA/pull/26) | feat: consume federated context from N06 cycles | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#36](https://github.com/divibisoul/SARA/pull/36) | feat(SARA): add executable Mem0 memory adapter | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#37](https://github.com/divibisoul/SARA/pull/37) | feat(sara): standardize readiness probe | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#39](https://github.com/divibisoul/SARA/pull/39) | fix: cirurgia da Regra de Ouro no Trinity/ERU/RGO | INVENTARIADA — diff/ancestralidade ainda a classificar |
+| [#40](https://github.com/divibisoul/SARA/pull/40) | fix(vagus): preserve inbound provenance across HTTP boundary | CANDIDATA DE SINERGIA — precisa de diff/ancestralidade |
+| [#41](https://github.com/divibisoul/SARA/pull/41) | feat: canonicalize NervoVago without duplicating VagusBus | CANDIDATA DE SINERGIA — precisa de diff/ancestralidade |
+| [#42](https://github.com/divibisoul/SARA/pull/42) | reconcile: complete current Nervo Vago and regenerative frontiers | CANDIDATA DE SINERGIA — precisa de diff/ancestralidade |
+| [#43](https://github.com/divibisoul/SARA/pull/43) | feat(grce): expose real SARA hook execution evidence | CANDIDATA DE SINERGIA — precisa de diff/ancestralidade |
+
+## Como encerrar cada cluster
+
+1. Capturar base/head SHA, PRs empilhadas, arquivos tocados, funcionalidades e riscos.
+2. Comparar os diffs e a implementação atual; definir explicitamente o que é complementar, redundante, incompatível ou bloqueado. Uma aparente duplicação só pode ser resolvida depois de provar que nenhuma funcionalidade/evidência se perde.
+3. Criar branch própria baseada no head correto, commits incrementais sem force-push, PR draft com proveniência e checklist de cobertura.
+4. Verificar testes necessários e E2E real quando o cluster envolver comunicação; executar CI novamente no SHA final da candidata.
+5. Só mudar o estado para CONCLUÍDA quando a evidência e as condições de merge forem verificadas. Caso contrário manter ABERTA/BLOQUEADA com causa concreta.
+
+**Importante:** esta lista comprova a enumeração das 291 fontes e dá um ponto permanente de retorno. Não representa uma alegação de que os 291 diffs já foram todos analisados ou fundidos.
