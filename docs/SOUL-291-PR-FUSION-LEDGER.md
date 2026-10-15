@@ -386,3 +386,48 @@
 5. Só mudar o estado para CONCLUÍDA quando a evidência e as condições de merge forem verificadas. Caso contrário manter ABERTA/BLOQUEADA com causa concreta.
 
 **Importante:** esta lista comprova a enumeração das 291 fontes e dá um ponto permanente de retorno. Não representa uma alegação de que os 291 diffs já foram todos analisados ou fundidos.
+
+
+## Adendo de auditoria ao vivo — 2026-10-15
+
+Este adendo é append-only: preserva o inventário e o histórico anteriores. Ele registra as fusões e verificações realizadas nesta rodada; **não** declara concluída a auditoria funcional das 291 PRs.
+
+### Fusões verificadas
+
+| Núcleo / PR | Resultado | Evidência verificada |
+|---|---|---|
+| N07 [#159](https://github.com/divibisoul/Orquestrador-/pull/159) | MERGED; commit `5fd4e95d4e2bffb7fd1028da00cdbf7b4f66e49a`; 1 arquivo, +8/−0 | 8 workflows no SHA candidato passaram. O E2E separado N06↔N07 autenticou `mesh.ping` e `mesh.describe` via HTTP/HMAC no processo Go real, no SHA fix `1b125cf19b5baafd7959b88f3cb90abd201a3d44`. Pós-fusão: CI de runtime, commissioning e container passaram; Pages ainda estava em execução na última leitura. |
+| N02 [#59](https://github.com/divibisoul/Eternium-/pull/59) | MERGED; commit `0516bfcffa266190910c36389c75df642e13da41`; 22 arquivos, +900/−44, nenhum arquivo removido | 7 workflows no SHA candidato passaram; inclui N01↔N02 em processos separados, HMAC nos dois sentidos, callback e validação de identidade/correlação; também N02→N01 com servidor HTTP N01 real. Os 5 workflows pós-fusão reportaram sucesso. |
+| N06 [#45](https://github.com/divibisoul/nextjs-ai-chatbot-2000/pull/45) | MERGED; commit `735b688be8b93768bcfe5f103a92947f28e4b5cb`; 13 arquivos, +495/−204, nenhum arquivo removido | 8 workflows do SHA candidato passaram, incluindo o E2E N06↔N07 com dois processos reais, HTTP e HMAC. Os workflows pós-fusão estavam em fila/em execução na última leitura; conclusão pós-fusão ainda pendente. |
+
+Estas fusões usaram merge normal com `expected_head_sha`; não houve force-push nem exclusão de branches-fonte. As linhas removidas em arquivos são mudanças de implementação revisadas, não arquivos removidos; os comportamentos antigos devem continuar rastreáveis nas PRs de origem.
+
+### Candidatas e bloqueios encontrados
+
+| Núcleo / PR | Estado observado | Próximo requisito para fechamento |
+|---|---|---|
+| N01 [#105](https://github.com/divibisoul/aeternum-core-29/pull/105) | DRAFT; SHA `528fa464e47264a58ed44e4a4515415711c7a684`; 38 arquivos, +2282/−219. A nova tentativa do workflow Android ainda estava em execução na última leitura. | Não fundir até CI exato verde e reconciliar a topologia: a candidata define 30 rotas entre N01–N06, enquanto o contrato canônico do N07 declara adjacência linear N01→N02→N03→N04→N05→N06→N07. O teste Android de ida e volta em memória é local/in-process, não E2E entre núcleos. |
+| N03 [#48](https://github.com/divibisoul/nexus-aeternum-fusion/pull/48) | DRAFT; SHA `f03fba45d9ab54d904e0d6e9cc07b65d688b7b9d`; build e capability upgrade verdes. | Acrescentar/verificar evidência de comunicação real N02↔N03; build bem-sucedido não comprova tráfego entre processos. |
+| N04 [#50](https://github.com/divibisoul/nextjs-ai-chatbots/pull/50) | DRAFT; SHA `1f8a8c14c65b7ebafde3d5f54762d22d004dabda`; 7/7 workflows verdes. A falha TypeScript foi corrigida removendo `transport` de nível superior inválido e preservando `meta.transport`; teste de regressão incluído. | Falta E2E real entre processos adjacentes N03↔N04. Não fundir só com base em testes internos/CI verde. |
+| N05 [#51](https://github.com/divibisoul/nextjs-ai-chatbot/pull/51) | DRAFT; SHA `4fbd7e0b2227d2c5db191c08ad80edcbfcd2fb61`; workflows do candidato verdes. | A bridge HMAC atual é teste de contrato; falta evidência real de N05↔N06 em processos separados. |
+| N07 [#156](https://github.com/divibisoul/Orquestrador-/pull/156) | DRAFT empilhada sobre `fix/n07-grce-compile-boundary-2026-10-08`; última alteração verificada no SHA `8f0fbe6362539fbe80e95fc24090fd2b6910f92b`. | O Dockerfile esperava 28 submódulos, mas o tree Git contém 31 gitlinks. A verificação foi mudada para contar os gitlinks do próprio commit e continua conferindo o SHA de cada diretório. Os sourceRefs N02 e N06 foram reconciliados após fusões e seus SHAs anteriores continuam no histórico. CI renovado ainda pendente; não fundir. |
+| SARA [#44](https://github.com/divibisoul/SARA/pull/44) | DRAFT; SHA `7839e21c461025b4adb3eec580e45a4c2a014336`; workflows do candidato verdes. | Confirmar o E2E SARA↔N07 na versão final empilhada e a proveniência exata das hooks GRF/GRCE. |
+| JEV [#5](https://github.com/divibisoul/jev-api/pull/5) | DRAFT; SHA `c63d6bae6744a9625809083c2808b4da111fb1e3`; 3 workflows verdes. | Falta comprovar o caminho real entre a autoridade de decisão JEV e o consumidor de núcleo, não somente os testes de contrato. |
+
+### Matriz de comunicação real comprovada
+
+| Par adjacente | Estado | Limite da evidência |
+|---|---|---|
+| N01↔N02 | REAL — verificado | O E2E pós-fusão do N02 iniciou o servidor N01 real no SHA `d5932bbe9e91127d497e86acd32bbb305e0c14d6`; também houve teste de pares em processos separados com N01 pinado. |
+| N02↔N03 | UNMEASURABLE | Não foi localizado E2E de processos reais no head da candidata N03. |
+| N03↔N04 | UNMEASURABLE | A candidata N04 tem CI verde, mas ainda sem prova cruzada de processos. |
+| N04↔N05 | UNMEASURABLE | O teste HMAC de bridge não demonstra por si só uma conexão de rede real. |
+| N05↔N06 | UNMEASURABLE | Necessário E2E adjacente em processos reais, no SHA final. |
+| N06↔N07 | REAL — verificado no SHA candidato integrado | Processo Go N07 real e adapter N06 real por HTTP/HMAC; o SHA fix do N07 foi incorporado em main. Revalidar no CI pós-fusão do N06. |
+
+### Regras aplicadas nesta rodada
+
+- `REAL` só é atribuído a comunicação com processos separados e transporte observado; uma fixture em memória, um mock, build ou teste unitário não é prova de conexão.
+- `PROJECTED` e `UNMEASURABLE` não são promovidos a runtime real por causa de CI verde.
+- Corrigir proveniência depois de uma fusão faz parte da integração: a entrada N02 passou de `b10dc048429e7ea19ac0c0834e3ff3cc1ae2af7d` para `0516bfcffa266190910c36389c75df642e13da41`; a entrada N06 passou de `0b2ba53922046e772883a8de5bf9ecc41fa3eacb` para `735b688be8b93768bcfe5f103a92947f28e4b5cb`. Os SHAs anteriores foram preservados em `sourceRefHistory` como `PRESERVED`.
+- A enumeração das 291 PRs continua sendo inventário, não prova de revisão funcional completa. O encerramento global exige reconciliar todos os clusters, preservar funções compatíveis, testar interfaces reais e executar CI no SHA exato de cada integração.
