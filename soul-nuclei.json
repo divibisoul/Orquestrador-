@@ -37,7 +37,7 @@
     "masterContract": "SOUL_MASTER_ENGINEERING_CONTRACT.md",
     "grf": "GRF 2.0 transversal framework; N07 hosts GRCE control-plane operations while SARA/JEV/native nuclei retain their functional authority",
     "grce": "GRCE 2.0 installed in N07; cycle remains BLOCKED until distinct real ERU/MMD/ARA/ETR/ITR/RGO hooks are proven",
-    "mainlineRefReconciledAt": "2026-10-06"
+    "mainlineRefReconciledAt": "2026-10-15"
   },
   "nuclei": {
     "N01": {
@@ -99,12 +99,12 @@
         "N03"
       ],
       "manifestAuthority": "SOUL-FUSION-MANIFEST.json",
-      "sourceRef": "b10dc048429e7ea19ac0c0834e3ff3cc1ae2af7d",
-      "status": "main-live-bncv2-csae-dcrs-reintegrated",
+      "sourceRef": "0516bfcffa266190910c36389c75df642e13da41",
+      "status": "main-live-hmac-safe-mesh-bidirectional-e2e-merged-2026-10-15",
       "contractEvidencePaths": [
         "src/soul-mesh/SoulMeshProtocol.ts"
       ],
-      "previousSourceRef": "b8c681e1c2bf000bb614b5b0c13ca8377c857a14",
+      "previousSourceRef": "b10dc048429e7ea19ac0c0834e3ff3cc1ae2af7d",
       "sourceRefHistory": [
         {
           "sourceRef": "b8c681e1c2bf000bb614b5b0c13ca8377c857a14",
@@ -114,6 +114,11 @@
         {
           "sourceRef": "b10dc048429e7ea19ac0c0834e3ff3cc1ae2af7d",
           "observed": "2026-10-06/live-mainline",
+          "state": "PRESERVED"
+        },
+        {
+          "sourceRef": "0516bfcffa266190910c36389c75df642e13da41",
+          "observed": "2026-10-15/post-merge-n02-pr59",
           "state": "CURRENT"
         }
       ],
