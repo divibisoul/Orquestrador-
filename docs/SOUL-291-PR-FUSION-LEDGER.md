@@ -431,3 +431,44 @@ Estas fusões usaram merge normal com `expected_head_sha`; não houve force-push
 - `PROJECTED` e `UNMEASURABLE` não são promovidos a runtime real por causa de CI verde.
 - Corrigir proveniência depois de uma fusão faz parte da integração: a entrada N02 passou de `b10dc048429e7ea19ac0c0834e3ff3cc1ae2af7d` para `0516bfcffa266190910c36389c75df642e13da41`; a entrada N06 passou de `0b2ba53922046e772883a8de5bf9ecc41fa3eacb` para `735b688be8b93768bcfe5f103a92947f28e4b5cb`. Os SHAs anteriores foram preservados em `sourceRefHistory` como `PRESERVED`.
 - A enumeração das 291 PRs continua sendo inventário, não prova de revisão funcional completa. O encerramento global exige reconciliar todos os clusters, preservar funções compatíveis, testar interfaces reais e executar CI no SHA exato de cada integração.
+
+
+## Atualização append-only de verificação — 2026-10-16 UTC
+
+Este registro complementa a auditoria de 15 de outubro. Não altera nem invalida as evidências e conclusões anteriores.
+
+### Evidência de comunicação N02↔N03
+
+- **REAL — E2E aprovado no SHA 9012f36a621d8be3b6f6bc4222fa1408f064a434**, workflow [Soul Mesh CI run 38826589689](https://github.com/divibisoul/nexus-aeternum-fusion/actions/runs/38826589689), etapa N02↔N03 authenticated real-process E2E.
+- O log registra dois servidores independentes (N02 e N03), cliente N02→servidor N03 e o registro N03→servidor N02; transporte HTTP e autenticação HMAC-SHA256 nas requisições e respostas. O segredo de teste é efêmero e não foi persistido.
+- Esse run não deixou N03 aprovado: o passo seguinte, typecheck, falhou por TS2783 em lib/soul-mesh/SoulMeshProtocol.ts porque correlationId era definido antes de ...input e, portanto, sobrescrito.
+- A correção foi aplicada de forma compatível no candidato: ...input vem primeiro; os campos gerados protocol, contractVersion, id, timestamp e o correlationId final são escritos depois, mantendo o comportamento intencional e eliminando o campo duplicado. Novo head: 26c100d8b5c2646c2c8314792f3bc1afe86fa63c.
+- No momento desta atualização, os workflows para 26c100d8b5c2646c2c8314792f3bc1afe86fa63c foram disparados; E2E, typecheck, teste de preservação de agentes e build ainda precisam terminar nesse SHA. A evidência REAL do SHA anterior não autoriza declarar o head atual aprovado.
+
+### Correções de inicialização e preservação no N03
+
+- O modo Node 22 strip-only não suportava parameter properties e falhou antes de abrir a porta. O servidor standalone e o cliente N03 passaram a usar Bun, que já estava instalado no workflow. Os comandos Node antigos foram mantidos como scripts de compatibilidade, não removidos.
+- O E2E seguinte detectou duplicação real: N03.audio.transcribe.agent era registrado pelo handler histórico e depois novamente pela camada canônica. O registro estrito continua recusando duplicatas acidentais; um novo método de substituição explícita verifica identidade e capacidades, arquiva o handler anterior e expõe a versão preservada no inventário de capacidades. Foram adicionados testes para a preservação, registro duplicado estrito e bloqueio de substituição incompatível; o teste foi incorporado ao Soul Mesh CI.
+- Foi corrigido também o descompasso entre o cliente N02 (assinatura/nonce nos headers HTTP) e o listener N03 (que lia apenas o corpo): os dois formatos continuam aceitos; a nova integração usa o envelope canônico e verifica a resposta assinada antes de promover o peer a healthy.
+
+### Estado dos demais bloqueios na última leitura
+
+- **N07 #156 — DRAFT:** fonte/contratos, testes Go, race, build de Go, integridade de SHAs e assertiva estrutural passaram no SHA 8f0fbe6362539fbe80e95fc24090fd2b6910f92b. A etapa Build production image ainda estava em execução; não declarar a PR pronta até receber resultado final do container. É uma PR empilhada sobre a base fix/n07-grce-compile-boundary-2026-10-08, então a cadeia de bases precisa continuar íntegra.
+- **N01 #105 — DRAFT:** build web e APKs debug/release passaram. A instrumentação Android falhou porque o emulador hospedado não iniciou (Failed to find ColorBuffer, Failed to bind to texture, Timeout waiting for emulator to boot). Logo, a bateria de testes Android não chegou a executar: não atribuir isso como falha funcional do app nem declarar CI verde. Permanece o bloqueio adicional de reconciliação entre as 30 rotas declaradas em N01 (grade/mesh completo N01–N06) e a topologia adjacente registrada por N07. A decisão de topologia requer especificação explícita, não uma alteração inferida.
+- **N04 #50 e N05 #51 — DRAFT:** os builds/testes internos vistos anteriormente não substituem E2E entre processos reais. Ainda faltam, respectivamente, N03↔N04 e N04↔N05/N05↔N06 no SHA final.
+- **N02 #59 e N06 #45:** continuam integradas. As leituras pós-fusão registraram os workflows do N02 verdes e os workflows pós-fusão do N06 verdes. As contribuições-fonte continuam abertas; nenhum histórico foi removido.
+- **N07 #159:** fusão normal, correção mínima de autenticação local Mesh, sem remoções.
+
+### Status de comunicação atualizado
+
+| Par | Estado demonstrado |
+|---|---|
+| N01↔N02 | REAL — E2E bidirecional no runtime candidato do N02; testes pós-fusão aprovados |
+| N02↔N03 | REAL — teste de processos independentes aprovado no SHA 9012f36a...; revalidar no atual 26c100d8... antes de fechar N03 |
+| N03↔N04 | UNMEASURABLE — ainda sem E2E real no SHA final de ambas as pontas |
+| N04↔N05 | UNMEASURABLE |
+| N05↔N06 | UNMEASURABLE |
+| N06↔N07 | REAL — E2E HTTP/HMAC com processo Go real N07 e cliente N06; pós-fusão N06 aprovado |
+| SARA↔N07 | REAL — workflow E2E dedicado aprovado no candidato N07 |
+
+**Critério global continua aberto:** inventário de 291 PRs não equivale a auditoria funcional concluída. Nenhuma PR que depende de E2E/CI ainda em execução foi promovida a MERGED, e nenhuma branch histórica foi removida.
