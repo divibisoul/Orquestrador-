@@ -299,12 +299,12 @@
         "N07"
       ],
       "manifestAuthority": "SOUL-FUSION-MANIFEST.json",
-      "sourceRef": "0b2ba53922046e772883a8de5bf9ecc41fa3eacb",
-      "status": "main-live-composition-targets-reconciled",
+      "sourceRef": "735b688be8b93768bcfe5f103a92947f28e4b5cb",
+      "status": "main-live-hmac-authenticated-n07-runtime-e2e-merged-2026-10-15",
       "contractEvidencePaths": [
         "lib/soul-mesh/SoulMeshProtocol.ts"
       ],
-      "previousSourceRef": "17c46a0ddd5edfcdb570539d2d250a78799016f2",
+      "previousSourceRef": "0b2ba53922046e772883a8de5bf9ecc41fa3eacb",
       "sourceRefHistory": [
         {
           "sourceRef": "17c46a0ddd5edfcdb570539d2d250a78799016f2",
@@ -314,6 +314,11 @@
         {
           "sourceRef": "0b2ba53922046e772883a8de5bf9ecc41fa3eacb",
           "observed": "2026-10-06/live-mainline",
+          "state": "PRESERVED"
+        },
+        {
+          "sourceRef": "735b688be8b93768bcfe5f103a92947f28e4b5cb",
+          "observed": "2026-10-15/post-merge-n06-pr45",
           "state": "CURRENT"
         }
       ],
