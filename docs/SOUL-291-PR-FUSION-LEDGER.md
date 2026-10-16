@@ -814,3 +814,29 @@ Um andar recebe COMPLETE apenas quando implementação fonte, conteúdo sobrepos
 3. Em trilho paralelo separado, validar N05 #52 + N06 #46 com E2E HTTP/HMAC real antes de integrar o delta amplo de N06 #42.
 4. Resolver N01 Android instrumentation no head atual.
 5. Só promover uma unidade funcional quando seus gates dependentes e seu CI estiverem verdes; demais frentes seguem OPEN/DRAFT/UNMEASURABLE.
+
+## Atualização append-only — fotografias pós-materialização e lint N06 (2026-10-16 UTC)
+
+### N07 #153 — fonte materializada novamente
+
+- Head atual: 7394d4bc2de1dc1bd8cd6d419969253e5230243d; base 94f72bb511295c925cb482252d5f6666975994a8; OPEN/DRAFT.
+- O workflow GRF/GRCE Real SARA E2E voltou a materializar os submódulos SOUL de primeiro nível via scripts/materialize-top-level-submodules.mjs antes do teste de federação. O checkout continua com submodules=false, portanto a materialização não recursa nos datasets aninhados. Isso preserva a prova de fontes materializadas em vez de aceitar apenas 22 descriptors que reportem MISSING_WORKTREE.
+- A auditoria de sobreposição N07 cooperative front overlap audit (run 38843339775) passou no SHA 7394d4b. Os demais 15 workflows consultados estavam queued, incluindo GRF/GRCE Real SARA E2E 38843339782 e N07 Orquestrador CI 38843339839. Estado: IMPLEMENTED-UNVERIFIED; o andar-base ainda não pode ser promovido.
+- PR #156 segue stale/dirty: head 7fddde3a220adf648abc508905b16927271c1db5, base f656aca8c944183f9f9638179307901395b481be. Não sincronizar até #153 validar o head corrente e completar seus gates.
+
+### N06 #42 / #46 — causa de lint identificada e corrigida, CI reiniciado
+
+- A validação de N06 #42 no SHA antigo 692a970cb63c58f9f5b26619abfce3f1aab75b18 falhou no job Lint por exatamente dois diagnósticos Biome: uso de delete para remover meta.nonce em N06PeerAdapter.ts e import de randomUUID de crypto (sem o protocolo node: explícito) em Nucleus06E2EContract.ts. O Soul Mesh CI passou naquele mesmo head; isso não anulava a falha de lint.
+- #42 foi atualizado com commit 1c2900500f840aeb25275c10b3d27bb44fc86bf9 para importar node:crypto explicitamente. Seu branch já apresentava uma variante sem delete na linha de retry; foi conferido para não duplicar alteração desnecessária. Os 10 workflows do novo head estavam queued no último refresh.
+- #46 foi atualizado para head 614963429bb4e24628771631429b8d6496706f52: N06PeerAdapter agora faz overlay de nonce por tentativa sem mutar/remover a chave, e Nucleus06E2EContract usa node:crypto. Os workflows E2E e Soul Mesh CI desse SHA estavam pending; os restantes queued.
+- O E2E de N06 aponta para o head atual de N05 #52, 75ea08296534f973015a78b0b37d82c13c954013, tanto no checkout quanto na verificação do SHA. Os sete workflows de N05 #52 passaram no head consultado, mas isto não substitui a execução real N05↔N06.
+- Próximo gate N06: esperar lint/typecheck/build, os testes canônicos e o E2E de dois processos dos SHAs 614963429... e 1c290050...; não promover #46/#42 se qualquer workflow obrigatório estiver pending, queued, falho ou preso a SHA anterior.
+
+### N01 — ainda não comprovado
+
+- N01 #105 continua no head 3f560d687b01ce2ab2b2f3db3cf4c18e679a1f92. O workflow NeuralManagementCore verification (38842476220) terminou success, mas a maior parte dos 18 workflows continuava queued e o Android instrumentation não tinha rodado novamente no head corrigido.
+- O artefato antigo confirmou que as falhas eram assertions de Result.isSuccess sem exceção/log diagnóstica. A hipótese de cleartext em loopback é tratada pela política de rede restrita, mas a nova instrumentação precisa provar ou refutar a causa no novo SHA.
+
+### Decisão de promoção
+
+Nenhuma destas três frentes pode ser fechada nesta fotografia. O próximo movimento autorizado continua: validar #153 no head 7394d4b; só depois reconciliar #156 sobre a base validada, em merge commit não-forçado de dois pais e com composição funcional dos onze caminhos sobrepostos. Em trilhos paralelos, fechar N05↔N06 e Android apenas com E2E/CI exatos. A auditoria das 291 PRs permanece aberta.
