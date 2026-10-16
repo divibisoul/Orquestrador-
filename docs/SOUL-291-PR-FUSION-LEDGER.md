@@ -541,3 +541,26 @@ O fechamento de #40/#41/#42 foi somente de estado da PR para evitar integração
 ### Situação da malha de comunicação
 
 O cluster SARA #44 comprova os contratos HTTP locais de proveniência e hooks, mas não altera o estado da matriz de comunicação cruzada: N07↔SARA permanece UNMEASURABLE até E2E com dois processos independentes e runtime N07 validado. A fonte de verdade do estado do container é a PR N07 #156 e seus checks no SHA atual; um manifesto ou capability list sem prova de fonte atestada não é suficiente.
+
+
+## Atualização append-only — rodada técnica 15–16/10/2026 (UTC)
+
+Esta seção registra a nova rodada sem reescrever o histórico anterior. Os resumos acima refletem o estado observado em 14/10; os estados abaixo têm precedência quando os mesmos itens aparecerem com informação mais antiga.
+
+### Integrações confirmadas no GitHub
+
+- **N05 #51 — MERGED**: https://github.com/divibisoul/nextjs-ai-chatbot/pull/51. Head validado `4fbd7e0b2227d2c5db191c08ad80edcbfcd2fb61`; merge commit `894c001e48da368b58ca0b67911e63b2a859c1f3`. Os seis workflows consultados no head terminaram `success`. A implementação ativa `lib/soul-mesh/endpoint.ts` agora encaminha os símbolos de protocolo para `./SoulMeshProtocol`, em vez de declarar uma segunda autoridade de protocolo. O cliente mantém assinatura de requisição, verificação da resposta, vínculo de correlação e proteção contra chave HMAC curta. Isso elimina uma causa concreta da falha arquitetural registrada pelo N07; não prova conectividade N05↔N07 em processos reais. PRs-fontes #49 e #50 e seus branches não foram excluídos nem alterados por esta fusão.
+- **SARA #44 — MERGED**: https://github.com/divibisoul/SARA/pull/44. Merge commit `5633cdd95a067c1c40a4b731a38976971e173d1f`. A integração de proveniência Vagus, alias NervoVago, hooks GRCE e retenção append-only do ERU preservou as PRs-fontes. Os testes consultados provaram os contratos HTTP locais, não comunicação interprocesso N07↔SARA.
+- **N02 #59 — MERGED, estado confirmado**: https://github.com/divibisoul/Eternium-/pull/59. Merge commit `0516bfcffa266190910c36389c75df642e13da41`. Registro de estado confirmado nesta rodada; não implica prova global de comunicação entre todos os núcleos.
+
+### Correções e gates ainda abertos
+
+- **N04 #50 — OPEN/DRAFT, NÃO MERGE**: https://github.com/divibisoul/nextjs-ai-chatbots/pull/50. No branch `fusion/n04-e2e-hmac-canonical-20261014`, o head mais recente é `697dd2735a23006caf3da984b6dc43ead16314fa`. Corrigido o parâmetro de tentativas inválido do teste (`0` → `1`) e tornado o carregamento do peer client tolerante ao namespace ESM/CommonJS. O E2E anterior falhou durante a importação do cliente, antes de provar a troca HTTP/HMAC. Os seis workflows do novo head ainda estavam `queued` na última consulta. Não marcar conectado nem mesclar até o E2E bidirecional passar no head final.
+- **N01 #105 — OPEN/DRAFT, NÃO MERGE**: https://github.com/divibisoul/aeternum-core-29/pull/105. Head `528fa464e47264a58ed44e4a4515415711c7a684`. A validação Web TypeScript/Vite terminou `success`; a execução Android APK + Mesh instrumentation estava `in_progress` após nova tentativa. A tentativa anterior expirou aguardando inicialização do emulador. CI global ainda não comprovadamente verde.
+- **N03 #44 — OPEN/DRAFT, NÃO MERGE**: https://github.com/divibisoul/nexus-aeternum-fusion/pull/44. No branch `integration/reconcile-current-n03-fronts-2026-10-06`, commit `a7673511b4bc497b07bc0a356a092a9dabf02c33`, corrigidas as extensões `.ts` nas importações do listener. A falha anterior era `ERR_MODULE_NOT_FOUND` em `SoulMeshHmac`. Após a atualização, o GitHub reportou `mergeable=false` e nenhuma nova execução foi encontrada para esse commit. Investigar a divergência/estado de merge e obter CI no head exato; não forçar merge.
+- **N06 #42 — OPEN/DRAFT, NÃO MERGE**: https://github.com/divibisoul/nextjs-ai-chatbot-2000/pull/42. Falhas observadas: TypeScript em `N06ExternalCapabilityFabric.ts` (o campo `state` foi inferido como `string`, mas o contrato aceita `CATALOG_BOUND | ADAPTER_BOUND`), build Web pelo mesmo erro e Dependency Review com 16 vulnerabilidades reportadas, incluindo achados de severidade alta. O adaptador tipado e a árvore de dependências precisam ser corrigidos e revalidados antes de integrar.
+- **N07 #158 — OPEN/DRAFT, NÃO MERGE**: https://github.com/divibisoul/Orquestrador-/pull/158. O head continua `572572b7e8fb26d3291ebd2c0e0ee2230c2eae99`, com `mergeable=false`. A reexecução do job de integridade foi solicitada depois do merge do N05 #51; resultado ainda precisa ser lido. O E2E GRF/GRCE com SARA anterior passou, mas permanece insuficiente para provar toda a malha. A PR-base #156 e os conflitos de empilhamento devem ser preservados e reconciliados sem force-push.
+
+### Regra para o próximo lote
+
+A ordem permanece: (1) corrigir falhas concretas de transporte/contrato e obter um E2E bidirecional em processos independentes; (2) reconciliar a cadeia de PRs empilhadas e semelhanças de função sem duplicar a autoridade de protocolos; (3) validar testes e CI no SHA final; (4) só então mesclar. Qualquer registro de capacidade que tenha somente manifesto, mock, unidade ou HTTP 200 permanece `PROJECTED`/ `UNMEASURABLE`, não `REAL`.
