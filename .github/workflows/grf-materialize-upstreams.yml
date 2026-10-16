@@ -1,0 +1,71 @@
+name: materialize GRF upstreams
+
+on:
+  push:
+    branches:
+      - feat/grf-grce-upgrade-wave-2026-10-06
+
+permissions:
+  contents: write
+
+jobs:
+  materialize:
+    if: contains(github.event.head_commit.message, '[materialize-grf]')
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          persist-credentials: true
+      - name: configure git
+        run: |
+          git config user.name "SOUL GRF Integrator"
+          git config user.email "actions@users.noreply.github.com"
+      - name: add pinned upstream submodules
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          add_pinned() {
+            local name="$1"
+            local url="$2"
+            local path="$3"
+            local sha="$4"
+
+            if test -e "$path/.git"; then
+              actual="$(git -C "$path" rev-parse HEAD)"
+            elif test -e "$path"; then
+              echo "path already exists and is not a submodule: $path" >&2
+              exit 1
+            else
+              git submodule add --depth 1 "$url" "$path"
+              actual="$(git -C "$path" rev-parse HEAD)"
+            fi
+
+            if test "$actual" != "$sha"; then
+              git -C "$path" fetch --depth 1 origin "$sha"
+              git -C "$path" checkout --detach "$sha"
+              git add "$path"
+            fi
+            git add .gitmodules "$path"
+            echo "$name=$sha"
+          }
+
+          add_pinned "octos" "https://github.com/lispking/octos.git" "integrations/external/grf/octos" "26a916be14dee49bcc48fbc048947d018c7de6ba"
+          add_pinned "hora-graph-core" "https://github.com/Vivien83/hora-graph-core.git" "integrations/external/grf/hora-graph-core" "334f4f82d1c7525d29130ced9e6199e3633c0f61"
+          add_pinned "mycelium" "https://github.com/mycelium-io/mycelium.git" "integrations/external/grf/mycelium" "26156b5e9f169e74c73848908ad5e3bad76cd6fa"
+          add_pinned "prime-agent" "https://github.com/PrimeIntellect-ai/prime-agent.git" "integrations/external/grf/prime-agent" "7a52276cb17310f331f1075f28fa5cf9c4ae0a0a"
+          add_pinned "cuda-oxide" "https://github.com/SuperInstance/cuda-oxide.git" "integrations/external/grf/cuda-oxide" "1ad9bfc5241322ceeccb3f9182f2a188a648bd08"
+          add_pinned "openmind-conductor" "https://github.com/SuperInstance/openmind-conductor.git" "integrations/external/grf/openmind-conductor" "18c5498a4175ed0b20bff03bc3cf2ed3233be014"
+
+          git diff --check
+          git status --short
+
+      - name: commit materialized sources
+        run: |
+          if git diff --cached --quiet; then
+            echo "No GRF upstream delta was required."
+            exit 0
+          fi
+          git commit -m "chore(grf): materialize pinned upstream sources"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
