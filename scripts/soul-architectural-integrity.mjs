@@ -71,7 +71,27 @@ async function remoteSnapshot(id,nucleus) {
   const token=String(process.env.SOUL_GITHUB_AUDIT_TOKEN || process.env.GITHUB_TOKEN || '').trim();
   if (!token) { add(report.degraded,{nucleus:id,type:'remote-provenance-unverified',requiredEnv:'SOUL_GITHUB_AUDIT_TOKEN'}); return null; }
   const headers={accept:'application/vnd.github+json',authorization:`Bearer ${token}`,'x-github-api-version':'2022-11-28','user-agent':'SOUL-Architectural-Integrity-Engine'};
-  const readRemote=async(url)=>{const response=await fetch(url,{headers});if(!response.ok)throw new Error('REMOTE_API_FAILED:'+id+':'+response.status+':'+url);return response.json();};
+  const publicHeaders={accept:'application/vnd.github+json','x-github-api-version':'2022-11-28','user-agent':'SOUL-Architectural-Integrity-Engine'};
+  const readRemote=async(url)=>{
+    let response=await fetch(url,{headers});
+    // The workflow's fine-grained GITHUB_TOKEN may be scoped to N07 and rejected
+    // for other public repositories. Retry only the public read without auth;
+    // inaccessible/private repos still fail closed and cannot pass provenance.
+    if ((response.status===401 || response.status===403) && token) {
+      const authenticatedStatus=response.status;
+      response=await fetch(url,{headers:publicHeaders});
+      if (!response.ok) {
+        const detail=(await response.text()).slice(0,500);
+        throw new Error('REMOTE_API_FAILED:'+id+':auth='+authenticatedStatus+':anonymous='+response.status+':'+url+':'+detail);
+      }
+      return response.json();
+    }
+    if (!response.ok) {
+      const detail=(await response.text()).slice(0,500);
+      throw new Error('REMOTE_API_FAILED:'+id+':'+response.status+':'+url+':'+detail);
+    }
+    return response.json();
+  };
   const repo=await readRemote(`${API}/repos/${nucleus.repository}`);
   const branch=repo.default_branch;
   const ref=await readRemote(`${API}/repos/${nucleus.repository}/git/ref/heads/${encodeURIComponent(branch)}`);
