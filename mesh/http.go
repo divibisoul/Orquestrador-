@@ -21,6 +21,7 @@ type HTTPGateway struct {
 	Engine                    *orchestrator.Engine
 	Secret                    string
 	AllowUnauthenticatedLocal bool
+	Registration              *RegistrationRegistry
 }
 type canonicalWireEnvelope struct {
 	Protocol        string            `json:"protocol"`
@@ -48,7 +49,7 @@ var seenHeaderNonces = map[string]int64{}
 const headerNonceReplayWindowMs = int64(120000)
 
 func NewHTTPGateway(engine *orchestrator.Engine) *HTTPGateway {
-	return &HTTPGateway{Engine: engine, Secret: strings.TrimSpace(os.Getenv("SOUL_MESH_HMAC_SECRET")), AllowUnauthenticatedLocal: strings.EqualFold(strings.TrimSpace(os.Getenv("N07_MESH_ALLOW_UNAUTH_LOCAL")), "true")}
+	return &HTTPGateway{Engine: engine, Secret: strings.TrimSpace(os.Getenv("SOUL_MESH_HMAC_SECRET")), AllowUnauthenticatedLocal: strings.EqualFold(strings.TrimSpace(os.Getenv("N07_MESH_ALLOW_UNAUTH_LOCAL")), "true"), Registration: DefaultRegistrationRegistry()}
 }
 func (g *HTTPGateway) ServeHTTP(w http.ResponseWriter, r *http.Request) { g.Handler(w, r) }
 func (g *HTTPGateway) authenticated(envelope protocol.MeshEnvelope) error {
@@ -270,7 +271,7 @@ func (g *HTTPGateway) Handler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if canonicalKind(wire) == "request" && capability == "mesh.describe" {
-		g.respond(w, http.StatusOK, envelope, "TASK_RESULT", map[string]any{"nucleus": "N07", "operations": g.Engine.Operations(), "transports": []string{"LOOPBACK_HTTP", "HTTP"}})
+		g.respond(w, http.StatusOK, envelope, "TASK_RESULT", map[string]any{"nucleus": "N07", "operations": g.Engine.Operations(), "transports": []string{"LOOPBACK_HTTP", "HTTP"}, "registeredPeers": g.Registration.Snapshot()})
 		return
 	}
 	var values []float64
@@ -346,7 +347,10 @@ func structuredMeshCapability(capability string) bool {
 	capability = strings.TrimSpace(capability)
 	return strings.HasPrefix(capability, "cooperation.") ||
 		strings.HasPrefix(capability, "mesh.supergpu.") ||
-		strings.HasPrefix(capability, "superagi.fabric.")
+		strings.HasPrefix(capability, "superagi.fabric.") ||
+		strings.HasPrefix(capability, "grce.") ||
+		strings.HasPrefix(capability, "mesh.register") ||
+		strings.HasPrefix(capability, "nervo.vago.publish")
 }
 
 func copyStructuredCapabilityMetadata(metadata map[string]string, capability string, payload map[string]any) error {
@@ -364,6 +368,45 @@ func copyStructuredCapabilityMetadata(metadata map[string]string, capability str
 		payload = map[string]any{}
 	}
 	switch capability {
+	case "mesh.register", "mesh.register@1.0.0":
+		if payload == nil {
+			return errors.New("mesh registration payload is required")
+		}
+		if endpoint, ok := payload["endpoint"].(string); ok && strings.TrimSpace(endpoint) != "" {
+			metadata["endpoint"] = strings.TrimSpace(endpoint)
+		} else {
+			return errors.New("mesh registration endpoint is required")
+		}
+		if capabilities, ok := payload["capabilities"].([]any); ok {
+			values := make([]string, 0, len(capabilities))
+			for _, value := range capabilities {
+				if item, ok := value.(string); ok && strings.TrimSpace(item) != "" {
+					values = append(values, strings.TrimSpace(item))
+				}
+			}
+			metadata["capabilities"] = strings.Join(values, " ")
+		}
+		return nil
+	case "nervo.vago.publish@1.0.0", "nervo.vago.publish":
+		if payload == nil {
+			return errors.New("NervoVago payload is required")
+		}
+		raw, err := json.Marshal(payload)
+		if err != nil {
+			return fmt.Errorf("NervoVago payload encode: %w", err)
+		}
+		metadata["sara_vagus_json"] = string(raw)
+		return nil
+		case "grce.cycle.execute@1.0.0", "grce.cycle.execute":
+		if payload == nil {
+			return errors.New("grce payload is required")
+		}
+		input, ok := payload["input"].(string)
+		if !ok || strings.TrimSpace(input) == "" {
+			return errors.New("grce payload.input is required")
+		}
+		metadata["grce_input"] = strings.TrimSpace(input)
+		return nil
 	case "mesh.supergpu.execute@1.0.0", "mesh.supergpu.execute":
 		return copySuperGPUMetadata(metadata, payload, true)
 	case "mesh.supergpu.parallel@1.0.0", "mesh.supergpu.parallel":

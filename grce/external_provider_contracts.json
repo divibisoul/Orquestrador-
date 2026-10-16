@@ -1,0 +1,31 @@
+{
+  "schema_version": "1.0.0",
+  "contract": "GoldenRuleParticipant",
+  "owner": "N07",
+  "providers": [
+    {
+      "id": "bijux-core",
+      "hook": "characterize",
+      "environment": "SOUL_GRCE_BIJUX_COMMAND",
+      "purpose": "deterministic execution and provenance boundary"
+    },
+    {
+      "id": "ouro-loop",
+      "hook": "validate",
+      "environment": "SOUL_GRCE_OURO_LOOP_COMMAND",
+      "purpose": "bounded self-fix and remediation boundary"
+    },
+    {
+      "id": "recuris",
+      "hook": "trace",
+      "environment": "SOUL_GRCE_RECURIS_COMMAND",
+      "purpose": "experiential memory and failure-localization boundary"
+    }
+  ],
+  "evidence": {
+    "missing_command": "BLOCKED",
+    "successful_command": "REAL",
+    "provider_runtime_is_not_inferred_from_manifest": true,
+    "core_grce_state_is_independent_from_optional_provider_state": true
+  }
+}

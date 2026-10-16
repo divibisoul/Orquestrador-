@@ -1,0 +1,26 @@
+{
+  "schema_version": "1.0.0",
+  "date": "2026-10-06",
+  "release_online": false,
+  "evidence_policy": "runtime execution outranks manifest presence",
+  "non_elimination": true,
+  "tasks": [
+    {"id":"1.1","name":"N01-N07-Mesh-E2E","implementation":"IMPLEMENTED","runtime":"PENDING_GITHUB_ACTIONS","promotion":"BLOCKED"},
+    {"id":"1.2","name":"N01-N02-N03-N05-CI","implementation":"IMPLEMENTED","runtime":"PENDING_GITHUB_ACTIONS","promotion":"BLOCKED"},
+    {"id":"1.3","name":"N01-dual-Mesh-contract","implementation":"IMPLEMENTED","runtime":"PENDING_GITHUB_ACTIONS","promotion":"BLOCKED"},
+    {"id":"2.1","name":"GRCE-six-SARA-hooks","implementation":"IMPLEMENTED","runtime":"PENDING_REAL_SARA_E2E","promotion":"BLOCKED"},
+    {"id":"2.2.a","name":"bijux-core","implementation":"ADAPTER_BOUND","runtime":"PENDING_REAL_PROVIDER_E2E","promotion":"BLOCKED"},
+    {"id":"2.2.b","name":"ouro-loop","implementation":"ADAPTER_BOUND","runtime":"PENDING_REAL_PROVIDER_E2E","promotion":"BLOCKED"},
+    {"id":"2.2.c","name":"Recuris","implementation":"ADAPTER_BOUND","runtime":"PENDING_REAL_PROVIDER_E2E","promotion":"BLOCKED"},
+    {"id":"3.1","name":"FedML","implementation":"BOUNDARY_IMPLEMENTED","runtime":"PENDING_REAL_LEARNING_TRANSACTION","promotion":"PROJECTED"},
+    {"id":"3.2","name":"Hivemind","implementation":"BOUNDARY_IMPLEMENTED_AS_DEPENDENCY","runtime":"PENDING_REAL_P2P_LEARNING_TRANSACTION","promotion":"PROJECTED"},
+    {"id":"4.1","name":"NervoVago-unification","implementation":"N07_CANONICAL_OPERATION + SARA_CANONICAL_ALIAS + N02_COMPATIBILITY_FACADE","runtime":"PENDING_CROSSFRONT_E2E","promotion":"BLOCKED"},
+    {"id":"4.2","name":"Release-Gate-V1","implementation":"STATE_LEDGER_READY","runtime":"NOT_ELIGIBLE","promotion":"NOT_ONLINE"}
+  ],
+  "graph": {
+    "native_nodes": 9,
+    "external_capability_providers": 20,
+    "graph_nodes": 29,
+    "implementation_dependencies": ["hivemind"]
+  }
+}

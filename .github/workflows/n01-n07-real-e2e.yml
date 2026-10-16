@@ -1,0 +1,214 @@
+name: N01 to N07 real federation E2E
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'mesh/**'
+      - 'grce/**'
+      - 'cmd/nexus/**'
+      - '.github/workflows/n01-n07-real-e2e.yml'
+  push:
+    paths:
+      - 'mesh/**'
+      - 'grce/**'
+      - 'cmd/nexus/**'
+      - '.github/workflows/n01-n07-real-e2e.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  n01-n07:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout N07
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Checkout N01
+        uses: actions/checkout@v4
+        with:
+          repository: divibisoul/aeternum-core-29
+          ref: restructure/soul-v1-mesh-contract-2026-10-06
+          path: n01
+
+      - name: Checkout real SARA
+        uses: actions/checkout@v4
+        with:
+          repository: divibisoul/SARA
+          ref: main
+          path: sara
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.25.x'
+          cache: true
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install real SARA
+        run: python -m pip install -e ./sara
+
+      - name: Install N01
+        working-directory: n01
+        run: npm ci --legacy-peer-deps --no-audit --no-fund
+
+      - name: Start real SARA
+        env:
+          SARA_API_TOKEN: n01-n07-real-e2e-token
+          SARA_HOST: 127.0.0.1
+          SARA_PORT: '8090'
+        run: |
+          set -euo pipefail
+          nohup python -m sara.service.main > "$RUNNER_TEMP/sara.log" 2>&1 &
+          for i in $(seq 1 60); do
+            if curl -fsS http://127.0.0.1:8090/health > "$RUNNER_TEMP/sara-health.json"; then break; fi
+            sleep 1
+          done
+          cat "$RUNNER_TEMP/sara-health.json"
+          test -s "$RUNNER_TEMP/sara-health.json"
+
+      - name: Start real N07
+        env:
+          SARA_SERVICE_URL: http://127.0.0.1:8090
+          SARA_SERVICE_TOKEN: n01-n07-real-e2e-token
+          N07_HTTP_ADDR: 127.0.0.1:18080
+          N07_APP_TOKEN: n07-local-app-token
+          SOUL_MESH_HMAC_SECRET: n01-n07-shared-staging-secret-2026
+        run: |
+          set -euo pipefail
+          nohup go run ./cmd/nexus/main.go > "$RUNNER_TEMP/n07.log" 2>&1 &
+          for i in $(seq 1 60); do
+            if curl -fsS http://127.0.0.1:18080/health > "$RUNNER_TEMP/n07-health.json"; then break; fi
+            sleep 1
+          done
+          cat "$RUNNER_TEMP/n07-health.json"
+          test -s "$RUNNER_TEMP/n07-health.json"
+
+      - name: Start real N01 gateway
+        working-directory: n01
+        env:
+          SOUL_MESH_N01_HOST: 127.0.0.1
+          SOUL_MESH_N01_PORT: '18081'
+          SOUL_MESH_N07_URL: http://127.0.0.1:18080
+          SOUL_MESH_HMAC_SECRET: n01-n07-shared-staging-secret-2026
+          SOUL_MESH_SECRET: n01-n07-shared-staging-secret-2026
+          SOUL_MESH_N01_ENDPOINT: http://127.0.0.1:18081
+        run: |
+          set -euo pipefail
+          nohup npm run mesh:n01 > "$RUNNER_TEMP/n01.log" 2>&1 &
+          for i in $(seq 1 60); do
+            if curl -fsS http://127.0.0.1:18081/mesh/health > "$RUNNER_TEMP/n01-health.json"; then break; fi
+            sleep 1
+          done
+          cat "$RUNNER_TEMP/n01-health.json"
+          test -s "$RUNNER_TEMP/n01-health.json"
+
+      - name: Validate N01 discovery of N07
+        run: |
+          set -euo pipefail
+          curl -fsS http://127.0.0.1:18081/mesh/discovery | tee "$RUNNER_TEMP/n01-discovery.json"
+          jq -e '.peers[] | select(.id == "N07" and .url == "http://127.0.0.1:18080")' "$RUNNER_TEMP/n01-discovery.json"
+
+      - name: Verify N01 automatic registration in N07
+        working-directory: n01
+        run: |
+          set -euo pipefail
+          for attempt in $(seq 1 30); do
+            node <<'NODE' > "$RUNNER_TEMP/n01-registration-check.json"
+            const message = {
+              protocol: 'soul-mesh/1',
+              contractVersion: '1.1.0',
+              id: crypto.randomUUID(),
+              correlationId: 'phase1-n01-n07-registration-check',
+              source: 'N01',
+              target: 'N07',
+              kind: 'request',
+              capability: 'mesh.describe',
+              payload: {},
+              timestamp: Date.now(),
+              meta: { transport: 'HTTP', runtime: 'N01-staging' }
+            };
+            const response = await fetch('http://127.0.0.1:18081/api/soul-mesh/n07', {
+              method: 'POST',
+              headers: { 'content-type': 'application/json' },
+              body: JSON.stringify(message)
+            });
+            const body = await response.json();
+            if (!response.ok) {
+              console.error(JSON.stringify(body));
+              process.exit(1);
+            }
+            console.log(JSON.stringify(body));
+            NODE
+            if jq -e '.payload.registeredPeers[] | select(.nucleus == "N01" and .endpoint == "http://127.0.0.1:18081")' "$RUNNER_TEMP/n01-registration-check.json" >/dev/null; then
+              cat "$RUNNER_TEMP/n01-registration-check.json"
+              exit 0
+            fi
+            sleep 1
+          done
+          cat "$RUNNER_TEMP/n01-registration-check.json"
+          echo "N01 registration evidence was not observed in N07"
+          exit 1
+
+      - name: Delegate real GRCE from N01 to N07
+        working-directory: n01
+        run: |
+          set -euo pipefail
+          node <<'NODE' > "$RUNNER_TEMP/n01-delegation.json"
+          const message = {
+            protocol: 'soul-mesh/1',
+            contractVersion: '1.1.0',
+            id: crypto.randomUUID(),
+            correlationId: 'phase1-n01-n07-grce-real-e2e',
+            source: 'N01',
+            target: 'N07',
+            kind: 'request',
+            capability: 'grce.cycle.execute@1.0.0',
+            payload: { input: 'real federation preservation audit' },
+            timestamp: Date.now(),
+            meta: { transport: 'HTTP', runtime: 'N01-staging' }
+          };
+          const response = await fetch('http://127.0.0.1:18081/api/soul-mesh/n07', {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify(message)
+          });
+          const body = await response.json();
+          if (!response.ok) {
+            console.error(JSON.stringify(body));
+            process.exit(1);
+          }
+          console.log(JSON.stringify(body));
+          NODE
+          cat "$RUNNER_TEMP/n01-delegation.json"
+          jq -e '.source == "N07" and .target == "N01" and .correlationId == "phase1-n01-n07-grce-real-e2e" and .payload.metadata.grce_state == "REAL" and .payload.metadata.grce_stages == "6"' "$RUNNER_TEMP/n01-delegation.json"
+
+      - name: Upload real federation evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: n01-n07-real-federation-evidence
+          path: |
+            ${{ runner.temp }}/sara.log
+            ${{ runner.temp }}/sara-health.json
+            ${{ runner.temp }}/n07.log
+            ${{ runner.temp }}/n07-health.json
+            ${{ runner.temp }}/n01.log
+            ${{ runner.temp }}/n01-health.json
+            ${{ runner.temp }}/n01-discovery.json
+            ${{ runner.temp }}/n01-registration-check.json
+            ${{ runner.temp }}/n01-delegation.json
+          if-no-files-found: warn
