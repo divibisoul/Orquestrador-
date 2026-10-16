@@ -11,6 +11,7 @@ import (
 
 func TestNervoVagoPublishRunsETRBeforeVagusDelivery(t *testing.T) {
 	var calls []string
+	var auditedInput string
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case "/v1/audit":
@@ -19,9 +20,11 @@ func TestNervoVagoPublishRunsETRBeforeVagusDelivery(t *testing.T) {
 			if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 				t.Fatal(err)
 			}
-			if _, ok := body["input"]; !ok {
+			input, ok := body["input"].(string)
+			if !ok || strings.TrimSpace(input) == "" {
 				t.Fatal("audit input missing")
 			}
+			auditedInput = input
 			_, _ = w.Write([]byte(`{"ethical":{"approved":true},"operation":"audit"}`))
 		case "/v1/vagus":
 			calls = append(calls, "vagus")
@@ -71,6 +74,12 @@ func TestNervoVagoPublishRunsETRBeforeVagusDelivery(t *testing.T) {
 	out, err := gateway.Publish(context.Background(), envelope)
 	if err != nil {
 		t.Fatal(err)
+	}
+	if !strings.Contains(auditedInput, "Finalidade da avaliação: avaliar a segurança, integridade e proveniência do evento antes da publicação no Vagus") {
+		t.Fatal("ETR purpose context missing from audit input")
+	}
+	if !strings.Contains(auditedInput, `"message_id":"m-1"`) || !strings.Contains(auditedInput, `"kind":"test"`) {
+		t.Fatal("full original event content was not preserved in audit input")
 	}
 	if got, want := strings.Join(calls, ","), "audit,vagus"; got != want {
 		t.Fatalf("delivery order = %q, want %q", got, want)
