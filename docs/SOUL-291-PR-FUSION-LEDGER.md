@@ -635,3 +635,32 @@ A auditoria reportou também `braces@3.0.3`. O advisory consultado não aponta v
 - As asserções de 16 provedores e 9 peers presentes nos logs eram parte do script de validação; a falha efetiva mostrada depois era o teste Go. Não alterar esses números sem evidência diferente do próprio contrato.
 - Limitação: não foram retornadas execuções novas no SHA após esse commit; a correção está aplicada, mas ainda não validada por CI. A limpeza pós-job também registrou aviso de submódulo aninhado `integrations/external/autogenesis/datasets/leetcode` sem URL correspondente em `.gitmodules`; esse aviso ocorreu durante cleanup após a falha de teste e não é a causa do teste de retry.
 - A PR #158 permanece bloqueada por empilhamento/conflito com #156. Nenhum force-push, fechamento, remoção de branch ou exclusão de arquivo foi executado.
+
+
+## Adendo append-only — correções da rodada continuada (16/10/2026)
+
+### N06 #42 — novo head com reparos de lint e Mesh
+
+- PR: https://github.com/divibisoul/nextjs-ai-chatbot-2000/pull/42
+- Head observado: `ba42c112fea470c4aaa25413eab2908cf4fe4769`; continua aberta/draft.
+- No head, `SOUL 25 Capability Upgrade`, `Soul Mesh CI`, `SOUL Integration CI`, `N06 Channel Contract`, `P0 Readiness Runtime`, `N06 Cycle 3 forensic audit` e `Dependency Review` passaram nos checks consultados do commit anterior mais recente. No head mais novo, a validação principal estava em build Web/início do lint, enquanto os demais workflows começaram a enfileirar novamente.
+- Mudanças adicionais de estilo preservaram contratos e comportamento: imports de tipos marcados `type`, template literals em strings, declarações de variáveis separadas, caminhos de diagnóstico preservados, SVGs vazios auto-fechados e a restauração de variáveis de ambiente do teste usando `Reflect.deleteProperty` sem a regra lint `noDelete`. Não foram removidos testes, ícones, capacidades ou arquivos.
+- A PR só pode sair de draft após o resultado final do novo lint, dos testes N05/N06, dos testes de ferramentas Mesh e de todos os checks relevantes ficar verde no mesmo head.
+
+### N01 #105 — APK verde, instrumentação ainda pendente
+
+- PR: https://github.com/divibisoul/aeternum-core-29/pull/105
+- O job Web TypeScript/Vite passou e os APKs debug e release foram construídos com sucesso. A execução Android + Mesh instrumentation continua no passo de emulator/testes instrumentados; na última consulta não havia conclusão. Uma repetição anterior apresentou crash do emulador/color buffer, não erro de compilação.
+- Estado correto: **BLOCKED/IN_PROGRESS**, ainda não mesclável por falta de CI final. A reexecução está ativa; não alterar a implementação Android sem evidência de falha funcional distinta da instabilidade do emulador.
+
+### N07 #153 — correções de base para a cadeia GRCE e fonte externa
+
+- PR-base: https://github.com/divibisoul/Orquestrador-/pull/153
+- Novo head: `759c013eea8757dbe0a20ca70b61ad68dad6157a`; PR continua aberta/draft, com `mergeable=true`, mas todos os workflows do novo head estavam na fila.
+- A base agora contém: teste de retry com resposta 500 autenticada; guard de GRCE que preserva a entrada original e evidências para `COMPLEXIDADE_EXCESSIVA`; validação de que o caminho de um provedor resolve ao seu próprio worktree Git; materialização explícita de submódulos apenas de primeiro nível na workflow RGO; E2E que captura o HTTP 400 esperado e lê a evidência `PRESERVED` em vez de deixar `curl -f` encerrar a etapa antes de validar o corpo; e captura de corpo HTTP na prova Nervo Vago para obter o erro ETR real.
+- Os workflows pós-correção ainda não tinham concluído. A correção do harness não constitui prova de runtime; as asserções esperam explicitamente o estado preservado, correlação/proveniência e resultado ETR aprovado no caminho que deve ter êxito.
+
+### N07 #156 / #158 — não forçar integração empilhada
+
+- PR #156: https://github.com/divibisoul/Orquestrador-/pull/156 — head `7b5baee1f7b42e9f014d19cac78d0265d3f356f6`, aberta/draft, `mergeable=false) na última consulta, pois sua fotografia de base ainda aponta para o head antigo `f656aca8c944183f9f9638179307901395b481be` da PR #153.
+- PR #158: https://github.com/divibisoul/Orquestrador-/pull/158 — permanece aberta/draft e `mergeable=false), baseada no branch da #156. Ainda não se tentou force-push, mudança destrutiva de base ou merge forçado. Após a PR #153 ser aprovada/mesclada, reconciliar a #156 de forma não destrutiva e depois reaplicar o delta complementar da #158 sem descartar seus registros ou arquivos de origem.
