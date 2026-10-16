@@ -472,3 +472,43 @@ Este registro complementa a auditoria de 15 de outubro. Não altera nem invalida
 | SARA↔N07 | REAL — workflow E2E dedicado aprovado no candidato N07 |
 
 **Critério global continua aberto:** inventário de 291 PRs não equivale a auditoria funcional concluída. Nenhuma PR que depende de E2E/CI ainda em execução foi promovida a MERGED, e nenhuma branch histórica foi removida.
+
+
+## Atualização append-only — fusão N03 e investigação do container N07 (2026-10-16 UTC)
+
+Esta seção acrescenta evidências sem reescrever os registros anteriores. A correção da data na seção anterior também é aditiva: os logs do E2E N02↔N03 mostram 2026-10-15T23:58:43Z; a fusão da PR #48 ocorreu depois, em 2026-10-16 UTC. Portanto, o rótulo “2026-10-16 UTC” daquela seção descreve a atualização do registro e não a hora original do E2E.
+
+### N03 #48 — MERGED
+
+- PR: https://github.com/divibisoul/nexus-aeternum-fusion/pull/48
+- Merge commit/main atual: 676c20cb5e537944a5a75d8e4920ff48c010cfbf.
+- Head validado imediatamente antes da fusão: 26c100d8b5c2646c2c8314792f3bc1afe86fa63c; base eda84858b87a612c5d544c5de0893e681a79b591.
+- Sete workflows do head exato concluíram com success, incluindo Soul Mesh CI. O job 116735843230 confirma E2E bidirecional entre processos independentes N02↔N03 por HTTP com HMAC-SHA256 nos pedidos e nas respostas, mesh.ping, teste de preservação dos handlers de agente, typecheck e build web. Nenhum arquivo foi removido; a PR preservou 14 arquivos com alterações aditivas/de compatibilidade e fusão normal.
+- A atualização do manifesto N07 neste candidato alterou o sourceRef de N03 para 676c20cb5e537944a5a75d8e4920ff48c010cfbf, manteve eda84858b87a612c5d544c5de0893e681a79b591 como previousSourceRef e mudou os registros históricos que não são mais atuais para PRESERVED. O registro contém exatamente um CURRENT para N03.
+- CI pós-fusão do N03 ainda estava queued na última leitura para os workflows 38827333338, 38827333471, 38827333461, 38827333387 e 38827333507. O E2E aprovado é do head exato que foi fundido; a validação pós-merge permanece pendente até esses runs concluírem.
+
+### N07 #156 — correção de atestação da imagem pendente de CI
+
+- PR https://github.com/divibisoul/Orquestrador-/pull/156 permanece DRAFT, empilhada sobre fix/n07-grce-compile-boundary-2026-10-08; não fundir enquanto a base empilhada e os checks finais não forem verificados.
+- O CI anterior 38824804699, SHA 8f0fbe6362539fbe80e95fc24090fd2b6910f92b, construiu a imagem, mas falhou no smoke de federação: os 22 providers eram listados e o endpoint respondia, porém cada fonte aparecia MISSING_WORKTREE, sourcePresent=false e revisionMatched=false. Portanto, esse run não demonstrou que os upstreams estivessem presentes no container.
+- Diagnóstico confirmado: o builder conferia gitlink SHA contra o HEAD de cada submódulo e produzia config/soul-external-runtime-attestation.json; a imagem runtime copia os arquivos dos upstreams, mas omite os bancos .git necessários para que cada pasta pareça um worktree autônomo. O runtime precisava distinguir checkout Git ativo de conteúdo copiado e atestado.
+- Correção candidata agora no branch: inspectExternalSource preserva a verificação de worktree Git real e, na imagem de produção, aceita somente ATTESTED_PIN_MATCH depois de verificar conteúdo não vazio, schema soul.external.runtime-attestation.v1, presença do SHA esperado e igualdade do SHA atestado com o manifesto. O estado JSON expõe evidenceMode para distinguir git-worktree de build-attestation. Pastas vazias ou apenas metadados .git continuam sendo MISSING_WORKTREE; ausência ou divergência de atestação falha fechado.
+- Foram acrescentados orchestrator/external_attestation_test.go (pin correto, pin divergente, metadata-only vazio) e assertions no smoke do container para os 22 providers: presença do fonte, pin igual, modo de evidência permitido e estado coerente. O objetivo não é relaxar o teste; é alinhar a evidência exigida ao formato intencional da imagem.
+- Head corrente registrado na última leitura: 1a32055046737eaae57be9c2d9705055a86260a7. Os runs relevantes — N07 CI 38827400592 e mainline source-ref integrity 38827400685 — ainda estavam queued/in_progress. Até CI verde, a correção é IMPLEMENTED / UNVERIFIED, não aprovada.
+- O build de produção anteriormente foi concluído, mas o smoke falhou. A nova versão deve fazer o smoke provar a atestação de todos os 22 roots e manter o teste ativo external.langgraph.probe com source_present=true.
+
+### Matriz de comunicação após a fusão N03
+
+| Par / integração | Estado |
+|---|---|
+| N01↔N02 | REAL — E2E com processos independentes, HTTP/HMAC, candidato N02 e validações pós-fusão reportadas verdes |
+| N02↔N03 | REAL — E2E bidirecional no head N03 26c100d8...; a PR foi fundida como 676c20cb...; checks pós-fusão pendentes |
+| N03↔N04 | UNMEASURABLE — ainda sem E2E de processos independentes no SHA final de ambos |
+| N04↔N05 | UNMEASURABLE |
+| N05↔N06 | UNMEASURABLE |
+| N06↔N07 | REAL — E2E HTTP/HMAC com processo Go N07 real e cliente N06; N06 integrado |
+| SARA↔N07 | REAL — E2E reportado pelo workflow dedicado da candidata N07; validar novamente na revisão final após a correção atual do container |
+
+### Estado global
+
+As PRs #159 (N07), #59 (N02), #45 (N06) e #48 (N03) estão fundidas por merge normal. Não se removeu conteúdo de arquivos nem branches-fonte. N01 #105, N04 #50, N05 #51, N07 #156, SARA #44 e JEV #5 continuam em auditoria conforme seus bloqueios; a enumeração histórica das 291 PRs não significa que todas estejam revisadas ou integradas. O fechamento global exige a verificação funcional de cada cluster, compatibilidade de contratos, prova de comunicação real entre adjacências e CI verde no SHA efetivamente integrado.
