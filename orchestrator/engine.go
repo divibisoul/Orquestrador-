@@ -414,12 +414,13 @@ func (e *Engine) Submit(ctx context.Context, message protocol.Message) (protocol
 
 	handler, err := e.Route(message)
 	if err != nil {
-		e.recordFailure()
+		// Routing/registration rejections are client/configuration outcomes,
+		// not execution failures; they must not poison the global execution breaker.
 		return reject("rejected", err)
 	}
 	registration, err := e.registration(message.Operation)
 	if err != nil {
-		e.recordFailure()
+		// Preserve the rejection as evidence without counting it as a runtime fault.
 		return reject("rejected", err)
 	}
 
