@@ -943,3 +943,34 @@ CI de N07 ainda está em curso no head `f2a0e03`; os reruns N01/N06 ainda estava
 ### N01 #105 — ambiente Android
 
 - O job \`Soul N01 Full Build\` no head \`3f560d687b01ce2ab2b2f3db3cf4c18e679a1f92\` falhou no boot do emulador (timeout esperando \`sys.boot_completed\`), depois de construir e validar os APKs debug/release. Os instrumented tests não começaram. Esse resultado é classificado como bloqueio de infraestrutura, não como aprovação nem defeito funcional comprovado. A PR segue bloqueada até teste instrumentado conclusivo no SHA exato.
+
+
+## Atualização append-only — fotografia após auditoria viva de fusões e correção de N07 (2026-10-16 UTC)
+
+### Estado confirmado das candidatas e fusões de núcleo
+
+- **N01 #106** continua OPEN/DRAFT na branch `fusion/n01-hortacore-clareira-mesh-20261016`, head `c7be9ee3a31212e4278cc0ce86c5aa5858d78ef0`, base `main` em `d5932bbe9e91127d497e86acd32bbb305e0c14d6`. A fotografia consultada listou 87 caminhos modificados, +5.862/-410 linhas e **zero arquivos removidos** no diff. Isso não prova preservação semântica: há remoções de linhas em arquivos de HortaCore, manifesto de augmentação, entrypoint Mesh e acesso Android; esses trechos exigem comparação funcional com as PRs de origem antes de qualquer promoção. No SHA integrado #106, os 21 workflows consultados estavam queued, sem conclusão. Os resultados de #107 em seu SHA separado (10 SUCCESS, 1 queued) não substituem a validação do SHA #106.
+- **N02 #59** está MERGED; os seis workflows consultados no seu head `85da61a0e8674abb7d12006634bc345a20d4ef56` concluíram SUCCESS.
+- **N03 #48** está MERGED; os seis workflows consultados no seu head `26c100d8b5c2646c2c8314792f3bc1afe86fa63c` concluíram SUCCESS.
+- **N04 #50** permanece registrado nas atualizações anteriores como MERGED, com validações próprias; não presumir que essa evidência prove N04↔N05.
+- **N05 #52** está MERGED após seis workflows próprios SUCCESS e a prova de processo real N05↔N06 registrada acima.
+- **N06 #42** está MERGED após oito workflows SUCCESS no head aprovado `94d22606bbcf7167c40e5bfe9be02735b0d659d3`. A candidata complementar #46 tem nove workflows queued no head consultado `7b34621f2b2c75f5010a47d2ed5af019b7208a3b`; não promover enquanto a revalidação do E2E no SHA atual estiver pendente.
+- **SARA #44** está MERGED conforme a atualização de fusão registrada anteriormente. SARA↔N07 continua uma aresta independente, a validar no runtime real.
+- **JEV** permanece no escopo do inventário. O fechamento da consolidação global exige reconciliar sua decisão tipada/guardrails com o contrato N07, sem duplicar o proprietário nativo.
+
+### N07 #153 — correção da asserção, execução final ainda pendente
+
+- No head `ad2108bf0cce382f3cfeebc42bb458e1b85b3ae6`, a consulta retornou 13/14 workflows SUCCESS e falha de `N07 Orquestrador CI` na etapa `Production external federation smoke`.
+- O log mostrou `metadata.federation_json` como JSON serializado dentro da resposta externa; a asserção textual que procurava `provider_count` não fazia parse desse contrato aninhado. Foi alterada **somente** essa asserção em `.github/workflows/n07-ci.yml`, no branch da PR (sem alterar o runtime), para usar `jq -e '.metadata.federation_json | fromjson | .provider_count == 22'`. Novo commit: `16ffbf48bdec0f302be5f351e13340ba8f4b3e61`.
+- No instante da consulta do novo head, ainda não havia workflow run nem status check retornado para esse commit. A correção não é considerada validada até a CI ser observada no SHA novo e todos os gates relevantes terminarem SUCCESS.
+- O log também registrou um aviso secundário de limpeza Git: submódulo aninhado `integrations/external/autogenesis/datasets/leetcode` sem URL em `.gitmodules`. Investigar esse aviso separadamente; não confundi-lo com a falha principal nem o declarei corrigido.
+- **N07 #156 e #158 continuam bloqueadas/dirty pela cadeia de base.** Não promover a camada SOUL-28/GRCE nem suas afinidades complementares antes de validar #153 e reconciliar as bases sem force-push.
+
+### Próxima sequência no trilho
+
+1. Manter #106 sem promoção: auditar as 410 linhas removidas funcionalmente, mapear cada mudança aos deltas de origem e aguardar a CI do próprio SHA #106.
+2. Validar o novo head de #153; depois corrigir, se necessário, o contrato de runtime revelado pelo smoke ou o aviso de proveniência do submódulo, sempre com evidência específica.
+3. Só depois sincronizar #156 e, em seguida, #158; preservar os pais históricos e reexecutar CI nos novos commits de reconciliação.
+4. Continuar a matriz E2E por aresta: cada conexão entre núcleos requer prova bidirecional própria; manifesto, CI unitária ou sucesso de outra aresta não a substitui.
+
+Nenhuma PR de origem, branch de origem ou arquivo foi excluído ou fechado por esta atualização. Esta fotografia não declara concluída a fusão integral das 291 PRs.
