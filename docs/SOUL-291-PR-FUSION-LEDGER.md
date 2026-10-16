@@ -564,3 +564,32 @@ Esta seção registra a nova rodada sem reescrever o histórico anterior. Os res
 ### Regra para o próximo lote
 
 A ordem permanece: (1) corrigir falhas concretas de transporte/contrato e obter um E2E bidirecional em processos independentes; (2) reconciliar a cadeia de PRs empilhadas e semelhanças de função sem duplicar a autoridade de protocolos; (3) validar testes e CI no SHA final; (4) só então mesclar. Qualquer registro de capacidade que tenha somente manifesto, mock, unidade ou HTTP 200 permanece `PROJECTED`/ `UNMEASURABLE`, não `REAL`.
+
+## Atualização append-only — cluster de transporte N03↔N04 validado (2026-10-16 UTC)
+
+### N04 #50 — MERGED
+
+- PR: https://github.com/divibisoul/nextjs-ai-chatbots/pull/50
+- Merge commit: b3ca469c8063c143081ad44fbeb7c238153a60cd; head testado antes da fusão: 697dd2735a23006caf3da984b6dc43ead16314fa.
+- Sete workflows no head exato terminaram success, incluindo N04 CI, Soul Mesh CI, integração N04, capability upgrade, diagnósticos de validação e revisão de dependências.
+- O job dedicado 116764877123 em 38835351694 terminou success: o log contém N03_N04_REAL_PROCESS_PAIR_E2E PASS e os dois marcadores de comunicação autenticada:
+  - N04 real peer client → servidor HTTP N03 real: N04_TO_N03_REAL_PROCESS_E2E_PASS, mesh.ping, HTTP, HMAC-SHA256 na requisição e resposta.
+  - cliente N03 real → servidor Next.js N04 real: N03_TO_N04_REAL_PROCESS_E2E_PASS, HTTP, HMAC-SHA256 nas duas direções.
+  - O workflow compilou o runtime Next.js N04, iniciou-o com next start, iniciou o servidor Bun real de N03 e verificou a pinagem exata de N03 em 676c20cb5e537944a5a75d8e4920ff48c010cfbf.
+- Causa da primeira falha: o driver E2E importava sendTo como export nomeado sem que o carregamento TypeScript/Node resolvesse essa exportação no caminho usado. O log era FAILED e não comprovava tráfego. A candidata foi corrigida para invocar a exportação real do módulo; o teste no head final passou. A falha inicial permanece documentada, não é sobrescrita como se fosse sucesso.
+- Nenhum arquivo foi removido; o cluster continua com fixtures/testes de contrato e a prova real de rede como gates distintos.
+
+### Proveniência N07 após N04
+
+- O branch candidato N07 feat/n07-soul28-universal-adapter-2026-10-10 passou a registrar N04 como sourceRef=b3ca469c8063c143081ad44fbeb7c238153a60cd.
+- previousSourceRef=0b364dba05bd986de040b6c4b3715dfdaebc75d2; a entrada anterior foi marcada PRESERVED. Todos os registros anteriores foram conservados e há exatamente uma entrada CURRENT para N04.
+- Commit de reconciliação da proveniência: 3159327d780595dd53faa5d3abc64b3ce72a18c1.
+- Essa alteração reiniciou os checks do N07 #156 no SHA atual 3159327d780595dd53faa5d3abc64b3ce72a18c1. Na última leitura, os 20 workflows desse SHA estavam queued; #156 segue DRAFT / IMPLEMENTED-UNVERIFIED, não pode ser fundida ainda.
+- A cadeia contém a base #148 (fundação) → #153 (GRCE/compilação) → #156 (federação/atestação e transporte). A sincronização da #156 com #153 foi feita por merge commit de dois pais 72135d1d97611e1e505d9a056218647a43938ad1, sem force-push. #153 e #156 precisam ser aprovadas no SHA final e integradas na ordem da cadeia.
+
+### Bloqueios ainda presentes na última leitura
+
+- N01 #105: o workflow de build total 38485895276 continua in_progress, sem conclusão final; APKs/web foram aprovados antes, mas a instrumentação Android não pode ser declarada aprovada até o job acabar. A decisão da topologia das 30 rotas lógicas N01–N06 versus canais adjacentes registrados no N07 continua explícita, não inferida.
+- N07 #153/#156: testes foram disparados nos SHAs f656aca8c944183f9f9638179307901395b481be e 3159327d780595dd53faa5d3abc64b3ce72a18c1; os resultados finais para GRCE real, contagem dinâmica de gitlinks, container com 22 fontes atestadas, HMAC antes de status HTTP e proveniência pós-fusão ainda não foram confirmados.
+- N05 #51: permanece draft e precisa de uma prova de comunicação interprocesso N05↔N06 no SHA final; o adaptador de N06 e testes HMAC internos não bastam.
+- Matriz confirmada depois desta rodada: N01↔N02 REAL; N02↔N03 REAL; N03↔N04 REAL; N04↔N05 ainda UNMEASURABLE; N05↔N06 ainda UNMEASURABLE; N06↔N07 REAL; SARA↔N07 continua pendente de E2E final com container N07 validado.
