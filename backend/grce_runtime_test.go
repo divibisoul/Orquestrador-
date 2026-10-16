@@ -18,13 +18,23 @@ func TestGRCEExecutorRuntimeCompletesWithHTTPBoundaryFixture(t *testing.T) {
 		case "/v1/state":
 			writeGRCEJSONTest(w, map[string]any{"ready": true, "source": "SARA"})
 		case "/v1/audit":
+			var auditRequest map[string]any
+			if err := json.NewDecoder(r.Body).Decode(&auditRequest); err != nil {
+				t.Errorf("decode ARA request: %v", err)
+				writeGRCEJSONTest(w, map[string]any{"error": "invalid ARA request"})
+				return
+			}
+			input, _ := auditRequest["input"].(string)
+			findingKind := "TEST_EVIDENCE"
+			findingDetail := "free-text mention of COMPLEXIDADE_EXCESSIVA is not itself a typed ARA finding"
+			if len(input) > 10000 {
+				findingKind = "COMPLEXIDADE_EXCESSIVA"
+				findingDetail = "ARA classified the original high-complexity input"
+			}
 			writeGRCEJSONTest(w, map[string]any{
-				// This fixture exercises the successful, low-risk cycle.
-				// The real-process E2E separately proves that excessive complexity
-				// is preserved and rejected rather than promoted to ACTIVE.
 				"flaws": []any{map[string]any{
-					"kind":   "TEST_EVIDENCE",
-					"detail": "test evidence from ARA",
+					"kind":   findingKind,
+					"detail": findingDetail,
 				}},
 				"ethical": map[string]any{"approved": true},
 			})
@@ -133,6 +143,33 @@ func TestGRCEExecutorRuntimeCompletesWithHTTPBoundaryFixture(t *testing.T) {
 	}
 	if len(result.Evidence) == 0 || len(result.Capabilities) == 0 {
 		t.Fatalf("expected evidence and capabilities, got evidence=%d capabilities=%d", len(result.Evidence), len(result.Capabilities))
+	}
+
+	// The detector category, not free-text prose, controls the safety transition.
+	// The benign fixture above deliberately mentions the marker in detail while
+	// still reaching ACTIVE because its structured kind is TEST_EVIDENCE.
+	complexInput := strings.Repeat("a", 11000)
+	preserved, preserveErr := executor.Run(context.Background(), grf.State{
+		ID:              "state-complex",
+		EpistemicState: grf.REAL,
+		Payload:         map[string]any{"text": complexInput},
+	}, grf.Context{
+		TraceID:       "trace-complex",
+		CorrelationID: "corr-complex",
+		SequenceIndex: 2,
+	})
+	if preserveErr == nil || !strings.Contains(preserveErr.Error(), "GRCE_COMPLEXITY_EXCESSIVE_INPUT_PRESERVED") {
+		t.Fatalf("expected typed ARA complexity finding to fail closed, got result=%#v err=%v", preserved, preserveErr)
+	}
+	if preserved.EpistemicState != grf.PRESERVED || preserved.Outcome != "ROLLBACK_PRESERVED:DETECT" {
+		t.Fatalf("complex input state=%s outcome=%q, want PRESERVED/ROLLBACK_PRESERVED:DETECT", preserved.EpistemicState, preserved.Outcome)
+	}
+	gotText, ok := preserved.NextState.Payload["text"].(string)
+	if !ok || gotText != complexInput {
+		t.Fatal("original high-complexity input was not preserved byte-for-byte")
+	}
+	if len(preserved.Evidence) == 0 {
+		t.Fatal("typed complexity finding must retain evidence and causal identity")
 	}
 }
 
