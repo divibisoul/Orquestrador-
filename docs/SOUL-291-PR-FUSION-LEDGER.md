@@ -1259,3 +1259,28 @@ Este registro é somente aditivo. Nenhuma fonte, PR de origem, branch histórica
 - A ação correta enquanto essa observabilidade estiver ausente é avançar uma auditoria/correção independente, atualizar novamente os estados na rodada seguinte e não promover nenhuma aresta com base em suposição.
 
 Esta entrada é estritamente aditiva. Não substitui nem corrige retroativamente qualquer registro histórico, não altera arquivos de runtime e não autoriza merge.
+
+
+## Atualização append-only — E2E sem URL de banco fictícia e pin N04 atualizado (2026-10-16 UTC)
+
+### Causa e mudança
+
+- Auditoria do script `scripts/n04-n05-real-process-e2e.mjs` mostrou que o ambiente de runtime acrescentava `POSTGRES_URL=postgresql://soulmesh:soulmesh@127.0.0.1:5432/soulmesh` como fallback, sem que o workflow tivesse um serviço PostgreSQL. O endpoint Mesh ping não precisava executar consultas ao banco; mesmo assim, a URL falsa escondia a diferença entre “variável configurada” e “serviço realmente disponível”.
+- N04 #51 passou a exigir `POSTGRES_URL` explicitamente no script E2E e rejeita a URL ausente, em vez de inventar um endereço. O workflow agora inicia PostgreSQL 16 como serviço real com health-check `pg_isready` e passa a URL somente à etapa E2E. A URL não é passada à etapa de build, preservando o comportamento intencional do build sem migrações.
+- O mesmo problema existia no script `scripts/n01-n04-real-process-e2e.mjs`; a correção equivalente foi aplicada ao N01 #106 e o workflow desse E2E também provisiona PostgreSQL saudável e fornece a URL real somente à etapa de runtime.
+- O escopo E2E continua sendo a comunicação Mesh por HTTP/HMAC entre processos Next.js/Node reais. A disponibilidade do serviço PostgreSQL é requisito de configuração; não se afirma que esse E2E valide migrações, esquema de dados ou operações de banco.
+
+### Pin de dependência corrigido
+
+- O workflow N01↔N04 antes verificava o candidato N04 `815acbaa58d1bc2d15f94e7b3a142ca4cbac2163`, anterior às correções recentes. Ele agora faz checkout e valida o SHA exato `1d0c224a09e871da5ec69b7875d515390689f1a8` (head de N04 #51 observado após os commits desta rodada).
+- Isso evita que um E2E N01↔N04 de head recente teste silenciosamente um N04 mais antigo. O pin é deliberado e fixo; uma mudança futura de head N04 exige revisão explícita do pin e da asserção.
+- N04 #51 permaneceu aberta em draft, head `1d0c224a09e871da5ec69b7875d515390689f1a8`, 6 arquivos alterados, +578/-7. N01 #106 permaneceu aberta em draft, head `3c582cd7c0a44b6c5669a29df31a3ec2f85c2899`, 91 arquivos alterados, +6447/-428. Nenhum arquivo foi excluído; os números negativos representam edição de linhas.
+
+### Validação e tempo
+
+- No head atual N01 #106: 22 workflows consultados, 21 QUEUED e 1 PENDING, sem conclusão.
+- No head atual N04 #51: 7 workflows consultados, 6 QUEUED e 1 PENDING, sem conclusão.
+- O conector ainda não fornece timestamps utilizáveis para calcular a idade dos itens, e a consulta de jobs/status detalhados retornou listas vazias. Assim, a idade de fila continua **UNMEASURABLE**; aplicar os limites operacionais depende de a API expor a hora de criação/atividade. Não alegar atraso de runner ou aprovação pendente sem prova.
+- **Estado técnico desta rodada:** correção de configuração implementada; workflow ainda sem resultado terminal; **não é PASS**. Sem merge e sem promoção de aresta.
+
+Entrada cumulativa: nenhum registro, arquivo de runtime, PR de origem ou branch histórica foi apagado ou reescrito.
