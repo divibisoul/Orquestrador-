@@ -1207,3 +1207,27 @@ Nenhuma PR ou branch de origem foi apagada, fechada ou force-pushed; este adendo
 A fronteira do cliente browser N01 continua sem prova HMAC de resposta e depende de `VITE_SOUL_MESH_TOKEN` em chamadas diretas. Não alteramos esse caminho para um proxy genérico sem resolver o modelo de identidade/autorização entre a sessão Supabase da UI e os peers (N04, por exemplo, mantém sessão de aplicação própria). Criar um relay aberto ou trocar silenciosamente uma identidade do utilizador por N01 seria inseguro e não conta como integração correta. O trabalho server-side `forward()` agora verifica HMAC de peers; isso não autentica retroativamente o cliente do navegador. Registrar essa aresta como BLOCKED até existir uma fronteira de gateway autenticada e uma política de identidade/delegação testável.
 
 Nenhum arquivo, branch histórica, PR original ou registro anterior foi apagado ou substituído; esta entrada é somente aditiva.
+
+
+## Atualização append-only — isolamento da porta interna N01 (2026-10-16 UTC)
+
+### N01 #106 — gateway público separado do servidor interno
+
+- Head exato observado: `c8daac7f652d848cd75571f7c748c98ab768126d`; base `main` permanece `d5932bbe9e91127d497e86acd32bbb305e0c14d6`; PR aberta em draft.
+- Defeito: `scripts/soul-mesh-server-entry.mjs` lançava o servidor Mesh interno em `publicPort + 1`, mas não sobrescrevia `SOUL_MESH_N01_HOST`. O processo filho usa `0.0.0.0` por padrão, o que podia expor o ingress interno fora do wrapper público.
+- Correção: a variável do filho passa explicitamente a `SOUL_MESH_N01_HOST: '127.0.0.1'`. O listener externo segue pertencendo ao wrapper; o serviço interno e as rotas foram preservados.
+- A asserção foi acrescentada a `scripts/soul-mesh-contract-check.mjs`, verificador que já é executado pelos workflows de validação do N01. Assim, a proteção é uma regra de contrato verificável e não apenas uma mudança comentada.
+- O novo head teve 22 checks consultados: 21 QUEUED e 1 PENDING, nenhum com conclusão. A correção ainda não tem PASS do CI.
+
+### Fotografia das frentes depois do ajuste
+
+| Frente | SHA observado | Estado de validação |
+|---|---|---|
+| N01 #106 | `c8daac7f652d848cd75571f7c748c98ab768126d` | 21 QUEUED, 1 PENDING |
+| N04 #51 | `815acbaa58d1bc2d15f94e7b3a142ca4cbac2163` | 6 QUEUED, 1 PENDING |
+| N06 #46 | `8c5e997482822aafd72b7375b5c934d8641b5fd7` | 7 QUEUED, 2 PENDING |
+| N07 #153 | `ba8d5bc07a8edf4d8d181f78027e881952a87b6c` | 14 QUEUED |
+
+Nenhum check listado terminou; a classificação correta permanece **IMPLEMENTADO / CI PENDENTE**, não PASS. A fronteira do cliente browser N01 e a conclusão real dos E2Es permanecem abertas. Não promover os PRs empilhados N07 #156/#158 antes do CI verde da base #153 e leitura de eventuais falhas.
+
+Este registro é somente aditivo. Nenhuma fonte, PR de origem, branch histórica ou arquivo foi excluído, encerrado ou reescrito.
