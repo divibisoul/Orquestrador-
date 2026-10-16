@@ -1021,3 +1021,24 @@ Nenhum arquivo, PR de origem ou branch de origem foi apagado ou fechado por esta
 - O head continua `ba8d5bc07a8edf4d8d181f78027e881952a87b6c`. A última consulta continuava mostrando os 14 workflows QUEUED/PENDING. Não promover #153 nem destravar #156/#158 até conclusão dos workflows e leitura de qualquer falha remanescente no novo SHA.
 
 Nenhuma PR, branch ou arquivo histórico foi excluído ou fechado nesta atualização. A integração integral continua em andamento.
+
+
+## Atualização append-only — N04 resposta HMAC agora falha fechada (2026-10-16 UTC)
+
+### N04 PR #51 — defeito real de autenticação encontrado e correção isolada
+
+- PR: https://github.com/divibisoul/nextjs-ai-chatbots/pull/51.
+- A auditoria de `lib/soul-mesh/peer-client.ts` encontrou que `verifySoulMeshResponse(...)` era chamado, mas o booleano retornado era descartado. Com isso, uma resposta que passasse as verificações de rota/correlação e retornasse HTTP 200 podia ser aceita mesmo quando a assinatura HMAC era inválida.
+- Correção no branch `fix/n04-enforce-peer-response-hmac-20261016`: guardar a decisão de verificação e lançar `SOUL_MESH_RESPONSE_HMAC_INVALID` se a assinatura não autenticar, antes de interpretar o status HTTP ou dados do erro remoto.
+- Regressão acrescentada em `lib/soul-mesh/SoulMeshHmac.test.ts`: usa a API pública `sendTo()` contra um respondedor HTTP local que devolve um envelope de rota/correlação válido com HTTP 200, mas HMAC adulterado; o teste exige rejeição. O teste preserva/restaura `SOUL_MESH_N05_URL`, `SOUL_MESH_HMAC_SECRET`, `SOUL_MESH_TOKEN` e `NODE_ENV`, incluindo caminhos de falha no bind/shutdown.
+- Head atual verificado: `bc4d08b43460b44e16eec970ee5dcbad719eaebd`. A PR tem dois arquivos modificados, zero arquivos removidos, e seis workflows estavam QUEUED/PENDING na última consulta. Portanto, o reparo ainda não foi declarado aprovado.
+- A correção afeta a validade da prova N03↔N04: o E2E existente passa pelo mesmo cliente N04 e só prova autenticação de resposta depois que a verificação passa a ser efetivamente exigida. A nova CI/Soul Mesh CI e o E2E no SHA corrigido precisam concluir com sucesso.
+
+### Barreiras de comunicação que continuam abertas
+
+- **N06↔N05:** PR N06 #46, head `7b34621f2b2c75f5010a47d2ed5af019b7208a3b`, workflow dedicado `N05-N06 Real Process E2E` com dois runtimes Next.js independentes e HMAC bidirecional. Os nove workflows consultados ainda estavam QUEUED/PENDING; não promover até a prova no head atual.
+- **N05↔N04:** fica preparada depois da validação de N06↔N05; não confundir contrato local de N04 com E2E entre N04 e N05 em processos separados. A sequência segue o documento de coordenação: N06↔N05 → N05↔N04 → N04↔N03 → N03↔N02 → N02↔N01 → integração final com N07.
+- **N01 #106:** head `e8a4e4970834feacea12fe5c664ad8e0f0a43872` inclui a correção de leitura HTTP por bytes UTF-8 e uma regressão com `consciência 🧠`; 21 workflows consultados estavam QUEUED/PENDING.
+- **N07 #153:** head `ba8d5bc07a8edf4d8d181f78027e881952a87b6c` contém as três asserções JSON corrigidas no smoke, mas os 14 workflows consultados ainda estavam QUEUED/PENDING. #156/#158 continuam dependentes desta base e não devem ser promovidas.
+
+Nenhuma destas mudanças removeu arquivos, PRs ou branches de origem. A fusão das 291 continua aberta, com prioridade prática na comunicação autenticada real e gates executados no SHA exato.
