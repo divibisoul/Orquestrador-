@@ -776,3 +776,41 @@ Esta seção torna explícita a analogia de obra: os dez andares são gates depe
 ### Critério de conclusão de andar
 
 Um andar recebe COMPLETE apenas quando implementação fonte, conteúdo sobreposto, testes específicos e contratos dependentes estão validados no SHA atual. Até lá, usar IMPLEMENTED-UNVERIFIED, BLOCKED ou UNMEASURABLE e registrar a próxima ação. A auditoria das 291 PRs continua aberta; esta fotografia não declara todas avaliadas ou fundidas.
+
+## Atualização append-only — GRCE com categoria tipada; trilhos permanecem bloqueados (2026-10-16 UTC)
+
+### N07 #153: categoria tipada, não heurística de texto
+
+- PR #153: https://github.com/divibisoul/Orquestrador-/pull/153
+- Head exato: 7c562182a657db505a62569543665d04bc1ccc99; base: 94f72bb511295c925cb482252d5f6666975994a8.
+- Commits funcionais: de1a46ab4b6859cccff59838a1a83281c65b45fb (grf.Failure.Kind), 4c5681c1fb825244f10277fec732e86286ae056b (mapeia kind da resposta HTTP SARA), 7878c53840fadf877ce52ba673d7ccba654c0332 (GRCE bloqueia só pelo kind tipado), 7c562182a657db505a62569543665d04bc1ccc99 (regressões benigno/complexidade).
+- A API real da SARA retorna cada flaw como objeto com kind e detail separados. Antes, GRCE procurava o marcador COMPLEXIDADE_EXCESSIVA no texto original; isso não detectaria uma entrada repetitiva de 11.000 caracteres quando o kind, e não o texto, é o sinal autoritativo. Agora Failure.Kind é serializado separadamente, o parser preserva kind e detail, e a transição protetiva procura apenas Failure.Kind == COMPLEXIDADE_EXCESSIVA, ignorando menções de texto livre.
+- O teste de backend HTTP usa duas situações: (a) fixture benigna com kind=TEST_EVIDENCE e descrição que menciona COMPLEXIDADE_EXCESSIVA deve continuar ACTIVE; (b) input de 11.000 caracteres repetitivos causa categoria estruturada de complexidade, deve retornar PRESERVED, outcome ROLLBACK_PRESERVED:DETECT, conteúdo original idêntico e evidência causal.
+- Status do head ao último refresh: 18 workflows; 17 queued e a auditoria de sobreposição N07 cooperative front overlap audit (38842941515) completou success no head exato. GRF/GRCE Real SARA E2E (38842941698), N07 Orquestrador CI (38842941470) e source-ref integrity (38842941455) continuam queued. Status: IMPLEMENTED-UNVERIFIED; nenhum merge.
+
+### N07 #156: sincronização aguarda o andar-base
+
+- PR: https://github.com/divibisoul/Orquestrador-/pull/156
+- Head observado: 7fddde3a220adf648abc508905b16927271c1db5; base ainda é o SHA antigo f656aca8c944183f9f9638179307901395b481be; OPEN/DRAFT, dirty/mergeable=false.
+- Compare atualizado identificou 11 arquivos sobrepostos: .github/workflows/grf-grce-real-e2e.yml, .github/workflows/rgo-integration.yml, backend/grce_runtime.go, backend/grce_runtime_test.go, backend/nervo_vago.go, backend/nervo_vago_test.go, grce/executor.go, mesh/peers_test.go, orchestrator/external_adapters.go, scripts/soul-architectural-integrity.mjs e soul-nuclei.json.
+- Comentários de coordenação publicados em #153 e #156 (IDs 6207013117 e 6207013818). Nenhum branch foi removido ou reescrito. #156 não deve ser sincronizada por substituição de arquivos inteiros; depois do sucesso do andar-base, criar merge commit não-forçado de dois pais e reconciliar os 11 caminhos por função, mantendo gates novos do GRCE e adapters SOUL28/federation do filho. O workflow E2E deve manter source pin SARA verificado, ciclo seguro real, caso de complexidade HTTP 400/PRESERVED com payload original e prova de ETR/Nervo Vago.
+
+### N06: duas frentes de interoperabilidade, ambas sem promoção
+
+- #46: https://github.com/divibisoul/nextjs-ai-chatbot-2000/pull/46, head ada4a07c462c6abd1ec53ddfd0793ed24d9194c0. N06 Channel Contract e forensic audit passaram; Soul Mesh CI e E2E N05-N06 estavam queued/pending no SHA visto. A correção de import ESM/CJS removeu o bloqueio anterior antes da chamada de rede, mas não é evidência de tráfego real aprovado.
+- #42: https://github.com/divibisoul/nextjs-ai-chatbot-2000/pull/42, head 692a970cb63c58f9f5b26619abfce3f1aab75b18, 62 arquivos; workflows queued. A alteração de HMAC foi reconciliada para transport derivado de meta.transport, igual a N05; o único arquivo sobreposto com #46 é lib/soul-mesh/SoulMeshHmac.ts. Preservar ambas; só reconciliar o delta amplo de #42 depois que #46 provar a aresta HTTP/HMAC real.
+- #52 N05: head 75ea08296534f973015a78b0b37d82c13c954013; sete workflows próprios foram verdes no head consultado. Ainda assim, não mesclar #52 até #46 executar ambos os sentidos em dois runtimes reais com HMAC nos pedidos e respostas, e todas as verificações obrigatórias de #46 terminarem no SHA final.
+
+### N01: Android loopback ainda é hipótese técnica até o novo CI
+
+- PR #105: https://github.com/divibisoul/aeternum-core-29/pull/105; head 3f560d687b01ce2ab2b2f3db3cf4c18e679a1f92.
+- O SHA anterior 528fa464e47264a58ed44e4a4515415711c7a684 construiu APK debug/release e validação web, mas 2/10 testes instrumentados falharam nos roundtrips HTTP em SoulMeshHttpTransportTest.loopbackRequestReachesReceiverAndReturnsCanonicalResponse e SoulMeshRpcEndToEndTest.requestReachesEndpointAndReturnsCorrelatedResponse. O log só mostrou Result.isSuccess=false, sem exceção real; por isso, cleartext foi hipótese, não causa comprovada.
+- No head novo foi acrescentada política com cleartext negado por padrão e exceção apenas para 127.0.0.1/localhost; o manifest aponta para ela e os asserts incluem a mensagem de falha. Os 18 workflows desse head estavam queued no último refresh. Não fechar o gate até instrumentação Android completar os 10 testes e Web/CI ficar verde no SHA exato.
+
+### Ordem da próxima promoção
+
+1. Validar o head de #153, especificamente N07 CI, GRF/GRCE real E2E, source-ref integrity e adapter contracts.
+2. Se #153 passar no SHA atual, reconciliar #156 com os 11 caminhos sobrepostos por merge commit não-forçado, validar a árvore e iniciar os checks do novo head.
+3. Em trilho paralelo separado, validar N05 #52 + N06 #46 com E2E HTTP/HMAC real antes de integrar o delta amplo de N06 #42.
+4. Resolver N01 Android instrumentation no head atual.
+5. Só promover uma unidade funcional quando seus gates dependentes e seu CI estiverem verdes; demais frentes seguem OPEN/DRAFT/UNMEASURABLE.
