@@ -283,12 +283,12 @@
         "N07"
       ],
       "manifestAuthority": "SOUL-FUSION-MANIFEST.json",
-      "sourceRef": "735b688be8b93768bcfe5f103a92947f28e4b5cb",
-      "status": "main-live-source-ref-reconciled-2026-10-16-n06",
+      "sourceRef": "8367522ec3a75eff9fff8342a8f82ddd58c8cfe9",
+      "status": "main-live-source-ref-reconciled-2026-10-16-n06-merge",
       "contractEvidencePaths": [
         "lib/soul-mesh/SoulMeshProtocol.ts"
       ],
-      "previousSourceRef": "0b2ba53922046e772883a8de5bf9ecc41fa3eacb",
+      "previousSourceRef": "735b688be8b93768bcfe5f103a92947f28e4b5cb",
       "sourceRefHistory": [
         {
           "sourceRef": "17c46a0ddd5edfcdb570539d2d250a78799016f2",
@@ -303,6 +303,11 @@
         {
           "sourceRef": "735b688be8b93768bcfe5f103a92947f28e4b5cb",
           "observed": "2026-10-16/verified-mainline-after-functional-fusions-N06",
+          "state": "PRESERVED"
+        },
+        {
+          "sourceRef": "8367522ec3a75eff9fff8342a8f82ddd58c8cfe9",
+          "observed": "2026-10-16/merged-cognition-capability-and-Mesh-integration-N06",
           "state": "CURRENT"
         }
       ]
