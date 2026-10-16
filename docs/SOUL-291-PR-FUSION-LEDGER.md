@@ -1003,3 +1003,21 @@ Nenhuma PR de origem, branch de origem ou arquivo foi excluído ou fechado por e
 4. Prosseguir pela matriz de comunicação real de cada aresta e registrar cada resultado como REAL, PROJECTED, BLOCKED ou UNMEASURABLE, sem transferir evidência entre conexões.
 
 Nenhum arquivo, PR de origem ou branch de origem foi apagado ou fechado por esta atualização; a fusão integral das 291 PRs permanece aberta.
+
+
+## Atualização append-only — correção de transporte UTF-8 no loopback N01 (2026-10-16 UTC)
+
+### N01 #106 — defeito concreto de transporte corrigido no branch candidato
+
+- A revisão encontrou um defeito real no listener Kotlin de `SoulMeshHttpTransport`: o servidor interpretava `Content-Length` (quantidade de **bytes** HTTP) como o tamanho de um `CharArray` (quantidade de caracteres). Mensagens com acentos ou caracteres Unicode multibyte podiam terminar como corpo incompleto/malformado, quebrando a comunicação apesar de o mesmo teste passar com JSON somente ASCII.
+- Correção aditiva no arquivo `soul-sentinel/app/src/main/java/com/divibisoul/soul/SoulMeshHttpTransport.kt`, dentro da branch da PR #106: leitura do cabeçalho HTTP em bytes até `CRLF CRLF`; limite de 16 KiB para cabeçalhos e 1 MiB para corpo; validação de cabeçalho duplicado; rejeição explícita de `Transfer-Encoding` não suportado; leitura exata do corpo em `ByteArray` antes de decodificar UTF-8; respostas 413/431 com reason phrases correspondentes. O restante do contrato de mensagem, correlation, rota e erro estruturado foi mantido.
+- Regressão adicionada ao teste de loopback já existente, sem criar um teste duplicado: o payload inclui agora `consciência 🧠` e o receptor precisa confirmar o texto exato recebido. Esse caso cobre acento português e um emoji de quatro bytes, que o cálculo anterior podia truncar.
+- Commits de correção no branch candidato: `9765b6ce06b2e45dc510c843e7757a07f9e31a94` (transporte) e `e8a4e4970834feacea12fe5c664ad8e0f0a43872` (regressão). O head da PR #106 foi verificado como `e8a4e4970834feacea12fe5c664ad8e0f0a43872`; o diff continua com 87 arquivos alterados e **zero arquivos inteiros removidos**. O total de linhas mudou para +5.943/-426 por causa da correção localizada e dos limites/validações.
+- A última consulta retornou 21 workflows de N01 no novo head, todos QUEUED/PENDING; por isso o teste ainda não está declarado PASS. O resultado só fecha quando a CI do SHA exato concluir e o caso Unicode for executado pela instrumentação Android.
+- A correção aumenta robustez do transporte, mas não substitui a prova de disponibilidade de cada par em processos independentes. N01↔N02/N07 e demais arestas continuam com seu próprio gate E2E.
+
+### Estado de N07 #153 após reparo das asserções
+
+- O head continua `ba8d5bc07a8edf4d8d181f78027e881952a87b6c`. A última consulta continuava mostrando os 14 workflows QUEUED/PENDING. Não promover #153 nem destravar #156/#158 até conclusão dos workflows e leitura de qualquer falha remanescente no novo SHA.
+
+Nenhuma PR, branch ou arquivo histórico foi excluído ou fechado nesta atualização. A integração integral continua em andamento.
