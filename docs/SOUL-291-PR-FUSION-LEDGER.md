@@ -1158,3 +1158,29 @@ Nenhum arquivo/PR/branch histórico foi apagado, fechado ou reescrito. O ledger 
 O cliente browser `src/core/soul-mesh/peerClient.ts` de N01 segue registrado como bloqueio separado: há chamadas diretas a peers, leitura de token `VITE_SOUL_MESH_TOKEN` e ausência de verificação HMAC de resposta. Esse caminho de UI não fica autenticado apenas porque o gateway server-side `forward()` foi corrigido; precisa de fronteira de servidor e prova própria.
 
 Nenhum arquivo original, branch histórica, PR de origem ou merge foi apagado, encerrado ou reescrito. Este adendo mantém o ledger das 291 PRs append-only.
+
+
+## Atualização append-only — validação de compatibilidade N06↔N05 e ajuste de CI (2026-10-16 UTC)
+
+### N06 PR #46 — segunda implementação do cliente também corrigida
+
+- PR: https://github.com/divibisoul/nextjs-ai-chatbot-2000/pull/46
+- Head exato observado: `8c5e997482822aafd72b7375b5c934d8641b5fd7`; base `main` em `8367522ec3a75eff9fff8342a8f82ddd58c8cfe9`; PR aberta em draft.
+- Adicionado Bearer simultâneo a HMAC em `lib/soul-mesh/peer-client.ts` quando ambos os segredos existem; produção continua falhando fechado quando nenhum mecanismo de autenticação está configurado.
+- Regressão adicionada a `lib/soul-mesh/N06MeshHmacConformance.test.ts`: servidor HTTP loopback verifica o HMAC canônico do pedido, o teste exige o cabeçalho Bearer na mesma chamada e a resposta assinada precisa ser autenticada pelo cliente.
+- A auditoria confirmou um detalhe importante: o E2E principal N05↔N06 já usa `N06PeerAdapter.sendFromN06()`, que já envia Bearer e HMAC juntos. Portanto a falha do `peer-client.ts` não foi rotulada incorretamente como causa comprovada do E2E bidirecional; é uma segunda fronteira de cliente corrigida em paralelo.
+- O workflow N05↔N06 está pinado ao SHA merged N05 `64e1b8719068b153130bcdbcfbbc2c78c11e1b8c`. A URL de banco falsa foi removida dos passos de build: o script `build-with-optional-migrations.mjs` do N05 executa migrações sempre que `POSTGRES_URL` é definido; sem banco real provisionado a variável deve ficar ausente para que migrações sejam puladas. A URL de fallback usada apenas pelo processo E2E não é evidência de banco real.
+- Nenhum teste local foi executado nesta interface; a validação do novo head ainda depende do CI. O estado anterior observado para o head exato foi 7 jobs enfileirados e 2 pendentes (incluindo o E2E e Soul Mesh CI), todos sem conclusão. Esse estado não é PASS.
+
+### Heads de integração sincronizados depois das correções de workflow
+
+- **N01 #106**: `b635a4aa2b7f0bb6313d0277e8bde013add9fbfe`; workflow N01↔N04 agora pinna o head N04 revisado abaixo. Última consulta: 22 checks, 21 QUEUED e 1 PENDING.
+- **N04 #51**: `815acbaa58d1bc2d15f94e7b3a142ca4cbac2163`; workflow N04↔N05 constrói os runtimes sem definir uma URL de banco fictícia no build. Última consulta: 6 checks QUEUED e 1 PENDING.
+- **N06 #46**: `8c5e997482822aafd72b7375b5c934d8641b5fd7`; última consulta: 7 checks QUEUED e 2 PENDING.
+- **N07 #153** permanece em `ba8d5bc07a8edf4d8d181f78027e881952a87b6c`, 14 jobs QUEUED. Não desbloquear os PRs empilhados #156/#158 enquanto a base #153 não tiver CI concluída e diagnóstico de qualquer falha.
+
+### Critério de conclusão mantido
+
+O código adicionado nos três PRs é candidato, não implantação concluída. A fila de GitHub Actions permanece sem conclusões nos SHAs consultados; não há novo PASS/FAIL para declarar. Continuam obrigatórios build/typecheck, HMAC/contrato, E2E real em processos separados e CI verde no SHA exato, antes de promover qualquer aresta.
+
+Nenhuma PR ou branch de origem foi apagada, fechada ou force-pushed; este adendo conserva o histórico anterior do ledger.
