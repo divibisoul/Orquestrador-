@@ -1231,3 +1231,31 @@ Nenhum arquivo, branch histórica, PR original ou registro anterior foi apagado 
 Nenhum check listado terminou; a classificação correta permanece **IMPLEMENTADO / CI PENDENTE**, não PASS. A fronteira do cliente browser N01 e a conclusão real dos E2Es permanecem abertas. Não promover os PRs empilhados N07 #156/#158 antes do CI verde da base #153 e leitura de eventuais falhas.
 
 Este registro é somente aditivo. Nenhuma fonte, PR de origem, branch histórica ou arquivo foi excluído, encerrado ou reescrito.
+
+
+## Regra operacional append-only — tempo, observabilidade e avanço sem espera indefinida (2026-10-16 UTC)
+
+### Ponto de partida, posição e destino
+
+- **Ponto de partida preservado:** inventário cumulativo das 291 PRs; fusão por semelhança funcional e sinergia; proibição de excluir arquivos, capacidades, PRs, branches ou evidência histórica; nenhuma fusão/merge sem validação do head exato.
+- **Posição desta frente:** MEIO. Existem correções de protocolo e candidatos reais de comunicação entre processos, mas os heads atuais ainda não provaram CI verde. A ordem de promoção continua: N06↔N05 → N05↔N04 → N04↔N03 → N03↔N02 → N02↔N01 → comissão final N01↔N06↔N07.
+- **Destino verificável:** cada aresta só pode ser promovida após comunicação real entre processos independentes, autenticação/contrato verificados, testes relevantes concluídos no SHA exato e checks obrigatórios verdes. Manifestos, código escrito, testes pendentes e sucesso em SHA antigo não satisfazem esse critério.
+
+### Limites de tempo e ação
+
+1. **Ao abrir cada rodada:** recuperar a última entrada do ledger, o SHA exato de cada candidato, a etapa/aresta atual, os bloqueios conhecidos e o destino. Não recomeçar do zero nem avançar a ordem por conveniência.
+2. **Até 15 minutos em QUEUED/PENDING após o horário de criação fornecido pela API:** tratar como alerta operacional e inspecionar o run específico, jobs, runner/concurrency e eventuais aprovações. Estado pendente nunca é PASS.
+3. **A partir de 30 minutos sem atribuição/execução observável:** classificar provisoriamente como **BLOCKED_EXTERNAL** se a fila estiver confirmada, ou **UNMEASURABLE** se faltarem os dados necessários para confirmar a causa. Não manter a frente parada à espera: prosseguir com auditoria estática e outras correções independentes, preservando a ordem de promoção e sem duplicar workflows já enfileirados.
+4. **A partir de 60 minutos sem progresso observável:** registrar o bloqueio e a evidência disponível, comunicar o impedimento e escolher a próxima ação independente com melhor valor. Não fazer retry de execução ainda enfileirada só para produzir atividade; repetir somente execução falha/cancelada quando a causa for entendida ou a repetição tiver justificativa explícita.
+5. **A cada rodada:** terminar com um registro curto de (a) o que mudou, (b) qual evidência foi realmente obtida, (c) o que está REAL/PROJECTED/BLOCKED/UNMEASURABLE, (d) tempo/bloqueio que mudou e (e) uma única próxima ação prioritária. Não declarar concluído o projeto enquanto restarem arestas não verificadas.
+
+### Evidência observada nesta consulta
+
+- N01 #106, head `c8daac7f652d848cd75571f7c748c98ab768126d`: 22 workflows consultados, 21 QUEUED e 1 PENDING, nenhum com conclusão.
+- N04 #51, head `815acbaa58d1bc2d15f94e7b3a142ca4cbac2163`: 7 workflows consultados, 6 QUEUED e 1 PENDING, nenhum com conclusão.
+- N06 #46, head `8c5e997482822aafd72b7375b5c934d8641b5fd7`: a consulta mais recente retornou 9 workflows, 7 QUEUED e 2 PENDING, sem conclusão.
+- N07 #153, head `ba8d5bc07a8edf4d8d181f78027e881952a87b6c`: 14 workflows QUEUED, nenhum com conclusão.
+- A consulta disponível não expôs timestamps de criação que permitam calcular a idade exata dos itens, e a consulta de jobs/status detalhados retornou listas vazias apesar dos IDs de runs. Portanto, a **idade efetiva da fila e sua causa estão UNMEASURABLE nesta resposta**; não é legítimo afirmar que já ultrapassaram os limites de 15/30/60 minutos nem atribuir a causa a runners/concurrency sem evidência adicional.
+- A ação correta enquanto essa observabilidade estiver ausente é avançar uma auditoria/correção independente, atualizar novamente os estados na rodada seguinte e não promover nenhuma aresta com base em suposição.
+
+Esta entrada é estritamente aditiva. Não substitui nem corrige retroativamente qualquer registro histórico, não altera arquivos de runtime e não autoriza merge.
