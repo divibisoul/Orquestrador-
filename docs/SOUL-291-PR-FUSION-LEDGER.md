@@ -1302,3 +1302,29 @@ Entrada cumulativa: nenhum registro, arquivo de runtime, PR de origem ou branch 
 - A ordem de promoção permanece intacta: N06↔N05 é o primeiro gate. O N05↔N04 foi auditado e corrigido em paralelo, mas não se promove antes do resultado exato de N06↔N05 e de seus checks obrigatórios.
 
 Entrada somente aditiva. Nenhuma PR foi mesclada, branch foi forçada, fonte foi excluída ou histórico foi substituído.
+
+
+## Snapshot de controle cruzado pós-correções (2026-10-16 UTC)
+
+### Integridade estática dos três gates E2E
+
+Consulta de conteúdo após as gravações confirmou, nas branches candidatas:
+
+- N01↔N04: o script usa `POSTGRES_URL: databaseUrl`, falha explicitamente se a variável estiver ausente, não tem fallback sintético; o workflow declara PostgreSQL 16 com health-check e passa URL apenas ao passo E2E. O checkout/verificador aponta para N04 SHA `1d0c224a09e871da5ec69b7875d515390689f1a8`.
+- N04↔N05: as mesmas guardas estão presentes; N05 está pinado/verificado em `64e1b8719068b153130bcdbcfbbc2c78c11e1b8c`.
+- N05↔N06: as mesmas guardas estão presentes e o fallback fixo de `AUTH_SECRET` foi removido; N05 está pinado/verificado em `64e1b8719068b153130bcdbcfbbc2c78c11e1b8c`.
+
+Esta é **verificação de conteúdo no GitHub**, não execução local dos scripts nem resultado de CI. A confirmação de saúde do PostgreSQL ocorrerá pelo health-check do workflow; migrações/esquema continuam fora do escopo dessas provas de comunicação.
+
+### Estado consolidado após as mudanças
+
+| Candidato | Head atual | Checks observados | Validação |
+|---|---|---|---|
+| N01 #106 | `3c582cd7c0a44b6c5669a29df31a3ec2f85c2899` | 21 QUEUED, 1 PENDING | Pendente |
+| N04 #51 | `1d0c224a09e871da5ec69b7875d515390689f1a8` | 6 QUEUED, 1 PENDING | Pendente |
+| N06 #46 | `a7b87bc6564ea38615535e644fad1df6d1d7d9bc` | 6 QUEUED, 2 PENDING | Pendente |
+| N07 #153 | `ba8d5bc07a8edf4d8d181f78027e881952a87b6c` | 14 QUEUED | Pendente |
+
+Os candidatos continuam abertos em draft. A consulta ainda não expõe timestamps de criação/atividade ou jobs individuais suficientes para medir idade de fila; **tempo decorrido da fila = UNMEASURABLE**. Próxima ação: atualizar estados exatos e, sem ficar ocioso, continuar auditoria estática do primeiro elo N06↔N05; não promover N05↔N04 antes do gate anterior ter resultado concluído e checks obrigatórios verdes.
+
+Nenhum arquivo ou capacidade de runtime foi removido; as alterações de código limitam-se à substituição de fallback sintético por dependência real explicitamente provisionada e à atualização do pin de dependência. Nenhuma PR foi mesclada.
