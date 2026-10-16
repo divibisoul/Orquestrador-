@@ -210,7 +210,8 @@ jobs:
 
       - name: Execute unified Nervo Vago path with ETR provenance
         run: |
-          curl -fsS -H 'Authorization: Bearer e2e-n07-token-123456789' \
+          # Keep the response body visible on HTTP errors so ETR failures are diagnosable.
+          curl -sS -H 'Authorization: Bearer e2e-n07-token-123456789' \
             -H 'Content-Type: application/json' \
             -X POST http://127.0.0.1:8080/v1/execute \
             -d '{"operation":"nervo-vago.event@1.0.0","correlationId":"nervo-e2e-001","metadata":{"sequence_index":"1","message_id":"nervo-msg-001","source":"N07.SuperGPU","target":"SARA","priority":"100","ttl":"5000","type":"supergpu.result","parent_hash":"sha256:parent","input_hash":"sha256:input","payload_json":"{\"ok\":true}"}}' \
