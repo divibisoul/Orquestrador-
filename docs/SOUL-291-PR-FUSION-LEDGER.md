@@ -625,3 +625,13 @@ A auditoria reportou também `braces@3.0.3`. O advisory consultado não aponta v
 - **MERGED:** N04 #50; N05 #51. SARA #44 e N02 #59 já constavam como mescladas e foram reconfirmadas.
 - **ABERTO/BLOCKED:** N01 #105 aguardando Android APK + Mesh instrumentation; N03 #44 está 52 commits atrás do main observado e com `mergeable=false`; N06 #42 aguardando CI; N07 #158 aguardando CI e resolução da dependência/empilhamento com #156.
 - **Regra preservada:** sem force-push, sem merge em SHA inesperado, sem exclusão de arquivo/branch/PR fonte e sem registrar `PROJECTED` ou `ADAPTER_BOUND` como runtime comprovado. O inventário total das 291 PRs continua sendo uma frente de trabalho; este adendo não afirma que todas tenham sido avaliadas e fundidas.
+
+
+## Adendo append-only — N07 PR-base #156, teste de retry autenticado
+
+- PR-base: https://github.com/divibisoul/Orquestrador-/pull/156. Estado observado após a alteração: aberta, draft, `mergeable=false`; portanto não foi mesclada.
+- Os logs de três workflows falhavam no mesmo teste, `TestPeerClientRetriesReuseLogicalMessageID`. A primeira tentativa respondia HTTP 500 com JSON sem HMAC. O cliente agora autentica a resposta **antes** de confiar no status HTTP, então rejeitar a resposta não assinada era o comportamento correto.
+- Correção aplicada à branch da PR #156 em `mesh/peers_test.go`, commit `d76b1744aba4c3e8723ac1810daf0d69f35fc600`: o cenário transitório usa `signedPeerErrorResponse(...)` para assinar a resposta 500. A expectativa de retry foi preservada e a autenticação estrita de produção não foi relaxada.
+- As asserções de 16 provedores e 9 peers presentes nos logs eram parte do script de validação; a falha efetiva mostrada depois era o teste Go. Não alterar esses números sem evidência diferente do próprio contrato.
+- Limitação: não foram retornadas execuções novas no SHA após esse commit; a correção está aplicada, mas ainda não validada por CI. A limpeza pós-job também registrou aviso de submódulo aninhado `integrations/external/autogenesis/datasets/leetcode` sem URL correspondente em `.gitmodules`; esse aviso ocorreu durante cleanup após a falha de teste e não é a causa do teste de retry.
+- A PR #158 permanece bloqueada por empilhamento/conflito com #156. Nenhum force-push, fechamento, remoção de branch ou exclusão de arquivo foi executado.
