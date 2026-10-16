@@ -683,3 +683,33 @@ A auditoria reportou também `braces@3.0.3`. O advisory consultado não aponta v
 - **N01 #105** — os APKs debug/release e validação Web passaram, mas `Android APK + Mesh instrumentation` continua em progresso no job `116777458295`; sem conclusão final, não mesclar.
 - **N07 #156/#158** — permanecem abertas/draft e não mescláveis por empilhamento. #156 aponta para base SHA antigo `f656aca8c944183f9f9638179307901395b481be` da PR #153; #158 depende da #156. Sem force-push, sem atualizar base de forma destrutiva e sem excluir branches/arquivos.
 - **Registro geral** — este adendo descreve apenas as frentes trabalhadas nesta rodada, não a conclusão da auditoria de todas as 291 PRs.
+
+
+## Adendo append-only — lint N06, correção do guard GRCE e teste de interoperabilidade N05↔N06 (16/10/2026)
+
+### N06 #42 — novo conjunto de correções mecânicas
+
+- PR https://github.com/divibisoul/nextjs-ai-chatbot-2000/pull/42, head atual observado `692a970cb63c58f9f5b26619abfce3f1aab75b18`, aberta/draft.
+- O relatório anterior de lint motivou correções em `N06SuperAGIBridge.test.ts`, `N06ExternalProviderAdapters.test.ts`, `Nucleus05Runtime.ts`, `DSPyAdapter.ts`, `SmolAgentsAdapter.ts`, `N06CapabilityDispatcher.ts`, `N06N05Interop.ts`, `N06PeerMeshBridge.ts`, `Nucleus05E2EContract.ts` e `N06PeerAdapter.ts`. As alterações mantêm os testes e as capacidades: restauração de variáveis por `Reflect.deleteProperty`, imports `node:`, declaração de variáveis separada, remoção apenas do import de tipo não usado e estreitamento explícito de estado do peer. Nenhum arquivo foi apagado.
+- O head 692a tem todos os oito workflows novamente `queued` na última consulta. É obrigatório verificar a execução final do lint, build, testes e Dependency Review deste SHA antes de tirar a PR do draft.
+- O finding de alta severidade de `braces@3.0.3` continua classificado como risco upstream não resolvido, sem desativação do gate nem declaração de correção fictícia.
+
+### N07 #153 — guard de complexidade refinado
+
+- PR https://github.com/divibisoul/Orquestrador-/pull/153, head `f86ace964f6cd2e0feafab978d26ccab84c8b6aa`, aberta/draft.
+- Um teste de baixo risco, `TestGRCEExecutorRuntimeCompletesWithHTTPBoundaryFixture`, falhou porque o guard inicial procurava a string `COMPLEXIDADE_EXCESSIVA` nas descrições de falhas de auditoria. Isso misturava conteúdo descritivo de uma falha com o conteúdo original submetido ao ciclo.
+- Corrigi o guard em `grce/executor.go`, commit `f86ace964f6cd2e0feafab978d26ccab84c8b6aa`: agora a decisão de preservação é baseada no texto/estado original (`stateText(originalState)`), e não em qualquer descrição retornada pelo auditor externo. O comportamento continua fail-closed para uma entrada de alta complexidade que contenha o marcador, com histórico/evidências preservados.
+- O E2E SARA no head anterior a este último ajuste passou (run #231). No head novo, todos os workflows voltaram à fila, incluindo o E2E (#236); o teste de baixo risco que motivou o refinamento também precisa passar antes de declarar a base estável.
+
+### N05 #52 ↔ N06 #46 — interoperabilidade real em validação
+
+- N05 #52: https://github.com/divibisoul/nextjs-ai-chatbot/pull/52, head `75ea08296534f973015a78b0b37d82c13c954013`, aberta/draft; seis workflows próprios consultados terminaram `success`.
+- N06 #46: https://github.com/divibisoul/nextjs-ai-chatbot-2000/pull/46, head atual `ada4a07c462c6abd1ec53ddfd0793ed24d9194c0`, aberta/draft.
+- A tentativa de E2E #6 (run `38841472224`) construiu os dois runtimes Next.js em produção, mas falhou antes da primeira requisição N06→N05 porque Node/tsx não reconheceu uma importação nomeada de `sendFromN06` do arquivo TypeScript. Não houve ainda evidência de falha do protocolo HMAC nessa execução: o driver não chegou à chamada de rede.
+- Corrigi `scripts/n05-n06-real-process-e2e.mjs`, commit `ada4a07c462c6abd1ec53ddfd0793ed24d9194c0`, para carregar o módulo de peer por importação namespace com fallback explícito para `default.sendFromN06`, falhando com mensagem diagnóstica se o símbolo ainda não existir. O workflow E2E #7 e os demais checks de N06 #46 estavam `pending/queued` na consulta posterior.
+- Não mesclar N05 #52 antes de o E2E bidirecional de processos reais passar com os SHAs exatos e de os checks de N06 #46 terminarem verdes. Depois disso, mesclar uma PR de cada vez com SHA esperado, reler a base/checks e reconciliar N06 #42 conforme necessário.
+
+### N01 #105 e sequência de fusão
+
+- N01 #105 permanece aberta/draft, head `528fa464e47264a58ed44e4a4515415711c7a684`. APK debug e release e validação Web passaram; o job Android + Mesh instrumentation ainda estava em progresso, logo sem CI global verde.
+- N07 #156/#158 continuam bloqueadas pela cadeia empilhada; não forçar merge/force-push. O próximo passo permanece fechar gates na base #153, atualizar a pilha de modo não destrutivo e, em paralelo, completar a prova de comunicação N05↔N06.
