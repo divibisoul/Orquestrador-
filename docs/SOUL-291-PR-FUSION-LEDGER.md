@@ -664,3 +664,22 @@ A auditoria reportou também `braces@3.0.3`. O advisory consultado não aponta v
 
 - PR #156: https://github.com/divibisoul/Orquestrador-/pull/156 — head `7b5baee1f7b42e9f014d19cac78d0265d3f356f6`, aberta/draft, `mergeable=false) na última consulta, pois sua fotografia de base ainda aponta para o head antigo `f656aca8c944183f9f9638179307901395b481be` da PR #153.
 - PR #158: https://github.com/divibisoul/Orquestrador-/pull/158 — permanece aberta/draft e `mergeable=false), baseada no branch da #156. Ainda não se tentou force-push, mudança destrutiva de base ou merge forçado. Após a PR #153 ser aprovada/mesclada, reconciliar a #156 de forma não destrutiva e depois reaplicar o delta complementar da #158 sem descartar seus registros ou arquivos de origem.
+
+
+## Adendo append-only — Nervo Vago ETR e checks da rodada (16/10/2026)
+
+### N07 #153 — ETR/Nervo Vago: correção aplicada, CI ainda não publicada
+
+- PR: https://github.com/divibisoul/Orquestrador-/pull/153
+- Head atual observado: `b38c248f6ecdd640cb3a64c1e7170f4182b56add`; PR aberta/draft, `mergeable=true`, não mesclada.
+- O E2E real executou com sucesso: descoberta GRF, inventário dos 22 provedores e seus estados, ciclo GRCE real C1–C7–C1 com autoridade SARA e prova de preservação/bloqueio de entrada de alta complexidade. O último bloqueio foi isolado ao caminho Nervo Vago: a SARA retornou `ethical.approved=false`, produzindo `NERVO_VAGO_BLOCKED:ETR_REJECTED`. A captura do corpo HTTP está preservada; o harness não mascara mais erros de política com `curl -f`.
+- A causa de contrato identificada foi que `NervoVagoGateway.Publish` enviava à auditoria ETR somente o JSON bruto do evento. O GRCE já fornece contexto explícito de finalidade e princípios por meio de `grceEthicalReviewInput`, mantendo o conteúdo integral sob avaliação.
+- Correção aplicada em `backend/nervo_vago.go`, commit `f3a63e3e2a0ff605a3c3825ed5c83ea3a0b6e02d`: auditoria recebe finalidade explícita sobre segurança, integridade e proveniência antes de publicar no Vagus, junto do JSON original completo. Regressão adicionada em `backend/nervo_vago_test.go`, commit `b38c248f6ecdd640cb3a64c1e7170f4182b56add`, para verificar que finalidade e conteúdo original chegam à SARA. A resposta de aprovação continua exclusivamente sob autoridade da SARA; o gate de rejeição e o bloqueio de publicação permanecem estritos.
+- O SHA final ainda não retornou workflows/statuses na última consulta. **Não declarado resolvido por CI**; verificar o novo E2E e o teste Go antes de considerar a PR-base pronta.
+
+### Estado atual dos outros bloqueios
+
+- **N06 #42** — head `cf240bc7a396ce28aaade75edeaf28797508f669`, aberta/draft. O build Web passou no head imediatamente anterior; lint ainda havia falhado em `ba42c112fea470c4aaa25413eab2908cf4fe4769` com 39 diagnósticos. Os reparos de lint, import de Node, tipagem, contexto de auditoria, compatibilidade e ambiente de teste foram adicionados depois disso. No head `cf240...`, os oito workflows apareceram enfileirados/pending; não atribuir verde/erro do head antigo ao novo.
+- **N01 #105** — os APKs debug/release e validação Web passaram, mas `Android APK + Mesh instrumentation` continua em progresso no job `116777458295`; sem conclusão final, não mesclar.
+- **N07 #156/#158** — permanecem abertas/draft e não mescláveis por empilhamento. #156 aponta para base SHA antigo `f656aca8c944183f9f9638179307901395b481be` da PR #153; #158 depende da #156. Sem force-push, sem atualizar base de forma destrutiva e sem excluir branches/arquivos.
+- **Registro geral** — este adendo descreve apenas as frentes trabalhadas nesta rodada, não a conclusão da auditoria de todas as 291 PRs.
