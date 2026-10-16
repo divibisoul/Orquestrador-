@@ -268,7 +268,13 @@ func (r *Runtime) Execute(ctx context.Context, device Device, operation string, 
 			return nil, errors.New("runtime closed")
 		}
 	}
+	r.mu.Lock()
+	if r.closed {
+		r.mu.Unlock()
+		return nil, errors.New("runtime closed")
+	}
 	r.running.Add(1)
+	r.mu.Unlock()
 	defer r.running.Done()
 
 	correlationID := CorrelationIDFromContext(ctx)
