@@ -1,0 +1,6 @@
+# GitHub Pages configuration for the N07 engineering documentation site.
+# Vendored external repositories are runtime inputs, not Pages content.
+# Excluding them prevents third-party Markdown front matter from being
+# interpreted by Jekyll while preserving every submodule unchanged.
+exclude:
+  - integrations/external
