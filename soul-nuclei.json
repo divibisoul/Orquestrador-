@@ -160,7 +160,7 @@
         {
           "sourceRef": "a8068ce15977a9624d9f2e11b7a4731c5bca0f9f",
           "observed": "2026-10-06/live-mainline",
-          "state": "CURRENT"
+          "state": "PRESERVED"
         },
         {
           "sourceRef": "a8068ce15977a9624d9f2e11b7a4731c5bca0f9f",
@@ -220,7 +220,7 @@
         {
           "sourceRef": "f640b959d628176488b73bd2a44fa1a85ca84be4",
           "observed": "2026-10-06/live-mainline",
-          "state": "CURRENT"
+          "state": "PRESERVED"
         },
         {
           "sourceRef": "f640b959d628176488b73bd2a44fa1a85ca84be4",
