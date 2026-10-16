@@ -1438,3 +1438,34 @@ Validação do código-fonte da correção: **8/8 verificações estáticas de p
 Estado do GitHub Actions no head atual: 7 runs — 6 QUEUED e 1 PENDING, zero conclusões. E2E `38975186004` continua pendente e não lista jobs iniciados. O código permanece **UNMEASURABLE em execução** até a CI executar; não declarar PASS/mergear a PR antes disso.
 
 Registro aditivo: histórico anterior mantido; sem merge, exclusão, force-push ou gravação direta em `main`.
+
+
+## Correção aditiva do primeiro elo N06↔N05 — produção exige HMAC em ambos os sentidos (2026-10-16 UTC)
+
+### N05 PR #53
+
+- PR: https://github.com/divibisoul/nextjs-ai-chatbot/pull/53
+- Head candidato: `c9c5f37dc397ec6dd8348388855cc140bd2b0ea4` (branch `fix/n05-enforce-production-mesh-hmac-20261016`).
+- Criado `lib/soul-mesh/N05RequestAuthentication.ts` e conectado a `app/api/soul-mesh/route.ts`. Em produção, HMAC ausente/fraco, nonce ou assinatura ausentes falham fechados; assinatura legada de body só permanece na rota de desenvolvimento.
+- `lib/soul-mesh/adapter.ts` agora falha antes da rede sem HMAC de 32+ bytes e Bearer configurado em produção; não cai para assinatura legada; valida protocolo/contrato/ID/correlação/rota/capability/kind/timestamp e autentica a resposta antes de retorná-la. A resposta de N07 continua usando o verificador legado próprio, demais pares usam a resposta canônica.
+- Regressões adicionadas em `N05BidirectionalHmac.test.ts` cobrem Bearer-only com legacy key em produção, HMAC válido no ingresso e saída fail-closed antes de rede.
+
+### E2E conectada à candidata exata
+
+- N06 PR #46 atualizada para fixar N05 SHA `c9c5f37dc397ec6dd8348388855cc140bd2b0ea4` em `.github/workflows/n05-n06-real-process-e2e.yml`; o teste verifica esse SHA exato antes do build.
+- `scripts/n05-n06-real-process-e2e.mjs` manda Bearer válido sem HMAC ao processo N05 real e exige `401 INVALID_MESH_SIGNATURE`; depois executa as chamadas reais N05→N06 e N06→N05.
+- E2E e testes têm fonte adicionada, mas **nenhum resultado PASS foi observado ainda**.
+
+### Estado operacional no snapshot
+
+| PR | Head | Estado Actions |
+|---|---|---|
+| N05 #53 | `c9c5f37dc397ec6dd8348388855cc140bd2b0ea4` | 6 QUEUED; zero conclusões |
+| N06 #46 | `48a5761be69c177bbb23356f724c402a3edf922b` | 7 QUEUED, 2 PENDING; zero conclusões |
+| N04 #51 | `1e2c41ef3da054f6974085de9caed03d3db17f47` | 6 QUEUED, 1 PENDING; zero conclusões |
+| N01 #106 | `6c3f40bcbf6f633ab06700f0c3719c0f7b1e8710` | 21 QUEUED, 1 PENDING; zero conclusões |
+| N07 #153 | `ba8d5bc07a8edf4d8d181f78027e881952a87b6c` | 13 QUEUED, 1 SUCCESS; E2E GRF/GRCE sem conclusão |
+
+O status público oficial do GitHub informa Actions operacional e nenhum incidente no dia 16/10/2026; isso não explica a ausência de jobs iniciados nestes repositórios. Como as ferramentas conectadas não expõem dispatch de workflow, não inferimos sucesso nem tentamos disparar repetidamente novas execuções para mascarar o bloqueio. O próximo diagnóstico de runner precisa usar a configuração de Actions/runner/concurrency e faturamento/limites do proprietário da organização.
+
+Sem merge, exclusão de funcionalidades/arquivos, force-push ou escrita em `main`. A ordem de promoção permanece N06↔N05 → N05↔N04 → N04↔N03 → N03↔N02 → N02↔N01 → comissão N01↔N06↔N07.
