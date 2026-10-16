@@ -19,8 +19,11 @@ func TestGRCEExecutorRuntimeCompletesWithHTTPBoundaryFixture(t *testing.T) {
 			writeGRCEJSONTest(w, map[string]any{"ready": true, "source": "SARA"})
 		case "/v1/audit":
 			writeGRCEJSONTest(w, map[string]any{
+				// This fixture exercises the successful, low-risk cycle.
+				// The real-process E2E separately proves that excessive complexity
+				// is preserved and rejected rather than promoted to ACTIVE.
 				"flaws": []any{map[string]any{
-					"kind":   "COMPLEXIDADE_EXCESSIVA",
+					"kind":   "TEST_EVIDENCE",
 					"detail": "test evidence from ARA",
 				}},
 				"ethical": map[string]any{"approved": true},
