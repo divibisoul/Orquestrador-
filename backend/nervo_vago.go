@@ -103,7 +103,8 @@ func (g *NervoVagoGateway) Publish(ctx context.Context, envelope NervoVagoEnvelo
 	if err != nil {
 		return nil, fmt.Errorf("NERVO_VAGO_ENVELOPE_ENCODE:%w", err)
 	}
-	audit, err := g.sara.Audit(ctx, string(raw), envelope.CorrelationID)
+	auditInput := grceEthicalReviewInput("avaliar a segurança, integridade e proveniência do evento antes da publicação no Vagus", string(raw))
+	audit, err := g.sara.Audit(ctx, auditInput, envelope.CorrelationID)
 	if err != nil {
 		return nil, fmt.Errorf("NERVO_VAGO_BLOCKED:ETR_AUDIT_FAILED:%w", err)
 	}
