@@ -37,7 +37,7 @@
     "masterContract": "SOUL_MASTER_ENGINEERING_CONTRACT.md",
     "grf": "GRF 2.0 transversal framework; N07 hosts GRCE control-plane operations while SARA/JEV/native nuclei retain their functional authority",
     "grce": "GRCE 2.0 installed in N07; cycle remains BLOCKED until distinct real ERU/MMD/ARA/ETR/ITR/RGO hooks are proven",
-    "mainlineRefReconciledAt": "2026-10-15"
+    "mainlineRefReconciledAt": "2026-10-16"
   },
   "nuclei": {
     "N01": {
@@ -261,13 +261,13 @@
         "N06"
       ],
       "manifestAuthority": "SOUL-FUSION-MANIFEST.json",
-      "sourceRef": "87e4a5363bfd85aae4f666a6806301fdb5026172",
-      "status": "main-live-inference-capability-catalog-reconciled",
+      "sourceRef": "894c001e48da368b58ca0b67911e63b2a859c1f3",
+      "status": "main-live-functional-n05-mesh-integration-merged-2026-10-16",
       "contractEvidencePaths": [
         "lib/soul-mesh/endpoint.ts",
         "lib/soul-mesh/SoulMeshProtocol.ts"
       ],
-      "previousSourceRef": "3bce0da91dd03bcf2c1e3765687dc357f187388b",
+      "previousSourceRef": "87e4a5363bfd85aae4f666a6806301fdb5026172",
       "sourceRefHistory": [
         {
           "sourceRef": "3bce0da91dd03bcf2c1e3765687dc357f187388b",
@@ -277,6 +277,11 @@
         {
           "sourceRef": "87e4a5363bfd85aae4f666a6806301fdb5026172",
           "observed": "2026-10-06/live-mainline",
+          "state": "PRESERVED"
+        },
+        {
+          "sourceRef": "894c001e48da368b58ca0b67911e63b2a859c1f3",
+          "observed": "2026-10-16/post-merge-functional-cluster",
           "state": "CURRENT"
         }
       ],
@@ -418,9 +423,9 @@
         "src/sara/__init__.py"
       ],
       "authority": "sara.meta / sara.core / sara.governance",
-      "sourceRef": "53a7760cc3db7f77456e415ef14b3638d52df816",
-      "status": "main-live-chimera-and-bayesian-runtime-merged",
-      "previousSourceRef": "2da3c965aab4abdf745c0ef545d4d2ca61fd5ad2",
+      "sourceRef": "5633cdd95a067c1c40a4b731a38976971e173d1f",
+      "status": "main-live-vagus-provenance-grce-hooks-append-only-eru-merged-2026-10-16",
+      "previousSourceRef": "53a7760cc3db7f77456e415ef14b3638d52df816",
       "sourceRefHistory": [
         {
           "sourceRef": "2da3c965aab4abdf745c0ef545d4d2ca61fd5ad2",
@@ -430,6 +435,11 @@
         {
           "sourceRef": "53a7760cc3db7f77456e415ef14b3638d52df816",
           "observed": "2026-10-06/live-mainline",
+          "state": "PRESERVED"
+        },
+        {
+          "sourceRef": "5633cdd95a067c1c40a4b731a38976971e173d1f",
+          "observed": "2026-10-16/post-merge-sara-pr44",
           "state": "CURRENT"
         }
       ]
