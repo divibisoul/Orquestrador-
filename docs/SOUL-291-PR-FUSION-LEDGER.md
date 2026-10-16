@@ -840,3 +840,33 @@ Um andar recebe COMPLETE apenas quando implementação fonte, conteúdo sobrepos
 ### Decisão de promoção
 
 Nenhuma destas três frentes pode ser fechada nesta fotografia. O próximo movimento autorizado continua: validar #153 no head 7394d4b; só depois reconciliar #156 sobre a base validada, em merge commit não-forçado de dois pais e com composição funcional dos onze caminhos sobrepostos. Em trilhos paralelos, fechar N05↔N06 e Android apenas com E2E/CI exatos. A auditoria das 291 PRs permanece aberta.
+
+
+## Atualização append-only — revalidação após correções cirúrgicas (2026-10-16 UTC)
+
+### N07 #153 — fonte principal e build da imagem
+
+- Head atual após as correções: `f2a0e03658ffbbe56bbaad0a7db658c963298df2`; base `restructure/soul-v2-foundation-2026-10-06`. PR permanece OPEN/DRAFT.
+- `soul-nuclei.json` agora aponta N03 para o SHA observado na `main` do repositório N03: `676c20cb5e537944a5a75d8e4920ff48c010cfbf`. O SHA anterior `a8068ce15977a9624d9f2e11b7a4731c5bca0f9f` foi mantido em `sourceRefHistory` com estado PRESERVED; foi acrescentada entrada CURRENT para o novo SHA e ajustado o ponteiro `previousSourceRef`. O workflow de source-ref integrity passou no novo head (`38847986602`).
+- O Dockerfile tinha backslashes indevidos nas aspas da expressão `awk` que conta gitlinks, e o build parava com `awk: Unexpected token`. Foi corrigida somente essa expressão. A execução de build/imagem no novo head permanece em fila/em andamento; a correção ainda não é declarada validada até o workflow terminar.
+- Nenhuma PR empilhada foi promovida. #156 e #158 continuam bloqueadas pela dependência de base e aguardam a validação de #153.
+
+### N06 #42 — diagnóstico a confirmar
+
+- Head consultado: `1c2900500f840aeb25275c10b3d27bb44fc86bf9`. Os sete workflows complementares estavam verdes; `N06 validation diagnostics` falhou no primeiro attempt no passo Lint, apontando `delete meta.nonce` em `lib/soul-mesh/N06PeerAdapter.ts`.
+- Leitura direta do arquivo versionado nesse mesmo SHA/blob (`d36b3c7163f32fc18cb986de1ba934801fe7ab70`) não contém esse `delete`. Para não duplicar correção nem tocar no arquivo sem evidência reproduzível, foi reexecutado apenas o job de validação; o segundo attempt ainda estava queued no instante deste registro. Manter o gate até o rerun terminar e reconciliar o log com o conteúdo do commit.
+
+### N05 #52 ↔ N06 #46 — status de interoperabilidade
+
+- N05 #52 permanece OPEN/DRAFT, head `75ea08296534f973015a78b0b37d82c13c954013`; os seis workflows próprios consultados estavam verdes. Isso não significa merge autorizado por si só.
+- N06 #46 permanece OPEN/DRAFT, head `614963429bb4e24628771631429b8d6496706f52`; os oito workflows consultados estavam verdes, incluindo `N05-N06 Real Process E2E`. O resultado é evidência real para a aresta HTTP/HMAC entre processos, mas a integração final continua coordenada com a frente maior #42 para evitar sobrepor o adapter de N06 com código divergente.
+- Não houve merge nesta rodada: preservar a ordem de integração e fazer leitura de árvore/diff e CI final depois de reconciliar as frentes.
+
+### N01 #105 — Android
+
+- Head `3f560d687b01ce2ab2b2f3db3cf4c18e679a1f92`. O primeiro attempt do job de Android instrumentation terminou em `Process crashed`, com `0/0 completed`; esse resultado, isoladamente, não comprova falha de contrato HTTP nem sucesso funcional.
+- Foi reexecutado apenas o job que falhou para distinguir instabilidade do emulador de falha reproduzível no transporte. O attempt 2 estava queued; o gate Android continua aberto até existir relatório de teste conclusivo no SHA exato.
+
+### Regra de promoção nesta fotografia
+
+CI de N07 ainda está em curso no head `f2a0e03`; os reruns N01/N06 ainda estavam em fila; #156/#158 não são mergeáveis; nenhuma nova fusão foi concluída. Continuar apenas com correções pequenas, rastreáveis e cobertas por testes. Nenhum arquivo, PR, branch ou registro histórico foi apagado nesta atualização.
