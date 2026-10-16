@@ -474,7 +474,17 @@ func decodeJSON(r *http.Request, limit int64, out any) error {
 	}
 	defer r.Body.Close()
 	decoder := json.NewDecoder(http.MaxBytesReader(nil, r.Body, limit))
-	return decoder.Decode(out)
+	if err := decoder.Decode(out); err != nil {
+		return err
+	}
+	var extra any
+	if err := decoder.Decode(&extra); err != io.EOF {
+		if err == nil {
+			return errors.New("request body must contain a single JSON value")
+		}
+		return err
+	}
+	return nil
 }
 
 func writeJSON(w http.ResponseWriter, status int, body any) {
