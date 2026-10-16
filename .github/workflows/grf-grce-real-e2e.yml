@@ -204,6 +204,7 @@ jobs:
           assert outer['metadata']['epistemic_state'] == 'PRESERVED', outer
           assert result['epistemic_state'] == 'PRESERVED', result
           assert result['outcome'].startswith('ROLLBACK_PRESERVED:'), result
+          assert result['next_state']['payload']['text'] == 'a' * 11000, 'original payload was not preserved'
           assert 'COMPLEXIDADE_EXCESSIVA' in evidence, result
           print('GRCE high-complexity input: BLOCKED / PRESERVED / REAL')
           PY
