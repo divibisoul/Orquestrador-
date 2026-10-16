@@ -1,0 +1,7 @@
+# GitHub Pages documents the N07 project itself.
+# External capability repositories remain in the source tree and are not excluded
+# from the SOUL runtime or integration mechanisms; they are only excluded from
+# the automatic Jekyll documentation scan to avoid treating upstream Markdown/MDX
+# front matter as N07 Pages metadata.
+exclude:
+  - integrations/external/

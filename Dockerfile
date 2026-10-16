@@ -6,7 +6,17 @@ COPY go.mod go.sum ./
 RUN go mod download
 COPY . .
 RUN CGO_ENABLED=0 go build -trimpath -ldflags='-s -w' -o /out/n07 ./cmd/nexus
-RUN GOBIN=/out go install github.com/storacha/guppy@v0.7.0
+RUN set -eux; \
+    for attempt in 1 2 3 4 5; do \
+      if GOBIN=/out go install github.com/storacha/guppy@v0.7.0; then \
+        break; \
+      fi; \
+      if [ "$attempt" -eq 5 ]; then \
+        echo "guppy install failed after 5 attempts" >&2; \
+        exit 1; \
+      fi; \
+      sleep $((attempt * 3)); \
+    done
 
 FROM alpine:3.22
 RUN addgroup -S n07 && adduser -S -G n07 n07 \
