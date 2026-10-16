@@ -9,7 +9,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          submodules: true
+          # Provider pin tests need top-level worktrees, not the parent checkout's HEAD.
+          # Materialize only first-level submodules; never recurse through upstream datasets.
+          submodules: false
+      - name: Materialize pinned top-level SOUL upstreams
+        run: node scripts/materialize-top-level-submodules.mjs
       - uses: actions/setup-go@v5
         with: {go-version: '1.25'}
       - run: go test ./rgo

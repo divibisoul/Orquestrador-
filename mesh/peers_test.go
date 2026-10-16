@@ -159,6 +159,39 @@ func TestPeerClientObserveRouteDoesNotRewriteOutcome(t *testing.T) {
 }
 
 
+func signedPeerErrorResponse(correlation, capability, secret string) map[string]any {
+	msgID := protocol.NewTraceID()
+	nonce := protocol.NewTraceID()
+	timestamp := time.Now().UnixMilli()
+	env := protocol.MeshEnvelope{
+		Version: protocol.SoulMeshVersion,
+		ContractVersion: protocol.SoulMeshContractVersion,
+		MessageID: msgID,
+		Source: protocol.N01,
+		Target: protocol.N07,
+		Timestamp: timestamp,
+		Nonce: nonce,
+		CorrelationID: correlation,
+		Type: "ERROR",
+		Payload: map[string]any{"capability": capability, "payload": map[string]any{"error": "remote failure"}},
+	}
+	if err := protocol.SignHMAC(&env, secret); err != nil { panic(err) }
+	return map[string]any{
+		"protocol": "soul-mesh/1",
+		"contractVersion": protocol.SoulMeshContractVersion,
+		"id": msgID,
+		"correlationId": correlation,
+		"source": protocol.N01,
+		"target": protocol.N07,
+		"kind": "error",
+		"capability": capability,
+		"payload": map[string]any{"error": "remote failure"},
+		"timestamp": timestamp,
+		"nonce": nonce,
+		"hmac": env.HMAC,
+	}
+}
+
 func TestPeerClientRetriesReuseLogicalMessageID(t *testing.T) {
 	secret := "n07-e2e-secret-0123456789abcdef"
 	var requestIDs []string
@@ -177,9 +210,11 @@ func TestPeerClientRetriesReuseLogicalMessageID(t *testing.T) {
 		attempt++
 
 		if attempt == 1 {
+			correlation, _ := wire["correlationId"].(string)
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusInternalServerError)
-			_ = json.NewEncoder(w).Encode(map[string]any{"error": "transient"})
+			// Retryable HTTP errors still require valid response authentication.
+			_ = json.NewEncoder(w).Encode(signedPeerErrorResponse(correlation, "mesh.ping", secret))
 			return
 		}
 

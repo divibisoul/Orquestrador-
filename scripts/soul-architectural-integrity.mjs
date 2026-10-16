@@ -67,15 +67,25 @@ for (const [id,n] of Object.entries(matrix.nuclei??{})) for (const peer of n.pee
 }
 
 async function remoteSnapshot(id,nucleus) {
-  const token=String(process.env.SOUL_GITHUB_AUDIT_TOKEN || '').trim();
-  if (!token) { add(report.degraded,{nucleus:id,type:'remote-provenance-unverified',requiredEnv:'GITHUB_TOKEN'}); return null; }
+  const token=String(process.env.SOUL_GITHUB_AUDIT_TOKEN || process.env.GITHUB_TOKEN || '').trim();
+  if (!token) { add(report.degraded,{nucleus:id,type:'remote-provenance-unverified',requiredEnv:'SOUL_GITHUB_AUDIT_TOKEN'}); return null; }
   const headers={accept:'application/vnd.github+json',authorization:`Bearer ${token}`,'x-github-api-version':'2022-11-28','user-agent':'SOUL-Architectural-Integrity-Engine'};
-  const repoResponse=await fetch(`${API}/repos/${nucleus.repository}`,{headers});
-  if (!repoResponse.ok) throw new Error(`REMOTE_REPO_LOOKUP_FAILED:${id}:${repoResponse.status}`);
-  const repo=await repoResponse.json(); const branch=repo.default_branch;
-  const refResponse=await fetch(`${API}/repos/${nucleus.repository}/git/ref/heads/${encodeURIComponent(branch)}`,{headers});
-  if (!refResponse.ok) throw new Error(`REMOTE_REF_LOOKUP_FAILED:${id}:${refResponse.status}`);
-  const ref=await refResponse.json(); const actualSha=ref?.object?.sha; const expectedSha=nucleus.sourceRef;
+  const publicHeaders={accept:'application/vnd.github+json','x-github-api-version':'2022-11-28','user-agent':'SOUL-Architectural-Integrity-Engine'};
+  const readRemote=async(url,label)=>{
+    let response=await fetch(url,{headers});
+    // A repository-scoped Actions token may not authorize cross-repository reads.
+    // Retry public metadata anonymously; private/unavailable repositories remain blocked.
+    if ((response.status===401 || response.status===403) && token) response=await fetch(url,{headers:publicHeaders});
+    if (!response.ok) {
+      const detail=(await response.text()).slice(0,400);
+      throw new Error(`${label}:${id}:${response.status}:${url}:${detail}`);
+    }
+    return response.json();
+  };
+  const repo=await readRemote(`${API}/repos/${nucleus.repository}`,'REMOTE_REPO_LOOKUP_FAILED');
+  const branch=repo.default_branch;
+  const ref=await readRemote(`${API}/repos/${nucleus.repository}/git/ref/heads/${encodeURIComponent(branch)}`,'REMOTE_REF_LOOKUP_FAILED');
+  const actualSha=ref?.object?.sha; const expectedSha=nucleus.sourceRef;
   const provenance={nucleus:id,repository:nucleus.repository,branch,expectedSha,actualSha,state:actualSha===expectedSha?'MATCH':'DRIFT'}; report.remoteProvenance.push(provenance);
   if (id!=='N07' && actualSha!==expectedSha) add(report.contractConflicts,{nucleus:id,type:'source-ref-drift',expectedSha,actualSha});
   return {id,nucleus,origin:'remote',commit:actualSha,files:[]};

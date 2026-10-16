@@ -11,6 +11,7 @@ import (
 
 func TestNervoVagoPublishRunsETRBeforeVagusDelivery(t *testing.T) {
 	var calls []string
+	var auditedInput string
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case "/v1/audit":
@@ -19,9 +20,11 @@ func TestNervoVagoPublishRunsETRBeforeVagusDelivery(t *testing.T) {
 			if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 				t.Fatal(err)
 			}
-			if _, ok := body["input"]; !ok {
+			input, ok := body["input"].(string)
+			if !ok || strings.TrimSpace(input) == "" {
 				t.Fatal("audit input missing")
 			}
+			auditedInput = input
 			_, _ = w.Write([]byte(`{"ethical":{"approved":true},"operation":"audit"}`))
 		case "/v1/vagus":
 			calls = append(calls, "vagus")
@@ -71,6 +74,12 @@ func TestNervoVagoPublishRunsETRBeforeVagusDelivery(t *testing.T) {
 	out, err := gateway.Publish(context.Background(), envelope)
 	if err != nil {
 		t.Fatal(err)
+	}
+	if !strings.Contains(auditedInput, "Finalidade da avaliação: avaliar a segurança, integridade e proveniência do evento antes da publicação no Vagus") {
+		t.Fatal("ETR purpose context missing from audit input")
+	}
+	if !strings.Contains(auditedInput, `"message_id":"m-1"`) || !strings.Contains(auditedInput, `"kind":"test"`) {
+		t.Fatal("full original event content was not preserved in audit input")
 	}
 	if got, want := strings.Join(calls, ","), "audit,vagus"; got != want {
 		t.Fatalf("delivery order = %q, want %q", got, want)
@@ -159,5 +168,39 @@ func TestNervoVagoStrictNumericParsing(t *testing.T) {
 	}
 	if _, err := parseInt64Strict("5000x", 0); err == nil {
 		t.Fatal("ttl parser accepted trailing non-numeric data")
+	}
+}
+
+
+func TestHashNervoVagoValueDeterministic(t *testing.T) {
+	first := map[string]any{"b": 2, "a": 1}
+	second := map[string]any{}
+	second["a"] = 1
+	second["b"] = 2
+
+	firstHash, err := HashNervoVagoValue(first)
+	if err != nil {
+		t.Fatal(err)
+	}
+	secondHash, err := HashNervoVagoValue(second)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if firstHash == "" || firstHash != secondHash {
+		t.Fatalf("equivalent JSON objects must produce the same hash: %q != %q", firstHash, secondHash)
+	}
+
+	changedHash, err := HashNervoVagoValue(map[string]any{"a": 1, "b": 3})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if changedHash == firstHash {
+		t.Fatal("different JSON values must not produce the same hash")
+	}
+}
+
+func TestHashNervoVagoValueRejectsUnsupportedValue(t *testing.T) {
+	if _, err := HashNervoVagoValue(map[string]any{"unsupported": make(chan int)}); err == nil {
+		t.Fatal("unsupported JSON value must fail closed")
 	}
 }

@@ -6,6 +6,8 @@ COPY go.mod go.sum ./
 RUN go mod download
 COPY . .
 RUN set -eu; \
+    expected="$(git ls-tree -r HEAD integrations/external | awk '$1 == "160000" { count++ } END { print count+0 }')"; \
+    test "$expected" -gt 0; \
     count=0; first=1; \
     { \
       echo '{'; \
@@ -25,7 +27,7 @@ RUN set -eu; \
       echo; \
       echo '  }'; \
       echo '}'; \
-      test "$count" -eq 22; \
+      test "$count" -eq "$expected"; \
     } > config/soul-external-runtime-attestation.json
 RUN CGO_ENABLED=0 go build -trimpath -ldflags='-s -w' -o /out/n07 ./cmd/nexus
 RUN GOBIN=/out go install github.com/storacha/guppy@v0.7.0

@@ -37,7 +37,7 @@
     "masterContract": "SOUL_MASTER_ENGINEERING_CONTRACT.md",
     "grf": "GRF 2.0 transversal framework; N07 hosts GRCE control-plane operations while SARA/JEV/native nuclei retain their functional authority",
     "grce": "GRCE 2.0 installed in N07; cycle remains BLOCKED until distinct real ERU/MMD/ARA/ETR/ITR/RGO hooks are proven",
-    "mainlineRefReconciledAt": "2026-10-06"
+    "mainlineRefReconciledAt": "2026-10-16"
   },
   "nuclei": {
     "N01": {
@@ -98,12 +98,12 @@
         "N03"
       ],
       "manifestAuthority": "SOUL-FUSION-MANIFEST.json",
-      "sourceRef": "b10dc048429e7ea19ac0c0834e3ff3cc1ae2af7d",
-      "status": "main-live-bncv2-csae-dcrs-reintegrated",
+      "sourceRef": "0516bfcffa266190910c36389c75df642e13da41",
+      "status": "main-live-source-ref-reconciled-2026-10-16-n02",
       "contractEvidencePaths": [
         "src/soul-mesh/SoulMeshProtocol.ts"
       ],
-      "previousSourceRef": "b8c681e1c2bf000bb614b5b0c13ca8377c857a14",
+      "previousSourceRef": "b10dc048429e7ea19ac0c0834e3ff3cc1ae2af7d",
       "sourceRefHistory": [
         {
           "sourceRef": "b8c681e1c2bf000bb614b5b0c13ca8377c857a14",
@@ -113,6 +113,11 @@
         {
           "sourceRef": "b10dc048429e7ea19ac0c0834e3ff3cc1ae2af7d",
           "observed": "2026-10-06/live-mainline",
+          "state": "PRESERVED"
+        },
+        {
+          "sourceRef": "0516bfcffa266190910c36389c75df642e13da41",
+          "observed": "2026-10-16/verified-mainline-after-functional-fusions-N02",
           "state": "CURRENT"
         }
       ]
@@ -138,12 +143,12 @@
         "N04"
       ],
       "manifestAuthority": "SOUL-FUSION-MANIFEST.json",
-      "sourceRef": "a8068ce15977a9624d9f2e11b7a4731c5bca0f9f",
-      "status": "main-live-composition-contract-reconciled",
+      "sourceRef": "676c20cb5e537944a5a75d8e4920ff48c010cfbf",
+      "status": "main-live-source-ref-reconciled-2026-10-16-n03",
       "contractEvidencePaths": [
         "src/mesh/SoulMeshProtocol.ts"
       ],
-      "previousSourceRef": "7a56c4d07d31e3dacfb0fa8ef3114ab0c253a49c",
+      "previousSourceRef": "a8068ce15977a9624d9f2e11b7a4731c5bca0f9f",
       "sourceRefHistory": [
         {
           "sourceRef": "7a56c4d07d31e3dacfb0fa8ef3114ab0c253a49c",
@@ -153,6 +158,11 @@
         {
           "sourceRef": "a8068ce15977a9624d9f2e11b7a4731c5bca0f9f",
           "observed": "2026-10-06/live-mainline",
+          "state": "PRESERVED"
+        },
+        {
+          "sourceRef": "676c20cb5e537944a5a75d8e4920ff48c010cfbf",
+          "observed": "2026-10-16/verified-mainline-after-functional-fusions-N03",
           "state": "CURRENT"
         }
       ]
@@ -177,12 +187,12 @@
         "N05"
       ],
       "manifestAuthority": "SOUL-FUSION-MANIFEST.json",
-      "sourceRef": "f640b959d628176488b73bd2a44fa1a85ca84be4",
-      "status": "main-live-tool-capability-alias-reconciled",
+      "sourceRef": "b3ca469c8063c143081ad44fbeb7c238153a60cd",
+      "status": "main-live-source-ref-reconciled-2026-10-16-n04",
       "contractEvidencePaths": [
         "lib/soul-mesh/SoulMeshProtocol.ts"
       ],
-      "previousSourceRef": "2bc605a1d2114ac1e39de63e922e937306dde1c4",
+      "previousSourceRef": "f640b959d628176488b73bd2a44fa1a85ca84be4",
       "sourceRefHistory": [
         {
           "sourceRef": "2bc605a1d2114ac1e39de63e922e937306dde1c4",
@@ -192,6 +202,11 @@
         {
           "sourceRef": "f640b959d628176488b73bd2a44fa1a85ca84be4",
           "observed": "2026-10-06/live-mainline",
+          "state": "PRESERVED"
+        },
+        {
+          "sourceRef": "b3ca469c8063c143081ad44fbeb7c238153a60cd",
+          "observed": "2026-10-16/verified-mainline-after-functional-fusions-N04",
           "state": "CURRENT"
         }
       ]
@@ -217,13 +232,13 @@
         "N06"
       ],
       "manifestAuthority": "SOUL-FUSION-MANIFEST.json",
-      "sourceRef": "87e4a5363bfd85aae4f666a6806301fdb5026172",
-      "status": "main-live-inference-capability-catalog-reconciled",
+      "sourceRef": "64e1b8719068b153130bcdbcfbbc2c78c11e1b8c",
+      "status": "main-live-source-ref-reconciled-2026-10-16-n05-hmac-fusion",
       "contractEvidencePaths": [
         "lib/soul-mesh/endpoint.ts",
         "lib/soul-mesh/SoulMeshProtocol.ts"
       ],
-      "previousSourceRef": "3bce0da91dd03bcf2c1e3765687dc357f187388b",
+      "previousSourceRef": "894c001e48da368b58ca0b67911e63b2a859c1f3",
       "sourceRefHistory": [
         {
           "sourceRef": "3bce0da91dd03bcf2c1e3765687dc357f187388b",
@@ -233,6 +248,16 @@
         {
           "sourceRef": "87e4a5363bfd85aae4f666a6806301fdb5026172",
           "observed": "2026-10-06/live-mainline",
+          "state": "PRESERVED"
+        },
+        {
+          "sourceRef": "894c001e48da368b58ca0b67911e63b2a859c1f3",
+          "observed": "2026-10-16/verified-mainline-after-functional-fusions-N05",
+          "state": "PRESERVED"
+        },
+        {
+          "sourceRef": "64e1b8719068b153130bcdbcfbbc2c78c11e1b8c",
+          "observed": "2026-10-16/merged-canonical-HMAC-response-interoperability-N05",
           "state": "CURRENT"
         }
       ]
@@ -258,12 +283,12 @@
         "N07"
       ],
       "manifestAuthority": "SOUL-FUSION-MANIFEST.json",
-      "sourceRef": "0b2ba53922046e772883a8de5bf9ecc41fa3eacb",
-      "status": "main-live-composition-targets-reconciled",
+      "sourceRef": "8367522ec3a75eff9fff8342a8f82ddd58c8cfe9",
+      "status": "main-live-source-ref-reconciled-2026-10-16-n06-merge",
       "contractEvidencePaths": [
         "lib/soul-mesh/SoulMeshProtocol.ts"
       ],
-      "previousSourceRef": "17c46a0ddd5edfcdb570539d2d250a78799016f2",
+      "previousSourceRef": "735b688be8b93768bcfe5f103a92947f28e4b5cb",
       "sourceRefHistory": [
         {
           "sourceRef": "17c46a0ddd5edfcdb570539d2d250a78799016f2",
@@ -273,6 +298,16 @@
         {
           "sourceRef": "0b2ba53922046e772883a8de5bf9ecc41fa3eacb",
           "observed": "2026-10-06/live-mainline",
+          "state": "PRESERVED"
+        },
+        {
+          "sourceRef": "735b688be8b93768bcfe5f103a92947f28e4b5cb",
+          "observed": "2026-10-16/verified-mainline-after-functional-fusions-N06",
+          "state": "PRESERVED"
+        },
+        {
+          "sourceRef": "8367522ec3a75eff9fff8342a8f82ddd58c8cfe9",
+          "observed": "2026-10-16/merged-cognition-capability-and-Mesh-integration-N06",
           "state": "CURRENT"
         }
       ]
@@ -366,9 +401,9 @@
         "src/sara/__init__.py"
       ],
       "authority": "sara.meta / sara.core / sara.governance",
-      "sourceRef": "53a7760cc3db7f77456e415ef14b3638d52df816",
-      "status": "main-live-chimera-and-bayesian-runtime-merged",
-      "previousSourceRef": "2da3c965aab4abdf745c0ef545d4d2ca61fd5ad2",
+      "sourceRef": "5633cdd95a067c1c40a4b731a38976971e173d1f",
+      "status": "main-live-source-ref-reconciled-2026-10-16-sara",
+      "previousSourceRef": "53a7760cc3db7f77456e415ef14b3638d52df816",
       "sourceRefHistory": [
         {
           "sourceRef": "2da3c965aab4abdf745c0ef545d4d2ca61fd5ad2",
@@ -378,6 +413,11 @@
         {
           "sourceRef": "53a7760cc3db7f77456e415ef14b3638d52df816",
           "observed": "2026-10-06/live-mainline",
+          "state": "PRESERVED"
+        },
+        {
+          "sourceRef": "5633cdd95a067c1c40a4b731a38976971e173d1f",
+          "observed": "2026-10-16/verified-mainline-after-functional-fusions-SARA",
           "state": "CURRENT"
         }
       ]

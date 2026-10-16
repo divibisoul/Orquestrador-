@@ -56,6 +56,10 @@ type Evidence struct {
 
 type Failure struct {
 	ID string `json:"id"`
+	// Kind is the structured finding category from the authoritative detector.
+	// Keep it separate from Description: arbitrary free text must never trigger
+	// a protective policy transition by itself.
+	Kind string `json:"kind,omitempty"`
 	Source string `json:"source"`
 	Description string `json:"description"`
 	RequiredOpposition string `json:"required_opposition,omitempty"`

@@ -33,16 +33,19 @@ jobs:
           fetch-depth: 0
           submodules: false
 
-      - name: Materialize SOUL top-level submodules without recursion
+      - name: Materialize pinned top-level SOUL upstreams without recursion
         run: node scripts/materialize-top-level-submodules.mjs
 
       - name: Checkout SARA
         uses: actions/checkout@v4
         with:
           repository: divibisoul/SARA
-          ref: 90fe0c93af787cf2dba560992ef247e43460a94c
+          ref: 5633cdd95a067c1c40a4b731a38976971e173d1f
           path: .e2e/SARA
           fetch-depth: 1
+
+      - name: Verify merged SARA source pin
+        run: test "$(git -C .e2e/SARA rev-parse HEAD)" = "5633cdd95a067c1c40a4b731a38976971e173d1f"
 
       - uses: actions/setup-go@v5
         with:
@@ -105,22 +108,45 @@ jobs:
           print('GRF discovery: PASS')
           PY
 
-      - name: Assert 22-source federation
+      - name: Assert 22-provider inventory and exact source states
         run: |
           curl -fsS -H 'Authorization: Bearer e2e-n07-token-123456789' -H 'Content-Type: application/json' -X POST http://127.0.0.1:8080/v1/execute -d '{"operation":"external.federation.describe@1.0.0","metadata":{}}' | tee /tmp/federation.json
           python - <<'PY'
           import json
           outer=json.load(open('/tmp/federation.json'))
           raw=json.loads(next(v for k,v in outer['metadata'].items() if k.endswith('json')))
-          assert raw['provider_count']==22
-          print('22-source federation: PASS')
+          providers=raw['providers']
+          assert raw['control_plane']=='N07'
+          assert raw['provider_count']==22 and len(providers)==22
+          ids=[p['id'] for p in providers]
+          assert len(set(ids))==22
+          for p in providers:
+              assert len(p['expectedRevision'])==40, p['id']
+              assert p['sourceState'] in ('PIN_MATCH','REVISION_MISMATCH','MISSING_WORKTREE'), p
+              assert isinstance(p['sourcePresent'], bool), p['id']
+              assert isinstance(p['revisionMatched'], bool), p['id']
+              assert isinstance(p['executionEnabled'], bool), p['id']
+              if p['sourceState']=='PIN_MATCH':
+                  assert p['sourcePresent'] and p['revisionMatched']
+                  assert p['observedRevision']==p['expectedRevision'], p['id']
+              elif p['sourceState']=='REVISION_MISMATCH':
+                  assert p['sourcePresent'] and not p['revisionMatched'], p['id']
+              else:
+                  assert not p['sourcePresent'] and not p['revisionMatched']
+          counts={state:sum(p['sourceState']==state for p in providers) for state in ('PIN_MATCH','REVISION_MISMATCH','MISSING_WORKTREE')}
+          enabled=sum(p['executionEnabled'] for p in providers)
+          print(json.dumps({'providerInventory':'PASS','providerCount':len(providers),'sourceStates':counts,'executionEnabled':enabled,'runtimeExecutionProven':False},sort_keys=True))
+          print('22-provider inventory: PASS; source presence, exact pin, and execution enablement reported separately')
           PY
 
       - name: Execute full GRCE -> C1-C7-C1 with real SARA authority
         run: |
           python - <<'PY'
           import json
-          text = ("preservar autonomia, rastreabilidade e estado historico. " * 220)
+          # A protected identity tag produces a real ARA finding. The canonical
+          # SARA ARA path must annotate it without removing the source or its tag.
+          text = ("preservar a identidade protegida 🔒IDENTITY ao acrescentar evidência; "
+                  "manter autonomia, transparência, responsabilidade e proveniência.")
           body = {
               "operation": "grce.cycle.execute@2.0.0",
               "correlationId": "grce-full-e2e-001",
@@ -131,7 +157,10 @@ jobs:
           }
           json.dump(body, open("/tmp/grce-request.json", "w"))
           PY
-          curl -fsS -H 'Authorization: Bearer e2e-n07-token-123456789' -H 'Content-Type: application/json' -X POST http://127.0.0.1:8080/v1/execute --data-binary @/tmp/grce-request.json | tee /tmp/grce-full.json
+          http_status="$(curl -sS -o /tmp/grce-full.json -w '%{http_code}' -H 'Authorization: Bearer e2e-n07-token-123456789' -H 'Content-Type: application/json' -X POST http://127.0.0.1:8080/v1/execute --data-binary @/tmp/grce-request.json)"
+          echo "GRCE_HTTP_STATUS=${http_status}"
+          cat /tmp/grce-full.json
+          test "${http_status}" = "200"
           python - <<'PY'
           import json
           outer=json.load(open('/tmp/grce-full.json'))
@@ -141,6 +170,7 @@ jobs:
           assert m['execution_mode']=='GRCE_EXECUTOR'
           assert result['epistemic_state']=='ACTIVE', result
           assert result['outcome']=='ACTIVE', result
+          assert 'VIOLACAO_TAG_PROTEGIDA' in json.dumps(result, ensure_ascii=False), result
           assert len(result['provenance']) >= 5
           assert len(result['evidence']) >= 1
           assert len(result['capabilities']) >= 1
@@ -149,9 +179,43 @@ jobs:
           print('GRCE C1-C7-C1: ACTIVE / REAL')
           PY
 
+      - name: Prove high-complexity input remains preserved on the real SARA path
+        run: |
+          python - <<'PY'
+          import json
+          body = {
+              "operation": "grce.cycle.execute@2.0.0",
+              "correlationId": "grce-complexity-preserved-001",
+              "metadata": {
+                  "grf_sequence_index": "2",
+                  "grf_input_text": "a" * 11000
+              }
+          }
+          json.dump(body, open("/tmp/grce-complexity-request.json", "w"))
+          PY
+          http_status="$(curl -sS -o /tmp/grce-complexity.json -w '%{http_code}' -H 'Authorization: Bearer e2e-n07-token-123456789' -H 'Content-Type: application/json' -X POST http://127.0.0.1:8080/v1/execute --data-binary @/tmp/grce-complexity-request.json)"
+          echo "GRCE_COMPLEXITY_HTTP_STATUS=${http_status}"
+          # HTTP 400 is expected when GRCE preserves and blocks a high-complexity input.
+          # Do not use curl -f: the response body is the evidence this step must inspect.
+          test "${http_status}" = "400"
+          python - <<'PY'
+          import json
+          outer = json.load(open('/tmp/grce-complexity.json'))
+          result = json.loads(outer['metadata']['grce_result_json'])
+          evidence = json.dumps(result, ensure_ascii=False)
+          assert outer['status'] == 'degraded', outer
+          assert outer['metadata']['epistemic_state'] == 'PRESERVED', outer
+          assert result['epistemic_state'] == 'PRESERVED', result
+          assert result['outcome'].startswith('ROLLBACK_PRESERVED:'), result
+          assert result['next_state']['payload']['text'] == 'a' * 11000, 'original payload was not preserved'
+          assert 'COMPLEXIDADE_EXCESSIVA' in evidence, result
+          print('GRCE high-complexity input: BLOCKED / PRESERVED / REAL')
+          PY
+
       - name: Execute unified Nervo Vago path with ETR provenance
         run: |
-          curl -fsS -H 'Authorization: Bearer e2e-n07-token-123456789' \
+          # Keep the response body visible on HTTP errors so ETR failures are diagnosable.
+          curl -sS -H 'Authorization: Bearer e2e-n07-token-123456789' \
             -H 'Content-Type: application/json' \
             -X POST http://127.0.0.1:8080/v1/execute \
             -d '{"operation":"nervo-vago.event@1.0.0","correlationId":"nervo-e2e-001","metadata":{"sequence_index":"1","message_id":"nervo-msg-001","source":"N07.SuperGPU","target":"SARA","priority":"100","ttl":"5000","type":"supergpu.result","parent_hash":"sha256:parent","input_hash":"sha256:input","payload_json":"{\"ok\":true}"}}' \
