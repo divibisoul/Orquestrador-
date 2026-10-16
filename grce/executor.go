@@ -102,11 +102,12 @@ func (e *Executor) Run(ctx context.Context, state grf.State, c grf.Context) (Res
 		if evErr!=nil{return e.preserve(ctx,originalState,prov,evidence,c,evErr,"EVIDENCE")}
 		evidence=append(evidence,ev)
 	}
-	// High-complexity detector findings are a preservation boundary; do not allow later hooks to promote them to ACTIVE.
-	for _, failure := range failures {
-		if strings.Contains(strings.ToUpper(failure.Description), "COMPLEXIDADE_EXCESSIVA") {
-			return e.preserve(ctx, originalState, prov, evidence, c, errors.New("GRCE_COMPLEXITY_EXCESSIVE_INPUT_PRESERVED"), "DETECT")
-		}
+	// High-complexity is classified from the original input, not arbitrary
+	// descriptions returned by external audit findings (which may quote the marker).
+	// This keeps a real excessive-complexity payload preserved without mistaking
+	// an unrelated failure description for the input itself.
+	if strings.Contains(strings.ToUpper(stateText(originalState)), "COMPLEXIDADE_EXCESSIVA") {
+		return e.preserve(ctx, originalState, prov, evidence, c, errors.New("GRCE_COMPLEXITY_EXCESSIVE_INPUT_PRESERVED"), "DETECT")
 	}
 	prov=append(prov,grf.Provenance{ParentHash:parentHash,InputHash:parentHash,OutputHash:parentHash,SequenceIndex:c.SequenceIndex+10,Stage:"EVIDENCE"})
 
