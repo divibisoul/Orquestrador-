@@ -1078,3 +1078,26 @@ Nenhuma destas mudanças removeu arquivos, PRs ou branches de origem. A fusão d
 - Próxima ordem continua: finalizar/verificar primeiro N06↔N05; então certificar N05↔N04 com o novo workflow; depois revalidar N04↔N03 com a compatibilidade HMAC corrigida. Só depois avançar N03↔N02, N02↔N01 e a comissão final N01↔N06↔N07.
 
 Nenhum arquivo, PR de origem ou branch histórica foi apagado, fechado ou reescrito. A auditoria/fusão das 291 PRs continua aberta; este trecho apenas registra o avanço e as incompatibilidades reais encontradas.
+
+
+## Atualização append-only — fallback autenticado N01/N03 e achado adicional no cliente N01 (2026-10-16 UTC)
+
+### N04 #51 — head de correção incremental e compatibilidade revisada nos ramos exatos
+
+- Head atualizado após o teste de compatibilidade N01 e a correção dos comentários de contrato: `10370ef9543b1be122476ad14f00a2107332e9bd`; PR continua aberta em draft, base `main`, com 6 arquivos, +558/-7 linhas e sem arquivos inteiros removidos.
+- A leitura do código do gateway N01 na branch candidata #106 confirmou que `scripts/soul-mesh-server.mjs` ainda gera respostas do contrato legado (`canonicalLegacyResponse`) no caminho de `/api/soul-mesh`. A correção N04 agora tenta a verificação canônica primeiro e, se ela falhar, aceita somente uma assinatura legada válida para N01 e N03. Resposta sem assinatura válida continua sendo rejeitada; não foi criado fallback aberto/sem autenticação.
+- O mapa de resposta de saída do endpoint N04 permanece: resposta legada para N02/N07; resposta canônica para N01/N03/N05/N06. Isso atende ao signer dos pares ativos novos sem alterar o contrato Go legado. N05 e N06 foram inspecionados no código para confirmar o canonical HMAC com `transport`, `meta`, `nonce`, rota/correlação; o E2E do N04↔N05 continua pendente da execução de CI.
+- Foi acrescentada regressão de loopback que exige aceitar uma resposta **legada autenticada** de N01 durante a transição; o caso não substitui E2E real.
+
+### Bloqueio novo de N01 a tratar na frente #106
+
+- O cliente de browser `src/core/soul-mesh/peerClient.ts` na branch candidata N01 foi lido no SHA correspondente ao branch #106. Ele verifica protocolo/versão/rota/correlação, mas não verifica o HMAC da resposta. Também usa `VITE_SOUL_MESH_TOKEN` como Bearer opcional diretamente no cliente; variáveis `VITE_*` entram no bundle de browser e não devem ser tratadas como segredo de servidor.
+- Isso **não foi alterado nesta rodada**, para não expandir ou sobrescrever silenciosamente a correção de N04. Fica como bloqueio de segurança/interoperabilidade para a continuação de #106: mover assinatura/autenticação privilegiada para a fronteira de servidor existente, decidir a rota real de saída já suportada (`/mesh/out`/gateway) após inspecionar o código, implementar verificação HMAC de resposta no cliente de servidor apropriado e acrescentar E2E sem expor segredos no browser. Não declarar N01↔qualquer peer como HMAC bidirecional autenticado antes dessa correção.
+- O caminho atual N01 de resposta legado está comprovado por inspeção estática da branch; a aceitação dessa resposta em N04 é agora coberta por teste de regressão, mas ainda requer os checks do SHA exato. Não implica que N01→N04 tenha autenticação de resposta completa.
+
+### Estado de execução
+
+- A última leitura anterior encontrou checks do N04 enfileirados/pendentes; a CI exata precisa ser consultada novamente no head `10370ef9543b1be122476ad14f00a2107332e9bd`. Nenhum status de fila equivale a PASS.
+- Ordem de comissão preservada: a N06↔N05 ainda precisa fechar primeiro com E2E real; a nova N04↔N05 deve fechar antes de avançar, e N01 tem a nova correção própria separada. A ordem de dependência não autoriza misturar evidência de pares distintos.
+
+Nenhum arquivo, PR de origem ou branch histórico foi excluído, encerrado ou reescrito por este adendo.
