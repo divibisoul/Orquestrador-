@@ -155,3 +155,27 @@ func TestPeerClientObserveRouteDoesNotRewriteOutcome(t *testing.T) {
 		t.Fatalf("unexpected observed outcome: %#v", o.outcomes)
 	}
 }
+
+func TestPeerClientConfiguredRequiresRouteAndHMAC(t *testing.T) {
+	t.Setenv("SOUL_MESH_N02_URL", "http://127.0.0.1:19002")
+	t.Setenv("SOUL_MESH_HMAC_SECRET", "")
+	p, err := NewPeerClient(nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if p.Configured("N02") {
+		t.Fatal("peer route cannot be considered configured without HMAC secret")
+	}
+
+	t.Setenv("SOUL_MESH_HMAC_SECRET", "test-secret")
+	p, err = NewPeerClient(nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !p.Configured("N02") {
+		t.Fatal("configured route with HMAC secret was not recognized")
+	}
+	if p.Configured("N03") {
+		t.Fatal("unconfigured peer was reported as ready")
+	}
+}
