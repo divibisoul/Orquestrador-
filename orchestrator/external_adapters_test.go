@@ -128,6 +128,59 @@ func TestExternalComplementaryDescribeContractsAreRegistered(t *testing.T) {
 }
 
 
+func TestInspectExternalSourceUsesBuildAttestationOnlyForNonGitRuntimeRoot(t *testing.T) {
+	repoRoot := t.TempDir()
+	sourceRoot := filepath.Join(repoRoot, "integrations", "external", "langgraph")
+	if err := os.MkdirAll(sourceRoot, 0700); err != nil {
+		t.Fatal(err)
+	}
+	revision := strings.Repeat("a", 40)
+	if err := os.WriteFile(filepath.Join(sourceRoot, "README.md"), []byte("verified runtime source"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	attestation := ExternalRuntimeAttestation{
+		SchemaVersion: "soul.external.runtime-attestation.v1",
+		GeneratedFromMaterializedGit: true,
+		Repositories: map[string]string{"langgraph": revision},
+	}
+	raw, err := json.Marshal(attestation)
+	if err != nil {
+		t.Fatal(err)
+	}
+	attestationPath := filepath.Join(repoRoot, "config", "soul-external-runtime-attestation.json")
+	if err := os.MkdirAll(filepath.Dir(attestationPath), 0700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(attestationPath, raw, 0600); err != nil {
+		t.Fatal(err)
+	}
+
+	matched := inspectExternalSourceWithRepositoryRoot(sourceRoot, revision, repoRoot)
+	if !matched.Present || !matched.RevisionMatched || matched.State != "PIN_MATCH" || matched.ObservedRevision != revision {
+		t.Fatalf("valid build attestation was not accepted in runtime root: %#v", matched)
+	}
+	mismatch := inspectExternalSourceWithRepositoryRoot(sourceRoot, strings.Repeat("b", 40), repoRoot)
+	if !mismatch.Present || mismatch.RevisionMatched || mismatch.State != "REVISION_MISMATCH" || mismatch.ObservedRevision != revision {
+		t.Fatalf("attested revision mismatch was not preserved: %#v", mismatch)
+	}
+
+	emptyRoot := filepath.Join(repoRoot, "integrations", "external", "empty-provider")
+	if err := os.MkdirAll(emptyRoot, 0700); err != nil {
+		t.Fatal(err)
+	}
+	attestation.Repositories["empty-provider"] = revision
+	raw, err = json.Marshal(attestation)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(attestationPath, raw, 0600); err != nil {
+		t.Fatal(err)
+	}
+	empty := inspectExternalSourceWithRepositoryRoot(emptyRoot, revision, repoRoot)
+	if empty.Present || empty.RevisionMatched || empty.State != "MISSING_WORKTREE" {
+		t.Fatalf("attestation overrode an empty source directory: %#v", empty)
+	}
+}
 func TestInspectExternalSourceRequiresOwnGitWorktreeAndPinnedRevision(t *testing.T) {
 	root := t.TempDir()
 	runGit := func(args ...string) string {

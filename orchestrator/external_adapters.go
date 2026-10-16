@@ -58,8 +58,9 @@ type ExternalCapabilityRegistry struct {
 }
 
 type ExternalRuntimeAttestation struct {
-	SchemaVersion string            `json:"schema_version"`
-	Repositories  map[string]string `json:"repositories"`
+	SchemaVersion            string            `json:"schema_version"`
+	GeneratedFromMaterializedGit bool          `json:"generated_from_materialized_git"`
+	Repositories             map[string]string `json:"repositories"`
 }
 
 type ExternalAdapterRegistry struct {
@@ -138,6 +139,15 @@ type externalSourceObservation struct {
 // os.Stat alone is insufficient: an uninitialized gitlink can appear as an
 // empty directory and must never be reported as a present upstream repository.
 func inspectExternalSource(root, expectedRevision string) externalSourceObservation {
+	return inspectExternalSourceWithRepositoryRoot(root, expectedRevision, repositoryRoot())
+}
+
+// inspectExternalSourceWithRepositoryRoot validates source provenance in either
+// a live checkout or the production image. Runtime images intentionally omit
+// Git metadata, so only the build-generated attestation may stand in for HEAD;
+// it is accepted only for the canonical provider path, an exact schema/pin,
+// and a non-empty copied source tree.
+func inspectExternalSourceWithRepositoryRoot(root, expectedRevision, repoRoot string) externalSourceObservation {
 	observation := externalSourceObservation{
 		ExpectedRevision: strings.ToLower(strings.TrimSpace(expectedRevision)),
 		State:            "MISSING_WORKTREE",
@@ -150,21 +160,79 @@ func inspectExternalSource(root, expectedRevision string) externalSourceObservat
 	if err != nil {
 		return observation
 	}
+
 	topCommand := exec.Command("git", "-C", resolvedRoot, "rev-parse", "--show-toplevel")
-	topBytes, err := topCommand.Output()
+	topBytes, topErr := topCommand.Output()
+	if topErr == nil {
+		resolvedTop, resolveErr := filepath.EvalSymlinks(strings.TrimSpace(string(topBytes)))
+		// If Git resolves this path to a parent checkout, it is an uninitialized
+		// gitlink. Do not use an image attestation to hide that condition.
+		if resolveErr != nil || filepath.Clean(resolvedTop) != filepath.Clean(resolvedRoot) {
+			return observation
+		}
+		headCommand := exec.Command("git", "-C", resolvedRoot, "rev-parse", "--verify", "HEAD")
+		headBytes, err := headCommand.Output()
+		if err != nil {
+			return observation
+		}
+		observed := strings.ToLower(strings.TrimSpace(string(headBytes)))
+		if !isGitRevision(observed) {
+			return observation
+		}
+		observation.Present = true
+		observation.ObservedRevision = observed
+		observation.RevisionMatched = isGitRevision(observation.ExpectedRevision) && observed == observation.ExpectedRevision
+		if observation.RevisionMatched {
+			observation.State = "PIN_MATCH"
+		} else {
+			observation.State = "REVISION_MISMATCH"
+		}
+		return observation
+	}
+
+	// A production image deliberately excludes .git and Git may not even be
+	// installed. Accept only the build attestation generated after Dockerfile
+	// verified each worktree HEAD against its parent gitlink.
+	rootAbs, err := filepath.Abs(filepath.Clean(repoRoot))
 	if err != nil {
 		return observation
 	}
-	resolvedTop, err := filepath.EvalSymlinks(strings.TrimSpace(string(topBytes)))
-	if err != nil || filepath.Clean(resolvedTop) != filepath.Clean(resolvedRoot) {
+	expectedRoot := filepath.Join(rootAbs, "integrations", "external", filepath.Base(resolvedRoot))
+	if filepath.Clean(expectedRoot) != filepath.Clean(resolvedRoot) {
 		return observation
 	}
-	headCommand := exec.Command("git", "-C", resolvedRoot, "rev-parse", "--verify", "HEAD")
-	headBytes, err := headCommand.Output()
+	entries, err := os.ReadDir(resolvedRoot)
 	if err != nil {
 		return observation
 	}
-	observed := strings.ToLower(strings.TrimSpace(string(headBytes)))
+	hasContent := false
+	for _, entry := range entries {
+		if entry.Name() != ".git" {
+			hasContent = true
+			break
+		}
+	}
+	if !hasContent {
+		return observation
+	}
+
+	attestationPath := strings.TrimSpace(os.Getenv("SOUL_EXTERNAL_RUNTIME_ATTESTATION"))
+	if attestationPath == "" {
+		attestationPath = filepath.Join(rootAbs, "config", "soul-external-runtime-attestation.json")
+	} else if !filepath.IsAbs(attestationPath) {
+		attestationPath = filepath.Join(rootAbs, attestationPath)
+	}
+	raw, err := os.ReadFile(attestationPath)
+	if err != nil {
+		return observation
+	}
+	var attestation ExternalRuntimeAttestation
+	if err := json.Unmarshal(raw, &attestation); err != nil ||
+		attestation.SchemaVersion != "soul.external.runtime-attestation.v1" ||
+		!attestation.GeneratedFromMaterializedGit {
+		return observation
+	}
+	observed := strings.ToLower(strings.TrimSpace(attestation.Repositories[filepath.Base(resolvedRoot)]))
 	if !isGitRevision(observed) {
 		return observation
 	}
