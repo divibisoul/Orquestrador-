@@ -907,3 +907,14 @@ CI de N07 ainda está em curso no head `f2a0e03`; os reruns N01/N06 ainda estava
 - Em validação: N07 #153 (manifesto/containers/GRF-GRCE), N06 #42 (árvore reconciliada), N01 #105 (Android emulador).
 - N06 #46 permanece OPEN/DRAFT como fonte de testes e mudanças especializadas; não foi mesclada separadamente para evitar duplicação dos três caminhos de arquivos em comum com #42 e porque sua branch original habilita N07 na lista de peers executáveis. Essa fronteira precisa ser reconciliada conscientemente na unidade N06, não por merge cego.
 - Nenhuma PR, branch, arquivo ou conteúdo histórico foi apagado ou fechado nesta atualização.
+
+
+## Atualização append-only — mapa de sobreposição das frentes GRCE/GRF (2026-10-16 UTC)
+
+- PR #153 atual head `24b8f49143d5728ffc69d2b982e71b9624e6f8c1`, 21 caminhos alterados.
+- PR #156 head `7fddde3a220adf648abc508905b16927271c1db5`, 33 caminhos alterados, base declarada na branch #153; continua dependente da validação da #153.
+- PR #158 head `f54b1579a5ca5ce338cf2409adcd4eef2a656352`, 5 caminhos alterados, baseada em #156.
+- Sobreposição #153↔#156: 15 caminhos idênticos de escopo (workflows GRF/GRCE/RGO, Dockerfile, runtime GRCE/Nervo Vago, executor, transporte Mesh, adapters externos, integridade arquitetural e `soul-nuclei.json`). Isso mostra que não é seguro simplesmente fazer merge em paralelo ou promover #156 antes da base #153.
+- Sobreposição #156↔#158: 3 caminhos — `backend/grce_runtime.go`, `backend/grce_runtime_test.go` e `soul-nuclei.json`. Sobreposição #153↔#158 nos mesmos três caminhos. O delta exclusivo #158 inclui `orchestrator/capability_upgrade.go` e seu teste; preservá-lo após #156, evitando sobrescrever a versão final do runtime GRCE.
+- Ordem mantida: validar #153 no head corrente; reconciliar #156 com merge commit não-forçado preservando os dois históricos e resolver os 15 caminhos sobrepostos com inspeção de diff; em seguida reaplicar o delta exclusivo #158 e validar seus 5 caminhos no novo head. #156/#158 não foram modificadas nesta rodada.
+- CI mais recente na consulta: #153 já tinha sucesso em source-ref integrity, overlap audit, SOUL Integration CI, agent arsenal, SuperAGI fabric, native augmentation e Superpowers crossfront; GRF/GRCE E2E, N07 principal, RGO/trinity e contracts restantes ainda estavam em andamento. Essa fotografia não equivale a CI verde completo.
