@@ -1184,3 +1184,26 @@ Nenhum arquivo original, branch histórica, PR de origem ou merge foi apagado, e
 O código adicionado nos três PRs é candidato, não implantação concluída. A fila de GitHub Actions permanece sem conclusões nos SHAs consultados; não há novo PASS/FAIL para declarar. Continuam obrigatórios build/typecheck, HMAC/contrato, E2E real em processos separados e CI verde no SHA exato, antes de promover qualquer aresta.
 
 Nenhuma PR ou branch de origem foi apagada, fechada ou force-pushed; este adendo conserva o histórico anterior do ledger.
+
+
+## Atualização append-only — correção de canonicalização Go e nova fotografia do CI (2026-10-16 UTC)
+
+### N01 #106 — HMAC legado N07 também respeita chaves numéricas aninhadas
+
+- Head exato observado após helper/teste: `242bc70717e8a8a2942e13620798e4f824542fc0`.
+- O verificador `scripts/soul-mesh-peer-response-auth.mjs` usa agora `canonicalOrderedJson` especificamente para a resposta HMAC legada de N07. O contrato legado JavaScript de N02 continua usando sua canonicalização atual; não se aplica ordenação Go indiscriminadamente a todos os peers.
+- A regressão no script `scripts/test-n01-protocol-hmac.mjs` calcula uma assinatura N07 legada com objetos aninhados contendo chaves `"10"` e `"2"`. Esse caso diferencia a ordenação lexicográfica de Go da enumeração de propriedades numéricas no JavaScript. O mesmo teste ainda cobre rejeição de HMAC adulterado para cada peer.
+- Essa mudança é código e teste candidato; não há resultado CI observado no head.
+
+### Snapshot de validação dos SHAs atuais
+
+- **N01 #106** `242bc70717e8a8a2942e13620798e4f824542fc0`: 22 workflows; 21 QUEUED e 1 PENDING, nenhum com conclusão.
+- **N04 #51** `815acbaa58d1bc2d15f94e7b3a142ca4cbac2163`: 7 workflows; 6 QUEUED e 1 PENDING, nenhum com conclusão. O workflow N04↔N05 foi ajustado para não fornecer um `POSTGRES_URL` fictício no build; sem banco real provisionado isso evita disparar as migrações do N05 contra um banco inexistente.
+- **N06 #46** `8c5e997482822aafd72b7375b5c934d8641b5fd7`: a consulta atual de runs não retornou lista para esse SHA; a consulta anterior sobre esse mesmo head retornou 9 checks sem conclusão (7 QUEUED, 2 PENDING), inclusive o E2E N05↔N06. Essa divergência de consulta é **UNMEASURABLE**, não pode ser interpretada como ausência de checks verdes nem como sucesso. Revalidar no GitHub Actions quando a execução tiver registro consultável.
+- **N07 #153** `ba8d5bc07a8edf4d8d181f78027e881952a87b6c`: 14 workflows QUEUED, nenhum com conclusão. Manter #156/#158 bloqueadas até a base #153 finalizar CI.
+
+### Bloqueio de comunicação que permanece explícito
+
+A fronteira do cliente browser N01 continua sem prova HMAC de resposta e depende de `VITE_SOUL_MESH_TOKEN` em chamadas diretas. Não alteramos esse caminho para um proxy genérico sem resolver o modelo de identidade/autorização entre a sessão Supabase da UI e os peers (N04, por exemplo, mantém sessão de aplicação própria). Criar um relay aberto ou trocar silenciosamente uma identidade do utilizador por N01 seria inseguro e não conta como integração correta. O trabalho server-side `forward()` agora verifica HMAC de peers; isso não autentica retroativamente o cliente do navegador. Registrar essa aresta como BLOCKED até existir uma fronteira de gateway autenticada e uma política de identidade/delegação testável.
+
+Nenhum arquivo, branch histórica, PR original ou registro anterior foi apagado ou substituído; esta entrada é somente aditiva.
