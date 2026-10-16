@@ -1128,3 +1128,33 @@ Nenhum arquivo, PR de origem ou branch histórico foi excluído, encerrado ou re
 - A ordem de comissão mantém N06↔N05 antes de N05↔N04; este reparo N01 é necessário para que futuras arestas com N05/N06 não falhem devido ao verificador de resposta legado.
 
 Nenhum arquivo/PR/branch histórico foi apagado, fechado ou reescrito. O ledger continua append-only e a fusão das 291 PRs segue aberta.
+
+
+## Atualização append-only — E2E real N01↔N04, identidade de núcleo sem impersonação (2026-10-16 UTC)
+
+### N01 PR #106 — novo gate entre dois runtimes separados
+
+- PR: https://github.com/divibisoul/aeternum-core-29/pull/106
+- Branch: `fusion/n01-hortacore-clareira-mesh-20261016`
+- Head exato da última consulta: `d9f2466331d261f38c9aca2c1661b85ed41bff17`; base `main` em `d5932bbe9e91127d497e86acd32bbb305e0c14d6`; aberto em draft.
+- Escopo informado agora pelo GitHub: 91 arquivos, +6.364/-426 linhas; nenhum arquivo inteiro removido. A alteração acrescenta script e workflow de E2E além do ajuste anterior de HMAC e transporte UTF-8.
+- Novos arquivos: `scripts/n01-n04-real-process-e2e.mjs` e `.github/workflows/n01-n04-real-process-e2e.yml`.
+- O workflow fixa o candidato N04 em `fa0dcc5fff8a4144a97acca06cdfd88b389300e4`, confere esse SHA explicitamente, instala dependências e constrói N01 e N04 antes de subir runtimes independentes: servidor HTTP Mesh Node real de N01 e servidor Next.js de produção real de N04. Segredos são gerados/marcados e usados apenas no ambiente do job.
+- O ensaio corrigido não imita a identidade de N02 nem de outro núcleo. Usa a implementação real do cliente peer N04 em duas operações:
+  1. `sendTo('N01', 'mesh.ping', ...)`: N04→N01 real, incluindo verificação pelo cliente N04 da resposta HMAC legada atual de N01.
+  2. `sendTo('N01', 'mesh.delegate', {target:'N04', capability:'mesh.ping', ...})`: chamada iniciada pelo próprio cliente N04, encaminhada pelo endpoint real de N01 com `forward()` para o handler real de produção N04. N01 precisa validar o HMAC canônico da resposta de N04; a resposta de N01 retorna com assinatura legada verificada pelo cliente N04.
+- Ambos os sentidos exigem protocolo/versão/identidade/correlação/tipo/payload corretos e marcadores PASS explícitos. Os dois núcleos são processos reais; não há endpoint simulado. O script E2E é ainda código candidato até execução do workflow.
+- A primeira versão do driver criava um `mesh.delegate` com origem textual N02 sem um processo N02 real. Foi substituída antes da validação por chamadas do peer-client real N04. A versão anterior não foi mantida como prova nem usada para declarar sucesso.
+
+### Validação na última leitura dos SHAs exatos
+
+- N01 #106 head `d9f2466331d261f38c9aca2c1661b85ed41bff17`: 22 workflows, 21 QUEUED e 1 PENDING, todos sem conclusão.
+- N04 #51 head `fa0dcc5fff8a4144a97acca06cdfd88b389300e4`: 7 workflows, 6 QUEUED e 1 PENDING, todos sem conclusão.
+- Portanto, hoje esta rodada tem **mudanças concretas adicionadas, porém E2E e CI ainda não mensuráveis no SHA final**. Não há PASS/FAIL observado nesses heads; fila pendente não vale como teste bem-sucedido.
+- Não promover nenhum dos dois PRs até execução no head exato, correção de falhas encontradas e aprovação dos checks pertinentes. A aresta N06↔N05 continua sendo a primeira etapa de comissão exigida; o reparo N01 é trabalho paralelo de compatibilidade, não reordenação da promoção.
+
+### Limite de segurança que permanece
+
+O cliente browser `src/core/soul-mesh/peerClient.ts` de N01 segue registrado como bloqueio separado: há chamadas diretas a peers, leitura de token `VITE_SOUL_MESH_TOKEN` e ausência de verificação HMAC de resposta. Esse caminho de UI não fica autenticado apenas porque o gateway server-side `forward()` foi corrigido; precisa de fronteira de servidor e prova própria.
+
+Nenhum arquivo original, branch histórica, PR de origem ou merge foi apagado, encerrado ou reescrito. Este adendo mantém o ledger das 291 PRs append-only.
