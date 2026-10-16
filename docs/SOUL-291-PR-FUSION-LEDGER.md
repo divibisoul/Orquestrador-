@@ -593,3 +593,35 @@ A ordem permanece: (1) corrigir falhas concretas de transporte/contrato e obter 
 - N07 #153/#156: testes foram disparados nos SHAs f656aca8c944183f9f9638179307901395b481be e 3159327d780595dd53faa5d3abc64b3ce72a18c1; os resultados finais para GRCE real, contagem dinâmica de gitlinks, container com 22 fontes atestadas, HMAC antes de status HTTP e proveniência pós-fusão ainda não foram confirmados.
 - N05 #51: permanece draft e precisa de uma prova de comunicação interprocesso N05↔N06 no SHA final; o adaptador de N06 e testes HMAC internos não bastam.
 - Matriz confirmada depois desta rodada: N01↔N02 REAL; N02↔N03 REAL; N03↔N04 REAL; N04↔N05 ainda UNMEASURABLE; N05↔N06 ainda UNMEASURABLE; N06↔N07 REAL; SARA↔N07 continua pendente de E2E final com container N07 validado.
+
+
+## Atualização append-only — verificação posterior da fusão N04 (16/10/2026)
+
+Este adendo acrescenta o resultado observado depois da atualização anterior. Não substitui nem remove os registros mais antigos, inclusive os que retratavam o estado pré-merge.
+
+### N04 #50 — MERGED e verificado
+
+- PR: https://github.com/divibisoul/nextjs-ai-chatbots/pull/50
+- Head aprovado: `697dd2735a23006caf3da984b6dc43ead16314fa`.
+- Merge commit: `b3ca469c8063c143081ad44fbeb7c238153a60cd`.
+- Os seis workflows consultados no head terminaram `success`: N04 CI, SOUL Integration CI, SOUL 25 Capability Upgrade, N04 validation diagnostics, Dependency Review e Soul Mesh CI.
+- O job `N03↔N04 bidirectional real-process E2E / bidirectional-http-hmac` terminou `success`. O log registrou ambos os sentidos de comunicação entre o servidor HTTP real do N03 (Bun) e o servidor de produção do N04 (Next.js), usando HTTP, HMAC-SHA256 na requisição e HMAC-SHA256 na resposta. A prova é específica para N03↔N04 e não demonstra, sozinha, conectividade com N01, N02, N05, N06 ou N07.
+- A antiga entrada `src/soul-mesh/endpoint.ts` virou fachada de compatibilidade que encaminha o envelope para `lib/soul-mesh/SoulMeshProtocol.ts`; o ingresso legado `ack` continua preservado. Seis casos Playwright que usavam `test.fixme()` foram reativados. A PR fonte #48 segue aberta; a #49 era uma fusão anterior. Nenhuma branch fonte foi excluída ou reescrita por esta rodada.
+
+### Correção de interpretação do gate N07
+
+O log anterior do verificador de integridade usava refs de N02/N03/N05/N06 anteriores aos respectivos commits atuais; naquela fotografia, classificou o endpoint de N05 como duplicação de autoridade. Depois da fusão de N05 #51, o arquivo ativo de N05 encaminha os símbolos para `./SoulMeshProtocol`. A leitura atual dos arquivos N02/N03/N04 mostra fachadas de compatibilidade e adaptadores históricos, que não devem ser apagados para satisfazer o gate.
+
+A PR #158 recebeu atualização append-only de `soul-nuclei.json` para alinhar `sourceRef` aos SHAs reais de mainline: N02 `0516bfcffa266190910c36389c75df642e13da41`, N03 `676c20cb5e537944a5a75d8e4920ff48c010cfbf`, N04 `b3ca469c8063c143081ad44fbeb7c238153a60cd`, N05 `894c001e48da368b58ca0b67911e63b2a859c1f3`, N06 `735b688be8b93768bcfe5f103a92947f28e4b5cb`. As referências anteriores foram mantidas no histórico como `PRESERVED`; N03 e N04 tiveram duplicações de estado `CURRENT` normalizadas sem excluir registros. O head atualizado da PR #158 é `f54b1579a5ca5ce338cf2409adcd4eef2a656352`, mas não foram retornadas novas execuções de workflow para esse SHA e a PR permanece draft/não mesclável por depender da cadeia empilhada. Portanto, essa reconciliação ainda não é declarada validada por CI.
+
+### N06 #42 — correções de código e dependências aguardando CI
+
+A PR https://github.com/divibisoul/nextjs-ai-chatbot-2000/pull/42 segue aberta/draft. No head observado `aa551047cbbfc61a31c70c6086c7e5ce8bb13f6f), esta rodada corrigiu a inferência de tipo do catálogo N06, retirou uma extensão `.ts` incompatível com o TypeScript do build Next.js, alinhou o gate de validação SOUL-25 às 25 entradas existentes e atualizou overrides/lockfile para `source-map-js` 1.2.2, `prosemirror-model` 1.25.12, `prosemirror-view` 1.42.3 e `sharp` 0.35.5. Os workflows do novo head foram vistos em `queued/pending` quando consultados; não declarar PASS até que cada execução relevante termine.
+
+A auditoria reportou também `braces@3.0.3`. O advisory consultado não aponta versão corrigida disponível, e há contestação pública do mantenedor; isso permanece uma questão de segurança em aberto, não um motivo para desativar o gate ou inventar uma versão corrigida. A aprovação final de N06 depende de revalidar o build, o contrato e a revisão de dependências e tratar explicitamente este finding.
+
+### Estado operacional desta rodada
+
+- **MERGED:** N04 #50; N05 #51. SARA #44 e N02 #59 já constavam como mescladas e foram reconfirmadas.
+- **ABERTO/BLOCKED:** N01 #105 aguardando Android APK + Mesh instrumentation; N03 #44 está 52 commits atrás do main observado e com `mergeable=false`; N06 #42 aguardando CI; N07 #158 aguardando CI e resolução da dependência/empilhamento com #156.
+- **Regra preservada:** sem force-push, sem merge em SHA inesperado, sem exclusão de arquivo/branch/PR fonte e sem registrar `PROJECTED` ou `ADAPTER_BOUND` como runtime comprovado. O inventário total das 291 PRs continua sendo uma frente de trabalho; este adendo não afirma que todas tenham sido avaliadas e fundidas.
