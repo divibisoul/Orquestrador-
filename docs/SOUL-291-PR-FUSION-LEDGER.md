@@ -1042,3 +1042,39 @@ Nenhuma PR, branch ou arquivo histórico foi excluído ou fechado nesta atualiza
 - **N07 #153:** head `ba8d5bc07a8edf4d8d181f78027e881952a87b6c` contém as três asserções JSON corrigidas no smoke, mas os 14 workflows consultados ainda estavam QUEUED/PENDING. #156/#158 continuam dependentes desta base e não devem ser promovidas.
 
 Nenhuma destas mudanças removeu arquivos, PRs ou branches de origem. A fusão das 291 continua aberta, com prioridade prática na comunicação autenticada real e gates executados no SHA exato.
+
+
+## Atualização append-only — interoperabilidade HMAC canônica N04↔N05 (2026-10-16 UTC)
+
+### N04 PR #51 — a correção de autenticação foi ampliada para corrigir a incompatibilidade entre os protocolos de resposta
+
+- PR: https://github.com/divibisoul/nextjs-ai-chatbots/pull/51
+- Branch: `fix/n04-enforce-peer-response-hmac-20261016`
+- Head exato atual observado: `d08701d8338f50aca5f0d4f6a5acade8d351fd4f`
+- PR permanece aberta, em draft, direcionada a `main`; não houve merge ou escrita direta em `main`.
+- Escopo atual: 6 arquivos alterados, +510/-7 linhas e **zero arquivos inteiros removidos**. São mudanças aditivas às correções já existentes nesta branch.
+
+#### Defeitos de comunicação confirmados na revisão de código
+
+1. O cliente N04 chamava `verifySoulMeshResponse(...)`, mas descartava o booleano retornado. Uma resposta HTTP 200 com rota/correlação estruturalmente correta e HMAC adulterado podia ser aceita. O cliente agora falha fechado com `SOUL_MESH_RESPONSE_HMAC_INVALID`.
+2. N04 assinava as respostas no formato legado para todos os peers; o N05 atual (#52 já integrado em `64e1b8719068b153130bcdbcfbbc2c78c11e1b8c`) exige resposta canônica HMAC para os peers N01–N06, exceto a compatibilidade dedicada com N07. Uma topologia declarada ou HMAC apenas no pedido não resolve essa incompatibilidade.
+3. O cliente N04 tratava Bearer e HMAC como alternativas. O endpoint de N05 exige Bearer quando `SOUL_MESH_TOKEN` está configurado, mesmo se a requisição também tem HMAC; agora envia os dois mecanismos quando configurados.
+4. A auditoria comparou também os contratos já implantados: o peer-client de N02 ainda verifica resposta legada e o servidor atual de N03 ainda usa o signer legado. A correção N04 mantém resposta legada para N02/N07 e usa validação canônica para N01/N05/N06. Para N03, verifica canônica primeiro e mantém fallback legado explicitamente temporário para o servidor atual já observado. Esse fallback não transforma a migração de N03 em concluída.
+
+#### Correções e provas adicionadas
+
+- `lib/soul-mesh/SoulMeshHmac.ts`: adicionado signer/verifier canônico `soul-mesh/1` HMAC-SHA256 com validação de rota, correlação, janela temporal e comparação em tempo constante; as funções legadas existentes foram preservadas.
+- `lib/soul-mesh/peer-client.ts`: falha fechada em HMAC inválido, Bearer+HMAC simultâneos quando ambos estão configurados, e seleção explícita de contrato canônico/legado por peer.
+- `app/api/soul-mesh/route.ts`: responde no formato legado para N02/N07 e no formato canônico para N01/N03/N05/N06.
+- `lib/soul-mesh/SoulMeshHmac.test.ts`: mantém a regressão que exige rejeitar HTTP 200 com HMAC inválido; adiciona teste de distinção legado/canônico e troca HTTP real em loopback com Bearer+HMAC.
+- `scripts/n04-n05-real-process-e2e.mjs`: novo ensaio entre processos independentes de produção (N04 e N05), com chamadas bidirecionais e marcadores de sucesso explícitos. Não simula a resposta dos serviços no E2E.
+- `.github/workflows/n04-n05-real-process-e2e.yml`: constrói ambos os runtimes de produção e executa o E2E contra N05 pinado no SHA `64e1b8719068b153130bcdbcfbbc2c78c11e1b8c`, usando segredos efêmeros gerados no job e não persistidos no repositório.
+
+#### Estado da validação e portas restantes
+
+- A última consulta do head `d08701d8338f50aca5f0d4f6a5acade8d351fd4f` retornou 7 workflows, todos `QUEUED`, sem conclusão. Portanto: **não há PASS nem FAIL observado no novo head; validação ainda não mensurável enquanto a fila não executar**. Nenhum check pendente deve ser promovido a verde por inferência.
+- Portas obrigatórias: `test:mesh:hmac`, typecheck/build N04, Soul Mesh CI, Dependency Review, E2E real N03↔N04 e novo E2E real N04↔N05; os dois sentidos precisam efetivamente passar.
+- O teste de loopback isolado testa transporte/HMAC local e não substitui o E2E entre processos independentes.
+- Próxima ordem continua: finalizar/verificar primeiro N06↔N05; então certificar N05↔N04 com o novo workflow; depois revalidar N04↔N03 com a compatibilidade HMAC corrigida. Só depois avançar N03↔N02, N02↔N01 e a comissão final N01↔N06↔N07.
+
+Nenhum arquivo, PR de origem ou branch histórica foi apagado, fechado ou reescrito. A auditoria/fusão das 291 PRs continua aberta; este trecho apenas registra o avanço e as incompatibilidades reais encontradas.
