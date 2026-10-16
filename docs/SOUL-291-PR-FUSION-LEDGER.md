@@ -713,3 +713,21 @@ A auditoria reportou também `braces@3.0.3`. O advisory consultado não aponta v
 
 - N01 #105 permanece aberta/draft, head `528fa464e47264a58ed44e4a4515415711c7a684`. APK debug e release e validação Web passaram; o job Android + Mesh instrumentation ainda estava em progresso, logo sem CI global verde.
 - N07 #156/#158 continuam bloqueadas pela cadeia empilhada; não forçar merge/force-push. O próximo passo permanece fechar gates na base #153, atualizar a pilha de modo não destrutivo e, em paralelo, completar a prova de comunicação N05↔N06.
+
+
+## Adendo append-only — evidência de loopback Android N01 e revalidação pendente (16/10/2026)
+
+### N01 #105 — falha de transporte identificada; correção limitada ao loopback
+
+- PR: https://github.com/divibisoul/aeternum-core-29/pull/105.
+- O job anterior de Android instrumentation concluiu 10 testes, com 8 passando e 2 falhando exatamente no `assertTrue(result.isSuccess)` de `SoulMeshHttpTransportTest.loopbackRequestReachesReceiverAndReturnsCanonicalResponse` e `SoulMeshRpcEndToEndTest.requestReachesEndpointAndReturnsCorrelatedResponse`. APKs debug e release tinham sido construídos; o erro ocorreu na primeira chamada HTTP de loopback, não na compilação.
+- A branch atual observada é `3f560d687b01ce2ab2b2f3db3cf4c18e679a1f92). Ela contém `soul-sentinel/app/src/main/res/xml/network_security_config.xml`, referenciado por `AndroidManifest.xml`. A política nega cleartext por padrão e abre a exceção apenas para `127.0.0.1` e `localhost`, preservando o bloqueio para hosts remotos. As duas assertions agora incluem a mensagem da exceção para diagnóstico se a falha persistir.
+- Este é um ajuste do contrato de transporte de loopback, não uma autorização para HTTP arbitrário. A nova CI do head `3f560d...` foi disparada; todos os workflows estavam `queued` na última consulta. A PR continua draft e não deve ser mesclada até que o teste instrumentado passe no head novo.
+
+### Estado consolidado de validação nesta consulta
+
+- **N07 #153**: head `f86ace964f6cd2e0feafab978d26ccab84c8b6aa`; o E2E real SARA já passou no head anterior ao refinamento do guard, e o head atual está na fila para validar preservação baseada no estado de entrada original. Todas as validações do novo SHA estavam `queued` exceto o audit de sobreposição cooperativa, que passou.
+- **N06 #42**: head `692a970cb63c58f9f5b26619abfce3f1aab75b18`; reparos adicionais de lint aplicados e todos os workflows re-enfileirados. Ainda sem CI verde no SHA final.
+- **N06 #46**: head `ada4a07c462c6abd1ec53ddfd0793ed24d9194c0`; o harness de E2E N05↔N06 recebeu importação namespace com fallback ESM/CJS. E2E bidirecional real e demais workflows ficaram `pending/queued`; não houve ainda prova de request/response HMAC neste novo head.
+- **N05 #52** continua com seis workflows próprios verdes, mas segue draft; manter sem merge até o E2E real N05↔N06 passar.
+- **N07 #156/#158** permanecem abertas/draft e não mescláveis pela pilha. **N01 #105**, **N06 #42/#46** e **N07 #153** permanecem sem merge porque os checks do head atual ainda não concluíram.
