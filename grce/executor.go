@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"sync"
 
 	"github.com/divibisoul/Orquestrador-/grf"
@@ -101,6 +102,14 @@ func (e *Executor) Run(ctx context.Context, state grf.State, c grf.Context) (Res
 		ev,evErr:=grf.NewEvidence(f,state,art,c.SequenceIndex+uint64(i)+1)
 		if evErr!=nil{return e.preserve(ctx,originalState,prov,evidence,c,evErr,"EVIDENCE")}
 		evidence=append(evidence,ev)
+	}
+	// High-complexity input is an explicit preservation boundary. Keep the
+	// original state and all detector evidence; do not promote an unresolved
+	// low-entropy/oversized input to ACTIVE merely because later hooks return.
+	for _,failure:=range failures {
+		if strings.Contains(strings.ToUpper(failure.Description), "COMPLEXIDADE_EXCESSIVA") {
+			return e.preserve(ctx, originalState, prov, evidence, c, errors.New("GRCE_COMPLEXITY_EXCESSIVE_INPUT_PRESERVED"), "DETECT")
+		}
 	}
 	prov=append(prov,grf.Provenance{ParentHash:parentHash,InputHash:parentHash,OutputHash:parentHash,SequenceIndex:c.SequenceIndex+10,Stage:"EVIDENCE"})
 
