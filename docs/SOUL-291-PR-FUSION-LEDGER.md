@@ -918,3 +918,28 @@ CI de N07 ainda está em curso no head `f2a0e03`; os reruns N01/N06 ainda estava
 - Sobreposição #156↔#158: 3 caminhos — `backend/grce_runtime.go`, `backend/grce_runtime_test.go` e `soul-nuclei.json`. Sobreposição #153↔#158 nos mesmos três caminhos. O delta exclusivo #158 inclui `orchestrator/capability_upgrade.go` e seu teste; preservá-lo após #156, evitando sobrescrever a versão final do runtime GRCE.
 - Ordem mantida: validar #153 no head corrente; reconciliar #156 com merge commit não-forçado preservando os dois históricos e resolver os 15 caminhos sobrepostos com inspeção de diff; em seguida reaplicar o delta exclusivo #158 e validar seus 5 caminhos no novo head. #156/#158 não foram modificadas nesta rodada.
 - CI mais recente na consulta: #153 já tinha sucesso em source-ref integrity, overlap audit, SOUL Integration CI, agent arsenal, SuperAGI fabric, native augmentation e Superpowers crossfront; GRF/GRCE E2E, N07 principal, RGO/trinity e contracts restantes ainda estavam em andamento. Essa fotografia não equivale a CI verde completo.
+
+
+## Atualização append-only — N06 merge, E2E permanente e runtime attestation N07 (2026-10-16 UTC)
+
+### N06 #42 — merge confirmado
+
+- PR https://github.com/divibisoul/nextjs-ai-chatbot-2000/pull/42 foi mesclada por merge commit \`8367522ec3a75eff9fff8342a8f82ddd58c8cfe9\`.
+- Head aprovado \`94d22606bbcf7167c40e5bfe9be02735b0d659d3\`; 8/8 workflows concluídos com SUCCESS no SHA exato. Foram revistos os 71 caminhos alterados; a lista não contém arquivos removidos.
+- A PR e a branch original continuam preservadas. N07 \`soul-nuclei.json\` foi atualizado para usar o novo SHA real da main N06; o SHA anterior \`735b688be8b93768bcfe5f103a92947f28e4b5cb\` continua no histórico, agora PRESERVED.
+
+### N06 #46 — reconciliação não-forçada da prova N05↔N06
+
+- Head anterior \`614963429bb4e24628771631429b8d6496706f52\`; novo head de reconciliação \`d44aa0575e82d42514bf0c96ad35fdba7e0e2759\`, com pais \`614963...\` e main N06 \`8367522...\`. Atualização de ref com \`force=false\`, expectativa do head anterior.
+- A árvore base é a main atual. Foram preservados: workflow \`N05-N06 Real Process E2E\`, script de E2E real de produção, dois testes de canonicalização N05, e o header Bearer do peer. A implementação atual de \`nonce\` da main (filtragem explícita) foi mantida; a versão anterior do adapter não foi copiada por cima.
+- O workflow verifica agora o N05 já mesclado \`64e1b8719068b153130bcdbcfbbc2c78c11e1b8c\`. Os 9 workflows no novo head estão queued/in progress; a PR continua OPEN/DRAFT, sem merge até todos passarem.
+
+### N07 #153 — atestação de runtime de upstream pinado
+
+- O smoke de produção no head \`24b8f491...\` falhou porque \`.github/workflows/n07-ci.yml\` exige \`"source_present":true\` para LangGraph, enquanto a imagem de runtime deliberadamente não inclui \`.git\`. O Docker build já materializava os submódulos e gerava \`soul.external.runtime-attestation.v1\`; o observador público ainda exigia \`git rev-parse\` dentro do container, por isso devolvia MISSING_WORKTREE mesmo para fontes copiadas.
+- Commit \`0cefdd6e56573d069e328450e1db8221059fd4b1\` atualiza \`orchestrator/external_adapters.go\` para aceitar a atestação somente em caminho canônico, para repositório cuja atestação foi gerada de Git materializado, pin SHA válido e diretório contendo conteúdo real. Pins divergentes reportam \`REVISION_MISMATCH\`; diretório vazio segue \`MISSING_WORKTREE\`. Foram adicionados testes para pin compatível, pin divergente e diretório vazio. Commit seguinte \`c771521f137ac83d8fe4da88a6941bdbcd91aca8\` acrescentou a importação \`encoding/json\` necessária no teste.
+- O head atual da PR #153 é \`ad2108bf0cce382f3cfeebc42bb458e1b85b3ae6\`; os 14 workflows estão queued/in progress no momento da gravação. Nenhum resultado verde foi presumido para as mudanças novas. #156 e #158 permanecem sem alteração e aguardam a resolução/validação da #153.
+
+### N01 #105 — ambiente Android
+
+- O job \`Soul N01 Full Build\` no head \`3f560d687b01ce2ab2b2f3db3cf4c18e679a1f92\` falhou no boot do emulador (timeout esperando \`sys.boot_completed\`), depois de construir e validar os APKs debug/release. Os instrumented tests não começaram. Esse resultado é classificado como bloqueio de infraestrutura, não como aprovação nem defeito funcional comprovado. A PR segue bloqueada até teste instrumentado conclusivo no SHA exato.
