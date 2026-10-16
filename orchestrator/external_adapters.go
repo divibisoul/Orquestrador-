@@ -473,7 +473,7 @@ func RegisterExternalAdapterOperations(e *Engine, r ExternalAdapterRegistry) err
 				"id": p.ID, "owner": p.Owner, "kind": p.Kind, "root": root,
 				"revision": r.revisions[p.ID], "expectedRevision": observation.ExpectedRevision,
 				"observedRevision": observation.ObservedRevision, "revisionMatched": observation.RevisionMatched,
-				"sourceState": observation.State, "operations": p.Operations,
+				"sourceState": observation.State, "evidenceMode": observation.EvidenceMode, "operations": p.Operations,
 				"sourcePresent": observation.Present, "executionEnabled": externalEnabled(p.ID),
 			})
 		}
