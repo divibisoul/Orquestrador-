@@ -1328,3 +1328,35 @@ Esta é **verificação de conteúdo no GitHub**, não execução local dos scri
 Os candidatos continuam abertos em draft. A consulta ainda não expõe timestamps de criação/atividade ou jobs individuais suficientes para medir idade de fila; **tempo decorrido da fila = UNMEASURABLE**. Próxima ação: atualizar estados exatos e, sem ficar ocioso, continuar auditoria estática do primeiro elo N06↔N05; não promover N05↔N04 antes do gate anterior ter resultado concluído e checks obrigatórios verdes.
 
 Nenhum arquivo ou capacidade de runtime foi removido; as alterações de código limitam-se à substituição de fallback sintético por dependência real explicitamente provisionada e à atualização do pin de dependência. Nenhuma PR foi mesclada.
+
+
+## Correção de fronteira de identidade N01 — relay autenticado de navegador (2026-10-16 UTC)
+
+### Mudanças adicionadas na PR #106
+
+Head candidato após os commits: `2bf8172681b29564efa0e64907af479922969589`.
+
+- O cliente de navegador N01 deixou de enviar diretamente a núcleos pares usando URLs e segredo `VITE_*`. Agora busca o access token da sessão Supabase e envia apenas `target`, `capability`, `payload` e `correlationId) para `/api/soul-mesh/relay`; não afirma a própria identidade de núcleo nem assina HMAC no navegador.
+- O gateway valida origem e access token contra o endpoint `/auth/v1/user` do Supabase. Origem cross-origin só é autorizada por `SOUL_MESH_BROWSER_ALLOWED_ORIGINS`; a rota também atende o preflight OPTIONS necessário a essa configuração.
+- N01 gera a identidade canônica `source=N01` no processo servidor. O caminho N02–N06 atravessa um endpoint interno limitado a loopback e protegido por token aleatório gerado pelo gateway; o processo interno continua responsável por HMAC de request/response.
+- O relay N07 reconstruí a mensagem no servidor e continua limitado a `mesh.ping`, `external.federation.describe@1.0.0` e `external.federation.execute@1.0.0`. A rota antiga `/api/soul-mesh/n07` permanece como compatibilidade, mas usa agora a mesma autenticação de sessão e não confia nos campos `source/target` fornecidos pelo navegador.
+- As requisições Mesh de produção deixam de ser aceitas sem um segredo HMAC de pelo menos 32 bytes. Valores aceitos pelo gateway: `SOUL_MESH_SECRET` ou `SOUL_MESH_HMAC_SECRET). A autenticação de browser exige URL e chave publishable do Supabase no ambiente do servidor, preferencialmente `SOUL_MESH_SUPABASE_URL` e `SOUL_MESH_SUPABASE_PUBLISHABLE_KEY` (também aceita `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`/`SUPABASE_ANON_KEY`).
+- Repetição automática foi limitada a capacidades de diagnóstico consideradas seguras, evitando repetir operações executáveis com possível efeito lateral.
+- O contrato estático foi estendido. O teste de cliente verifica token Bearer, ausência de identidade/HMAC confiada no browser, falha sem sessão e limite estrutural de N07. O E2E real agora inicia `scripts/soul-mesh-server-entry.mjs` (gateway público + processo interno) e verifica que um relay sem sessão recebe `401 SOUL_MESH_BROWSER_SESSION_REQUIRED` antes de alcançar qualquer par. N01↔N04 bidirecional permanece parte do mesmo E2E.
+
+### Validação, bloqueios e decisão temporal
+
+Estado de GitHub Actions consultado para os heads exatos:
+
+| PR | Head | Checks | Conclusão |
+|---|---|---|---|
+| N01 #106 | `2bf8172681b29564efa0e64907af479922969589` | 21 QUEUED, 1 PENDING | UNMEASURABLE até os jobs iniciarem |
+| N04 #51 | `1d0c224a09e871da5ec69b7875d515390689f1a8` | 6 QUEUED, 1 PENDING | UNMEASURABLE |
+| N06 #46 | `a7b87bc6564ea38615535e644fad1df6d1d7d9bc` | 9 QUEUED | UNMEASURABLE |
+| N07 #153 | `ba8d5bc07a8edf4d8d181f78027e881952a87b6c` | 13 QUEUED, 1 SUCCESS | Parcial; gates requeridos sem conclusão |
+
+A consulta de jobs individuais confirmou trabalhos `queued` com IDs e nenhum job iniciado nas verificações centrais; o E2E N01↔N04 segue `pending` sem jobs listados. O status público do GitHub não indicava incidente ativo na consulta, mas isso não identifica a causa específica da fila. Não há ação de dispatch/cancelamento de workflow exposta pelas ferramentas do conector, e reexecutar job enfileirado não é uma correção válida. Nenhuma conclusão verde foi inferida a partir desses estados.
+
+**Importante:** o teste adicionado comprova o bloqueio de chamadas sem sessão no gateway real; não comprova autenticação positiva de browser contra um projeto Supabase de produção. Essa última prova exige configurar o endpoint/chave Supabase em ambiente de execução e completar a validação E2E.
+
+Registro aditivo: nenhum arquivo ou histórico de PR foi removido, nenhum merge foi executado, nenhuma alteração foi feita diretamente em `main` e nenhuma branch foi forçada.
