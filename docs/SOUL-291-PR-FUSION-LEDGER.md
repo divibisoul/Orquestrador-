@@ -512,3 +512,32 @@ Esta seção acrescenta evidências sem reescrever os registros anteriores. A co
 ### Estado global
 
 As PRs #159 (N07), #59 (N02), #45 (N06) e #48 (N03) estão fundidas por merge normal. Não se removeu conteúdo de arquivos nem branches-fonte. N01 #105, N04 #50, N05 #51, N07 #156, SARA #44 e JEV #5 continuam em auditoria conforme seus bloqueios; a enumeração histórica das 291 PRs não significa que todas estejam revisadas ou integradas. O fechamento global exige a verificação funcional de cada cluster, compatibilidade de contratos, prova de comunicação real entre adjacências e CI verde no SHA efetivamente integrado.
+
+
+## Atualização append-only — fusão funcional do cluster SARA (2026-10-16 UTC)
+
+### SARA PR #44 — MERGED
+
+- PR: https://github.com/divibisoul/SARA/pull/44
+- Merge commit: 5633cdd95a067c1c40a4b731a38976971e173d1f.
+- Head exato testado: 2223c09882fb0d7a97fd8fd1c1d6071272ad41cc; base 53a7760cc3db7f77456e415ef14b3638d52df816.
+- Oito workflows do head exato terminaram success: SARA CI, SARA validation, SOUL Integration CI, SOUL 25 Capability Upgrade, RGO Trinity, RGO Trinity final, Chimera fusion verification e o workflow de push do capability upgrade.
+- A fusão foi organizada por semelhança de função: preservação de proveniência Vagus (#40/#42), NervoVago como alias canônico sem duplicar a autoridade VagusBus (#41/#42), integração dos hooks GRCE através do runtime RGO/Trinity/ERU (#43) e retenção de snapshots do ERU. Não houve remoção de arquivos.
+- Corrigido antes da fusão: o candidato original tinha um limite de snapshots que apagava do dicionário o snapshot mais antigo. Isso violava o requisito de histórico preservado. Agora o limite é soft threshold: ao ultrapassá-lo, ERU emite eru_snapshot_limit_reached, mantém todos os snapshots consultáveis e expõe snapshot_limit_reached e snapshot_retention: append_only. O novo teste tests/test_eru_snapshot_retention.py provou a recuperação dos snapshots antigo e novo depois de superar o limite.
+- O código de /v1/grce/hooks registra as evidências observadas de RGO, ARA, ETR, ITR, ERU e MMD, incluindo o hash final e o finding ID. O teste de proveniência Vagus e o teste de execução GRCE são mantidos separadamente porque cobrem contratos diferentes.
+- Limite explícito da evidência: o teste HTTP dos hooks inicia o serviço SARA real no próprio processo de teste; não é prova de comunicação interprocesso N07↔SARA. Essa comissão E2E continua aberta, especialmente enquanto a atestação do container N07 #156 não for aprovada.
+
+### Disposição das PRs-fonte após a fusão
+
+| PR-fonte | Estado depois da fusão | Tratamento de conteúdo e histórico |
+|---|---|---|
+| SARA #40 — Vagus provenance | CLOSED, não merged | Função e teste absorvidos em #44; comentário publicado. Branch 90fe0c93af787cf2dba560992ef247e43460a94c preservada. |
+| SARA #41 — NervoVago canonical alias | CLOSED, não merged | Função, bootstrap e teste de alias absorvidos em #44; comentário publicado. Branch 616d0ef94cf509d729fb8ecf4bade3342e067b3d preservada. |
+| SARA #42 — Vagus/regenerative frontiers | CLOSED e reconhecida por GitHub como integrada na história | Mudanças funcionais no head de #42 estão presentes; o tratamento de snapshot foi aperfeiçoado antes da fusão. Branch 08281c05cb6cf2d2c4ec330a1de25401fd91eb2f preservada. |
+| SARA #43 — GRCE hook evidence | OPEN — revisão específica ainda pendente | Endpoint e teste GRCE de #43 estão presentes em main através de #44. A única mudança funcional não absorvida é a remoção de um decorator @dataclass em FusionMirror; o PR permanece aberto porque o efeito dessa remoção ainda não foi provado seguro. |
+
+O fechamento de #40/#41/#42 foi somente de estado da PR para evitar integração duplicada. Nenhum branch-fonte, commit histórico ou arquivo foi excluído.
+
+### Situação da malha de comunicação
+
+O cluster SARA #44 comprova os contratos HTTP locais de proveniência e hooks, mas não altera o estado da matriz de comunicação cruzada: N07↔SARA permanece UNMEASURABLE até E2E com dois processos independentes e runtime N07 validado. A fonte de verdade do estado do container é a PR N07 #156 e seus checks no SHA atual; um manifesto ou capability list sem prova de fonte atestada não é suficiente.
