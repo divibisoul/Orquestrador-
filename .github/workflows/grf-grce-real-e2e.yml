@@ -33,6 +33,9 @@ jobs:
           fetch-depth: 0
           submodules: false
 
+      - name: Materialize pinned top-level SOUL upstreams without recursion
+        run: node scripts/materialize-top-level-submodules.mjs
+
       - name: Checkout SARA
         uses: actions/checkout@v4
         with:
