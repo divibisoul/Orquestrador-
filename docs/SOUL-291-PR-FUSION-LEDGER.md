@@ -1360,3 +1360,28 @@ A consulta de jobs individuais confirmou trabalhos `queued` com IDs e nenhum job
 **Importante:** o teste adicionado comprova o bloqueio de chamadas sem sessão no gateway real; não comprova autenticação positiva de browser contra um projeto Supabase de produção. Essa última prova exige configurar o endpoint/chave Supabase em ambiente de execução e completar a validação E2E.
 
 Registro aditivo: nenhum arquivo ou histórico de PR foi removido, nenhum merge foi executado, nenhuma alteração foi feita diretamente em `main` e nenhuma branch foi forçada.
+
+
+## Correção aditiva — SuperGPU N01→N07 sem violar o limite estrutural (2026-10-16 UTC)
+
+### Diagnóstico
+
+A revisão de capacidade encontrou uma incompatibilidade funcional real: `src/core/soul-mesh/SuperGPUMeshClient.ts` chamava `sendTo('N07', 'mesh.supergpu.execute@1.0.0', ...)`, mas o cliente browser e o relay público N07 rejeitavam essa operação por projeto, pois só aceitavam capacidades estruturais. A autoridade de N07 confirma SuperGPU como capacidade executável do núcleo; simplesmente abrir a lista estrutural seria incorreto.
+
+### Correção implementada na PR #106
+
+Head candidato atual: `6c3f40bcbf6f633ab06700f0c3719c0f7b1e8710`.
+
+- A política estrutural N07 permanece inalterada. A execução `mesh.supergpu.execute@1.0.0` ganhou rota separada `/api/soul-mesh/supergpu`, sem ser adicionada a `N07_PUBLIC_STRUCTURAL_CAPABILITIES`.
+- A rota usa a mesma autenticação de sessão Supabase e verificação de origem do relay, mas também exige que o ID real do usuário retornado pelo Supabase esteja na configuração **servidor-only** `SOUL_MESH_BROWSER_SUPERGPU_ALLOWED_USER_IDS` (IDs separados por vírgula). Ausência da allowlist significa bloqueio; token válido sozinho não autoriza o uso de acelerador.
+- A rota aceita somente `mesh.supergpu.execute@1.0.0`, exige array `values` finito, não vazio e limitado a 65.536 elementos, além de metadata com `operation` não vazia e `device` opcional limitado. A identidade N01 é criada no servidor, e a chamada passa pelo relay HMAC N01↔N07; o segredo precisa conter pelo menos 32 bytes.
+- O cliente mantém `requestN07SuperGPU` e seus parâmetros; `sendTo` encaminha apenas essa capacidade específica à rota dedicada. Outras capacidades N07 continuam submetidas à lista estrutural. Execução SuperGPU não é repetida automaticamente em falha de transporte para evitar duplicar efeitos/custo.
+- Testes de cliente cobrem caminho dedicado e preservação da barreira estrutural; o E2E de processo real verifica que tanto o relay geral como a rota SuperGPU rejeitam chamadas sem sessão, antes de alcançar N07. O contrato estático verifica allowlist e força do segredo.
+
+### Configuração e estado da prova
+
+Para habilitar a execução no runtime, configure no ambiente privado do N01 `SOUL_MESH_BROWSER_SUPERGPU_ALLOWED_USER_IDS` com os IDs Supabase autorizados, além das variáveis de HMAC e Supabase documentadas na seção anterior. **Não** exponha esse allowlist, a chave HMAC ou a chave de serviço ao browser. Esta mudança não habilita GPU simulada: N07 mantém a política original de exigir acelerador quando `require_accelerator` não é explicitamente `false`.
+
+A validação positiva de usuário autorizado e SuperGPU real continua **UNMEASURABLE** até a CI executar e o ambiente oferecer sessão Supabase real, allowlist e acelerador N07 disponível. Os checks da cabeça atual serão reconsultados; nenhuma CI verde é inferida de status enfileirado.
+
+Registro aditivo: nenhuma capacidade, rota ou histórico foi removido; nenhuma fusão de PR ou atualização forçada de branch ocorreu.
