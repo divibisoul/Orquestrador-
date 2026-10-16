@@ -7,15 +7,11 @@ jobs:
   verify:
     runs-on: ubuntu-latest
     steps:
-      # Match the canonical N07 integration workflow: materialize first-level
-      # public gitlinks explicitly, and repair incomplete nested dataset metadata
-      # only in this ephemeral runner after the pinned nested SHA is verified.
       - uses: actions/checkout@v4
         with:
+          # Go unit/contract packages do not require nested upstream dataset repos.
+          # Other commissioning workflows materialize top-level submodules explicitly.
           submodules: false
-          persist-credentials: false
-      - name: Materialize pinned top-level upstream repositories
-        run: node scripts/materialize-top-level-submodules.mjs
       - uses: actions/setup-go@v5
         with: {go-version: '1.25'}
       - run: go test ./rgo

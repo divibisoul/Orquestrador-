@@ -37,9 +37,12 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: divibisoul/SARA
-          ref: 90fe0c93af787cf2dba560992ef247e43460a94c
+          ref: 5633cdd95a067c1c40a4b731a38976971e173d1f
           path: .e2e/SARA
           fetch-depth: 1
+
+      - name: Verify merged SARA source pin
+        run: test "$(git -C .e2e/SARA rev-parse HEAD)" = "5633cdd95a067c1c40a4b731a38976971e173d1f"
 
       - uses: actions/setup-go@v5
         with:
@@ -137,9 +140,10 @@ jobs:
         run: |
           python - <<'PY'
           import json
-          # SARA's existing test_core.py confirms 11,000 repeated characters
-          # trigger a real ARA complexity finding; benign input correctly yields IDLE.
-          text = "a" * 11000
+          # A protected identity tag produces a real ARA finding. The canonical
+          # SARA ARA path must annotate it without removing the source or its tag.
+          text = ("preservar a identidade protegida 🔒IDENTITY ao acrescentar evidência; "
+                  "manter autonomia, transparência, responsabilidade e proveniência.")
           body = {
               "operation": "grce.cycle.execute@2.0.0",
               "correlationId": "grce-full-e2e-001",
@@ -163,12 +167,40 @@ jobs:
           assert m['execution_mode']=='GRCE_EXECUTOR'
           assert result['epistemic_state']=='ACTIVE', result
           assert result['outcome']=='ACTIVE', result
+          assert 'VIOLACAO_TAG_PROTEGIDA' in json.dumps(result, ensure_ascii=False), result
           assert len(result['provenance']) >= 5
           assert len(result['evidence']) >= 1
           assert len(result['capabilities']) >= 1
           seq=[p['sequence_index'] for p in result['provenance']]
           assert seq == sorted(seq) and len(seq)==len(set(seq)), seq
           print('GRCE C1-C7-C1: ACTIVE / REAL')
+          PY
+
+      - name: Prove high-complexity input remains preserved on the real SARA path
+        run: |
+          python - <<'PY'
+          import json
+          body = {
+              "operation": "grce.cycle.execute@2.0.0",
+              "correlationId": "grce-complexity-preserved-001",
+              "metadata": {
+                  "grf_sequence_index": "2",
+                  "grf_input_text": "a" * 11000
+              }
+          }
+          json.dump(body, open("/tmp/grce-complexity-request.json", "w"))
+          PY
+          curl -fsS -H 'Authorization: Bearer e2e-n07-token-123456789' -H 'Content-Type: application/json' -X POST http://127.0.0.1:8080/v1/execute --data-binary @/tmp/grce-complexity-request.json -o /tmp/grce-complexity.json
+          python - <<'PY'
+          import json
+          outer = json.load(open('/tmp/grce-complexity.json'))
+          result = json.loads(outer['metadata']['grce_result_json'])
+          evidence = json.dumps(result, ensure_ascii=False)
+          assert outer['status'] == 'ok'
+          assert result['epistemic_state'] == 'PRESERVED', result
+          assert result['outcome'].startswith('ROLLBACK_PRESERVED:'), result
+          assert 'COMPLEXIDADE_EXCESSIVA' in evidence, result
+          print('GRCE high-complexity input: BLOCKED / PRESERVED / REAL')
           PY
 
       - name: Execute unified Nervo Vago path with ETR provenance
