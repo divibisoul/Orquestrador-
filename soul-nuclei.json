@@ -232,13 +232,13 @@
         "N06"
       ],
       "manifestAuthority": "SOUL-FUSION-MANIFEST.json",
-      "sourceRef": "894c001e48da368b58ca0b67911e63b2a859c1f3",
-      "status": "main-live-source-ref-reconciled-2026-10-16-n05",
+      "sourceRef": "64e1b8719068b153130bcdbcfbbc2c78c11e1b8c",
+      "status": "main-live-source-ref-reconciled-2026-10-16-n05-hmac-fusion",
       "contractEvidencePaths": [
         "lib/soul-mesh/endpoint.ts",
         "lib/soul-mesh/SoulMeshProtocol.ts"
       ],
-      "previousSourceRef": "87e4a5363bfd85aae4f666a6806301fdb5026172",
+      "previousSourceRef": "894c001e48da368b58ca0b67911e63b2a859c1f3",
       "sourceRefHistory": [
         {
           "sourceRef": "3bce0da91dd03bcf2c1e3765687dc357f187388b",
@@ -253,6 +253,11 @@
         {
           "sourceRef": "894c001e48da368b58ca0b67911e63b2a859c1f3",
           "observed": "2026-10-16/verified-mainline-after-functional-fusions-N05",
+          "state": "PRESERVED"
+        },
+        {
+          "sourceRef": "64e1b8719068b153130bcdbcfbbc2c78c11e1b8c",
+          "observed": "2026-10-16/merged-canonical-HMAC-response-interoperability-N05",
           "state": "CURRENT"
         }
       ]
