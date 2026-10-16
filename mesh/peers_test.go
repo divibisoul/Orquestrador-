@@ -178,9 +178,12 @@ func TestPeerClientRetriesReuseLogicalMessageID(t *testing.T) {
 		attempt++
 
 		if attempt == 1 {
+			correlation, _ := wire["correlationId"].(string)
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusInternalServerError)
-			_ = json.NewEncoder(w).Encode(map[string]any{"error": "transient"})
+			// The retryable server error must still be authenticated: the peer
+			// client correctly rejects unsigned responses before inspecting HTTP status.
+			_ = json.NewEncoder(w).Encode(signedPeerErrorResponse(correlation, "mesh.ping", secret))
 			return
 		}
 
