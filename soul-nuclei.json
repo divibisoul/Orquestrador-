@@ -34,7 +34,10 @@
   "governance": {
     "externalSourceRefsAreExactHeadAssertions": true,
     "selfSourceRefPolicy": "release-identity",
-    "masterContract": "SOUL_MASTER_ENGINEERING_CONTRACT.md"
+    "masterContract": "SOUL_MASTER_ENGINEERING_CONTRACT.md",
+    "grf": "GRF 2.0 transversal framework; N07 hosts GRCE control-plane operations while SARA/JEV/native nuclei retain their functional authority",
+    "grce": "GRCE 2.0 installed in N07; cycle remains BLOCKED until distinct real ERU/MMD/ARA/ETR/ITR/RGO hooks are proven",
+    "mainlineRefReconciledAt": "2026-10-06"
   },
   "nuclei": {
     "N01": {
@@ -56,10 +59,23 @@
         "N02"
       ],
       "manifestAuthority": "SOUL-FUSION-MANIFEST.json",
-      "sourceRef": "bba43a86f8e98de52aeb606a00ac3f51244c862a",
+      "sourceRef": "d5932bbe9e91127d497e86acd32bbb305e0c14d6",
       "status": "main-live-recovery-and-hortacore-bridge-merged",
       "contractEvidencePaths": [
         "scripts/soul-mesh-server.mjs"
+      ],
+      "previousSourceRef": "bba43a86f8e98de52aeb606a00ac3f51244c862a",
+      "sourceRefHistory": [
+        {
+          "sourceRef": "bba43a86f8e98de52aeb606a00ac3f51244c862a",
+          "observed": "2026-10-03/audit-baseline",
+          "state": "PRESERVED"
+        },
+        {
+          "sourceRef": "d5932bbe9e91127d497e86acd32bbb305e0c14d6",
+          "observed": "2026-10-06/live-mainline",
+          "state": "CURRENT"
+        }
       ]
     },
     "N02": {
@@ -82,10 +98,23 @@
         "N03"
       ],
       "manifestAuthority": "SOUL-FUSION-MANIFEST.json",
-      "sourceRef": "b8c681e1c2bf000bb614b5b0c13ca8377c857a14",
+      "sourceRef": "b10dc048429e7ea19ac0c0834e3ff3cc1ae2af7d",
       "status": "main-live-bncv2-csae-dcrs-reintegrated",
       "contractEvidencePaths": [
         "src/soul-mesh/SoulMeshProtocol.ts"
+      ],
+      "previousSourceRef": "b8c681e1c2bf000bb614b5b0c13ca8377c857a14",
+      "sourceRefHistory": [
+        {
+          "sourceRef": "b8c681e1c2bf000bb614b5b0c13ca8377c857a14",
+          "observed": "2026-10-03/audit-baseline",
+          "state": "PRESERVED"
+        },
+        {
+          "sourceRef": "b10dc048429e7ea19ac0c0834e3ff3cc1ae2af7d",
+          "observed": "2026-10-06/live-mainline",
+          "state": "CURRENT"
+        }
       ]
     },
     "N03": {
@@ -109,10 +138,23 @@
         "N04"
       ],
       "manifestAuthority": "SOUL-FUSION-MANIFEST.json",
-      "sourceRef": "7a56c4d07d31e3dacfb0fa8ef3114ab0c253a49c",
+      "sourceRef": "a8068ce15977a9624d9f2e11b7a4731c5bca0f9f",
       "status": "main-live-composition-contract-reconciled",
       "contractEvidencePaths": [
         "src/mesh/SoulMeshProtocol.ts"
+      ],
+      "previousSourceRef": "7a56c4d07d31e3dacfb0fa8ef3114ab0c253a49c",
+      "sourceRefHistory": [
+        {
+          "sourceRef": "7a56c4d07d31e3dacfb0fa8ef3114ab0c253a49c",
+          "observed": "2026-10-03/audit-baseline",
+          "state": "PRESERVED"
+        },
+        {
+          "sourceRef": "a8068ce15977a9624d9f2e11b7a4731c5bca0f9f",
+          "observed": "2026-10-06/live-mainline",
+          "state": "CURRENT"
+        }
       ]
     },
     "N04": {
@@ -135,10 +177,23 @@
         "N05"
       ],
       "manifestAuthority": "SOUL-FUSION-MANIFEST.json",
-      "sourceRef": "2bc605a1d2114ac1e39de63e922e937306dde1c4",
+      "sourceRef": "f640b959d628176488b73bd2a44fa1a85ca84be4",
       "status": "main-live-tool-capability-alias-reconciled",
       "contractEvidencePaths": [
         "lib/soul-mesh/SoulMeshProtocol.ts"
+      ],
+      "previousSourceRef": "2bc605a1d2114ac1e39de63e922e937306dde1c4",
+      "sourceRefHistory": [
+        {
+          "sourceRef": "2bc605a1d2114ac1e39de63e922e937306dde1c4",
+          "observed": "2026-10-03/audit-baseline",
+          "state": "PRESERVED"
+        },
+        {
+          "sourceRef": "f640b959d628176488b73bd2a44fa1a85ca84be4",
+          "observed": "2026-10-06/live-mainline",
+          "state": "CURRENT"
+        }
       ]
     },
     "N05": {
@@ -162,11 +217,24 @@
         "N06"
       ],
       "manifestAuthority": "SOUL-FUSION-MANIFEST.json",
-      "sourceRef": "3bce0da91dd03bcf2c1e3765687dc357f187388b",
+      "sourceRef": "87e4a5363bfd85aae4f666a6806301fdb5026172",
       "status": "main-live-inference-capability-catalog-reconciled",
       "contractEvidencePaths": [
         "lib/soul-mesh/endpoint.ts",
         "lib/soul-mesh/SoulMeshProtocol.ts"
+      ],
+      "previousSourceRef": "3bce0da91dd03bcf2c1e3765687dc357f187388b",
+      "sourceRefHistory": [
+        {
+          "sourceRef": "3bce0da91dd03bcf2c1e3765687dc357f187388b",
+          "observed": "2026-10-03/audit-baseline",
+          "state": "PRESERVED"
+        },
+        {
+          "sourceRef": "87e4a5363bfd85aae4f666a6806301fdb5026172",
+          "observed": "2026-10-06/live-mainline",
+          "state": "CURRENT"
+        }
       ]
     },
     "N06": {
@@ -190,10 +258,23 @@
         "N07"
       ],
       "manifestAuthority": "SOUL-FUSION-MANIFEST.json",
-      "sourceRef": "17c46a0ddd5edfcdb570539d2d250a78799016f2",
+      "sourceRef": "0b2ba53922046e772883a8de5bf9ecc41fa3eacb",
       "status": "main-live-composition-targets-reconciled",
       "contractEvidencePaths": [
         "lib/soul-mesh/SoulMeshProtocol.ts"
+      ],
+      "previousSourceRef": "17c46a0ddd5edfcdb570539d2d250a78799016f2",
+      "sourceRefHistory": [
+        {
+          "sourceRef": "17c46a0ddd5edfcdb570539d2d250a78799016f2",
+          "observed": "2026-10-03/audit-baseline",
+          "state": "PRESERVED"
+        },
+        {
+          "sourceRef": "0b2ba53922046e772883a8de5bf9ecc41fa3eacb",
+          "observed": "2026-10-06/live-mainline",
+          "state": "CURRENT"
+        }
       ]
     },
     "N07": {
@@ -236,7 +317,14 @@
         "mesh.supergpu.execute@1.0.0",
         "mesh.supergpu.parallel@1.0.0",
         "superagi.fabric.describe@1.0.0",
-        "superagi.fabric.execute@1.0.0"
+        "superagi.fabric.execute@1.0.0",
+        "grf.describe@2.0.0",
+        "grf.participant.describe@2.0.0",
+        "grce.describe@2.0.0",
+        "grce.bindings.describe@2.0.0",
+        "grce.cycle.execute@2.0.0",
+        "grf.participant.ingest@2.0.0",
+        "grce.sara.authoritative.execute@2.0.0"
       ],
       "fusionBoundary": {
         "owner": "N07",
@@ -262,7 +350,8 @@
         "governance": [
           "prefrontal.orbital.evaluate@1.0.0",
           "jev.systemone@1.0.0",
-          "SARA"
+          "SARA",
+          "GRF/GRCE"
         ],
         "rule": "external providers remain explicit adapters; no provider becomes a SOUL nucleus or second control plane"
       }
@@ -277,8 +366,21 @@
         "src/sara/__init__.py"
       ],
       "authority": "sara.meta / sara.core / sara.governance",
-      "sourceRef": "2da3c965aab4abdf745c0ef545d4d2ca61fd5ad2",
-      "status": "main-live-chimera-and-bayesian-runtime-merged"
+      "sourceRef": "53a7760cc3db7f77456e415ef14b3638d52df816",
+      "status": "main-live-chimera-and-bayesian-runtime-merged",
+      "previousSourceRef": "2da3c965aab4abdf745c0ef545d4d2ca61fd5ad2",
+      "sourceRefHistory": [
+        {
+          "sourceRef": "2da3c965aab4abdf745c0ef545d4d2ca61fd5ad2",
+          "observed": "2026-10-03/audit-baseline",
+          "state": "PRESERVED"
+        },
+        {
+          "sourceRef": "53a7760cc3db7f77456e415ef14b3638d52df816",
+          "observed": "2026-10-06/live-mainline",
+          "state": "CURRENT"
+        }
+      ]
     }
   },
   "continuityLedgerVersion": 1,
@@ -499,5 +601,32 @@
         "status": "STRUCTURAL"
       }
     ]
+  },
+  "grf_grce": {
+    "schema_version": "2.0.0",
+    "control_plane": "N07",
+    "canonical_mesh": "soul-mesh/1",
+    "operations": [
+      "grf.describe@2.0.0",
+      "grf.participant.describe@2.0.0",
+      "grf.participant.ingest@2.0.0",
+      "grce.describe@2.0.0",
+      "grce.bindings.describe@2.0.0",
+      "grce.cycle.execute@2.0.0",
+      "grce.sara.authoritative.execute@2.0.0"
+    ],
+    "invariants": "I1-I18",
+    "layers": [
+      "L0",
+      "L1",
+      "L2",
+      "L3",
+      "L4",
+      "L5",
+      "L6",
+      "L7"
+    ],
+    "state": "PROJECTED",
+    "rule": "transversal; no second nucleus; no second Mesh"
   }
 }
