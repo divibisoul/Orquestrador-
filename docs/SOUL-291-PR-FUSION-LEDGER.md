@@ -1284,3 +1284,21 @@ Esta entrada é estritamente aditiva. Não substitui nem corrige retroativamente
 - **Estado técnico desta rodada:** correção de configuração implementada; workflow ainda sem resultado terminal; **não é PASS**. Sem merge e sem promoção de aresta.
 
 Entrada cumulativa: nenhum registro, arquivo de runtime, PR de origem ou branch histórica foi apagado ou reescrito.
+
+
+## Atualização append-only — N06↔N05 primeiro elo: E2E sem banco fictício (2026-10-16 UTC)
+
+### Correção candidata no N06 #46
+
+- Head atual observado: `a7b87bc6564ea38615535e644fad1df6d1d7d9bc`, PR aberta em draft, base `main`, 5 arquivos, +470/-1 linhas.
+- O script `scripts/n05-n06-real-process-e2e.mjs` também fabricava uma URL `POSTGRES_URL` de localhost quando nenhuma variável era fornecida. Corrigido para exigir explicitamente uma URL e falhar antes de iniciar processos quando ela não existir. O fallback fixo de `AUTH_SECRET` foi substituído por geração aleatória efêmera.
+- `.github/workflows/n05-n06-real-process-e2e.yml` agora provisiona PostgreSQL 16 com health-check `pg_isready` e entrega a URL real somente ao passo E2E. A URL permanece ausente nas etapas de build para evitar executar migrações sem uma intenção de validar o esquema. Não afirmar que o E2E prova migrações ou dados persistidos; ele prova comunicação Mesh/HMAC entre os processos e exige que a dependência PostgreSQL declarada esteja viva.
+- A descrição da PR recebeu adendo append-only para que a observação sobre o antigo fallback não seja confundida com o código atual.
+
+### Estado de CI após a correção
+
+- N06 #46, head `a7b87bc6564ea38615535e644fad1df6d1d7d9bc`: 8 workflows consultados, 6 QUEUED, 2 PENDING, nenhum com conclusão.
+- Não foi possível ler jobs/timestamps detalhados na consulta desta rodada. A idade efetiva de fila e a causa permanecem **UNMEASURABLE**; ainda não se pode afirmar PASS, falha de runner ou aprovação bloqueada.
+- A ordem de promoção permanece intacta: N06↔N05 é o primeiro gate. O N05↔N04 foi auditado e corrigido em paralelo, mas não se promove antes do resultado exato de N06↔N05 e de seus checks obrigatórios.
+
+Entrada somente aditiva. Nenhuma PR foi mesclada, branch foi forçada, fonte foi excluída ou histórico foi substituído.
