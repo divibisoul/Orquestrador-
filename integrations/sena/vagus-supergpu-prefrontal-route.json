@@ -1,0 +1,238 @@
+{
+  "schema_version": "1.0.0",
+  "status": "SPEC_ONLY",
+  "purpose": "Define the single canonical route for SENA general-core integration with both SuperGPU and Neocortex Prefrontal exclusively through the existing Nervo Vago/VagusBus signal transport.",
+  "invariants": [
+    "SENA is an optional capability, not a new SOUL nucleus or control plane.",
+    "Every SENA↔SuperGPU and SENA↔Neocortex Prefrontal connection must traverse the single logical Nervo Vago/VagusBus signal transport; no direct bypass is allowed.",
+    "SOUL Mesh 1.1.0 remains the canonical request/response and federation contract owned by N07.",
+    "SuperGPU owns compute admission and scheduling; SENA must not allocate resources directly or infer idle capacity from a fixed percentage.",
+    "Neocortex Prefrontal owns evaluation, inhibition, prioritization and commit; SENA outputs are candidates, not commands.",
+    "HortaCore remains the authoritative state persistence path; SARA remains regeneration/provenance authority; JEV retains typed decision guardrails.",
+    "No live path is REAL until authenticated E2E evidence verifies every hop, hashes, deadlines, provenance and rollback."
+  ],
+  "route": [
+    {
+      "sequence": 1,
+      "from": "N07 SOUL Mesh 1.1.0",
+      "to": "SENA adapter",
+      "operation": "sena.adaptive.evaluate@1.0.0",
+      "mode": "shadow|assist|offline_evaluation",
+      "required": [
+        "trace_id",
+        "correlation_id",
+        "input_hash",
+        "deadline_unix_ms",
+        "source_revision"
+      ],
+      "owner": "N07",
+      "status": "SPEC_ONLY"
+    },
+    {
+      "sequence": 2,
+      "from": "SENA adapter",
+      "to": "Nervo Vago / VagusBus",
+      "operation": "publish typed SENA request envelope",
+      "required": [
+        "schema_version",
+        "trace_id",
+        "correlation_id",
+        "sequence_index",
+        "input_hash",
+        "payload_hash",
+        "source_revision",
+        "deadline_unix_ms",
+        "evidence_state"
+      ],
+      "owner": "Existing VagusBus",
+      "status": "SPEC_ONLY"
+    },
+    {
+      "sequence": 3,
+      "from": "Nervo Vago / VagusBus",
+      "to": "SuperGPU",
+      "operation": "request bounded compute admission",
+      "required": [
+        "resource_budget",
+        "queue_budget",
+        "deadline_unix_ms",
+        "cancellation_token",
+        "model_revision"
+      ],
+      "owner": "Existing SuperGPU via N07 admission",
+      "status": "SPEC_ONLY"
+    },
+    {
+      "sequence": 4,
+      "from": "SuperGPU",
+      "to": "Nervo Vago / VagusBus",
+      "operation": "publish admission grant or explicit refusal",
+      "required": [
+        "admission_id",
+        "resource_grant",
+        "model_revision",
+        "input_hash",
+        "evidence_state"
+      ],
+      "owner": "Existing SuperGPU",
+      "status": "SPEC_ONLY"
+    },
+    {
+      "sequence": 5,
+      "from": "Nervo Vago / VagusBus",
+      "to": "SENA general core",
+      "operation": "deliver admitted inference/offline-evaluation request",
+      "required": [
+        "admission_id",
+        "resource_grant",
+        "model_revision",
+        "input_hash",
+        "trace_id",
+        "correlation_id"
+      ],
+      "owner": "Existing VagusBus",
+      "status": "SPEC_ONLY"
+    },
+    {
+      "sequence": 6,
+      "from": "SENA general core",
+      "to": "Nervo Vago / VagusBus",
+      "operation": "publish candidate, scores and provenance",
+      "required": [
+        "candidate_id",
+        "output_hash",
+        "confidence_calibration_revision",
+        "risk_features",
+        "provenance_ref",
+        "deadline_unix_ms"
+      ],
+      "owner": "SENA publishes signal only; no decision authority",
+      "status": "SPEC_ONLY"
+    },
+    {
+      "sequence": 7,
+      "from": "Nervo Vago / VagusBus",
+      "to": "Neocortex Prefrontal",
+      "operation": "deliver candidate for evaluation, inhibition and prioritization",
+      "required": [
+        "candidate_id",
+        "output_hash",
+        "trace_id",
+        "correlation_id",
+        "provenance_ref",
+        "deadline_unix_ms"
+      ],
+      "owner": "Existing Prefrontal",
+      "status": "SPEC_ONLY"
+    },
+    {
+      "sequence": 8,
+      "from": "Neocortex Prefrontal",
+      "to": "SARA ETR + JEV",
+      "operation": "evaluate candidate decision through existing guardrails",
+      "required": [
+        "candidate_id",
+        "decision_id",
+        "trace_id",
+        "evidence_ref"
+      ],
+      "owner": "Existing SARA + JEV",
+      "status": "SPEC_ONLY"
+    },
+    {
+      "sequence": 9,
+      "from": "SARA/JEV accepted decision",
+      "to": "HortaCore via existing N07/N01 persistence path",
+      "operation": "persist approved state/evidence only",
+      "required": [
+        "decision_id",
+        "cycle_id",
+        "output_hash",
+        "evidence_chain_hash",
+        "sequence_index"
+      ],
+      "owner": "Existing HortaCore",
+      "status": "SPEC_ONLY"
+    }
+  ],
+  "front_dependencies": [
+    {
+      "repo": "divibisoul/Orquestrador-",
+      "pr": 152,
+      "role": "Public capability federation and adapter/source verification",
+      "integration_rule": "SENA consumes only verified pinned adapters; do not alter shared registries or gitlinks in this SENA branch."
+    },
+    {
+      "repo": "divibisoul/Orquestrador-",
+      "pr": 153,
+      "role": "GRCE compile boundary and SARA execution gates",
+      "integration_rule": "Wait for reconciled GRCE/SARA evidence before any decision-affecting SENA route."
+    },
+    {
+      "repo": "divibisoul/Orquestrador-",
+      "pr": 130,
+      "role": "Native multilayer neural learning",
+      "integration_rule": "Compare/compose with native neural pipeline; do not create a competing neural authority."
+    },
+    {
+      "repo": "divibisoul/Orquestrador-",
+      "pr": 127,
+      "role": "Prefrontal decision telemetry",
+      "integration_rule": "Reuse actual decision, inhibition, evaluation and commit telemetry; no duplicate counters or decision engine."
+    },
+    {
+      "repo": "divibisoul/Orquestrador-",
+      "pr": 128,
+      "role": "HortaCore adapter health",
+      "integration_rule": "Respect DEGRADED/READY semantics and existing peer-adapter ownership."
+    },
+    {
+      "repo": "divibisoul/Orquestrador-",
+      "pr": 125,
+      "role": "N07 to N01 HortaCore RGO E2E",
+      "integration_rule": "Use the existing StageEnvelope, CallWithCorrelation and evidence chain; do not add a new persistence route."
+    }
+  ],
+  "promotion_gates": [
+    "Resolve and inspect the latest heads of all referenced PRs before merging or rebasing.",
+    "Verify actual VagusBus/Nervo Vago envelope schema and SuperGPU admission API from current source, not this proposal alone.",
+    "Verify actual Prefrontal candidate/decision API and telemetry contract.",
+    "Add adapter contract tests for correlation propagation, payload bounds, deadlines, cancellation, retries and duplicate delivery.",
+    "Run authenticated E2E SENA -> VagusBus -> SuperGPU -> SENA -> Prefrontal -> SARA ETR/JEV -> HortaCore, with hashes and evidence at every hop.",
+    "Keep shadow output non-authoritative and prove kill switch/fallback; keep online training disabled until separately approved.",
+    "Mark route REAL only after the authenticated E2E test and all required CI gates pass."
+  ],
+  "forbidden": [
+    "Second Mesh, second VagusBus, second HortaCore, or second persistent memory authority.",
+    "Random or fabricated image/sensor inputs.",
+    "SENA writing directly to HortaCore or bypassing Prefrontal, SARA ETR, or JEV.",
+    "Direct GPU allocation by SENA outside SuperGPU admission.",
+    "Treating model confidence, unit tests, registry presence or health status as E2E proof."
+  ],
+  "transport_binding": {
+    "id": "nervo-vago",
+    "owner": "N07",
+    "protocol": "soul.vagus.event.v1",
+    "publish_operation": "nervo-vago.event@1.0.0",
+    "describe_operation": "nervo-vago.describe@1.0.0",
+    "delivery_gate": "SARA/ETR before consumer delivery",
+    "request_response_contract": "SOUL Mesh 1.1.0 remains the canonical request/response and federation contract",
+    "preserve_existing_components": [
+      "N01 local Nervo Vago facade over its existing EventBus",
+      "SARA shared VagusNerveBus instance",
+      "existing N07 Mesh gateway and request/response contract"
+    ],
+    "transport_candidate": {
+      "id": "nats-go",
+      "repository": "https://github.com/nats-io/nats.go",
+      "revision": "f90b0a9f9df8f42a634a4f5351df1594dada4184",
+      "state": "PROJECTED",
+      "role": "durable event transport only; not a second Mesh and not a second logical VagusBus"
+    },
+    "preserve_correlation_and_idempotency": true,
+    "no_second_mesh": true,
+    "no_second_vagus": true,
+    "no_direct_sena_bypass": true,
+    "status": "SPEC_ONLY"
+  }
+}
