@@ -253,6 +253,22 @@ func (r ExternalAdapterRegistry) validateMaterializedPin(ctx context.Context, p 
 		if len(fields) < 3 || fields[0] != "160000" || fields[1] != "commit" || fields[2] != revision {
 			return fmt.Errorf("EXTERNAL_GITLINK_REVISION_MISMATCH:%s:expected=%s", p.ID, revision)
 		}
+		// A nested provider path must resolve to its own Git worktree. Without
+		// this check git -C may walk up to the N07 parent and return its HEAD.
+		topCmd := exec.CommandContext(gitCtx, "git", "-C", root, "rev-parse", "--show-toplevel")
+		topOut, err := topCmd.Output()
+		if err != nil {
+			if gitCtx.Err() != nil {
+				return fmt.Errorf("EXTERNAL_SUBMODULE_ROOT_CHECK_TIMEOUT:%s", p.ID)
+			}
+			return fmt.Errorf("EXTERNAL_SUBMODULE_NOT_MATERIALIZED:%s", p.ID)
+		}
+		resolvedRoot, rootErr := filepath.EvalSymlinks(root)
+		resolvedTop, topErr := filepath.EvalSymlinks(strings.TrimSpace(string(topOut)))
+		if rootErr != nil || topErr != nil ||
+			filepath.Clean(resolvedRoot) != filepath.Clean(resolvedTop) {
+			return fmt.Errorf("EXTERNAL_SUBMODULE_NOT_MATERIALIZED:%s", p.ID)
+		}
 		headCmd := exec.CommandContext(gitCtx, "git", "-C", root, "rev-parse", "HEAD")
 		headOut, err := headCmd.Output()
 		if err != nil {
