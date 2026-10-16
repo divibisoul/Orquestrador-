@@ -150,22 +150,29 @@ func (r *GRCEExecutorRuntime) detect(ctx context.Context, state grf.State, c grf
 	failures := make([]grf.Failure, 0, len(items))
 	for index, item := range items {
 		detail := fmt.Sprint(item)
-		kind := "SARA/ARA"
+		source := "SARA/ARA"
+		findingKind := ""
 		if record, ok := item.(map[string]any); ok {
 			if value, exists := record["detail"]; exists {
 				detail = fmt.Sprint(value)
 			}
 			if value, exists := record["kind"]; exists {
-				detail = fmt.Sprint(value) + ": " + detail
+				findingKind = strings.TrimSpace(fmt.Sprint(value))
+				detail = findingKind + ": " + detail
 			}
+		} else if value, ok := item.(string); ok {
+			// Older SARA contracts return the category string directly.
+			findingKind = strings.TrimSpace(value)
+			detail = value
 		}
-		hash, err := grf.HashJSON(map[string]any{"index": index, "detail": detail, "correlation": c.CorrelationID})
+		hash, err := grf.HashJSON(map[string]any{"index": index, "kind": findingKind, "detail": detail, "correlation": c.CorrelationID})
 		if err != nil {
 			return nil, err
 		}
 		failures = append(failures, grf.Failure{
 			ID:                  "ara:" + hash[:16],
-			Source:              kind,
+			Kind:                findingKind,
+			Source:              source,
 			Description:         detail,
 			RequiredOpposition:  "preserve causal history while increasing state evidence",
 			PropertyNecessary:   "provenance-preserving transformation",
