@@ -870,3 +870,40 @@ Nenhuma destas três frentes pode ser fechada nesta fotografia. O próximo movim
 ### Regra de promoção nesta fotografia
 
 CI de N07 ainda está em curso no head `f2a0e03`; os reruns N01/N06 ainda estavam em fila; #156/#158 não são mergeáveis; nenhuma nova fusão foi concluída. Continuar apenas com correções pequenas, rastreáveis e cobertas por testes. Nenhum arquivo, PR, branch ou registro histórico foi apagado nesta atualização.
+
+
+## Atualização append-only — N05 HMAC fusion e N06 base reconciliação (2026-10-16 UTC)
+
+### N05 #52 — merge concluído
+
+- PR: https://github.com/divibisoul/nextjs-ai-chatbot/pull/52
+- Head validado: `75ea08296534f973015a78b0b37d82c13c954013`; os seis workflows próprios consultados terminaram SUCCESS no SHA exato.
+- O workflow E2E de N06 #46 (`38843450431`) verificou o candidato N05 exato, construiu ambos os runtimes de produção e provou HTTP/HMAC bidirecional N05↔N06 real-processo.
+- Merge commit: `64e1b8719068b153130bcdbcfbbc2c78c11e1b8c`. O merge foi não-squash e a configuração do repo informa `delete_branch_on_merge=false`; PR e branch de origem permanecem preservadas.
+
+### N07 #153 — referência N05 atualizada, história mantida
+
+- O manifesto `soul-nuclei.json` no head `24b8f49143d5728ffc69d2b982e71b9624e6f8c1` agora declara N05 em `64e1b8719068b153130bcdbcfbbc2c78c11e1b8c`, SHA real da main após o merge #52.
+- O SHA anterior `894c001e48da368b58ca0b67911e63b2a859c1f3` segue no `sourceRefHistory` como PRESERVED e `previousSourceRef`; o novo SHA é a única entrada CURRENT do núcleo N05. Nenhuma entrada histórica foi apagada.
+- A correção de N03 e a correção de aspas do Dockerfile também fazem parte da mesma branch N07. As verificações geradas para o novo head `24b8f491...` ainda estão em andamento; não há merge autorizado.
+- #156 e #158 permanecem stacked/dirty e não foram alteradas nesta rodada.
+
+### N06 #42 — merge-base sincronizado sem force-push
+
+- PR: https://github.com/divibisoul/nextjs-ai-chatbot-2000/pull/42
+- Head anterior `1c2900500f840aeb25275c10b3d27bb44fc86bf9` estava baseado numa versão anterior da main. O job de lint testou o ref sintético de merge e recuperou `delete meta.nonce` da main corrente, apesar de o arquivo na branch isolada não conter essa expressão. Rerun reproduziu a falha no merge result.
+- A árvore sintética observada tinha commit de pais `735b688be8b93768bcfe5f103a92947f28e4b5cb` (main corrente) e `1c290050...` (branch #42). Foi criado novo commit reconciliador de dois pais `e228320e53c6a8ddb88393d79322392e85803a2e`, com a árvore resultante mais uma única correção de lint em `lib/soul-mesh/N06PeerAdapter.ts`.
+- A correção substitui `delete meta.nonce` por uma reconstrução da metadata que filtra explicitamente a chave `nonce` antes de anexar o nonce de tentativa, mantendo a semântica de não herdar nonce velho e preservando o restante da metadata. O ref da branch foi movido do head esperado `1c290050...` para `e228320...` com `force=false` e expectativa de head; o commit contém os dois pais, portanto nenhum histórico foi reescrito.
+- Nova rodada de CI para #42 está em fila no head `e228320...`; o código só pode ser aprovado depois que lint, testes, build, regressões Mesh e contratos concluírem SUCCESS nesse head/merge result.
+
+### N01 #105 — tentativa Android reexecutada
+
+- Head permanece `3f560d687b01ce2ab2b2f3db3cf4c18e679a1f92`. Foi reexecutado apenas o job Android que havia encerrado com `Process crashed` e `0/0 completed`; o attempt 2 chegou à etapa de build do APK debug, com build release e instrumentação ainda pendentes na última consulta.
+- Ainda não existe relatório conclusivo dos testes instrumentados no novo attempt. A política de rede continua restringindo HTTP cleartext a loopback; a causa da falha anterior não foi declarada comprovada.
+
+### Estado geral da promoção
+
+- Fechado nesta rodada: merge N05 #52 com CI verde e E2E real bidirecional.
+- Em validação: N07 #153 (manifesto/containers/GRF-GRCE), N06 #42 (árvore reconciliada), N01 #105 (Android emulador).
+- N06 #46 permanece OPEN/DRAFT como fonte de testes e mudanças especializadas; não foi mesclada separadamente para evitar duplicação dos três caminhos de arquivos em comum com #42 e porque sua branch original habilita N07 na lista de peers executáveis. Essa fronteira precisa ser reconciliada conscientemente na unidade N06, não por merge cego.
+- Nenhuma PR, branch, arquivo ou conteúdo histórico foi apagado ou fechado nesta atualização.
