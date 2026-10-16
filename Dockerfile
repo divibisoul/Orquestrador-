@@ -6,7 +6,7 @@ COPY go.mod go.sum ./
 RUN go mod download
 COPY . .
 RUN set -eu; \
-    expected="$(git ls-tree -r HEAD integrations/external | awk '$1 == \"160000\" { count++ } END { print count+0 }')"; \
+    expected="$(git ls-tree -r HEAD integrations/external | awk '$1 == "160000" { count++ } END { print count+0 }')"; \
     test "$expected" -gt 0; \
     count=0; first=1; \
     { \

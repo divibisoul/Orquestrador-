@@ -1,5 +1,6 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { execFileSync } from 'node:child_process';
 
 const ROOT = process.cwd();
 const MATRIX_PATH = path.join(ROOT, 'soul-nuclei.json');
@@ -39,7 +40,7 @@ function isAdapter(file, content='') {
   return p.includes('/legacy/') || p.includes('adapter') || /@deprecated[\s\S]{0,120}compatibility/i.test(content);
 }
 
-const report={system:'SOUL',checker:'SOUL Architectural Integrity Engine',schemaVersion:'3.0.0',generatedAt:new Date().toISOString(),state:'PASS',duplicateAuthorities:[],duplicateProtocols:[],duplicateRegistries:[],topologyConflicts:[],contractConflicts:[],orphanCapabilities:[],legacyAdapters:[],canonicalAuthorities:[],degraded:[],remoteProvenance:[],promptContract:[],headSnapshot:[]};
+const report={system:'SOUL',checker:'SOUL Architectural Integrity Engine',schemaVersion:'3.0.0',generatedAt:new Date().toISOString(),state:'PASS',duplicateAuthorities:[],duplicateProtocols:[],protocolImplementations:[],duplicateRegistries:[],topologyConflicts:[],contractConflicts:[],orphanCapabilities:[],legacyAdapters:[],canonicalAuthorities:[],degraded:[],remoteProvenance:[],candidateProvenance:[],promptContract:[],headSnapshot:[],canonicalMeshContracts:[],nonCanonicalProtocolCopies:[],protocolImplementations:[]};
 const matrix=await readJson(MATRIX_PATH);
 
 if (matrix?.system!=='SOUL') add(report.contractConflicts,{type:'system-invalid'});
@@ -67,34 +68,102 @@ for (const [id,n] of Object.entries(matrix.nuclei??{})) for (const peer of n.pee
 }
 
 async function remoteSnapshot(id,nucleus) {
-  const token=String(process.env.SOUL_GITHUB_AUDIT_TOKEN || '').trim();
-  if (!token) { add(report.degraded,{nucleus:id,type:'remote-provenance-unverified',requiredEnv:'GITHUB_TOKEN'}); return null; }
+  const token=String(process.env.SOUL_GITHUB_AUDIT_TOKEN || process.env.GITHUB_TOKEN || '').trim();
+  if (!token) { add(report.degraded,{nucleus:id,type:'remote-provenance-unverified',requiredEnv:'SOUL_GITHUB_AUDIT_TOKEN'}); return null; }
   const headers={accept:'application/vnd.github+json',authorization:`Bearer ${token}`,'x-github-api-version':'2022-11-28','user-agent':'SOUL-Architectural-Integrity-Engine'};
-  const repoResponse=await fetch(`${API}/repos/${nucleus.repository}`,{headers});
-  if (!repoResponse.ok) throw new Error(`REMOTE_REPO_LOOKUP_FAILED:${id}:${repoResponse.status}`);
-  const repo=await repoResponse.json(); const branch=repo.default_branch;
-  const refResponse=await fetch(`${API}/repos/${nucleus.repository}/git/ref/heads/${encodeURIComponent(branch)}`,{headers});
-  if (!refResponse.ok) throw new Error(`REMOTE_REF_LOOKUP_FAILED:${id}:${refResponse.status}`);
-  const ref=await refResponse.json(); const actualSha=ref?.object?.sha; const expectedSha=nucleus.sourceRef;
-  const provenance={nucleus:id,repository:nucleus.repository,branch,expectedSha,actualSha,state:actualSha===expectedSha?'MATCH':'DRIFT'}; report.remoteProvenance.push(provenance);
-  if (id!=='N07' && actualSha!==expectedSha) add(report.contractConflicts,{nucleus:id,type:'source-ref-drift',expectedSha,actualSha});
-  return {id,nucleus,origin:'remote',commit:actualSha,files:[]};
+  const readRemote=async(url)=>{const response=await fetch(url,{headers});if(!response.ok)throw new Error('REMOTE_API_FAILED:'+id+':'+response.status+':'+url);return response.json();};
+  const repo=await readRemote(`${API}/repos/${nucleus.repository}`);
+  const branch=repo.default_branch;
+  const ref=await readRemote(`${API}/repos/${nucleus.repository}/git/ref/heads/${encodeURIComponent(branch)}`);
+  const actualSha=ref?.object?.sha;
+  if (!actualSha) throw new Error('REMOTE_HEAD_SHA_MISSING:'+id);
+  const expectedSha=String(nucleus.sourceRef??'');
+  report.remoteProvenance.push({nucleus:id,repository:nucleus.repository,branch,expectedSha,actualSha,state:actualSha===expectedSha?'MATCH':'DRIFT'});
+  if (id!=='N07' && /^[0-9a-f]{40}$/.test(expectedSha) && actualSha!==expectedSha) add(report.contractConflicts,{nucleus:id,type:'source-ref-drift',expectedSha,actualSha});
+  let snapshotSha=/^[0-9a-f]{40}$/.test(expectedSha)?expectedSha:actualSha;
+  const validationPullRequest=Number(nucleus.validationPullRequest??0);
+  if (validationPullRequest > 0) {
+    if (!Number.isInteger(validationPullRequest)) throw new Error('VALIDATION_PULL_REQUEST_INVALID:'+id);
+    const candidate=await readRemote(`${API}/repos/${nucleus.repository}/pulls/${validationPullRequest}`);
+    const candidateSha=String(candidate?.head?.sha??'');
+    const candidateRepo=String(candidate?.head?.repo?.full_name??'');
+    if (!/^[0-9a-f]{40}$/.test(candidateSha) || candidateRepo!==nucleus.repository) {
+      throw new Error('VALIDATION_PULL_REQUEST_HEAD_INVALID:'+id+':'+validationPullRequest);
+    }
+    if (candidate.state!=='open' && candidate.merged!==true) {
+      throw new Error('VALIDATION_PULL_REQUEST_NOT_ACTIVE:'+id+':'+validationPullRequest);
+    }
+    report.candidateProvenance.push({
+      nucleus:id,
+      repository:nucleus.repository,
+      pullRequest:validationPullRequest,
+      headRef:String(candidate?.head?.ref??''),
+      candidateSha,
+      mainBranch:branch,
+      expectedMainSha:expectedSha,
+      actualMainSha:actualSha,
+      draft:Boolean(candidate?.draft),
+      state:candidate?.merged===true?'MERGED_CANDIDATE':'OPEN_PR_CANDIDATE',
+    });
+    snapshotSha=candidateSha;
+  }
+  const tree=await readRemote(`${API}/repos/${nucleus.repository}/git/trees/${snapshotSha}?recursive=1`);
+  if (tree.truncated) throw new Error('REMOTE_TREE_TRUNCATED:'+id+':'+snapshotSha);
+  const evidencePaths=new Set([...(nucleus.entrypoints??[]),...(nucleus.contractEvidencePaths??[])]);
+  const relevantPath=/(?:SoulMeshProtocol|soul-mesh|N06|N06ToolRegistry|createN06Tools|createNucleus06Tools)/i;
+  const candidates=(tree.tree??[]).filter(entry=>entry.type==='blob'&&TS_EXTENSIONS.has(path.extname(entry.path))&&(evidencePaths.has(entry.path)||relevantPath.test(entry.path)));
+  if (candidates.length===0) throw new Error('REMOTE_SNAPSHOT_EMPTY:'+id+':'+snapshotSha);
+  if (candidates.length>180) throw new Error('REMOTE_SNAPSHOT_CANDIDATE_LIMIT_EXCEEDED:'+id+':'+candidates.length);
+  const files=[];
+  for (const entry of candidates) {
+    if (!entry.sha) throw new Error('REMOTE_BLOB_SHA_MISSING:'+id+':'+entry.path);
+    const blob=await readRemote(`${API}/repos/${nucleus.repository}/git/blobs/${entry.sha}`);
+    if (blob.encoding!=='base64'||typeof blob.content!=='string') throw new Error('REMOTE_BLOB_CONTENT_INVALID:'+id+':'+entry.path);
+    files.push({file:entry.path,content:Buffer.from(blob.content,'base64').toString('utf8')});
+  }
+  if (!files.length) throw new Error('REMOTE_SNAPSHOT_EMPTY:'+id+':'+snapshotSha);
+  return {id,nucleus,origin:'remote',commit:snapshotSha,files};
+}
+
+async function workspaceSnapshot(nucleus) {
+  const commit=execFileSync('git',['rev-parse','HEAD'],{cwd:ROOT,encoding:'utf8'}).trim();
+  const tracked=execFileSync('git',['ls-files','-z'],{cwd:ROOT,encoding:'utf8'}).split('\0').filter(Boolean);
+  const files=[];
+  for (const file of tracked) {
+    if (!TS_EXTENSIONS.has(path.extname(file))) continue;
+    files.push({file,content:await fs.readFile(path.join(ROOT,file),'utf8')});
+  }
+  if (!files.length) throw new Error('WORKSPACE_SNAPSHOT_EMPTY:N07:'+commit);
+  return {id:'N07',nucleus,origin:'working-tree',commit,files};
 }
 
 const sourceResults=[];
 for (const [id,nucleus] of Object.entries(matrix.nuclei??{})) {
   const root=path.join(SOURCES_ROOT,id); let local=null;
-  if (await fs.stat(root).then(s=>s.isDirectory()).catch(()=>false)) {
+  if (id==='N07') {
+    try { local=await workspaceSnapshot(nucleus); }
+    catch (error) { add(report.degraded,{nucleus:id,type:'workspace-snapshot-unavailable',error:String(error)}); }
+  } else if (await fs.stat(root).then(s=>s.isDirectory()).catch(()=>false)) {
     const files=[]; for (const f of await walk(root)) files.push({file:path.relative(root,f),content:await fs.readFile(f,'utf8')});
     local={id,nucleus,origin:'snapshot',commit:nucleus.sourceRef??null,files};
   }
-  const remote=process.env.SOUL_GITHUB_AUDIT_TOKEN ? await remoteSnapshot(id,nucleus) : null;
-  const selected=remote ?? local;
+  let remote=null;
+  if (id!=='N07') {
+    try { remote=await remoteSnapshot(id,nucleus); }
+    catch (error) { add(report.degraded,{nucleus:id,type:'remote-snapshot-unavailable',error:String(error)}); }
+  }
+  const selected=id==='N07'?local:(remote??local);
   if (!selected) add(report.degraded,{nucleus:id,type:'source-snapshot-unavailable'});
+  else if (!Array.isArray(selected.files)||selected.files.length===0) add(report.degraded,{nucleus:id,type:'source-snapshot-empty',origin:selected.origin??'unknown',commit:selected.commit??null});
   else sourceResults.push(selected);
 }
 
 for (const family of DUPLICATION_FAMILIES) {
+  // A shared wire protocol is implemented at each nucleus boundary. Identical
+  // protocol symbols in separate repositories are implementations, not multiple
+  // global authorities. N07's declarative canonicalMesh remains the one authority.
+  if (family.id==='mesh-protocol') continue;
+
   const authorities=[];
   for (const source of sourceResults) for (const file of source.files) {
     if (isAdapter(file.file,file.content)) {
@@ -106,11 +175,152 @@ for (const family of DUPLICATION_FAMILIES) {
   }
   if (authorities.length>1) {
     const issue={family:family.id,canonical:family.canonical,authorities};
-    if (family.id==='mesh-protocol') add(report.duplicateProtocols,issue);
-    else if (family.id==='n06-tool-registry') add(report.duplicateRegistries,issue);
+    if (family.id==='n06-tool-registry') add(report.duplicateRegistries,issue);
     else add(report.duplicateAuthorities,issue);
   }
 }
+
+// The cross-nucleus protocol is one wire contract with a canonical implementation
+// per independent runtime. Validate each declared canonical module; do not mistake
+// identical symbol names in separate repositories for duplicate global authorities.
+const protocolFamily = DUPLICATION_FAMILIES.find(f => f.id === 'mesh-protocol');
+const protocolImplementations = [];
+const canonicalMeshContracts = [];
+const nonCanonicalProtocolCopies = [];
+const normalizeRepoPath = value => String(value ?? '').replaceAll('\\', '/').replace(/^\.\/+/, '');
+const expectedMeshKinds = ['request', 'response', 'event', 'error'];
+for (const source of sourceResults) {
+  // N07's canonical Mesh envelope is Go-owned; the TypeScript contract gate applies to N01-N06.
+  if (source.id === 'N07') continue;
+
+  const canonicalPath = normalizeRepoPath(source.nucleus.canonicalMeshContractPath);
+  if (!canonicalPath) {
+    add(report.contractConflicts, { nucleus: source.id, type: 'canonical-mesh-contract-path-missing' });
+    continue;
+  }
+
+  const canonicalFile = source.files.find(file => normalizeRepoPath(file.file) === canonicalPath);
+  if (!canonicalFile) {
+    add(report.contractConflicts, {
+      nucleus: source.id,
+      type: 'canonical-mesh-contract-file-missing',
+      path: canonicalPath,
+      commit: source.commit ?? null,
+    });
+    canonicalMeshContracts.push({ nucleus: source.id, file: canonicalPath, state: 'MISSING' });
+    continue;
+  }
+
+  const content = canonicalFile.content;
+  const protocolMatch = content.match(/(?:export\s+)?const\s+SOUL_MESH_PROTOCOL\s*=\s*['"]([^'"]+)['"]/);
+  const versionMatch = content.match(/(?:export\s+)?const\s+SOUL_MESH_CONTRACT_VERSION\s*=\s*['"]([^'"]+)['"]/);
+  const kindMatch = content.match(/\btype\s+SoulMeshKind\s*=\s*([^;\n]+)/);
+  const kinds = kindMatch ? Array.from(kindMatch[1].matchAll(/['"]([^'"]+)['"]/g), match => match[1]) : [];
+  const nucleiMatch = content.match(/(?:export\s+)?const\s+SOUL_NUCLEI\b[^=]*=\s*\[([^\]]+)\]/);
+  const nuclei = nucleiMatch ? Array.from(nucleiMatch[1].matchAll(/['"](N0[1-7])['"]/g), match => match[1]) : [];
+  const checks = {
+    protocol: protocolMatch?.[1] === matrix.canonicalMesh.protocol,
+    contractVersion: versionMatch?.[1] === matrix.canonicalMesh.contractVersion,
+    canonicalKinds: JSON.stringify([...kinds].sort()) === JSON.stringify([...expectedMeshKinds].sort()),
+    numericTimestamp: /\btimestamp\s*:\s*number\b/.test(content),
+    completeNucleusSet: JSON.stringify(nuclei) === JSON.stringify(IDS),
+    messageFactory: /\bfunction\s+createSoulMeshMessage\b/.test(content),
+    messageValidator: /\b(?:function|const)\s+(?:validateSoulMeshMessage|validateMessage|isSoulMeshMessage)\b/.test(content),
+    messageEnvelopeFields: /\bid\s*:\s*string\b/.test(content)
+      && /\bcorrelationId\s*:\s*string\b/.test(content)
+      && /\bsource\s*:/.test(content)
+      && /\btarget\s*:/.test(content)
+      && /\bkind\s*:/.test(content)
+      && /\bpayload\s*:/.test(content)
+      && /\btimestamp\s*:/.test(content),
+  };
+  const failedChecks = Object.entries(checks).filter(([, passed]) => !passed).map(([name]) => name);
+  canonicalMeshContracts.push({
+    nucleus: source.id,
+    file: canonicalPath,
+    protocol: protocolMatch?.[1] ?? null,
+    contractVersion: versionMatch?.[1] ?? null,
+    kinds,
+    nuclei,
+    checks,
+    state: failedChecks.length ? 'FAIL' : 'PASS',
+  });
+  if (failedChecks.length) {
+    add(report.contractConflicts, {
+      nucleus: source.id,
+      file: canonicalPath,
+      type: 'canonical-mesh-contract-invalid',
+      failedChecks,
+      expectedProtocol: matrix.canonicalMesh.protocol,
+      expectedContractVersion: matrix.canonicalMesh.contractVersion,
+      expectedKinds: expectedMeshKinds,
+      expectedNuclei: IDS,
+    });
+  }
+
+  const activePaths = new Set([
+    ...(source.nucleus.entrypoints ?? []),
+    ...(source.nucleus.contractEvidencePaths ?? []),
+  ].map(normalizeRepoPath));
+
+  for (const file of source.files) {
+    const relativePath = normalizeRepoPath(file.file);
+    const definitions = protocolFamily.patterns.filter(pattern => pattern.test(file.content)).map(String);
+    if (!definitions.length) continue;
+
+    if (isAdapter(file.file, file.content)) {
+      report.legacyAdapters.push({ nucleus: source.id, family: protocolFamily.id, file: relativePath });
+      continue;
+    }
+
+    const fileProtocol = file.content.match(/(?:export\s+)?const\s+SOUL_MESH_PROTOCOL\s*=\s*['"]([^'"]+)['"]/);
+    const fileVersion = file.content.match(/(?:export\s+)?const\s+SOUL_MESH_CONTRACT_VERSION\s*=\s*['"]([^'"]+)['"]/);
+    const isCanonical = relativePath === canonicalPath;
+    const isActiveBinding = activePaths.has(relativePath);
+    const role = isCanonical ? 'canonical-contract' : (isActiveBinding ? 'active-runtime-binding' : 'non-canonical-copy');
+    protocolImplementations.push({
+      nucleus: source.id,
+      file: relativePath,
+      role,
+      protocol: fileProtocol?.[1] ?? null,
+      contractVersion: fileVersion?.[1] ?? null,
+      definitions,
+    });
+
+    if (isCanonical) continue;
+
+    if (isActiveBinding) {
+      // A declared active route must import/re-export its canonical schema, not define another one.
+      add(report.duplicateProtocols, {
+        family: protocolFamily.id,
+        canonical: canonicalPath,
+        authorities: [{
+          nucleus: source.id,
+          file: relativePath,
+          definitions,
+          reason: 'active entrypoint declares Mesh protocol symbols outside its canonical module',
+        }],
+      });
+      continue;
+    }
+
+    // Keep old or auxiliary copies visible for later adapter reconciliation; their presence
+    // alone is not evidence of a second active authority in the declared runtime path.
+    nonCanonicalProtocolCopies.push({
+      nucleus: source.id,
+      file: relativePath,
+      canonical: canonicalPath,
+      protocol: fileProtocol?.[1] ?? null,
+      contractVersion: fileVersion?.[1] ?? null,
+      containsLegacyAck: /\b(?:kind\s*:\s*[^;\n]*|type\s+\w*MeshKind\s*=)\s*[^;\n]*['"]ack['"]/.test(file.content),
+      containsStringTimestamp: /\btimestamp\s*:\s*string\b/.test(file.content),
+      state: 'NON_CANONICAL_COPY_RETAINED',
+    });
+  }
+}
+report.canonicalMeshContracts = canonicalMeshContracts;
+report.nonCanonicalProtocolCopies = nonCanonicalProtocolCopies;
+report.protocolImplementations = protocolImplementations;
 
 const n06Source = sourceResults.find(source => source.id === 'N06');
 const n06EngineFiles = n06Source
@@ -119,10 +329,24 @@ const n06EngineFiles = n06Source
 if (n06Source && !n06EngineFiles.length) add(report.contractConflicts,{nucleus:'N06',type:'canonical-capability-engine-not-found'});
 
 const n03Source = sourceResults.find(source => source.id === 'N03');
+const n03CanonicalPath = normalizeRepoPath(n03Source?.nucleus.canonicalMeshContractPath);
+const n03ActivePaths = new Set([
+  ...(n03Source?.nucleus.entrypoints ?? []),
+  ...(n03Source?.nucleus.contractEvidencePaths ?? []),
+].map(normalizeRepoPath));
 const n03Legacy = n03Source
-  ? n03Source.files.filter(f=>/(^|\/)soul-mesh\/SoulMeshProtocol\.(ts|tsx|js|mjs)$/.test(f.file) && !isAdapter(f.file,f.content))
+  ? n03Source.files.filter(f =>
+      /(^|\/)soul-mesh\/SoulMeshProtocol\.(ts|tsx|js|mjs)$/.test(normalizeRepoPath(f.file))
+      && normalizeRepoPath(f.file) !== n03CanonicalPath
+      && n03ActivePaths.has(normalizeRepoPath(f.file))
+      && !isAdapter(f.file, f.content)
+      && protocolFamily.patterns.some(p => p.test(f.content)))
   : [];
-if (n03Legacy.length) add(report.duplicateProtocols,{family:'mesh-protocol',canonical:'lib/soul-mesh/SoulMeshProtocol.ts',authorities:n03Legacy.map(f=>({nucleus:'N03',file:f.file,reason:'legacy protocol is active, not adapter'}))});
+if (n03Legacy.length) add(report.duplicateProtocols, {
+  family: 'mesh-protocol',
+  canonical: n03CanonicalPath,
+  authorities: n03Legacy.map(f => ({ nucleus: 'N03', file: f.file, reason: 'active N03 entrypoint declares a second protocol schema' })),
+});
 
 const critical=[...report.duplicateAuthorities,...report.duplicateRegistries,...report.duplicateProtocols,...report.topologyConflicts,...report.contractConflicts,...report.orphanCapabilities];
 if (critical.length) report.state='FAIL'; else if (report.degraded.length) report.state='DEGRADED';
