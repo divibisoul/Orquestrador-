@@ -1385,3 +1385,37 @@ Para habilitar a execução no runtime, configure no ambiente privado do N01 `SO
 A validação positiva de usuário autorizado e SuperGPU real continua **UNMEASURABLE** até a CI executar e o ambiente oferecer sessão Supabase real, allowlist e acelerador N07 disponível. Os checks da cabeça atual serão reconsultados; nenhuma CI verde é inferida de status enfileirado.
 
 Registro aditivo: nenhuma capacidade, rota ou histórico foi removido; nenhuma fusão de PR ou atualização forçada de branch ocorreu.
+
+
+## Correção de política HMAC fail-closed — N04 #51 (2026-10-16 UTC)
+
+Head candidato: `924a93a7a0631b683a1c8f87f426c204a0f06377`.
+
+A auditoria detectou que `lib/soul-mesh/peer-client.ts` permitia um caminho Bearer-only em produção quando `SOUL_MESH_TOKEN` existia e `SOUL_MESH_HMAC_SECRET` estava ausente. Nesse caminho, a verificação de HMAC da resposta era ignorada. A correção agora exige segredo HMAC forte em produção mesmo quando Bearer está configurado; Bearer continua complementar, nunca substitui autenticação de mensagem. O envelope da resposta também precisa ter ID, capability correspondente à requisição e timestamp válido antes de o cliente processar o resultado.
+
+Regressão adicionada em `lib/soul-mesh/SoulMeshHmac.test.ts`: produção com Bearer configurado e sem HMAC precisa rejeitar `SOUL_MESH_HMAC_NOT_CONFIGURED:N05` sem realizar I/O de rede.
+
+Estado das verificações no head atual: 7 runs — 6 QUEUED, 1 PENDING e zero conclusões. O E2E N04↔N05 (run `38974230750`) está PENDING e a consulta de jobs não retornou jobs iniciados. **UNMEASURABLE**, não PASS. PR permanece draft.
+
+## Correção do cliente secundário N06 — HMAC obrigatório e envelope N07 Go-compatible (2026-10-16 UTC)
+
+Head candidato: `369906219370580f783102f874d18af195d1b388`.
+
+A auditoria da rota secundária `lib/soul-mesh/peer-client.ts` encontrou o mesmo desvio: Bearer podia sustentar requisição de produção sem HMAC, e resposta sem assinatura não era rejeitada se o segredo estivesse ausente. A rota agora exige HMAC em produção, verifica o contrato de resposta (protocolo, versão, ID, correlação, origem/destino, capability, kind e janela temporal) e continua enviando Bearer junto ao HMAC quando configurado.
+
+Para N07, o cliente secundário reutiliza `signN07Request` e `verifyN07LegacyResponse` do adaptador principal em vez de assinar/validar como se N07 usasse o mesmo contrato canônico dos demais peers. O serializer agora preserva ordem de campos da struct Go, ordenação lexical UTF-8 dos mapas aninhados e escaping JSON compatível. Uma regressão independente cobre chaves numéricas textuais `"10"` e `"2"`.
+
+Estado no head atual: 9 runs — 7 QUEUED, 2 PENDING e zero conclusões. E2E N05↔N06 (`38974645332`) e Soul Mesh CI (`38974645407`) estão PENDING; consultas de jobs não retornaram jobs iniciados. **UNMEASURABLE**, não PASS. PR permanece draft.
+
+## Quadro operacional único — 2026-10-16 22:16 UTC
+
+| Frente | Head | Estado do GitHub Actions | Decisão |
+|---|---|---|---|
+| N01 #106 | `6c3f40bcbf6f633ab06700f0c3719c0f7b1e8710` | 21 QUEUED, 1 PENDING | UNMEASURABLE; o E2E pendente não expõe jobs |
+| N04 #51 | `924a93a7a0631b683a1c8f87f426c204a0f06377` | 6 QUEUED, 1 PENDING | UNMEASURABLE |
+| N06 #46 | `369906219370580f783102f874d18af195d1b388` | 7 QUEUED, 2 PENDING | UNMEASURABLE |
+| N07 #153 | `ba8d5bc07a8edf4d8d181f78027e881952a87b6c` | 13 QUEUED, 1 SUCCESS | Parcial; GRF/GRCE real E2E continua enfileirado |
+
+A consulta individual mostra jobs em estado `queued` sem `started_at`/runner e execuções E2E pendentes sem lista de jobs. A página oficial de status pública do GitHub reporta **All Systems Operational** e nenhum incidente listado em 16 de outubro de 2026; isso não prova a causa destas filas específicas nem exclui uma condição de concorrência/runner do repositório ou organização. Não há ação de dispatch de workflow exposta pelo conector nesta sessão. Portanto, não reexecutar trabalho enfileirado nem criar mudanças de código para forçar uma nova fila. O próximo passo operacional é obter diagnóstico de Actions/runner concurrency pelo contexto proprietário quando disponível, enquanto a revisão de código avança por frentes independentes.
+
+Nenhuma dessas correções é equivalente a CI verde ou a uma prova completa de comunicação de todos os núcleos. O roteiro de promoção segue N06↔N05 → N05↔N04 → N04↔N03 → N03↔N02 → N02↔N01 → comissão N01↔N06↔N07. Nenhuma PR draft foi promovida, mesclada ou apagada.
