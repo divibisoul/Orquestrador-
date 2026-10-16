@@ -1101,3 +1101,30 @@ Nenhum arquivo, PR de origem ou branch histórica foi apagado, fechado ou reescr
 - Ordem de comissão preservada: a N06↔N05 ainda precisa fechar primeiro com E2E real; a nova N04↔N05 deve fechar antes de avançar, e N01 tem a nova correção própria separada. A ordem de dependência não autoriza misturar evidência de pares distintos.
 
 Nenhum arquivo, PR de origem ou branch histórico foi excluído, encerrado ou reescrito por este adendo.
+
+
+## Atualização append-only — N01 gateway: verificação canônica/legada de respostas dos peers (2026-10-16 UTC)
+
+### N01 PR #106 — reparo incremental no encaminhamento de saída
+
+- PR: https://github.com/divibisoul/aeternum-core-29/pull/106
+- Branch: `fusion/n01-hortacore-clareira-mesh-20261016`
+- Head exato após a alteração de código/testes: `3f2776d66faeb3e9a167c1b351b47ef0f65add87`.
+- Escopo atual informado pelo GitHub: 89 arquivos alterados, +6.078/-426 linhas; o inventário de arquivos mantém zero arquivos inteiros removidos. A branch permanece draft/baseada em `main`.
+- Defeito confirmado em `scripts/soul-mesh-server.mjs`: o `forward()` verificava toda resposta de peer exclusivamente com `canonicalLegacyResponse`. Isso rejeitaria respostas canonical HMAC emitidas por N05/N06 e pela nova resposta canônica de N04, ainda que a rota/correlação estivessem corretas.
+- Correção aditiva: novo `scripts/soul-mesh-peer-response-auth.mjs`, integrado ao caminho real de `forward()`. O mapa de contrato é explícito: N02/N07 exigem assinatura legada; N05/N06 exigem assinatura canônica; N03/N04 aceitam qualquer uma das duas **somente após verificação HMAC válida** durante a transição; peer desconhecido falha fechado.
+- O teste existente `scripts/test-n01-protocol-hmac.mjs`, chamado por `SOUL N01 validation`, foi ampliado para construir assinaturas independentes nos dois formatos para cada peer N02–N07 e exigir rejeição de HMAC adulterado em todos os casos. O teste de ingress HMAC/replay original foi mantido, não substituído.
+
+### Bloqueio separado que ainda exige correção
+
+- Revisão da branch #106 encontrou `src/core/soul-mesh/peerClient.ts` executando chamadas diretas do browser a peers, com token opcional `VITE_SOUL_MESH_TOKEN` e sem validação do HMAC da resposta. Variáveis prefixadas `VITE_` são incluídas no bundle do browser; portanto, esse token não pode ser considerado secreto de servidor.
+- Isso não foi declarado corrigido na atual mudança do gateway. Antes de certificar o caminho UI/browser de N01 como autenticado, a próxima alteração precisa identificar e usar a fronteira real de gateway de servidor, encaminhar chamadas com autenticação no servidor e validar assinatura/correlação da resposta sem expor segredo no navegador. A rota atual `/mesh/out` foi inspecionada e, no código presente, também funciona como ingress direcionado ao N01; não deve ser reaproveitada como outbound sem corrigir seu contrato.
+- A rota server-side `forward()` agora valida respostas canônicas/legadas conforme a matriz, mas esse resultado não autentica retroativamente o cliente de browser nem substitui E2E por peer real.
+
+### Validação exata
+
+- Na consulta do head `3f2776d66faeb3e9a167c1b351b47ef0f65add87`, 21 workflows estavam QUEUED e sem conclusão. O novo helper/regressão ainda não foi classificado PASS/FAIL pelo CI; aguardar a execução no SHA exato e corrigir qualquer falha demonstrada.
+- O N04 #51 de compatibilidade continuava aberto e draft em `10370ef9543b1be122476ad14f00a2107332e9bd`; a última consulta mostrava 6 workflows QUEUED e um E2E PENDING. Esse estado é pendente, nunca PASS.
+- A ordem de comissão mantém N06↔N05 antes de N05↔N04; este reparo N01 é necessário para que futuras arestas com N05/N06 não falhem devido ao verificador de resposta legado.
+
+Nenhum arquivo/PR/branch histórico foi apagado, fechado ou reescrito. O ledger continua append-only e a fusão das 291 PRs segue aberta.
