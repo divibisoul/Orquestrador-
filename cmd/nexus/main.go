@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/signal"
 	"strings"
+	"sync/atomic"
 	"syscall"
 	"time"
 
@@ -148,6 +149,9 @@ func main() {
 			log.Fatal(err)
 		}
 	}
+	if err := backend.RegisterNervoVagoOperations(e, saraProxy); err != nil {
+		log.Fatal(err)
+	}
 	if err := rgo.RegisterOperation(e, saraProxy); err != nil {
 		log.Fatal(err)
 	}
@@ -184,6 +188,13 @@ func main() {
 	if err := orchestrator.RegisterMultiAgentFacadeOperations(e); err != nil {
 		log.Fatal(err)
 	}
+	externalRegistry, err := orchestrator.NewExternalAdapterRegistry()
+	if err != nil {
+		log.Fatal(err)
+	}
+	if err := orchestrator.RegisterExternalAdapterOperations(e, externalRegistry); err != nil {
+		log.Fatal(err)
+	}
 	agentArsenalProxy := agentarsenal.NewFromEnv()
 	if err := orchestrator.RegisterAgentArsenalOperations(e, agentArsenalProxy); err != nil {
 		log.Fatal(err)
@@ -204,6 +215,25 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	nervoVagoGateway, err := backend.NewNervoVagoGateway(saraProxy)
+	if err != nil {
+		log.Fatal(err)
+	}
+	grceExecutor, err := backend.NewGRCEExecutorRuntime(
+		saraProxy,
+		g,
+		backend.GRCEFeedback{
+			Horta: backend.NewGRCEVagoFeedback(nervoVagoGateway, "AETERNUM_HORTACORE", "horta"),
+			Vagus: orchestrator.NewGRCEVagoFeedback(nervoVagoGateway, "SARA", "vagus"),
+			Mesh:  orchestrator.NewGRCEVagoFeedback(nervoVagoGateway, "SOUL_MESH", "mesh"),
+		},
+	)
+	if err != nil {
+		log.Printf("GRCE executor unavailable: %v", err)
+	} else if err := orchestrator.RegisterGRFGRCEOperationsWithExecutor(e, saraProxy, grceExecutor); err != nil {
+		log.Fatal(err)
+	}
+	var nervoVagoSequence atomic.Uint64
 	g.SetExecutionReporter(supergpu.ReporterFunc(func(ctx context.Context, event supergpu.ExecutionEvent) error {
 		correlationID := event.CorrelationID
 		if strings.TrimSpace(correlationID) == "" {
@@ -211,27 +241,55 @@ func main() {
 		}
 		reportCtx := supergpu.WithCorrelationID(ctx, correlationID)
 		clareiraErr := clareiraReporter.Report(reportCtx, event)
-		if !saraProxy.Configured() {
-			return clareiraErr
+
+		payload := map[string]any{
+			"operation":   event.Operation,
+			"phase":       event.Phase,
+			"device_id":   event.DeviceID,
+			"backend":     event.Backend,
+			"input_size":  event.InputSize,
+			"output_size": event.OutputSize,
+			"error":       event.Error,
 		}
-		_, vagusErr := saraProxy.PublishVagus(ctx, map[string]any{
-			"vagus_version":  "1.0",
-			"message_id":     protocol.NewTraceID(),
+		inputHash, hashErr := backend.HashNervoVagoValue(payload)
+		if hashErr != nil {
+			if clareiraErr != nil {
+				return fmt.Errorf("clareira=%v; nervo-vago-hash=%v", clareiraErr, hashErr)
+			}
+			return hashErr
+		}
+		parentHash, hashErr := backend.HashNervoVagoValue(map[string]any{
 			"correlation_id": correlationID,
 			"source":         "N07.SuperGPU",
-			"target":         "VagusNerveBus",
-			"priority":       100,
-			"ttl":            5000,
-			"type":           "supergpu." + event.Phase,
-			"payload": map[string]any{
-				"operation":   event.Operation,
-				"device_id":   event.DeviceID,
-				"backend":     event.Backend,
-				"input_size":  event.InputSize,
-				"output_size": event.OutputSize,
-				"error":       event.Error,
+		})
+		if hashErr != nil {
+			if clareiraErr != nil {
+				return fmt.Errorf("clareira=%v; nervo-vago-parent-hash=%v", clareiraErr, hashErr)
+			}
+			return hashErr
+		}
+		messageID := protocol.NewTraceID()
+		sequenceIndex := nervoVagoSequence.Add(1)
+		traceID := protocol.NewTraceID()
+		_, vagusErr := nervoVagoGateway.Publish(ctx, backend.NervoVagoEnvelope{
+			VagusVersion:  "1.0",
+			MessageID:     messageID,
+			CorrelationID: correlationID,
+			Source:        "N07.SuperGPU",
+			Target:        "SARA",
+			Priority:      100,
+			TTL:           5000,
+			Type:          "supergpu." + event.Phase,
+			Payload:       payload,
+			Provenance: backend.NervoVagoProvenance{
+				TraceID:       traceID,
+				CorrelationID: correlationID,
+				MessageID:     messageID,
+				SequenceIndex: sequenceIndex,
+				ParentHash:    parentHash,
+				InputHash:     inputHash,
 			},
-		}, correlationID)
+		})
 		if clareiraErr != nil && vagusErr != nil {
 			return fmt.Errorf("clareira=%v; vagus=%v", clareiraErr, vagusErr)
 		}
@@ -274,7 +332,38 @@ func main() {
 			"type":           event.Type,
 			"payload":        event.Payload,
 		}
-		_, err := saraProxy.PublishVagus(ctx, payload, event.CorrelationID)
+		inputHash, err := backend.HashNervoVagoValue(payload)
+		if err != nil {
+			return fmt.Errorf("octacore nervo-vago input hash: %w", err)
+		}
+		parentHash, err := backend.HashNervoVagoValue(map[string]any{
+			"correlation_id": event.CorrelationID,
+			"source":         "N07.Octacore",
+		})
+		if err != nil {
+			return fmt.Errorf("octacore nervo-vago parent hash: %w", err)
+		}
+		traceID := protocol.NewTraceID()
+		sequenceIndex := nervoVagoSequence.Add(1)
+		_, err = nervoVagoGateway.Publish(ctx, backend.NervoVagoEnvelope{
+			VagusVersion:  event.VagusVersion,
+			MessageID:     event.MessageID,
+			CorrelationID: event.CorrelationID,
+			Source:        event.Source,
+			Target:        event.Target,
+			Priority:      event.Priority,
+			TTL:           event.TTL,
+			Type:          event.Type,
+			Payload:       event.Payload,
+			Provenance: backend.NervoVagoProvenance{
+				TraceID:       traceID,
+				CorrelationID: event.CorrelationID,
+				MessageID:     event.MessageID,
+				SequenceIndex: sequenceIndex,
+				ParentHash:    parentHash,
+				InputHash:     inputHash,
+			},
+		})
 		return err
 	})
 	if err := octacore.RegisterOperations(e, octacoreProcessor); err != nil {
@@ -356,6 +445,63 @@ func main() {
 			return
 		}
 		writeJSON(w, http.StatusOK, result)
+	})
+	mux.HandleFunc("/mesh/discovery", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			writeJSON(w, http.StatusMethodNotAllowed, map[string]any{"error": "GET required"})
+			return
+		}
+		writeJSON(w, http.StatusOK, map[string]any{
+			"nucleus": "N07",
+			"protocol": "soul-mesh/1",
+			"contractVersion": protocol.SoulMeshContractVersion,
+			"capabilities": e.Operations(),
+			"peers": peerClient.ConfiguredPeers(),
+			"transports": []string{"LOOPBACK_HTTP", "HTTP"},
+		})
+	})
+	mux.HandleFunc("/mesh/health", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			writeJSON(w, http.StatusMethodNotAllowed, map[string]any{"error": "GET required"})
+			return
+		}
+		writeJSON(w, http.StatusOK, map[string]any{
+			"ok": true,
+			"nucleus": "N07",
+			"protocol": "soul-mesh/1",
+			"contractVersion": protocol.SoulMeshContractVersion,
+			"peers": peerClient.ConfiguredPeers(),
+		})
+	})
+	mux.HandleFunc("/mesh/register", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			writeJSON(w, http.StatusMethodNotAllowed, map[string]any{"error": "POST required"})
+			return
+		}
+		var body map[string]any
+		if err := decodeJSON(r, cfg.MaxRequestBytes, &body); err != nil {
+			writeJSON(w, http.StatusBadRequest, map[string]any{"error": err.Error()})
+			return
+		}
+		nucleus, _ := body["nucleus"].(string)
+		endpoint, _ := body["endpoint"].(string)
+		var capabilities []string
+		if raw, ok := body["capabilities"].([]any); ok {
+			for _, item := range raw {
+				if value, ok := item.(string); ok {
+					capabilities = append(capabilities, strings.TrimSpace(value))
+				}
+			}
+		}
+		if err := peerClient.RegisterPeer(nucleus, endpoint, capabilities); err != nil {
+			writeJSON(w, http.StatusBadRequest, map[string]any{"error": err.Error()})
+			return
+		}
+		writeJSON(w, http.StatusOK, map[string]any{
+			"ok": true, "nucleus": "N07", "registered": strings.TrimSpace(nucleus),
+			"endpoint": strings.TrimRight(strings.TrimSpace(endpoint), "/"),
+			"capabilities": capabilities, "contractVersion": protocol.SoulMeshContractVersion,
+		})
 	})
 	mux.Handle("/api/soul-mesh", mesh.NewEnhancedFederatedHTTPGateway(e))
 	mux.HandleFunc("/execute", func(w http.ResponseWriter, r *http.Request) {

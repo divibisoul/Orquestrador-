@@ -2,12 +2,14 @@ package orchestrator
 
 import (
 	"context"
-	"github.com/divibisoul/Orquestrador-/neural"
-	"github.com/divibisoul/Orquestrador-/prefrontal"
-	"github.com/divibisoul/Orquestrador-/supergpu"
 	"os"
 	"strings"
 	"testing"
+
+	"github.com/divibisoul/Orquestrador-/neural"
+	"github.com/divibisoul/Orquestrador-/prefrontal"
+	"github.com/divibisoul/Orquestrador-/protocol"
+	"github.com/divibisoul/Orquestrador-/supergpu"
 )
 
 func newExternalTestEngine(t *testing.T) (*Engine, ExternalAdapterRegistry) {
@@ -28,10 +30,23 @@ func newExternalTestEngine(t *testing.T) (*Engine, ExternalAdapterRegistry) {
 	}
 	return e, r
 }
-func TestExternalAdapterManifestHasSixteenProviders(t *testing.T) {
+func TestExternalAdapterManifestHasTwentyTwoProviders(t *testing.T) {
 	_, r := newExternalTestEngine(t)
-	if len(r.byID) != 16 {
+	if len(r.byID) != 22 {
 		t.Fatalf("providers=%d", len(r.byID))
+	}
+}
+func TestExternalAdapterPrimarySixteenRemainIntact(t *testing.T) {
+	_, r := newExternalTestEngine(t)
+	primary := []string{
+		"superpowers","superagi","langgraph","crewai","microsoft-agent-framework","openhands",
+		"metagpt","agentscope","letta-code","browser-use","smolagents","pydantic-ai",
+		"llama-index","dspy","whisper","kokoro",
+	}
+	for _, id := range primary {
+		if _, ok := r.byID[id]; !ok {
+			t.Fatalf("original primary provider missing: %s", id)
+		}
 	}
 }
 func TestExternalAdapterExecutionFailsClosedByDefault(t *testing.T) {
@@ -48,5 +63,64 @@ func TestExternalAdapterProbeRegistered(t *testing.T) {
 	e, _ := newExternalTestEngine(t)
 	if _, err := e.Execute(context.Background(), "external.langgraph.probe@1.0.0", nil, nil); err != nil {
 		t.Fatalf("probe failed: %v", err)
+	}
+}
+
+func TestExternalAdapterAllTwentyTwoProvidersProbe(t *testing.T) {
+	e, r := newExternalTestEngine(t)
+	for id := range r.byID {
+		operation := "external." + id + ".probe@1.0.0"
+		if _, err := e.Execute(context.Background(), operation, nil, nil); err != nil {
+			t.Fatalf("provider %s probe failed: %v", id, err)
+		}
+	}
+}
+
+func TestExternalAdapterDegradedExecutionFailsClosed(t *testing.T) {
+	m := protocol.Message{CorrelationID: "corr-degraded"}
+	result, err := externalAdapterExecutionResult(m, map[string]any{
+		"state": "DEGRADED",
+		"provider": "langgraph",
+		"code": "TEST_DEGRADED",
+	})
+	if err == nil || !strings.Contains(err.Error(), "TEST_DEGRADED") {
+		t.Fatalf("degraded execution unexpectedly succeeded: result=%#v err=%v", result, err)
+	}
+	if result.Status != "error" || result.Error != "TEST_DEGRADED" {
+		t.Fatalf("degraded execution was not fail-closed: %#v", result)
+	}
+}
+
+func TestExternalAdapterTransportAuthorityCannotBeOverridden(t *testing.T) {
+	req := buildExternalAdapterRequest(
+		"langgraph",
+		"execute",
+		"workflow.invoke",
+		"/app/integrations/external/langgraph",
+		map[string]string{
+			"provider":  "crewai",
+			"operation": "arbitrary.operation",
+			"root":      "/tmp/escape",
+			"mode":      "probe",
+		},
+	)
+	for key, expected := range map[string]string{
+		"provider":  "langgraph",
+		"mode":      "execute",
+		"operation": "workflow.invoke",
+		"root":      "/app/integrations/external/langgraph",
+	} {
+		if got := req[key]; got != expected {
+			t.Fatalf("%s override succeeded: got=%v want=%s", key, got, expected)
+		}
+	}
+}
+
+func TestExternalComplementaryDescribeContractsAreRegistered(t *testing.T) {
+	e,_:=newExternalTestEngine(t)
+	for _,id:=range []string{"autogenesis","octos","hora-graph-core","mycelium","prime-agent","cuda-oxide"} {
+		if _,err:=e.Execute(context.Background(),"external."+id+".describe@1.0.0",nil,nil);err!=nil {
+			t.Fatalf("complementary describe failed for %s: %v",id,err)
+		}
 	}
 }

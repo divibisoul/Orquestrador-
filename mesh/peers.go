@@ -381,11 +381,14 @@ func (p *PeerClient) call(ctx context.Context, nucleus, capability string, paylo
 	}
 
 	var lastErr error
+	// One logical operation keeps one message ID across all retries.
+	// The correlation ID already identifies the operation; a stable message ID
+	// prevents a retry from becoming a second logical execution.
+	messageID := protocol.NewTraceID()
 	for attempt := 1; attempt <= p.maxRetry; attempt++ {
 		if err := ctx.Err(); err != nil {
 			return nil, err
 		}
-		messageID := protocol.NewTraceID()
 		nonce := protocol.NewTraceID()
 		wirePayload := payload
 		if wirePayload == nil {
@@ -574,6 +577,34 @@ func verifyResponseHMAC(result map[string]any, secret string) error {
 	}
 	env := protocol.MeshEnvelope{Version: protocol.SoulMeshVersion, ContractVersion: protocol.SoulMeshContractVersion, MessageID: id, Source: source, Target: target, Timestamp: int64(timestamp), Nonce: nonce, CorrelationID: correlation, Type: typ, HMAC: hmacValue, Payload: map[string]any{"capability": capability, "payload": payload}}
 	return protocol.VerifyHMAC(env, secret, time.Now())
+}
+
+// RegisterPeer adds or refreshes a discovered peer in the same canonical Mesh peer table.
+func (p *PeerClient) RegisterPeer(nucleus, endpoint string, capabilities []string) error {
+	if p == nil {
+		return errors.New("peer client is nil")
+	}
+	nucleus = strings.TrimSpace(nucleus)
+	endpoint = strings.TrimRight(strings.TrimSpace(endpoint), "/")
+	if nucleus == "" || nucleus == protocol.N07 {
+		return errors.New("invalid peer nucleus")
+	}
+	if endpoint == "" {
+		return errors.New("peer endpoint is required")
+	}
+	if !strings.HasPrefix(endpoint, "http://") && !strings.HasPrefix(endpoint, "https://") {
+		return errors.New("peer endpoint must use http(s)")
+	}
+	p.mu.Lock()
+	p.peers[nucleus] = PeerInfo{
+		Nucleus: nucleus,
+		URL: endpoint,
+		Healthy: true,
+		Circuit: CircuitClosed,
+	}
+	p.mu.Unlock()
+	p.invalidateDiscovery(nucleus)
+	return nil
 }
 
 func (p *PeerClient) ConfiguredPeers() []PeerInfo {

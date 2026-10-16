@@ -1,11 +1,16 @@
 #!/usr/bin/env python3
-import importlib.util, json, os, pathlib, subprocess, sys
+import importlib.util, json, os, pathlib, subprocess, sys, time
 MAX_INPUT=131072
 MAX_OUTPUT=262144
-PACKAGES={"superagi":"superagi","langgraph":"langgraph","crewai":"crewai","microsoft-agent-framework":"agent_framework","openhands":"openhands","metagpt":"metagpt","agentscope":"agentscope","browser-use":"browser_use","smolagents":"smolagents","pydantic-ai":"pydantic_ai","llama-index":"llama_index","dspy":"dspy","whisper":"whisper","kokoro":"kokoro"}
+REPO_ROOT=pathlib.Path(__file__).resolve().parents[1]
+PACKAGES={"fedml":"fedml","hivemind":"hivemind","ray":"ray","superagi":"superagi","langgraph":"langgraph","crewai":"crewai","microsoft-agent-framework":"agent_framework","openhands":"openhands","metagpt":"metagpt","agentscope":"agentscope","browser-use":"browser_use","smolagents":"smolagents","pydantic-ai":"pydantic_ai","llama-index":"llama_index","dspy":"dspy","whisper":"whisper","kokoro":"kokoro"}
 
 def emit(v,c=0):
-    print(json.dumps(v,ensure_ascii=False)[:MAX_OUTPUT])
+    raw=json.dumps(v,ensure_ascii=False)
+    if len(raw)>MAX_OUTPUT:
+        print(json.dumps({"state":"BLOCKED","code":"EXTERNAL_ADAPTER_OUTPUT_TOO_LARGE"},ensure_ascii=False))
+        raise SystemExit(2)
+    print(raw)
     raise SystemExit(c)
 
 def load():
@@ -17,7 +22,27 @@ def load():
     return v
 
 def root(v):
-    p=pathlib.Path(str(v.get("root") or "")).resolve()
+    provider=str(v.get("provider") or "").strip().lower()
+    configured=REPO_ROOT/"integrations/external-adapters.json"
+    try:
+        adapters=json.loads(configured.read_text(encoding="utf-8"))
+    except Exception as e:
+        emit({"state":"BLOCKED","code":"EXTERNAL_ADAPTER_REGISTRY_UNREADABLE","detail":str(e)},2)
+    providers=[*adapters.get("providers",[]), *adapters.get("expansion_providers",[])]
+    entry=next((p for p in providers if p.get("id")==provider),None)
+    if not entry:
+        emit({"state":"BLOCKED","code":"EXTERNAL_PROVIDER_NOT_REGISTERED","provider":provider},2)
+    expected=(REPO_ROOT/str(entry["root"])).resolve()
+    requested=pathlib.Path(str(v.get("root") or entry["root"]))
+    if not requested.is_absolute():
+        requested=REPO_ROOT/requested
+    p=requested.resolve()
+    try:
+        p.relative_to(REPO_ROOT)
+    except ValueError:
+        emit({"state":"BLOCKED","code":"EXTERNAL_ROOT_ESCAPE","provider":provider,"root":str(p)},2)
+    if p != expected:
+        emit({"state":"BLOCKED","code":"EXTERNAL_ROOT_NOT_CANONICAL","provider":provider,"expected":str(expected),"requested":str(p)},2)
     if not p.exists() and str(v.get("mode") or "").strip().lower() != "probe":
         emit({"state":"BLOCKED","code":"EXTERNAL_SOURCE_NOT_PRESENT","root":str(p)},2)
     return p
@@ -25,6 +50,32 @@ def root(v):
 def package_available(p):
     name=PACKAGES.get(p)
     return name is not None and importlib.util.find_spec(name) is not None
+
+def external_io_root():
+    configured=str(os.environ.get("SOUL_EXTERNAL_IO_ROOT") or "").strip()
+    if configured:
+        p=pathlib.Path(configured).resolve()
+    else:
+        p=(REPO_ROOT/"artifacts/external-io").resolve()
+    p.mkdir(parents=True,exist_ok=True)
+    try: p.relative_to(REPO_ROOT)
+    except ValueError:
+        if configured:
+            return p
+    return p
+
+def external_io_path(raw, default_name):
+    root=external_io_root()
+    value=str(raw or default_name).strip()
+    p=pathlib.Path(value)
+    if not p.is_absolute():
+        p=root/p
+    p=p.resolve()
+    try:
+        p.relative_to(root)
+    except ValueError:
+        emit({"state":"BLOCKED","code":"EXTERNAL_IO_PATH_ESCAPE","root":str(root),"path":str(p)},2)
+    return p
 
 def read_skill(rt,v):
     rel=str(v.get("path") or "README.md").strip()
@@ -113,7 +164,11 @@ def execute_microsoft_agent_framework(v,rt):
 
 def execute_openhands(v,rt):
     import urllib.request
-    base=str(v.get("base_url") or os.environ.get("SOUL_EXTERNAL_OPENHANDS_URL") or "").strip().rstrip("/")
+    configured_base=str(os.environ.get("SOUL_EXTERNAL_OPENHANDS_URL") or "").strip().rstrip("/")
+    requested_base=str(v.get("base_url") or "").strip().rstrip("/")
+    if requested_base and requested_base!=configured_base:
+        emit({"state":"BLOCKED","code":"OPENHANDS_BASE_URL_OVERRIDE_FORBIDDEN"},2)
+    base=configured_base
     conversation=str(v.get("conversation_id") or os.environ.get("SOUL_EXTERNAL_OPENHANDS_CONVERSATION_ID") or "").strip()
     prompt=str(v.get("prompt") or v.get("input") or "").strip()
     if not base or not conversation or not prompt:
@@ -157,11 +212,11 @@ def execute(v,rt):
             emit({"state":"PASS","provider":provider,"operation":op,"result":g.compile().invoke({"input":v.get("input") or v.get("prompt") or ""})})
         except Exception as e: emit({"state":"BLOCKED","code":"LANGGRAPH_EXECUTION_BLOCKED","detail":str(e)},2)
     if provider=="crewai" and op=="team.execute":
-        run_script("crewai_runner.py",{"goal":v.get("goal") or v.get("prompt"),"roles":v.get("roles") or ["Planner","Executor"],"root":str(rt),"maxRounds":v.get("maxRounds") or 3})
+        run_script("crewai_runner.py",{"goal":v.get("goal") or v.get("prompt"),"roles":v.get("roles") or ["Planner","Executor"],"maxRounds":v.get("maxRounds") or 3})
     if provider=="metagpt" and op=="team.execute":
-        run_script("metagpt_runner.py",{"goal":v.get("goal") or v.get("prompt"),"root":str(rt),"maxRounds":v.get("maxRounds") or 3})
+        run_script("metagpt_runner.py",{"goal":v.get("goal") or v.get("prompt"),"maxRounds":v.get("maxRounds") or 3})
     if provider=="whisper" and op=="speech.transcribe":
-        audio=pathlib.Path(str(v.get("audio_path") or "")).resolve()
+        audio=external_io_path(v.get("audio_path"), "input.wav")
         if not audio.is_file(): emit({"state":"BLOCKED","code":"WHISPER_AUDIO_NOT_FOUND"},2)
         try:
             import whisper
@@ -209,24 +264,58 @@ def execute(v,rt):
     if provider=="letta-code" and op=="memory.execute":
         execute_letta(v,rt)
     if provider=="superagi" and op=="agent.execute":
-        base=str(v.get("base_url") or os.environ.get("SOUL_EXTERNAL_SUPERAGI_URL") or "").strip().rstrip("/")
+        configured_base=str(os.environ.get("SOUL_EXTERNAL_SUPERAGI_URL") or "").strip().rstrip("/")
+        requested_base=str(v.get("base_url") or "").strip().rstrip("/")
+        if requested_base and requested_base!=configured_base:
+            emit({"state":"BLOCKED","code":"SUPERAGI_BASE_URL_OVERRIDE_FORBIDDEN"},2)
+        base=configured_base
         agent_id=str(v.get("agent_id") or os.environ.get("SOUL_EXTERNAL_SUPERAGI_AGENT_ID") or "").strip()
         api_key=str(os.environ.get("SOUL_EXTERNAL_SUPERAGI_API_KEY") or "").strip()
+        goal=str(v.get("goal") or v.get("prompt") or "").strip()
+        instruction=str(v.get("instruction") or "").strip()
         if not base or not agent_id or not api_key:
             emit({"state":"BLOCKED","code":"SUPERAGI_BASE_URL_AGENT_ID_AND_API_KEY_REQUIRED"},2)
+        if not goal and not instruction:
+            emit({"state":"BLOCKED","code":"SUPERAGI_GOAL_OR_INSTRUCTION_REQUIRED"},2)
         import urllib.request
+        headers={"Content-Type":"application/json","X-API-Key":api_key}
         try:
-            payload={"goal":str(v.get("goal") or v.get("prompt") or "")}
-            req=urllib.request.Request(f"{base}/agents/api/{agent_id}/run",data=json.dumps(payload).encode(),headers={"Content-Type":"application/json","Authorization":f"Bearer {api_key}"})
-            with urllib.request.urlopen(req,timeout=min(120,int(v.get("timeout_seconds") or 60))) as resp:
+            payload={}
+            if goal: payload["goal"]=[goal]
+            if instruction: payload["instruction"]=[instruction]
+            req=urllib.request.Request(f"{base}/v1/agent/{agent_id}/run",data=json.dumps(payload).encode(),headers=headers)
+            with urllib.request.urlopen(req,timeout=30) as resp:
                 result=json.loads(resp.read(MAX_OUTPUT))
-            emit({"state":"PASS","provider":"superagi","operation":"agent.execute","result":result})
-        except Exception as e:
-            emit({"state":"BLOCKED","code":"SUPERAGI_EXECUTION_BLOCKED","detail":str(e)},2)
+            run_id=result.get("run_id")
+            if run_id is None:
+                emit({"state":"BLOCKED","code":"SUPERAGI_RUN_ID_MISSING","result":result},2)
+            deadline=time.monotonic()+min(120,int(v.get("timeout_seconds") or 60))
+            last_status="RUNNING"
+            while time.monotonic()<deadline:
+                status_req=urllib.request.Request(
+                    f"{base}/v1/agent/{agent_id}/run-status",
+                    data=json.dumps({"run_ids":[int(run_id)],"run_status_filter":None}).encode(),
+                    headers=headers,
+                )
+                with urllib.request.urlopen(status_req,timeout=15) as resp:
+                    status_result=json.loads(resp.read(MAX_OUTPUT))
+                if isinstance(status_result,list) and status_result:
+                    last_status=str(status_result[0].get("status") or "")
+                elif isinstance(status_result,dict):
+                    last_status=str(status_result.get("status") or "")
+                if last_status.upper()=="COMPLETED":
+                    emit({"state":"PASS","provider":provider,"operation":"agent.execute","run_id":int(run_id),"completion_proven":True,"status":last_status})
+                if last_status.upper() in {"TERMINATED","PAUSED","WAITING_FOR_PERMISSION","WAIT_STEP","ITERATION_LIMIT_EXCEEDED"}:
+                    emit({"state":"BLOCKED","code":"SUPERAGI_EXECUTION_NOT_COMPLETED","run_id":int(run_id),"status":last_status},2)
+                time.sleep(1)
+            emit({"state":"BLOCKED","code":"SUPERAGI_EXECUTION_TIMEOUT","run_id":int(run_id),"status":last_status},2)
+        except Exception as ex:
+            emit({"state":"BLOCKED","code":"SUPERAGI_EXECUTION_BLOCKED","detail":str(ex)},2)
+
     if provider=="kokoro" and op=="speech.synthesize":
         text=str(v.get("text") or "").strip()
         if not text: emit({"state":"BLOCKED","code":"KOKORO_TEXT_REQUIRED"},2)
-        out=pathlib.Path(str(v.get("output_path") or "artifacts/kokoro-output.wav")).resolve()
+        out=external_io_path(v.get("output_path"), "kokoro-output.wav")
         try:
             from kokoro import KPipeline
             import numpy as np, soundfile as sf
@@ -236,8 +325,27 @@ def execute(v,rt):
             out.parent.mkdir(parents=True,exist_ok=True); sf.write(str(out),np.concatenate(chunks),24000)
             emit({"state":"PASS","provider":provider,"operation":op,"output_path":str(out)})
         except Exception as e: emit({"state":"BLOCKED","code":"KOKORO_EXECUTION_BLOCKED","detail":str(e)},2)
-    if op in {"agent.describe","workflow.describe","browser.describe"}:
-        emit({"state":"PASS","provider":provider,"operation":op,"source_present":rt.exists(),"package_available":package_available(provider)})
+    if provider in {"fedml","hivemind","temporal","cognitive-workspace","ravana","ray"} and op not in {
+        "federated.describe","swarm.describe","workflow.describe","workspace.describe","agent.describe","cluster.describe"
+    }:
+        emit({
+            "state":"BLOCKED",
+            "code":"SOUL_V2_EXPANSION_RUNTIME_NOT_BOUND",
+            "provider":provider,
+            "operation":op,
+            "reason":"native adapter and observed runtime are required before execution promotion",
+            "epistemic_state":"PROJECTED"
+        },2)
+
+    if op.endswith(".describe"):
+        emit({
+            "state":"REAL" if rt.exists() else "BLOCKED",
+            "provider":provider,
+            "operation":op,
+            "source_present":rt.exists(),
+            "package_available":package_available(provider),
+            "execution_proven":False,
+        })
     emit({"state":"BLOCKED","code":"EXTERNAL_ADAPTER_OPERATION_NOT_AVAILABLE","provider":provider,"operation":op},2)
 
 v=load()

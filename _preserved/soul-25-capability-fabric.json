@@ -1,0 +1,1292 @@
+{
+  "schema_version": "1.0.0",
+  "graph": "SOUL-25-capability-fabric",
+  "counts": {
+    "soul_components": 9,
+    "upstream_providers": 16,
+    "total_nodes": 25,
+    "edges": 144
+  },
+  "authority": "Each SOUL component retains native authority. N07 is the federation/control plane.",
+  "activation": [
+    "provider provenance",
+    "capability contract",
+    "adapter",
+    "Mesh routing",
+    "controlled execution",
+    "verification",
+    "observability",
+    "re-audit"
+  ],
+  "evidence_states": [
+    "REAL",
+    "PROJECTED",
+    "BLOCKED",
+    "UNMEASURABLE"
+  ],
+  "nodes": [
+    {
+      "id": "N01",
+      "type": "SOUL",
+      "repository": "divibisoul/aeternum-core-29",
+      "role": "coordenação, estado, identidade e memória"
+    },
+    {
+      "id": "N02",
+      "type": "SOUL",
+      "repository": "divibisoul/Eternium-",
+      "role": "ecossistema multiagente e execução colaborativa"
+    },
+    {
+      "id": "N03",
+      "type": "SOUL",
+      "repository": "divibisoul/nexus-aeternum-fusion",
+      "role": "percepção auditiva, fala e voz"
+    },
+    {
+      "id": "N04",
+      "type": "SOUL",
+      "repository": "divibisoul/nextjs-ai-chatbots",
+      "role": "interface conversacional e interação"
+    },
+    {
+      "id": "N05",
+      "type": "SOUL",
+      "repository": "divibisoul/nextjs-ai-chatbot",
+      "role": "chat, conhecimento e recuperação"
+    },
+    {
+      "id": "N06",
+      "type": "SOUL",
+      "repository": "divibisoul/nextjs-ai-chatbot-2000",
+      "role": "cognição, raciocínio e agentes de execução"
+    },
+    {
+      "id": "N07",
+      "type": "SOUL",
+      "repository": "divibisoul/Orquestrador-",
+      "role": "orquestração, federação e capability control plane"
+    },
+    {
+      "id": "SARA",
+      "type": "SOUL",
+      "repository": "divibisoul/SARA",
+      "role": "regeneração, governança e resiliência"
+    },
+    {
+      "id": "JEV",
+      "type": "SOUL",
+      "repository": "divibisoul/jev-api",
+      "role": "decisões tipadas, triagem e guardrails"
+    },
+    {
+      "id": "superpowers",
+      "type": "UPSTREAM",
+      "repository": "https://github.com/obra/superpowers",
+      "revision": "8ca22dba9a94f28898bbce59f2537ff4d87c747d",
+      "capabilities": [
+        "agentic-skills",
+        "subagents",
+        "planning",
+        "tdd",
+        "review",
+        "debugging"
+      ]
+    },
+    {
+      "id": "superagi",
+      "type": "UPSTREAM",
+      "repository": "https://github.com/TransformerOptimus/SuperAGI",
+      "revision": "c3c1982e7bd6a11cfed53c5a193ea502f924b1b6",
+      "capabilities": [
+        "autonomous-agents",
+        "tools",
+        "memory",
+        "multimodal",
+        "telemetry"
+      ]
+    },
+    {
+      "id": "langgraph",
+      "type": "UPSTREAM",
+      "repository": "https://github.com/langchain-ai/langgraph",
+      "revision": "2d942085e214ef6b99b6f54ed4d544a7c7c5ac56",
+      "capabilities": [
+        "stateful-agents",
+        "durable-workflows",
+        "orchestration"
+      ]
+    },
+    {
+      "id": "crewai",
+      "type": "UPSTREAM",
+      "repository": "https://github.com/crewAIInc/crewAI",
+      "revision": "1133f16cab274b9863b36fdacca7766b30e549fd",
+      "capabilities": [
+        "multi-agent-crews",
+        "flows",
+        "role-specialization"
+      ]
+    },
+    {
+      "id": "microsoft-agent-framework",
+      "type": "UPSTREAM",
+      "repository": "https://github.com/microsoft/agent-framework",
+      "revision": "b9d24c8fb484c8330abe8bb9e7500ca3c3bbf46c",
+      "capabilities": [
+        "agents",
+        "workflows",
+        "MCP",
+        "A2A"
+      ]
+    },
+    {
+      "id": "openhands",
+      "type": "UPSTREAM",
+      "repository": "https://github.com/OpenHands/OpenHands",
+      "revision": "81e83760a196ba6374ad2c3d38d577262c79ca2d",
+      "capabilities": [
+        "software-agents",
+        "tool-use",
+        "execution"
+      ]
+    },
+    {
+      "id": "metagpt",
+      "type": "UPSTREAM",
+      "repository": "https://github.com/FoundationAgents/MetaGPT",
+      "revision": "11cdf466d042aece04fc6cfd13b28e1a70341b1f",
+      "capabilities": [
+        "role-based-agents",
+        "multi-agent-collaboration",
+        "software-process"
+      ]
+    },
+    {
+      "id": "agentscope",
+      "type": "UPSTREAM",
+      "repository": "https://github.com/agentscope-ai/agentscope",
+      "revision": "72f3f6fa0b2fc38b8517f408ab616f0f2bd229e6",
+      "capabilities": [
+        "agents",
+        "teams",
+        "tools",
+        "memory",
+        "sandbox",
+        "A2A",
+        "voice"
+      ]
+    },
+    {
+      "id": "letta-code",
+      "type": "UPSTREAM",
+      "repository": "https://github.com/letta-ai/letta-code",
+      "revision": "4b028fab07c69edaac2ddb4f7b9a43573ff20d81",
+      "capabilities": [
+        "stateful-agents",
+        "persistent-memory",
+        "identity"
+      ]
+    },
+    {
+      "id": "browser-use",
+      "type": "UPSTREAM",
+      "repository": "https://github.com/browser-use/browser-use",
+      "revision": "7be96ed8bafa8dfe1eef228b59cf5c884b8b2431",
+      "capabilities": [
+        "browser-agents",
+        "web-automation"
+      ]
+    },
+    {
+      "id": "smolagents",
+      "type": "UPSTREAM",
+      "repository": "https://github.com/huggingface/smolagents",
+      "revision": "c30b115286e000e98711fae5e85993547b73d826",
+      "capabilities": [
+        "code-agents",
+        "tools",
+        "MCP",
+        "multimodal"
+      ]
+    },
+    {
+      "id": "pydantic-ai",
+      "type": "UPSTREAM",
+      "repository": "https://github.com/pydantic/pydantic-ai",
+      "revision": "cd99fbc21959731de84807724c997430115ce65e",
+      "capabilities": [
+        "typed-agents",
+        "tools",
+        "subagents",
+        "durable-execution"
+      ]
+    },
+    {
+      "id": "llama-index",
+      "type": "UPSTREAM",
+      "repository": "https://github.com/run-llama/llama_index",
+      "revision": "81f0e06f6e61a5659bd409cac4a199e28c2fd85e",
+      "capabilities": [
+        "RAG",
+        "indexing",
+        "retrieval",
+        "agent-workflows"
+      ]
+    },
+    {
+      "id": "dspy",
+      "type": "UPSTREAM",
+      "repository": "https://github.com/stanfordnlp/dspy",
+      "revision": "bc8af7ed3d5ee0b892211e5c03274396442a413c",
+      "capabilities": [
+        "LM-programming",
+        "optimization",
+        "reasoning-pipelines"
+      ]
+    },
+    {
+      "id": "whisper",
+      "type": "UPSTREAM",
+      "repository": "https://github.com/openai/whisper",
+      "revision": "86098128c0b4f24f0e2aa2994de830614b474227",
+      "capabilities": [
+        "speech-to-text"
+      ]
+    },
+    {
+      "id": "kokoro",
+      "type": "UPSTREAM",
+      "repository": "https://github.com/hexgrad/kokoro",
+      "revision": "dfb907a02bba8152ca444717ca5d78747ccb4bec",
+      "capabilities": [
+        "text-to-speech"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "from": "N01",
+      "to": "superpowers",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "N02",
+      "to": "superpowers",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "N03",
+      "to": "superpowers",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "N04",
+      "to": "superpowers",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "N05",
+      "to": "superpowers",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "N06",
+      "to": "superpowers",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "N07",
+      "to": "superpowers",
+      "mode": "direct-affinity",
+      "state": "PROJECTED",
+      "reason": "functional-complementation"
+    },
+    {
+      "from": "SARA",
+      "to": "superpowers",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "JEV",
+      "to": "superpowers",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "N01",
+      "to": "superagi",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "N02",
+      "to": "superagi",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "N03",
+      "to": "superagi",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "N04",
+      "to": "superagi",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "N05",
+      "to": "superagi",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "N06",
+      "to": "superagi",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "N07",
+      "to": "superagi",
+      "mode": "direct-affinity",
+      "state": "PROJECTED",
+      "reason": "functional-complementation"
+    },
+    {
+      "from": "SARA",
+      "to": "superagi",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "JEV",
+      "to": "superagi",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "N01",
+      "to": "langgraph",
+      "mode": "direct-affinity",
+      "state": "PROJECTED",
+      "reason": "functional-complementation"
+    },
+    {
+      "from": "N02",
+      "to": "langgraph",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "N03",
+      "to": "langgraph",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "N04",
+      "to": "langgraph",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "N05",
+      "to": "langgraph",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "N06",
+      "to": "langgraph",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "N07",
+      "to": "langgraph",
+      "mode": "direct-affinity",
+      "state": "PROJECTED",
+      "reason": "functional-complementation"
+    },
+    {
+      "from": "SARA",
+      "to": "langgraph",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "JEV",
+      "to": "langgraph",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "N01",
+      "to": "crewai",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "N02",
+      "to": "crewai",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "N03",
+      "to": "crewai",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "N04",
+      "to": "crewai",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "N05",
+      "to": "crewai",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "N06",
+      "to": "crewai",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "N07",
+      "to": "crewai",
+      "mode": "direct-affinity",
+      "state": "PROJECTED",
+      "reason": "functional-complementation"
+    },
+    {
+      "from": "SARA",
+      "to": "crewai",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "JEV",
+      "to": "crewai",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "N01",
+      "to": "microsoft-agent-framework",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "N02",
+      "to": "microsoft-agent-framework",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "N03",
+      "to": "microsoft-agent-framework",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "N04",
+      "to": "microsoft-agent-framework",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "N05",
+      "to": "microsoft-agent-framework",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "N06",
+      "to": "microsoft-agent-framework",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "N07",
+      "to": "microsoft-agent-framework",
+      "mode": "direct-affinity",
+      "state": "PROJECTED",
+      "reason": "functional-complementation"
+    },
+    {
+      "from": "SARA",
+      "to": "microsoft-agent-framework",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "JEV",
+      "to": "microsoft-agent-framework",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "N01",
+      "to": "openhands",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "N02",
+      "to": "openhands",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "N03",
+      "to": "openhands",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "N04",
+      "to": "openhands",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "N05",
+      "to": "openhands",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "N06",
+      "to": "openhands",
+      "mode": "direct-affinity",
+      "state": "PROJECTED",
+      "reason": "functional-complementation"
+    },
+    {
+      "from": "N07",
+      "to": "openhands",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "SARA",
+      "to": "openhands",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "JEV",
+      "to": "openhands",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "N01",
+      "to": "metagpt",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "N02",
+      "to": "metagpt",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "N03",
+      "to": "metagpt",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "N04",
+      "to": "metagpt",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "N05",
+      "to": "metagpt",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "N06",
+      "to": "metagpt",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "N07",
+      "to": "metagpt",
+      "mode": "direct-affinity",
+      "state": "PROJECTED",
+      "reason": "functional-complementation"
+    },
+    {
+      "from": "SARA",
+      "to": "metagpt",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "JEV",
+      "to": "metagpt",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "N01",
+      "to": "agentscope",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "N02",
+      "to": "agentscope",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "N03",
+      "to": "agentscope",
+      "mode": "direct-affinity",
+      "state": "PROJECTED",
+      "reason": "functional-complementation"
+    },
+    {
+      "from": "N04",
+      "to": "agentscope",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "N05",
+      "to": "agentscope",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "N06",
+      "to": "agentscope",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "N07",
+      "to": "agentscope",
+      "mode": "direct-affinity",
+      "state": "PROJECTED",
+      "reason": "functional-complementation"
+    },
+    {
+      "from": "SARA",
+      "to": "agentscope",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "JEV",
+      "to": "agentscope",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "N01",
+      "to": "letta-code",
+      "mode": "direct-affinity",
+      "state": "PROJECTED",
+      "reason": "functional-complementation"
+    },
+    {
+      "from": "N02",
+      "to": "letta-code",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "N03",
+      "to": "letta-code",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "N04",
+      "to": "letta-code",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "N05",
+      "to": "letta-code",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "N06",
+      "to": "letta-code",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "N07",
+      "to": "letta-code",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "SARA",
+      "to": "letta-code",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "JEV",
+      "to": "letta-code",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "N01",
+      "to": "browser-use",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "N02",
+      "to": "browser-use",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "N03",
+      "to": "browser-use",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "N04",
+      "to": "browser-use",
+      "mode": "direct-affinity",
+      "state": "PROJECTED",
+      "reason": "functional-complementation"
+    },
+    {
+      "from": "N05",
+      "to": "browser-use",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "N06",
+      "to": "browser-use",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "N07",
+      "to": "browser-use",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "SARA",
+      "to": "browser-use",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "JEV",
+      "to": "browser-use",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "N01",
+      "to": "smolagents",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "N02",
+      "to": "smolagents",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "N03",
+      "to": "smolagents",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "N04",
+      "to": "smolagents",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "N05",
+      "to": "smolagents",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "N06",
+      "to": "smolagents",
+      "mode": "direct-affinity",
+      "state": "PROJECTED",
+      "reason": "functional-complementation"
+    },
+    {
+      "from": "N07",
+      "to": "smolagents",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "SARA",
+      "to": "smolagents",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "JEV",
+      "to": "smolagents",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "N01",
+      "to": "pydantic-ai",
+      "mode": "direct-affinity",
+      "state": "PROJECTED",
+      "reason": "functional-complementation"
+    },
+    {
+      "from": "N02",
+      "to": "pydantic-ai",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "N03",
+      "to": "pydantic-ai",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "N04",
+      "to": "pydantic-ai",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "N05",
+      "to": "pydantic-ai",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "N06",
+      "to": "pydantic-ai",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "N07",
+      "to": "pydantic-ai",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "SARA",
+      "to": "pydantic-ai",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "JEV",
+      "to": "pydantic-ai",
+      "mode": "direct-affinity",
+      "state": "PROJECTED",
+      "reason": "functional-complementation"
+    },
+    {
+      "from": "N01",
+      "to": "llama-index",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "N02",
+      "to": "llama-index",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "N03",
+      "to": "llama-index",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "N04",
+      "to": "llama-index",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "N05",
+      "to": "llama-index",
+      "mode": "direct-affinity",
+      "state": "PROJECTED",
+      "reason": "functional-complementation"
+    },
+    {
+      "from": "N06",
+      "to": "llama-index",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "N07",
+      "to": "llama-index",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "SARA",
+      "to": "llama-index",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "JEV",
+      "to": "llama-index",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "N01",
+      "to": "dspy",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "N02",
+      "to": "dspy",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "N03",
+      "to": "dspy",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "N04",
+      "to": "dspy",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "N05",
+      "to": "dspy",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "N06",
+      "to": "dspy",
+      "mode": "direct-affinity",
+      "state": "PROJECTED",
+      "reason": "functional-complementation"
+    },
+    {
+      "from": "N07",
+      "to": "dspy",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "SARA",
+      "to": "dspy",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "JEV",
+      "to": "dspy",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "N01",
+      "to": "whisper",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "N02",
+      "to": "whisper",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "N03",
+      "to": "whisper",
+      "mode": "direct-affinity",
+      "state": "PROJECTED",
+      "reason": "functional-complementation"
+    },
+    {
+      "from": "N04",
+      "to": "whisper",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "N05",
+      "to": "whisper",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "N06",
+      "to": "whisper",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "N07",
+      "to": "whisper",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "SARA",
+      "to": "whisper",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "JEV",
+      "to": "whisper",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "N01",
+      "to": "kokoro",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "N02",
+      "to": "kokoro",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "N03",
+      "to": "kokoro",
+      "mode": "direct-affinity",
+      "state": "PROJECTED",
+      "reason": "functional-complementation"
+    },
+    {
+      "from": "N04",
+      "to": "kokoro",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "N05",
+      "to": "kokoro",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "N06",
+      "to": "kokoro",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "N07",
+      "to": "kokoro",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "SARA",
+      "to": "kokoro",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    },
+    {
+      "from": "JEV",
+      "to": "kokoro",
+      "mode": "federated-availability",
+      "state": "PROJECTED",
+      "reason": "discoverable-through-N07"
+    }
+  ],
+  "superpowers_engineering_layer": [
+    "soul.engineer.provenance",
+    "soul.engineer.adapter",
+    "soul.engineer.runtime",
+    "soul.engineer.verification",
+    "soul.engineer.resilience",
+    "superpowers.sara-trinity",
+    "superpowers.cortex-orbital-supergpu",
+    "superpowers.mesh-clareira",
+    "superpowers.octacore"
+  ],
+  "rule": "All 16 upstream capability sources are available to all 9 SOUL components through the canonical federation; direct affinity determines normal routing. No upstream provider becomes a second SOUL authority.",
+  "direct_adapter_semantics": "direct-affinity edges mirror external-capabilities.targets; federated-availability edges preserve system-wide discoverability without implying ownership",
+  "owner_registry": "integrations/external-capability-ownership.json",
+  "native_family_registry": "integrations/native-capability-augmentation.json"
+}
