@@ -1419,3 +1419,22 @@ Estado no head atual: 9 runs — 7 QUEUED, 2 PENDING e zero conclusões. E2E N05
 A consulta individual mostra jobs em estado `queued` sem `started_at`/runner e execuções E2E pendentes sem lista de jobs. A página oficial de status pública do GitHub reporta **All Systems Operational** e nenhum incidente listado em 16 de outubro de 2026; isso não prova a causa destas filas específicas nem exclui uma condição de concorrência/runner do repositório ou organização. Não há ação de dispatch de workflow exposta pelo conector nesta sessão. Portanto, não reexecutar trabalho enfileirado nem criar mudanças de código para forçar uma nova fila. O próximo passo operacional é obter diagnóstico de Actions/runner concurrency pelo contexto proprietário quando disponível, enquanto a revisão de código avança por frentes independentes.
 
 Nenhuma dessas correções é equivalente a CI verde ou a uma prova completa de comunicação de todos os núcleos. O roteiro de promoção segue N06↔N05 → N05↔N04 → N04↔N03 → N03↔N02 → N02↔N01 → comissão N01↔N06↔N07. Nenhuma PR draft foi promovida, mesclada ou apagada.
+
+
+## Correção da autorização de entrada N04 — HMAC fail-closed também no servidor (2026-10-16 UTC)
+
+Head candidato: `1e2c41ef3da054f6974085de9caed03d3db17f47`.
+
+A auditoria havia fechado o cliente N04, mas a rota receptora `app/api/soul-mesh/route.ts` ainda aceitava Bearer quando a assinatura HMAC faltava. Isso deixaria um caminho de downgrade no servidor. A autorização foi extraída para `lib/soul-mesh/MeshRequestAuthorization.ts` e agora obedece estas condições:
+
+- Em produção, segredo ausente ou inferior a 32 bytes retorna estado `misconfigured` (rota responde 503), mesmo que Bearer seja válido.
+- Quando o segredo existe, nonce e assinatura HMAC são obrigatórios; Bearer-only retorna `unauthorized` (rota responde 401).
+- Um pedido HMAC válido continua autorizado sem exigir Bearer; a política não introduz um requisito de sessão que os pares autenticados por HMAC não possuem.
+- O fallback Bearer local é mantido apenas fora de produção para preservar o fluxo de desenvolvimento.
+- Testes unitários cobrem ausência de segredo em produção, Bearer-only com segredo presente e HMAC válido sem Bearer. O E2E N04↔N05 com processos reais agora tenta um POST Bearer-only contra o processo Next.js N04 real e requer `401 UNAUTHORIZED` antes de prosseguir com os dois sentidos do Mesh.
+
+Validação do código-fonte da correção: **8/8 verificações estáticas de presença das proteções/testes passaram**. Isso é somente verificação estática de fonte; não equivale à execução dos testes.
+
+Estado do GitHub Actions no head atual: 7 runs — 6 QUEUED e 1 PENDING, zero conclusões. E2E `38975186004` continua pendente e não lista jobs iniciados. O código permanece **UNMEASURABLE em execução** até a CI executar; não declarar PASS/mergear a PR antes disso.
+
+Registro aditivo: histórico anterior mantido; sem merge, exclusão, force-push ou gravação direta em `main`.
