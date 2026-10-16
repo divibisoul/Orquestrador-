@@ -99,12 +99,12 @@
         "N03"
       ],
       "manifestAuthority": "SOUL-FUSION-MANIFEST.json",
-      "sourceRef": "b10dc048429e7ea19ac0c0834e3ff3cc1ae2af7d",
-      "status": "main-live-bncv2-csae-dcrs-reintegrated",
+      "sourceRef": "0516bfcffa266190910c36389c75df642e13da41",
+      "status": "main-live-source-ref-reconciled-2026-10-16",
       "contractEvidencePaths": [
         "src/soul-mesh/SoulMeshProtocol.ts"
       ],
-      "previousSourceRef": "b8c681e1c2bf000bb614b5b0c13ca8377c857a14",
+      "previousSourceRef": "b10dc048429e7ea19ac0c0834e3ff3cc1ae2af7d",
       "sourceRefHistory": [
         {
           "sourceRef": "b8c681e1c2bf000bb614b5b0c13ca8377c857a14",
@@ -114,6 +114,11 @@
         {
           "sourceRef": "b10dc048429e7ea19ac0c0834e3ff3cc1ae2af7d",
           "observed": "2026-10-06/live-mainline",
+          "state": "PRESERVED"
+        },
+        {
+          "sourceRef": "0516bfcffa266190910c36389c75df642e13da41",
+          "observed": "2026-10-16/verified-live-main-head",
           "state": "CURRENT"
         }
       ],
@@ -140,12 +145,12 @@
         "N04"
       ],
       "manifestAuthority": "SOUL-FUSION-MANIFEST.json",
-      "sourceRef": "dec2d9e6265556b452f30bbe8f47d9f8d401059e",
-      "status": "main-live-source-ref-reconciled-2026-10-14",
+      "sourceRef": "676c20cb5e537944a5a75d8e4920ff48c010cfbf",
+      "status": "main-live-source-ref-reconciled-2026-10-16",
       "contractEvidencePaths": [
         "lib/soul-mesh/SoulMeshProtocol.ts"
       ],
-      "previousSourceRef": "8deb6e86c33cb29674b99913ed4f86141086ba5e",
+      "previousSourceRef": "dec2d9e6265556b452f30bbe8f47d9f8d401059e",
       "sourceRefHistory": [
         {
           "sourceRef": "7a56c4d07d31e3dacfb0fa8ef3114ab0c253a49c",
@@ -170,6 +175,11 @@
         {
           "sourceRef": "dec2d9e6265556b452f30bbe8f47d9f8d401059e",
           "observed": "2026-10-14/verified-main-head",
+          "state": "PRESERVED"
+        },
+        {
+          "sourceRef": "676c20cb5e537944a5a75d8e4920ff48c010cfbf",
+          "observed": "2026-10-16/verified-live-main-head",
           "state": "CURRENT"
         }
       ],
@@ -246,13 +256,13 @@
         "N06"
       ],
       "manifestAuthority": "SOUL-FUSION-MANIFEST.json",
-      "sourceRef": "87e4a5363bfd85aae4f666a6806301fdb5026172",
-      "status": "main-live-inference-capability-catalog-reconciled",
+      "sourceRef": "894c001e48da368b58ca0b67911e63b2a859c1f3",
+      "status": "main-live-source-ref-reconciled-2026-10-16",
       "contractEvidencePaths": [
         "lib/soul-mesh/endpoint.ts",
         "lib/soul-mesh/SoulMeshProtocol.ts"
       ],
-      "previousSourceRef": "3bce0da91dd03bcf2c1e3765687dc357f187388b",
+      "previousSourceRef": "87e4a5363bfd85aae4f666a6806301fdb5026172",
       "sourceRefHistory": [
         {
           "sourceRef": "3bce0da91dd03bcf2c1e3765687dc357f187388b",
@@ -262,6 +272,11 @@
         {
           "sourceRef": "87e4a5363bfd85aae4f666a6806301fdb5026172",
           "observed": "2026-10-06/live-mainline",
+          "state": "PRESERVED"
+        },
+        {
+          "sourceRef": "894c001e48da368b58ca0b67911e63b2a859c1f3",
+          "observed": "2026-10-16/verified-live-main-head",
           "state": "CURRENT"
         }
       ],
@@ -288,12 +303,12 @@
         "N07"
       ],
       "manifestAuthority": "SOUL-FUSION-MANIFEST.json",
-      "sourceRef": "0b2ba53922046e772883a8de5bf9ecc41fa3eacb",
-      "status": "main-live-composition-targets-reconciled",
+      "sourceRef": "735b688be8b93768bcfe5f103a92947f28e4b5cb",
+      "status": "main-live-source-ref-reconciled-2026-10-16",
       "contractEvidencePaths": [
         "lib/soul-mesh/SoulMeshProtocol.ts"
       ],
-      "previousSourceRef": "17c46a0ddd5edfcdb570539d2d250a78799016f2",
+      "previousSourceRef": "0b2ba53922046e772883a8de5bf9ecc41fa3eacb",
       "sourceRefHistory": [
         {
           "sourceRef": "17c46a0ddd5edfcdb570539d2d250a78799016f2",
@@ -303,6 +318,11 @@
         {
           "sourceRef": "0b2ba53922046e772883a8de5bf9ecc41fa3eacb",
           "observed": "2026-10-06/live-mainline",
+          "state": "PRESERVED"
+        },
+        {
+          "sourceRef": "735b688be8b93768bcfe5f103a92947f28e4b5cb",
+          "observed": "2026-10-16/verified-live-main-head",
           "state": "CURRENT"
         }
       ],
