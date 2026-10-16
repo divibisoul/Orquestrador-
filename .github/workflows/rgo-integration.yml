@@ -9,9 +9,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          # Go unit/contract packages do not require nested upstream dataset repos.
-          # Other commissioning workflows materialize top-level submodules explicitly.
+          # The adapter's integrity/probe tests verify the actual top-level source pins.
+          # Do not recurse into any upstream's nested datasets.
           submodules: false
+      - name: Materialize pinned top-level SOUL upstreams
+        run: node scripts/materialize-top-level-submodules.mjs
       - uses: actions/setup-go@v5
         with: {go-version: '1.25'}
       - run: go test ./rgo
