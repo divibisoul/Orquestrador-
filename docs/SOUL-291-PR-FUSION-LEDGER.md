@@ -731,3 +731,48 @@ A auditoria reportou também `braces@3.0.3`. O advisory consultado não aponta v
 - **N06 #46**: head `ada4a07c462c6abd1ec53ddfd0793ed24d9194c0`; o harness de E2E N05↔N06 recebeu importação namespace com fallback ESM/CJS. E2E bidirecional real e demais workflows ficaram `pending/queued`; não houve ainda prova de request/response HMAC neste novo head.
 - **N05 #52** continua com seis workflows próprios verdes, mas segue draft; manter sem merge até o E2E real N05↔N06 passar.
 - **N07 #156/#158** permanecem abertas/draft e não mescláveis pela pilha. **N01 #105**, **N06 #42/#46** e **N07 #153** permanecem sem merge porque os checks do head atual ainda não concluíram.
+
+
+## TRILHO DE FUSÃO POR ANDARES — ordem de execução obrigatória (2026-10-16 UTC)
+
+Esta seção torna explícita a analogia de obra: os dez andares são gates dependentes; as frentes paralelas podem inspecionar e preparar mudanças em qualquer andar, mas não podem promover/mesclar um andar acima de uma fundação bloqueada. O trilho (contratos, proveniência, comunicação entre pares e bases de PRs) precisa continuar conectado. Estado verde de uma workflow ou de uma PR isolada não declara o sistema inteiro concluído.
+
+### Os dez andares
+
+1. Fundação, identidade e histórico: reler repositório, PR, head/base SHA e estado de main antes de cada write. Manter exatamente uma referência CURRENT por fonte; mover a referência anterior para PRESERVED, nunca apagá-la. Confirmar as dependências das PRs empilhadas e o ledger antes de gravar.
+2. Contrato canônico de mensagens: alinhar protocolo/versão, identidade, source/target, capability, payload, timestamp, trace/correlation e sequência/proveniência. Implementações por runtime são bindings do mesmo contrato; cópias legadas ficam visíveis como adapters até migração verificada.
+3. Autenticação e transporte: canonicalização HMAC igual no wire format, validar rota/correlação/nonce e autenticar envelopes de erro antes de confiar no status HTTP. Preservar explicitamente o envelope legado Go/N07; não enfraquecer HMAC nem retry policy.
+4. Listeners e rotas reais: confirmar que serviço e endpoint reais recebem uma mensagem válida e devolvem resposta pelo caminho correto. Manifestos/capability lists não são prova de comunicação.
+5. Runtime e propriedade de capacidades: ligar rota → dispatcher → handler → runtime proprietário. Reconciliar sobreposição por responsabilidade e comportamento, não só por nome de arquivo. Não declarar ACTIVE porque uma capacidade está listada.
+6. E2E de cada aresta: testar ida e volta em processos independentes e contrato/autenticação reais para N01↔N02, N02↔N03, N03↔N04, N04↔N05, N05↔N06, N06↔N07 e SARA↔N07. Registrar evidência por aresta e SHA; nunca inferir uma aresta a partir de outra.
+7. Federação, upstreams e adapters: confirmar SHA exato dos upstreams, gitlinks, materialização só de submódulos top-level e proveniência dos adapters. Derivar contagens do inventário real versionado; não promover fonte ausente/mismatch a executável.
+8. GRF/GRCE, SARA, ERU e preservação: separar cenário seguro que pode ser promovido do cenário complexo que deve ficar PRESERVED/BLOCKED. Manter input original, snapshots, causal failure ID, hashes e sequência. Gate ético rejeitado não pode ser sobreposto por sucesso sintético.
+9. Packaging e plataformas: após contratos/runtimes passarem, validar build Web, produção Next.js, APK debug/release, instrumentação Android e outros targets. Discriminar build failure, falha funcional e instabilidade do emulador.
+10. Auditoria cruzada, CI e promoção: checks relevantes no mesmo head final; reler diff/árvore e provar que nenhuma contribuição ou arquivo foi removido; mesclar pela ordem de dependência com expected head; reconciliar refs/ledger só após merge verificado. Run antigo verde, cancelado ou pending não satisfaz o gate.
+
+### Regras de movimento no trilho
+
+- Implementar em paralelo; promover em ordem. Frentes podem preparar andares diferentes, mas não podem promover uma PR até os gates inferiores relevantes passarem no seu SHA.
+- Uma unidade funcional por promoção. Fechar uma PR como absorvida só após confirmar que sua contribuição está no destino; contribuição não absorvida continua aberta.
+- Para mudança simultânea: reler head/conteúdo antes de cada write. Em arquivo sobreposto, compor por função/trechos; não substituir o arquivo inteiro sem preservar diferenças das duas frentes.
+- DRAFT, queued, pending, cancelled, stale-SHA, UNMEASURABLE, PROJECTED e teste interno não são CI verde nem E2E real.
+- Proibidos force-push, exclusão de arquivos/branches, apagar histórico e fechar PR não absorvida.
+
+### Fotografia dos grupos em 2026-10-16 UTC
+
+| Andar / grupo | Estado observado | Próximo gate |
+|---|---|---|
+| SARA #44 | MERGED em 5633cdd95a067c1c40a4b731a38976971e173d1f; oito checks verdes no SHA pré-merge | SARA↔N07 ainda exige E2E com runtime N07 validado |
+| N04 #50 / N03↔N04 | MERGED em b3ca469c8063c143081ad44fbeb7c238153a60cd; sete workflows verdes; dois marcadores de E2E HTTP/HMAC real | Não inferir outras arestas a partir desta prova |
+| N05 #51 | MERGED em 894c001e48da368b58ca0b67911e63b2a859c1f3 | O response HMAC e a aresta N05↔N06 são ampliados em #52 e #46 |
+| N05 #52 | OPEN/DRAFT, head 75ea08296534f973015a78b0b37d82c13c954013; sete workflows próprios verdes | Exigir E2E real N05↔N06 antes de promover |
+| N06 #46 | OPEN/DRAFT, head ada4a07c462c6abd1ec53ddfd0793ed24d9194c0; E2E e Soul Mesh CI pending, demais workflows queued | Validar canonicalização meta.transport, bearer, HMAC e ida/volta em processos reais no head exato |
+| N06 #42 | OPEN/DRAFT, head 692a970cb63c58f9f5b26619abfce3f1aab75b18; workflows queued | Preservar o trabalho multi-capacidade. O único arquivo de sobreposição com #46 é SoulMeshHmac.ts; meta.transport foi restaurado e comentado. Revalidar CI no head atual |
+| N07 #153 | OPEN/DRAFT, head f86ace964f6cd2e0feafab978d26ccab84c8b6aa; workflows, inclusive GRF/GRCE E2E, queued; auditoria de overlap passou em run 38842081738 | Validar classificação de excesso de complexidade no input original, preservação do payload e cenário seguro |
+| N07 #156 | OPEN/DRAFT, head 7fddde3a220adf648abc508905b16927271c1db5, baseado no SHA antigo f656aca8c944183f9f9638179307901395b481be; mergeable=false/dirty | Não promover. Após #153 passar, reconciliar com seu merge/head, preservando as duas linhas de commits e reexecutando todos os checks |
+| N07 #158 | OPEN/DRAFT, depende da linha #156 | Manter aberto; reconciliar não destrutivamente depois de #156 |
+| N01 #105 | OPEN/DRAFT, head 3f560d687b01ce2ab2b2f3db3cf4c18e679a1f92. Head anterior 528fa464e47264a58ed44e4a4515415711c7a684 construiu APKs e Web, mas 2/10 instrumentados falharam nos roundtrips HTTP de loopback | Configuração nova permite cleartext apenas em 127.0.0.1/localhost e nega por padrão; assertions agora expõem a exceção. Novos checks estavam queued; validar causa/roundtrip antes de promover. A causa exata do Result.failure anterior não constou no XML, então a hipótese cleartext ainda precisa ser confirmada |
+
+### Critério de conclusão de andar
+
+Um andar recebe COMPLETE apenas quando implementação fonte, conteúdo sobreposto, testes específicos e contratos dependentes estão validados no SHA atual. Até lá, usar IMPLEMENTED-UNVERIFIED, BLOCKED ou UNMEASURABLE e registrar a próxima ação. A auditoria das 291 PRs continua aberta; esta fotografia não declara todas avaliadas ou fundidas.
