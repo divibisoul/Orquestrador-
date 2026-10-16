@@ -190,17 +190,26 @@ jobs:
           }
           json.dump(body, open("/tmp/grce-complexity-request.json", "w"))
           PY
-          curl -fsS -H 'Authorization: Bearer e2e-n07-token-123456789' -H 'Content-Type: application/json' -X POST http://127.0.0.1:8080/v1/execute --data-binary @/tmp/grce-complexity-request.json -o /tmp/grce-complexity.json
+          http_status="$(curl -sS -o /tmp/grce-complexity.json -w '%{http_code}' -H 'Authorization: Bearer e2e-n07-token-123456789' -H 'Content-Type: application/json' -X POST http://127.0.0.1:8080/v1/execute --data-binary @/tmp/grce-complexity-request.json)"
+          echo "GRCE_COMPLEXITY_HTTP_STATUS=${http_status}"
+          cat /tmp/grce-complexity.json
+          # The executor intentionally fails closed at DETECT when ARA identifies
+          # excessive complexity. HTTP 400 is expected; the body must retain the
+          # original state and explicit rollback/evidence rather than promote it.
+          test "${http_status}" = "400"
           python - <<'PY'
           import json
           outer = json.load(open('/tmp/grce-complexity.json'))
+          assert outer['status'] == 'degraded', outer
+          assert 'GRCE_COMPLEXITY_EXCESSIVE_INPUT_PRESERVED' in outer.get('error', ''), outer
           result = json.loads(outer['metadata']['grce_result_json'])
           evidence = json.dumps(result, ensure_ascii=False)
-          assert outer['status'] == 'ok'
           assert result['epistemic_state'] == 'PRESERVED', result
-          assert result['outcome'].startswith('ROLLBACK_PRESERVED:'), result
+          assert result['outcome'] == 'ROLLBACK_PRESERVED:DETECT', result
+          assert result['next_state']['payload']['text'] == 'a' * 11000, 'original payload was not preserved'
           assert 'COMPLEXIDADE_EXCESSIVA' in evidence, result
-          print('GRCE high-complexity input: BLOCKED / PRESERVED / REAL')
+          assert result['evidence'], result
+          print('GRCE high-complexity input: BLOCKED / PRESERVED / REAL (HTTP 400 expected)')
           PY
 
       - name: Execute unified Nervo Vago path with ETR provenance
