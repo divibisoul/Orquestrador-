@@ -1,0 +1,127 @@
+name: GRF/GRCE Real SARA E2E
+
+on:
+  pull_request:
+    paths:
+      - 'grf/**'
+      - 'grce/**'
+      - 'integrations/grf/**'
+      - 'integrations/soul-29-capability-fabric.json'
+      - 'orchestrator/grce_ops.go'
+      - 'orchestrator/grce_ops_test.go'
+      - 'cmd/nexus/main.go'
+      - 'backend/backend.go'
+      - '.github/workflows/grf-grce-real-e2e.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  real-e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout N07
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: false
+
+      - name: Materialize SOUL top-level submodules without recursion
+        run: node scripts/materialize-top-level-submodules.mjs
+
+      - name: Checkout SARA
+        uses: actions/checkout@v4
+        with:
+          repository: divibisoul/SARA
+          ref: 53a7760cc3db7f77456e415ef14b3638d52df816
+          path: .e2e/SARA
+          fetch-depth: 1
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install SARA
+        working-directory: .e2e/SARA
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e .
+
+      - name: Start SARA
+        working-directory: .e2e/SARA
+        env:
+          SARA_API_TOKEN: e2e-sara-token-123456789
+          SARA_HOST: 127.0.0.1
+          SARA_PORT: 8090
+        run: |
+          nohup python -m sara.service.main > ../../sara-e2e.log 2>&1 &
+          echo $! > ../../sara.pid
+          for i in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:8090/health >/dev/null; then exit 0; fi
+            sleep 1
+          done
+          cat ../../sara-e2e.log
+          exit 1
+
+      - name: Build N07
+        run: go build -trimpath -o /tmp/n07-grce-e2e ./cmd/nexus
+
+      - name: Start N07
+        env:
+          N07_APP_TOKEN: e2e-n07-token-123456789
+          SARA_SERVICE_URL: http://127.0.0.1:8090
+          SARA_SERVICE_TOKEN: e2e-sara-token-123456789
+          SARA_REQUEST_TIMEOUT: 30s
+        run: |
+          nohup /tmp/n07-grce-e2e > /tmp/n07-grce-e2e.log 2>&1 &
+          echo $! > /tmp/n07.pid
+          for i in $(seq 1 45); do
+            if curl -fsS http://127.0.0.1:8080/health >/dev/null; then exit 0; fi
+            sleep 1
+          done
+          cat /tmp/n07-grce-e2e.log
+          exit 1
+
+      - name: Assert GRF discovery
+        run: |
+          curl -fsS -H 'Authorization: Bearer e2e-n07-token-123456789'             -H 'Content-Type: application/json'             -X POST http://127.0.0.1:8080/v1/execute             -d '{"operation":"grf.describe@2.0.0","metadata":{"grf_sequence_index":"1"}}'             | tee /tmp/grf.json
+          grep -q '"framework":"GRF"' /tmp/grf.json
+          grep -q '"version":"2.0"' /tmp/grf.json
+
+      - name: Assert 22-source federation
+        run: |
+          curl -fsS -H 'Authorization: Bearer e2e-n07-token-123456789'             -H 'Content-Type: application/json'             -X POST http://127.0.0.1:8080/v1/execute             -d '{"operation":"external.federation.describe@1.0.0","metadata":{}}'             | tee /tmp/federation.json
+          grep -q '"provider_count":22' /tmp/federation.json
+
+      - name: Execute real GRCE -> SARA cycle
+        run: |
+          curl -fsS -H 'Authorization: Bearer e2e-n07-token-123456789'             -H 'Content-Type: application/json'             -X POST http://127.0.0.1:8080/v1/execute             -d '{"operation":"grce.sara.authoritative.execute@2.0.0","correlationId":"grce-e2e-001","metadata":{"grf_sequence_index":"1","grf_input_text":"preservar estado, rastreabilidade e autonomia"}}'             | tee /tmp/grce-sara.json
+          grep -q '"execution_mode":"SARA_AUTHORITATIVE"' /tmp/grce-sara.json
+          grep -q '"epistemic_state":"REAL"' /tmp/grce-sara.json
+          grep -q '"trace_hash":"sha256:' /tmp/grce-sara.json
+          grep -q '"federated_context_hash":"sha256:' /tmp/grce-sara.json
+
+      - name: Prove direct GRCE fails closed
+        run: |
+          set +e
+          http_status="$(curl -sS -o /tmp/grce-direct.json -w '%{http_code}' -H 'Authorization: Bearer e2e-n07-token-123456789' -H 'Content-Type: application/json' -X POST http://127.0.0.1:8080/v1/execute -d '{"operation":"grce.cycle.execute@2.0.0","correlationId":"grce-direct-blocked","metadata":{"grf_sequence_index":"2"}}')"
+          curl_status=$?
+          cat /tmp/grce-direct.json
+          test "$curl_status" -eq 0
+          test "$http_status" = "400"
+          grep -q 'GRCE_RUNTIME_HOOKS_NOT_BOUND' /tmp/grce-direct.json
+
+      - name: Cleanup
+        if: always()
+        run: |
+          test ! -f /tmp/n07.pid || kill "$(cat /tmp/n07.pid)" || true
+          test ! -f sara.pid || kill "$(cat sara.pid)" || true
+          cat /tmp/n07-grce-e2e.log || true
+          cat sara-e2e.log || true

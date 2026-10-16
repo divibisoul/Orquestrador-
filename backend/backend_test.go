@@ -121,3 +121,79 @@ func TestSupabaseValidation(t *testing.T) {
 		t.Fatal("expected unconfigured store to fail")
 	}
 }
+
+func TestServerExposesArtifactPersistenceFailure(t *testing.T) {
+	storageServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = io.WriteString(w, "{\"cid\":\""+testCID+"\"}")
+	}))
+	defer storageServer.Close()
+
+	supabaseServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+		_, _ = io.WriteString(w, "persistence unavailable")
+	}))
+	defer supabaseServer.Close()
+
+	server := New(nil, Config{
+		AppToken:               "app-token",
+		Web3StorageURL:         storageServer.URL,
+		Web3StorageToken:       "storage-token",
+		IPFSGatewayURL:         storageServer.URL + "/ipfs",
+		SupabaseURL:            supabaseServer.URL,
+		SupabaseServiceKey:     "service-key",
+		SupabaseRunsTable:      "n07_runs",
+		SupabaseArtifactsTable: "n07_artifacts",
+	})
+
+	req := httptest.NewRequest(http.MethodPost, "/v1/storage/upload", strings.NewReader("hello"))
+	req.Header.Set("Authorization", "Bearer app-token")
+	req.Header.Set("X-Filename", "artifact.txt")
+	rec := httptest.NewRecorder()
+
+	server.Handler().ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("upload operation unexpectedly failed: status=%d body=%s", rec.Code, rec.Body.String())
+	}
+	var response map[string]any
+	if err := json.Unmarshal(rec.Body.Bytes(), &response); err != nil {
+		t.Fatal(err)
+	}
+	persistence, ok := response["persistence"].(map[string]any)
+	if !ok || persistence["state"] != "BLOCKED" {
+		t.Fatalf("artifact persistence failure was hidden: %#v", response)
+	}
+	if errText, _ := persistence["error"].(string); !strings.Contains(errText, "persistence unavailable") {
+		t.Fatalf("persistence error evidence missing: %#v", persistence)
+	}
+}
+
+func TestServerRejectsNonGETStorageReads(t *testing.T) {
+	server := New(nil, Config{AppToken: "app-token"})
+	for _, path := range []string{"/v1/storage/status/" + testCID, "/v1/storage/object/" + testCID} {
+		req := httptest.NewRequest(http.MethodPost, path, nil)
+		req.Header.Set("Authorization", "Bearer app-token")
+		rec := httptest.NewRecorder()
+		server.Handler().ServeHTTP(rec, req)
+		if rec.Code != http.StatusMethodNotAllowed {
+			t.Fatalf("expected 405 for %s, got %d", path, rec.Code)
+		}
+	}
+}
+
+func TestDecodeJSONRejectsTrailingValues(t *testing.T) {
+	var value map[string]any
+	request := httptest.NewRequest(http.MethodPost, "/v1/execute", strings.NewReader(`{"ok":true} {"unexpected":true}`))
+	if err := decodeJSON(request, 1024, &value); err == nil {
+		t.Fatal("expected trailing JSON value to be rejected")
+	}
+
+	request = httptest.NewRequest(http.MethodPost, "/v1/execute", strings.NewReader(`  {"ok":true}  `))
+	value = nil
+	if err := decodeJSON(request, 1024, &value); err != nil {
+		t.Fatalf("valid single JSON value was rejected: %v", err)
+	}
+	if value["ok"] != true {
+		t.Fatalf("decoded JSON value changed: %#v", value)
+	}
+}

@@ -1,0 +1,275 @@
+{
+  "schema_version": "2.0.0",
+  "framework": "GRF",
+  "executor": "GRCE",
+  "control_plane": "N07",
+  "canonical_mesh": "soul-mesh/1",
+  "layer_contracts": [
+    {
+      "id": "L0",
+      "name": "Substrato",
+      "owner": "SOUL Mesh",
+      "participants": [
+        "N01",
+        "N02",
+        "N03",
+        "N04",
+        "N05",
+        "N06",
+        "N07"
+      ]
+    },
+    {
+      "id": "L1",
+      "name": "Memória",
+      "owner": "SARA/ERU",
+      "state": "PROJECTED"
+    },
+    {
+      "id": "L2",
+      "name": "Mediação",
+      "owner": "SARA/N07 MMD boundary",
+      "state": "PROJECTED"
+    },
+    {
+      "id": "L3",
+      "name": "Regeneração",
+      "owner": "SARA/ARA",
+      "state": "PROJECTED"
+    },
+    {
+      "id": "L4",
+      "name": "Ética",
+      "owner": "SARA/ETR/JEV",
+      "state": "PROJECTED"
+    },
+    {
+      "id": "L5",
+      "name": "Inovação",
+      "owner": "SARA/ITR/N06",
+      "state": "PROJECTED"
+    },
+    {
+      "id": "L6",
+      "name": "Governança",
+      "owner": "SARA/RGO/N07",
+      "state": "PROJECTED"
+    },
+    {
+      "id": "L7",
+      "name": "Execução",
+      "owner": "N07/GRCE",
+      "state": "PROJECTED",
+      "reason": "GRCE installed in N07; runtime cycle awaits hook binding"
+    }
+  ],
+  "natives": [
+    {
+      "id": "N01",
+      "repository": "divibisoul/aeternum-core-29",
+      "adjacent": [
+        "N02"
+      ],
+      "role": "coordenação/estado/identidade/memória"
+    },
+    {
+      "id": "N02",
+      "repository": "divibisoul/Eternium-",
+      "adjacent": [
+        "N01",
+        "N03"
+      ],
+      "role": "multiagente/execução colaborativa"
+    },
+    {
+      "id": "N03",
+      "repository": "divibisoul/nexus-aeternum-fusion",
+      "adjacent": [
+        "N02",
+        "N04"
+      ],
+      "role": "percepção/voz"
+    },
+    {
+      "id": "N04",
+      "repository": "divibisoul/nextjs-ai-chatbots",
+      "adjacent": [
+        "N03",
+        "N05"
+      ],
+      "role": "interface/ferramentas/documentos"
+    },
+    {
+      "id": "N05",
+      "repository": "divibisoul/nextjs-ai-chatbot",
+      "adjacent": [
+        "N04",
+        "N06"
+      ],
+      "role": "chat/conhecimento/recuperação"
+    },
+    {
+      "id": "N06",
+      "repository": "divibisoul/nextjs-ai-chatbot-2000",
+      "adjacent": [
+        "N05",
+        "N07"
+      ],
+      "role": "cognição/raciocínio/agentes"
+    },
+    {
+      "id": "N07",
+      "repository": "divibisoul/Orquestrador-",
+      "adjacent": [
+        "N06"
+      ],
+      "role": "orquestração/federação/control plane"
+    },
+    {
+      "id": "SARA",
+      "repository": "divibisoul/SARA",
+      "adjacent": [
+        "transversal"
+      ],
+      "role": "ERU/MMD/ARA/ETR/ITR/RGO"
+    },
+    {
+      "id": "JEV",
+      "repository": "divibisoul/jev-api",
+      "adjacent": [
+        "transversal"
+      ],
+      "role": "decisões tipadas/guardrails"
+    }
+  ],
+  "organs": [
+    {
+      "id": "prefrontal-neocortex",
+      "owner": "N06",
+      "route": "prefrontal.orbital.evaluate@1.0.0"
+    },
+    {
+      "id": "orbitador",
+      "owner": "N07",
+      "route": "transcendental.estimate@1.0.0"
+    },
+    {
+      "id": "SuperGPU",
+      "owner": "N07",
+      "route": "mesh.supergpu.execute@1.0.0"
+    },
+    {
+      "id": "Octacore",
+      "owner": "N07",
+      "route": "octacore.submit@1.0.0"
+    },
+    {
+      "id": "HortaCore",
+      "owner": "N01",
+      "route": "rgo.hortacore.store"
+    },
+    {
+      "id": "VagusBus",
+      "owner": "N02/SARA",
+      "route": "nervo-vago.event",
+      "alias_of": "nervo-vago",
+      "state": "REAL",
+      "note": "historical VagusBus identifier preserved as alias; not a second component"
+    },
+    {
+      "id": "Clareira",
+      "owner": "N01/N04",
+      "route": "clareira.ingest"
+    },
+    {
+      "id": "NervoVago",
+      "owner": "SARA",
+      "route": "nervo-vago.event",
+      "alias_of": "nervo-vago",
+      "state": "REAL",
+      "note": "historical NervoVago identifier preserved as alias; blocked external source remains recorded in Soul-29, not a transport dependency"
+    }
+  ],
+  "adjacency_policy": "GRF never bypasses canonical Mesh; HortaCore carries state and VagusBus carries signal",
+  "no_second_mesh": true,
+  "no_shadow_authority": true,
+  "source_fabric": {
+    "primary_upstreams": 16,
+    "complementary_sources": 6,
+    "total_external_sources": 22
+  },
+  "grce_state": "PROJECTED",
+  "grce_block_reason": "distinct real ERU/MMD/ARA/ETR/ITR/RGO hooks are not yet bound",
+  "invariant_catalog": "integrations/grf/invariants.json",
+  "participant_contracts": "integrations/grf/soul-29-participant-contracts.json",
+  "operations": [
+    "grf.describe@2.0.0",
+    "grf.participant.describe@2.0.0",
+    "grf.participant.ingest@2.0.0",
+    "grce.describe@2.0.0",
+    "grce.bindings.describe@2.0.0",
+    "grce.cycle.execute@2.0.0",
+    "grce.sara.authoritative.execute@2.0.0",
+    "nervo-vago.event@1.0.0",
+    "nervo-vago.describe@1.0.0"
+  ],
+  "grf_cycle_topology": [
+    "L0",
+    "L1",
+    "L2",
+    "L3",
+    "L4",
+    "L5",
+    "L6",
+    "L7",
+    "feedback:L7→L0"
+  ],
+  "no_root_component": true,
+  "regenerative_modules_manifest": "integrations/grf/regenerative-and-organs.json",
+  "organs_manifest": "integrations/grf/regenerative-and-organs.json",
+  "source_authority": "divibisoul/SARA",
+  "organ_count": 8,
+  "regenerative_module_count": 6,
+  "unified_nervo_vago": {
+    "id": "nervo-vago",
+    "name": "Nervo Vago",
+    "state": "REAL",
+    "logical_component": "single",
+    "owner": "N07",
+    "ethical_policy": "SARA/ETR",
+    "preserved_aliases": [
+      {
+        "id": "VagusBus",
+        "alias_of": "nervo-vago",
+        "implementation": "SARA.VagusNerveBus",
+        "state": "REAL"
+      },
+      {
+        "id": "NervoVago",
+        "alias_of": "nervo-vago",
+        "implementation": "N01 nervoVago facade",
+        "state": "REAL"
+      }
+    ],
+    "durable_transport": {
+      "implementation": "NATS JetStream",
+      "state": "PROJECTED"
+    },
+    "capability_contract": {
+      "protocol": "soul-mesh/1",
+      "state": "REAL",
+      "note": "NATS is event transport; Soul Mesh remains canonical capability request/response contract"
+    },
+    "cross_component_event_rule": "all cross-component event signaling must use the unified Nervo Vago boundary",
+    "no_second_vagus": true,
+    "no_second_mesh": true,
+    "etr_gate_before_delivery": true,
+    "contract_manifest": "integrations/grf/nervo-vago-unified-contract.json",
+    "event_operation": "nervo-vago.event@1.0.0",
+    "describe_operation": "nervo-vago.describe@1.0.0",
+    "execution_boundary": "backend.NervoVagoGateway",
+    "evidence_scope": "local_SARA_N01",
+    "federated_state": "PROJECTED",
+    "note": "Local Nervo Vago is executable through preserved SARA/N01 components; durable/federated transport remains projected."
+  }
+}

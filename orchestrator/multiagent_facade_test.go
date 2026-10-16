@@ -1,6 +1,8 @@
 package orchestrator
 
 import (
+	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/divibisoul/Orquestrador-/protocol"
@@ -37,19 +39,16 @@ func TestMultiAgentRequestFromMetadata(t *testing.T) {
 	}
 }
 
-func TestMetaGPTRoutingRemainsN06Owned(t *testing.T) {
-	m := protocol.Message{
-		CorrelationID: "corr-metagpt",
-		Metadata: map[string]string{
-			"provider": "metagpt",
-			"goal":     "must not execute in N07",
-		},
+func TestMetaGPTRoutingUsesRegisteredExternalOwner(t *testing.T) {
+	t.Setenv("SOUL_N07_METAGPT_ENABLED", "")
+	e := providerEvidence("metagpt")
+	if e.State != "DEGRADED" || e.Code != "MULTIAGENT_ADAPTER_DISABLED" {
+		t.Fatalf("unexpected MetaGPT evidence: %#v", e)
 	}
-	r, err := multiAgentFail(m, "MULTIAGENT_NATIVE_OWNER_N06")
-	if err == nil || r.Status != "error" || r.Error != "MULTIAGENT_NATIVE_OWNER_N06" {
-		t.Fatalf("unexpected fail-closed result: %#v err=%v", r, err)
+	if e.Provider != "metagpt" || len(e.Revision) != 40 {
+		t.Fatalf("MetaGPT must be resolved from the external owner registry: %#v", e)
 	}
-	if r.CorrelationID != m.CorrelationID {
-		t.Fatal("correlation lost during authority boundary")
+	if !strings.Contains(filepath.ToSlash(e.Root), "integrations/external/metagpt") {
+		t.Fatalf("unexpected canonical MetaGPT root: %s", e.Root)
 	}
 }

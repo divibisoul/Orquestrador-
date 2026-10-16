@@ -5,6 +5,7 @@ import (
 	"errors"
 	"math"
 	"time"
+	"strings"
 )
 
 // NeuralSignalProvider is the minimal neural-network boundary required by the
@@ -72,6 +73,42 @@ func (n *Neocortex) Commit(candidate Candidate, reason string) (Decision, error)
 	}
 	return n.cortex.Commit(candidate, reason)
 }
+
+func (n *Neocortex) EvaluateSignal(id string, signal []float64, risk, cost, urgency, impact float64, capability string) (Candidate, error) {
+	if n == nil || n.cortex == nil {
+		return Candidate{}, errors.New("neocortex unavailable")
+	}
+	if id == "" {
+		return Candidate{}, errors.New("candidate id is required")
+	}
+	if len(signal) == 0 {
+		return Candidate{}, errors.New("neural signal is empty")
+	}
+	for _, value := range signal {
+		if math.IsNaN(value) || math.IsInf(value, 0) {
+			return Candidate{}, errors.New("neural signal contains non-finite value")
+		}
+	}
+	utility := 0.0
+	for _, value := range signal {
+		if value < 0 {
+			utility -= value
+		} else {
+			utility += value
+		}
+	}
+	utility /= float64(len(signal))
+	contextData := map[string]any{"neural_dimensions": len(signal)}
+	if capability = strings.TrimSpace(capability); capability != "" {
+		contextData["capability"] = capability
+	}
+	candidate := Candidate{ID: id, Utility: utility, Risk: risk, Cost: cost, Urgency: urgency, Impact: impact, Uncertainty: 0, Context: contextData}
+	if err := n.cortex.ValidateAction(candidate); err != nil {
+		return Candidate{}, err
+	}
+	return candidate, nil
+}
+
 
 func (n *Neocortex) UpdateWorkingMemory(candidates []Candidate) error {
 	if n == nil || n.cortex == nil {

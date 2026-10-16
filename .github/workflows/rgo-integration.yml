@@ -8,6 +8,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: false
+      - name: Materialize top-level SOUL submodules without unsafe recursion
+        run: node scripts/materialize-top-level-submodules.mjs
       - uses: actions/setup-go@v5
         with: {go-version: '1.25'}
       - run: go test ./rgo

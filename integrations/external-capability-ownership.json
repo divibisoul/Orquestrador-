@@ -1,5 +1,5 @@
 {
-  "schema_version": "1.0.0",
+  "schema_version": "1.1.0",
   "source_registry": "integrations/external-capabilities.json",
   "canonical_control_plane": "N07",
   "owner_rule": "One primary executable owner per capability slice; upstream repositories remain implementation sources, never SOUL authorities.",
@@ -267,6 +267,163 @@
       ],
       "status": "adapter-planned",
       "mode": "explicit-adapter"
+    },
+    {
+      "id": "autogenesis",
+      "source": "DVampire/Autogenesis",
+      "primaryOwner": "N07",
+      "consumers": [
+        "N06",
+        "SARA",
+        "JEV"
+      ],
+      "affinity": [
+        "meta-agent",
+        "self-evolution",
+        "optimizer",
+        "evaluator",
+        "generator"
+      ],
+      "status": "adapter-planned",
+      "mode": "complementary"
+    },
+    {
+      "id": "octos",
+      "source": "lispking/octos",
+      "primaryOwner": "N07",
+      "consumers": [
+        "N02",
+        "N06"
+      ],
+      "affinity": [
+        "agentic-os",
+        "parallel-fanout",
+        "swarm",
+        "memory",
+        "sandbox"
+      ],
+      "status": "adapter-planned",
+      "mode": "complementary"
+    },
+    {
+      "id": "hora-graph-core",
+      "source": "Vivien83/hora-graph-core",
+      "primaryOwner": "N01",
+      "consumers": [
+        "N07",
+        "N05"
+      ],
+      "affinity": [
+        "knowledge-graph",
+        "bi-temporal-memory",
+        "hybrid-retrieval",
+        "persistence"
+      ],
+      "status": "adapter-planned",
+      "mode": "complementary"
+    },
+    {
+      "id": "mycelium",
+      "source": "mycelium-io/mycelium",
+      "primaryOwner": "N04",
+      "consumers": [
+        "N01",
+        "N07"
+      ],
+      "affinity": [
+        "shared-workspace",
+        "agent-coordination",
+        "persistent-memory",
+        "mediated-negotiation"
+      ],
+      "status": "adapter-planned",
+      "mode": "complementary"
+    },
+    {
+      "id": "prime-agent",
+      "source": "PrimeIntellect-ai/prime-agent",
+      "primaryOwner": "N06",
+      "consumers": [
+        "N07",
+        "N04"
+      ],
+      "affinity": [
+        "recursive-subagents",
+        "RLM",
+        "continual-harness",
+        "self-improvement"
+      ],
+      "status": "adapter-planned",
+      "mode": "complementary"
+    },
+    {
+      "id": "cuda-oxide",
+      "source": "SuperInstance/cuda-oxide",
+      "primaryOwner": "N07",
+      "consumers": [
+        "N06"
+      ],
+      "affinity": [
+        "CUDA",
+        "PTX",
+        "GPU-runtime",
+        "async-device-execution"
+      ],
+      "status": "adapter-planned",
+      "mode": "complementary"
+    },
+    {
+      "id": "bijux-dag-runtime",
+      "source": "bijux/bijux-core",
+      "primaryOwner": "N07",
+      "consumers": [
+        "N07",
+        "SARA"
+      ],
+      "affinity": [
+        "validated-DAG-execution",
+        "replay",
+        "run-provenance",
+        "artifact-integrity"
+      ],
+      "status": "adapter-planned",
+      "mode": "grce-complement"
+    },
+    {
+      "id": "ouro-loop",
+      "source": "VictorVVedtion/ouro-loop",
+      "primaryOwner": "N07",
+      "consumers": [
+        "N07",
+        "SARA",
+        "N06"
+      ],
+      "affinity": [
+        "runtime-guardrails",
+        "verify-remediate-loop",
+        "danger-zone-boundaries",
+        "self-fix"
+      ],
+      "status": "adapter-planned",
+      "mode": "grce-complement"
+    },
+    {
+      "id": "recurs",
+      "source": "Gen-Verse/Recuris",
+      "primaryOwner": "N07",
+      "consumers": [
+        "N06",
+        "N07",
+        "N01"
+      ],
+      "affinity": [
+        "experiential-memory",
+        "failure-localization",
+        "memory-evolution",
+        "long-horizon-learning"
+      ],
+      "status": "adapter-planned",
+      "mode": "grce-complement"
     }
   ]
 }

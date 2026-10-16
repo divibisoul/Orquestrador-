@@ -306,6 +306,10 @@ func (s *Scheduler) executePlan(ctx context.Context, jobs []Job) []Result {
 	}
 
 	for len(pending) > 0 {
+		if err := ctx.Err(); err != nil {
+			for i, job := range pending { results[i] = failed(job, "EXECUTION_CANCELLED", err, 0, 0) }
+			break
+		}
 		ready := make([]int, 0, len(pending))
 		for i, job := range pending {
 			if barrierReady(i, job, pending) {
@@ -313,6 +317,10 @@ func (s *Scheduler) executePlan(ctx context.Context, jobs []Job) []Result {
 			}
 		}
 		if len(ready) == 0 {
+			if err := ctx.Err(); err != nil {
+				for i, job := range pending { results[i] = failed(job, "EXECUTION_CANCELLED", err, 0, 0) }
+				break
+			}
 			for i, job := range pending {
 				results[i] = failed(job, "BARRIER_DEADLOCK", errors.New("no executable frontier remains"), 0, 0)
 			}
@@ -325,16 +333,7 @@ func (s *Scheduler) executePlan(ctx context.Context, jobs []Job) []Result {
 			return ready[i] < ready[j]
 		})
 
-		var wg sync.WaitGroup
-		for _, index := range ready {
-			index := index
-			wg.Add(1)
-			go func() {
-				defer wg.Done()
-				results[index] = s.execute(ctx, jobs[index])
-			}()
-		}
-		wg.Wait()
+		s.executeWave(ctx, jobs, ready, results)
 
 		for _, index := range ready {
 			delete(pending, index)
@@ -346,6 +345,58 @@ func (s *Scheduler) executePlan(ctx context.Context, jobs []Job) []Result {
 		}
 	}
 	return results
+}
+
+func (s *Scheduler) executeWave(ctx context.Context, jobs []Job, indices []int, results []Result) {
+	if len(indices) == 0 {
+		return
+	}
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	workers := s.cfg.MaxInflight
+	if workers < 1 {
+		workers = 1
+	}
+	if workers > len(indices) {
+		workers = len(indices)
+	}
+	work := make(chan int)
+	var wg sync.WaitGroup
+	wg.Add(workers)
+	for i := 0; i < workers; i++ {
+		go func() {
+			defer wg.Done()
+			for {
+				select {
+				case <-ctx.Done():
+					return
+				case index, ok := <-work:
+					if !ok {
+						return
+					}
+					results[index] = s.execute(ctx, jobs[index])
+				}
+			}
+		}()
+	}
+dispatch:
+	for _, index := range indices {
+		select {
+		case work <- index:
+		case <-ctx.Done():
+			break dispatch
+		}
+	}
+	close(work)
+	wg.Wait()
+	if err := ctx.Err(); err != nil {
+		for _, index := range indices {
+			if results[index].JobID == "" {
+				results[index] = failed(jobs[index], "EXECUTION_CANCELLED", err, 0, 0)
+			}
+		}
+	}
 }
 
 func barrierReady(index int, job Job, pending map[int]Job) bool {
@@ -374,7 +425,8 @@ func barriersForReady(jobs []Job, results []Result, ready []int) map[string]Vagu
 		}
 		name := strings.TrimSpace(*job.Barrier)
 		corr := job.CorrelationID
-		out[name] = makeVagus(
+		key := name + "::" + job.JobID
+		out[key] = makeVagus(
 			"gpu.barrier",
 			"G7",
 			string(job.Source),
