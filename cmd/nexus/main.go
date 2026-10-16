@@ -70,7 +70,7 @@ func (a n07CognitiveMeshAdapter) CallBestDynamic(ctx context.Context, capability
 
 func main() {
 	syncMeshSecretAlias()
-	n, err := neural.New(8, .05)
+	n, err := neural.NewDefault()
 	if err != nil {
 		log.Fatal(err)
 	}
