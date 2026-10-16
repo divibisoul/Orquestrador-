@@ -50,7 +50,11 @@ func RegisterSuperGPUOperations(e *Engine) error {
 				defer e.compute.Release(device.ID, message.TraceID)
 				op := strings.TrimSpace(message.Metadata["operation"])
 				if op == "" {
-					op = "identity"
+					return protocol.Result{
+						TraceID: message.TraceID, CorrelationID: message.CorrelationID,
+						Source: "N07.supergpu", Target: message.Source, Status: "rejected",
+						Error: "metadata.operation is required",
+					}, errors.New("metadata.operation is required")
 				}
 				values, err := e.compute.Execute(ctx, device, op, message.Payload)
 				return protocol.Result{TraceID: message.TraceID, CorrelationID: message.CorrelationID, Source: "N07.supergpu", Target: message.Source, Status: status(err), Payload: values, Metadata: map[string]string{"device": device.ID, "operation": op}, Error: errorText(err)}, err
@@ -73,7 +77,11 @@ func RegisterSuperGPUOperations(e *Engine) error {
 				}
 				op := strings.TrimSpace(message.Metadata["operation"])
 				if op == "" {
-					op = "identity"
+					return protocol.Result{
+						TraceID: message.TraceID, CorrelationID: message.CorrelationID,
+						Source: "N07.supergpu", Target: message.Source, Status: "rejected",
+						Error: "metadata.operation is required",
+					}, errors.New("metadata.operation is required")
 				}
 				workers := 1
 				if raw := strings.TrimSpace(message.Metadata["workers"]); raw != "" {
