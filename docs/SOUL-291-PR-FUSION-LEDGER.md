@@ -974,3 +974,32 @@ CI de N07 ainda está em curso no head `f2a0e03`; os reruns N01/N06 ainda estava
 4. Continuar a matriz E2E por aresta: cada conexão entre núcleos requer prova bidirecional própria; manifesto, CI unitária ou sucesso de outra aresta não a substitui.
 
 Nenhuma PR de origem, branch de origem ou arquivo foi excluído ou fechado por esta atualização. Esta fotografia não declara concluída a fusão integral das 291 PRs.
+
+
+## Atualização append-only — auditoria funcional de compatibilidade N01 e segundo reparo do smoke N07 (2026-10-16 UTC)
+
+### N01 #106 — auditoria de superfície funcional (sem promoção)
+
+- Comparação do manifesto `integrations/soul-25-augmentation.json` entre a base consultada e o head candidato: as 16 origens upstream anteriores permanecem todas presentes com os mesmos IDs; foram acrescentadas nove origens (`everything-claude-code`, `swarmclaw`, `mem0`, `letta`, `langfuse`, `vllm`, `sglang`, `ray`, `megatron-lm`). Os nove IDs de peers nativos (N01–N07, SARA e JEV) também permanecem intactos.
+- Comparação do `capabilityList()` do listener N01: as 24 capacidades anteriores permanecem presentes; quatro novas entradas foram adicionadas para resolver, descrever e executar o fabric externo. Não foi encontrada perda de nome de capacidade nessa lista; isto ainda não substitui verificação de handler/rota real.
+- Comparação de `package.json`: nenhum script existente foi removido ou alterado. Seis comandos de validação novos foram adicionados.
+- A fachada legada `lib/aeternum/HortaCore.ts` conserva `AeternumHortaCore` e o singleton `aeternumHortaCore`, com os métodos antigos `set/get/has/observe/observeAll/keys/snapshot/getChangeLog`. A mudança faz a fachada delegar à única autoridade `src/core/hortaCore.ts` e acrescenta acesso a `delete/clear`, vasos, links funcionais e fluxos sinérgicos. O teste `src/core/hortaCore.fusion.test.ts` prova estado partilhado e conclusão/rejeição de fluxos com correlação; testes de unidade não provam a comunicação interprocesso de todos os núcleos.
+- A auditoria de HortaCore confirmou que o delta não é uma remoção integral: a implementação foi expandida (aprox. 9,8 KB para 18,6 KB no core e 2,2 KB para 4,2 KB na fachada), preservando a superfície de memória e acrescentando os fluxos vasculares/sinérgicos. Ainda é necessário conferir o conjunto completo de diffs de 44 arquivos com linhas removidas, incluindo compatibilidade dos consumidores do relatório de saúde quando campos passam de números sintéticos para `number | null`. Esta transição evita fabricar telemetria, mas exige que callers tratem `unmeasuredLayers` corretamente.
+- A matriz Kotlin da #106 agora separa explicitamente seis núcleos AI operacionais (30 rotas dirigidas/60 superfícies) de N07 estrutural (mais 12 rotas lógicas/24 superfícies na topologia completa). Os cálculos são rotulados `LOGICAL_UNVERIFIED`; não contam como E2E real. A promoção permanece bloqueada até instrumentação Android e contratos HTTP do SHA candidato passarem.
+- Resultado da auditoria atual: **nenhuma perda confirmada de comando no inventário comparado** (manifesto upstream, capacidades do listener e scripts npm). **Não** é autorização para merge: falta revisão funcional dos trechos alterados, do contrato de saúde tipado e CI integral de #106.
+
+### N07 #153 — reparo completo das asserções aninhadas; CI aguardada
+
+- No primeiro head corrigido `16ffbf48bdec0f302be5f351e13340ba8f4b3e61`, a asserção de `provider_count` foi ajustada para interpretar `metadata.federation_json`. A leitura do workflow/handler confirmou que a resposta do probe segue o mesmo envelope: o resultado de `external.langgraph.probe@1.0.0` é serializado dentro de `metadata.external_result_json`.
+- Foram corrigidas também as duas asserções do probe no workflow: `jq -e '.metadata.external_result_json | fromjson | .state == "PASS"'` e `jq -e '.metadata.external_result_json | fromjson | .source_present == true'`. Os dois ajustes e a correção prévia de `provider_count` alteram apenas as asserções do smoke, não o código de runtime.
+- Novo head atual observado: `ba8d5bc07a8edf4d8d181f78027e881952a87b6c`. A consulta de Actions encontrou 14 workflows, todos ainda QUEUED/PENDING. **Não há aprovação final nem nova evidência verde** para esse head até os workflows terminarem.
+- O aviso de cleanup sobre `integrations/external/autogenesis/datasets/leetcode` sem URL em `.gitmodules` permanece secundário e por investigar. Não foi alterado nenhum upstream nem submódulo aninhado neste reparo.
+
+### Próximas portas, em ordem
+
+1. Aguardar a conclusão das 14 verificações do head `ba8d5bc` sem promovê-lo por inferência; se uma nova falha surgir, ler o job/log e corrigir apenas a causa demonstrada.
+2. Terminar a revisão funcional do diff de N01 #106 (em especial compatibilidade de saúde/telemetria, transportes HTTP Android e os 44 arquivos que alteram linhas), em paralelo com a CI própria da #106.
+3. Manter N07 #156/#158 empilhadas e bloqueadas enquanto a base #153 não estiver validada; só então sincronizar bases sem force-push e revalidar no novo SHA.
+4. Prosseguir pela matriz de comunicação real de cada aresta e registrar cada resultado como REAL, PROJECTED, BLOCKED ou UNMEASURABLE, sem transferir evidência entre conexões.
+
+Nenhum arquivo, PR de origem ou branch de origem foi apagado ou fechado por esta atualização; a fusão integral das 291 PRs permanece aberta.
