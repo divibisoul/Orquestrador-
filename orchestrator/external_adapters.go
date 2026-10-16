@@ -350,27 +350,23 @@ func (r ExternalAdapterRegistry) validateMaterializedPin(ctx context.Context, p 
 		}
 		return nil
 	}
-	attestationPath := strings.TrimSpace(os.Getenv("SOUL_EXTERNAL_RUNTIME_ATTESTATION"))
-	if attestationPath == "" {
-		attestationPath = filepath.Join(rootDir, "config", "soul-external-runtime-attestation.json")
-	} else if !filepath.IsAbs(attestationPath) {
-		attestationPath = filepath.Join(rootDir, attestationPath)
-	}
-	raw, err := os.ReadFile(attestationPath)
-	if err != nil {
-		return fmt.Errorf("EXTERNAL_RUNTIME_ATTESTATION_UNAVAILABLE:%s", p.ID)
-	}
-	var attestation ExternalRuntimeAttestation
-	if err := json.Unmarshal(raw, &attestation); err != nil {
-		return fmt.Errorf("EXTERNAL_RUNTIME_ATTESTATION_INVALID:%s", p.ID)
-	}
-	if attestation.Repositories[p.ID] != revision {
-		return fmt.Errorf("EXTERNAL_RUNTIME_ATTESTATION_REVISION_MISMATCH:%s:expected=%s", p.ID, revision)
-	}
-	if _, err := os.Stat(root); err != nil {
+	attestationPath := externalRuntimeAttestationPath(rootDir)
+	observation := inspectAttestedExternalSource(root, revision, attestationPath)
+	if !observation.Present {
 		return fmt.Errorf("EXTERNAL_SUBMODULE_SOURCE_NOT_PRESENT:%s", p.ID)
 	}
-	return nil
+	switch observation.State {
+	case "ATTESTED_PIN_MATCH":
+		return nil
+	case "ATTESTATION_UNAVAILABLE":
+		return fmt.Errorf("EXTERNAL_RUNTIME_ATTESTATION_UNAVAILABLE:%s", p.ID)
+	case "ATTESTATION_INVALID", "ATTESTATION_SCHEMA_UNSUPPORTED":
+		return fmt.Errorf("EXTERNAL_RUNTIME_ATTESTATION_INVALID:%s", p.ID)
+	case "ATTESTATION_REVISION_MISSING", "ATTESTATION_REVISION_MISMATCH":
+		return fmt.Errorf("EXTERNAL_RUNTIME_ATTESTATION_REVISION_MISMATCH:%s:expected=%s", p.ID, revision)
+	default:
+		return fmt.Errorf("EXTERNAL_SUBMODULE_SOURCE_NOT_PRESENT:%s", p.ID)
+	}
 }
 
 func buildExternalAdapterRequest(provider, mode, operation, root string, metadata map[string]string) map[string]any {
