@@ -1469,3 +1469,30 @@ Registro aditivo: histórico anterior mantido; sem merge, exclusão, force-push 
 O status público oficial do GitHub informa Actions operacional e nenhum incidente no dia 16/10/2026; isso não explica a ausência de jobs iniciados nestes repositórios. Como as ferramentas conectadas não expõem dispatch de workflow, não inferimos sucesso nem tentamos disparar repetidamente novas execuções para mascarar o bloqueio. O próximo diagnóstico de runner precisa usar a configuração de Actions/runner/concurrency e faturamento/limites do proprietário da organização.
 
 Sem merge, exclusão de funcionalidades/arquivos, force-push ou escrita em `main`. A ordem de promoção permanece N06↔N05 → N05↔N04 → N04↔N03 → N03↔N02 → N02↔N01 → comissão N01↔N06↔N07.
+
+
+## Correção de pins E2E entre candidatas atuais — 2026-10-17 UTC
+
+Esta entrada é aditiva; todo o conteúdo anterior do ledger foi mantido.
+
+Uma revisão cruzada dos workflows encontrou três testes de processo real que estavam fixando revisões antigas de um núcleo dependente. Isso criava risco de validar uma implementação diferente daquela que a etapa de fusão pretende promover. Corrigimos o ref e a asserção de SHA exato juntos em cada workflow:
+
+| Etapa | Workflow corrigido | SHA anterior | SHA candidato agora fixado | Commit da correção do workflow |
+|---|---|---|---|---|
+| N01↔N04 | [N01 E2E](https://github.com/divibisoul/aeternum-core-29/blob/fusion/n01-hortacore-clareira-mesh-20261016/.github/workflows/n01-n04-real-process-e2e.yml) | `1d0c224a09e871da5ec69b7875d515390689f1a8` | `1e2c41ef3da054f6974085de9caed03d3db17f47` (N04 PR #51) | `41c9f28638007ccae83edced5b2638739ee34414` |
+| N04↔N05 | [N04 E2E](https://github.com/divibisoul/nextjs-ai-chatbots/blob/fix/n04-enforce-peer-response-hmac-20261016/.github/workflows/n04-n05-real-process-e2e.yml) | `64e1b8719068b153130bcdbcfbbc2c78c11e1b8c` | `6315f2d58e68c65ef5f97406fd0c759dc78333e0` (N05 PR #53) | `aa544747740d2d0840d10f115db1b0597d287201` |
+| N05↔N06 | [N06 E2E](https://github.com/divibisoul/nextjs-ai-chatbot-2000/blob/fix/n05-n06-mesh-hmac-canonical-interoperability-20261016/.github/workflows/n05-n06-real-process-e2e.yml) | `ed5f7c0caf7b477c058fd79317919c870c9d5fc6` | `6315f2d58e68c65ef5f97406fd0c759dc78333e0` (N05 PR #53) | `05cdc7883279ea9ab51d6751aa1a43a2a8bf1c02` |
+
+Os commits atualizaram apenas os três arquivos de workflow, sem apagar testes ou alterar o código de runtime. Os detalhes foram anotados nas conversas de N01 #106, N04 #51 e N06 #46.
+
+### Estado após sincronizar os pins
+
+As novas alterações geraram novos heads e novos conjuntos de Actions:
+- N01 #106: head `41c9f28638007ccae83edced5b2638739ee34414` — 21 QUEUED, 1 PENDING.
+- N04 #51: head `aa544747740d2d0840d10f115db1b0597d287201` — 6 QUEUED, 1 PENDING.
+- N06 #46: head `05cdc7883279ea9ab51d6751aa1a43a2a8bf1c02` — 7 QUEUED, 2 PENDING.
+- N05 #53: head `6315f2d58e68c65ef5f97406fd0c759dc78333e0` — 6 QUEUED.
+
+**Classificação: correção de integração implementada; execução/validação dos heads novos ainda UNMEASURABLE.** Os pins agora são consistentes entre as etapas, mas nenhum status queued/pending conta como PASS. Não promover PRs dependentes até que os testes de cada elo executem e apresentem resultado conclusivo. O bloqueio operacional de Actions/runner continua separado da correção de código; sem evidência de jobs iniciados, não inventar causa nem criar alterações de runtime para mascarar a fila.
+
+A ordem de promoção segue inalterada: N06↔N05 → N05↔N04 → N04↔N03 → N03↔N02 → N02↔N01 → comissão N01↔N06↔N07. Sem merge, force-push, exclusão de arquivo ou escrita direta em main.
