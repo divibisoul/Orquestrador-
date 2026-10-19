@@ -1496,3 +1496,28 @@ As novas alterações geraram novos heads e novos conjuntos de Actions:
 **Classificação: correção de integração implementada; execução/validação dos heads novos ainda UNMEASURABLE.** Os pins agora são consistentes entre as etapas, mas nenhum status queued/pending conta como PASS. Não promover PRs dependentes até que os testes de cada elo executem e apresentem resultado conclusivo. O bloqueio operacional de Actions/runner continua separado da correção de código; sem evidência de jobs iniciados, não inventar causa nem criar alterações de runtime para mascarar a fila.
 
 A ordem de promoção segue inalterada: N06↔N05 → N05↔N04 → N04↔N03 → N03↔N02 → N02↔N01 → comissão N01↔N06↔N07. Sem merge, force-push, exclusão de arquivo ou escrita direta em main.
+
+
+## Rodada de engenharia chefe — preservação de API neural e bloqueios atuais (2026-10-19 UTC)
+
+### Mudanças realmente gravadas no GitHub
+
+1. **N06 #42** foi mesclada em `main` no commit `94d22606bbcf7167c40e5bfe9be02735b0d659d3`; os oito workflows consultados no head final terminaram SUCCESS. A PR #46 também foi mesclada em `main` no commit `861221a881e857da898e46b3fd4c98055e3fec32`; nove workflows no head final terminaram SUCCESS. Não interpretar esses merges como prova de integração completa dos nove núcleos.
+2. **N01 #105**: o build dos APKs debug/release passa, mas a instrumentação não chegou a executar os testes: no attempt 5 o emulator/ADB falhou, o console do emulador não iniciou e o relatório terminou `Process crashed`, `15 Tests 0/0 completed`. A causa observada é infraestrutura/emulador, não falha de assertion da aplicação. Ajustei apenas `.github/workflows/android-build.yml` para limitar o emulador a 2048 MB e 2 cores; novo head `f18df1f06f8230f85fd6f8486c965dcbe60b1083` está em CI. Nenhum código de runtime foi alterado nesta correção.
+3. **N07 #161** — https://github.com/divibisoul/Orquestrador-/pull/161 — branch `integration/n07-neural-api-additive-restore-20261019`, head `a559cdd736f57ca56374b287d6884d4b0eba702c`. Adiciona `Network.Configure(Config)` e validação, sem substituir `neural/network.go`: preserva `New/AddEdge/RemoveEdge/Activate/Forward/Learn/Normalize/Attention/Backprop/Health`, mantém grafo/pesos/bias, invalida cache ao configurar e reseta somente acumuladores do otimizador quando a família muda. Testes cobrem preservação do grafo/cache e rejeição de configuração inválida. Dropout não implementado permanece explicitamente rejeitado. PR é DRAFT; sete workflows estavam em execução na última consulta, então não mesclar ainda.
+
+### Ordem de integração de fundação — N07
+
+- **Base a preservar:** main atual + história da PR #148 (SOUL v2/Mesh), incluindo o merge commit #153 `3d332bee054b5c46c3dfc0098e1bac5e2493365b`, que é ancestral do head de fundação `a9b51dc1c5313e6d718590d98ac4f6d7ddc7b97d`.
+- **Complemento independente:** PR #147 adiciona artefatos de fundação v1/GRCE e ledger próprio. Tem 13 checks falhando no head `c2797fa...`; não mesclar até corrigir.
+- **Reconciliação neural/SOUL-28:** PR #149 tem 11 checks falhando no head `9dce0c6...`. Sua versão de `neural/network.go` preserva os métodos públicos já presentes na fundação e adiciona `Configure`, mas modifica bastante implementação interna; não substituir o arquivo da fundação inteira. A API `Configure` foi portada como alteração aditiva em #161 para validar a recuperação sem apagar a implementação existente. Os complementos SOUL-28 exclusivos de #149 continuam pendentes de integração e testes.
+- **Estrutura acima da base:** após #161 verde, reconciliar os deltas exclusivos de #149 com inspeção por arquivo; depois rebase lógico/merge não-forçado de #156 (SOUL-28) sobre a fundação atual; por último reaplicar o delta complementar #158. #156/#158 continuam DRAFT/stacked e não estão prontos para merge.
+- **Regra de promoção:** base primeiro; contratos/API retrocompatíveis em seguida; adaptadores/afinidade por último; E2E entre núcleos depois dos testes unitários/contratuais. Nenhuma branch histórica é apagada, nenhum force-push e nenhum PASS inferido de fila.
+
+### Snapshot operacional desta rodada
+
+- N01 #105: 15 workflows SUCCESS, 1 workflow ativo no head `f18df1f...`; o ativo ainda precisa concluir.
+- N07 #161: sete workflows ativos no head `a559cdd...`; nenhum resultado final ainda.
+- N07 #147: 2 SUCCESS / 13 FAILURE; N07 #149: 10 SUCCESS / 11 FAILURE. Nenhuma dessas PRs pode ser promovida como verde.
+- N07 #148 continua DRAFT e sem checks no head original; o ramo de fundação não deve ser promovido diretamente a main até concluir a reconciliação por camadas.
+- Sem exclusões, force-push, fechamento de PR histórica ou alteração direta em main nesta rodada.
