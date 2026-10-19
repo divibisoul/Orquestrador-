@@ -283,12 +283,12 @@
         "N07"
       ],
       "manifestAuthority": "SOUL-FUSION-MANIFEST.json",
-      "sourceRef": "8367522ec3a75eff9fff8342a8f82ddd58c8cfe9",
-      "status": "main-live-source-ref-reconciled-2026-10-16-n06-merge",
+      "sourceRef": "30847a58d7d94eee0890d9a7a03898d1f7e280aa",
+      "status": "main-live-source-ref-reconciled-2026-10-19-n06-hmac-interoperability",
       "contractEvidencePaths": [
         "lib/soul-mesh/SoulMeshProtocol.ts"
       ],
-      "previousSourceRef": "735b688be8b93768bcfe5f103a92947f28e4b5cb",
+      "previousSourceRef": "8367522ec3a75eff9fff8342a8f82ddd58c8cfe9",
       "sourceRefHistory": [
         {
           "sourceRef": "17c46a0ddd5edfcdb570539d2d250a78799016f2",
@@ -308,6 +308,11 @@
         {
           "sourceRef": "8367522ec3a75eff9fff8342a8f82ddd58c8cfe9",
           "observed": "2026-10-16/merged-cognition-capability-and-Mesh-integration-N06",
+          "state": "PRESERVED"
+        },
+        {
+          "sourceRef": "30847a58d7d94eee0890d9a7a03898d1f7e280aa",
+          "observed": "2026-10-19/merged-bidirectional-HMAC-interoperability-N06",
           "state": "CURRENT"
         }
       ]
