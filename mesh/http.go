@@ -48,7 +48,12 @@ var seenHeaderNonces = map[string]int64{}
 const headerNonceReplayWindowMs = int64(120000)
 
 func NewHTTPGateway(engine *orchestrator.Engine) *HTTPGateway {
-	return &HTTPGateway{Engine: engine, Secret: strings.TrimSpace(os.Getenv("SOUL_MESH_HMAC_SECRET")), AllowUnauthenticatedLocal: strings.EqualFold(strings.TrimSpace(os.Getenv("N07_MESH_ALLOW_UNAUTH_LOCAL")), "true")}
+	secret := strings.TrimSpace(os.Getenv("SOUL_MESH_HMAC_SECRET"))
+	// Backward-compatible alias retained for existing N07 deployments and integration tests.
+	if secret == "" {
+		secret = strings.TrimSpace(os.Getenv("N07_MESH_HMAC_SECRET"))
+	}
+	return &HTTPGateway{Engine: engine, Secret: secret, AllowUnauthenticatedLocal: strings.EqualFold(strings.TrimSpace(os.Getenv("N07_MESH_ALLOW_UNAUTH_LOCAL")), "true")}
 }
 func (g *HTTPGateway) ServeHTTP(w http.ResponseWriter, r *http.Request) { g.Handler(w, r) }
 func (g *HTTPGateway) authenticated(envelope protocol.MeshEnvelope) error {

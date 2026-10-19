@@ -224,8 +224,8 @@ func main() {
 		g,
 		backend.GRCEFeedback{
 			Horta: backend.NewGRCEVagoFeedback(nervoVagoGateway, "AETERNUM_HORTACORE", "horta"),
-			Vagus: orchestrator.NewGRCEVagoFeedback(nervoVagoGateway, "SARA", "vagus"),
-			Mesh:  orchestrator.NewGRCEVagoFeedback(nervoVagoGateway, "SOUL_MESH", "mesh"),
+			Vagus: backend.NewGRCEVagoFeedback(nervoVagoGateway, "SARA", "vagus"),
+			Mesh:  backend.NewGRCEVagoFeedback(nervoVagoGateway, "SOUL_MESH", "mesh"),
 		},
 	)
 	if err != nil {
@@ -479,7 +479,7 @@ func main() {
 			return
 		}
 		var body map[string]any
-		if err := decodeJSON(r, cfg.MaxRequestBytes, &body); err != nil {
+		if err := backend.DecodeJSON(r, cfg.MaxRequestBytes, &body); err != nil {
 			writeJSON(w, http.StatusBadRequest, map[string]any{"error": err.Error()})
 			return
 		}

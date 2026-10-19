@@ -103,7 +103,8 @@ func (g *NervoVagoGateway) Publish(ctx context.Context, envelope NervoVagoEnvelo
 	if err != nil {
 		return nil, fmt.Errorf("NERVO_VAGO_ENVELOPE_ENCODE:%w", err)
 	}
-	audit, err := g.sara.Audit(ctx, string(raw), envelope.CorrelationID)
+	auditInput := grceEthicalReviewInput("avaliar a segurança, integridade e proveniência do evento antes da publicação no Vagus", string(raw))
+	audit, err := g.sara.Audit(ctx, auditInput, envelope.CorrelationID)
 	if err != nil {
 		return nil, fmt.Errorf("NERVO_VAGO_BLOCKED:ETR_AUDIT_FAILED:%w", err)
 	}
@@ -196,6 +197,16 @@ func canonicalEnvelopeForHash(e NervoVagoEnvelope, withoutOutputHash bool) ([]by
 func sha256Hex(raw []byte) string {
 	sum := sha256.Sum256(raw)
 	return hex.EncodeToString(sum[:])
+}
+
+// HashNervoVagoValue hashes a JSON-serializable value using the existing SHA-256 utility.
+// Go's encoding/json sorts map keys, giving stable hashes for equivalent object values.
+func HashNervoVagoValue(value any) (string, error) {
+	raw, err := json.Marshal(value)
+	if err != nil {
+		return "", fmt.Errorf("NERVO_VAGO_VALUE_HASH_ENCODE:%w", err)
+	}
+	return sha256Hex(raw), nil
 }
 
 func RegisterNervoVagoOperations(e *orchestrator.Engine, sara *SARAProxy) error {
