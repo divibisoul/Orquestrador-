@@ -32,6 +32,8 @@ func TestGRCEExecutorRuntimeCompletesWithHTTPBoundaryFixture(t *testing.T) {
 				findingDetail = "ARA classified the original high-complexity input"
 			}
 			writeGRCEJSONTest(w, map[string]any{
+				// This fixture is the successful, low-risk path. High-complexity
+				// preservation is covered separately by the real-process E2E.
 				"flaws": []any{map[string]any{
 					"kind":   findingKind,
 					"detail": findingDetail,

@@ -103,16 +103,16 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
-      SOUL_GITHUB_AUDIT_TOKEN: ${{ secrets.SOUL_GITHUB_AUDIT_TOKEN }}
-      SOUL_REQUIRE_REMOTE_PROVENANCE: 'false'
+      SOUL_GITHUB_AUDIT_TOKEN: ${{ secrets.SOUL_GITHUB_AUDIT_TOKEN || github.token }}
+      SOUL_REQUIRE_REMOTE_PROVENANCE: 'true'
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
           submodules: false
 
-      - name: Materialize top-level SOUL submodules without unsafe recursion
-        run: node scripts/materialize-top-level-submodules.mjs
+      - name: Assert source audit credentials are available
+        run: test -n "$SOUL_GITHUB_AUDIT_TOKEN"
 
       - uses: actions/setup-node@v4
         with:
@@ -263,6 +263,30 @@ jobs:
           done
           curl -fsS             -H 'Authorization: Bearer ci'             -H 'Content-Type: application/json'             -X POST http://127.0.0.1:18082/execute             -d '{"operation":"external.federation.describe@1.0.0","metadata":{}}'             | tee /tmp/external-federation.json
           jq -e '.metadata.federation_json | fromjson | .provider_count == 22' /tmp/external-federation.json >/dev/null
+          python3 - <<'PY'
+          import json
+          with open("/tmp/external-federation.json", encoding="utf-8") as stream:
+              envelope = json.load(stream)
+          raw = envelope.get("metadata", {}).get("federation_json")
+          if not isinstance(raw, str):
+              raise SystemExit("EXTERNAL_FEDERATION_JSON_MISSING")
+          report = json.loads(raw)
+          providers = report.get("providers")
+          if report.get("state") != "PASS" or report.get("provider_count") != 22 or not isinstance(providers, list) or len(providers) != 22:
+              raise SystemExit("EXTERNAL_FEDERATION_INVENTORY_INCOMPLETE")
+          for provider in providers:
+              provider_id = provider.get("id", "<missing-id>")
+              if provider.get("sourcePresent") is not True:
+                  raise SystemExit(f"EXTERNAL_SOURCE_NOT_PRESENT:{provider_id}:{provider.get('sourceState')}")
+              if provider.get("revisionMatched") is not True:
+                  raise SystemExit(f"EXTERNAL_SOURCE_PIN_NOT_VERIFIED:{provider_id}:{provider.get('sourceState')}")
+              if provider.get("evidenceMode") not in {"git-worktree", "build-attestation"}:
+                  raise SystemExit(f"EXTERNAL_SOURCE_EVIDENCE_INVALID:{provider_id}:{provider.get('evidenceMode')}")
+              expected_state = "ATTESTED_PIN_MATCH" if provider["evidenceMode"] == "build-attestation" else "PIN_MATCH"
+              if provider.get("sourceState") != expected_state:
+                  raise SystemExit(f"EXTERNAL_SOURCE_STATE_INVALID:{provider_id}:{provider.get('sourceState')}")
+          print(json.dumps({"state":"PASS","source_count":len(providers),"all_sources_present_and_pinned":True}))
+          PY
           curl -fsS             -H 'Authorization: Bearer ci'             -H 'Content-Type: application/json'             -X POST http://127.0.0.1:18082/execute             -d '{"operation":"external.langgraph.probe@1.0.0","metadata":{}}'             | tee /tmp/langgraph-probe.json
           jq -e '.metadata.external_result_json | fromjson | .state == "PASS"' /tmp/langgraph-probe.json >/dev/null
           jq -e '.metadata.external_result_json | fromjson | .source_present == true' /tmp/langgraph-probe.json >/dev/null

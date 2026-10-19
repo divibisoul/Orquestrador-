@@ -79,6 +79,74 @@ func TestExternalAdapterAllTwentyTwoProvidersProbe(t *testing.T) {
 	}
 }
 
+
+func TestExternalFederationExecutionRequiresCanonicalNativeOwner(t *testing.T) {
+	e, _ := newExternalTestEngine(t)
+	t.Setenv("SOUL_EXTERNAL_EXECUTE_LANGGRAPH", "")
+
+	base := map[string]string{
+		"provider":           "langgraph",
+		"external_operation": "workflow.invoke",
+	}
+	_, err := e.Execute(context.Background(), ExternalFederationExecuteOperation, nil, base)
+	if err == nil || !strings.Contains(err.Error(), "EXTERNAL_NATIVE_OWNER_REQUIRED") {
+		t.Fatalf("missing native owner did not fail closed: %v", err)
+	}
+
+	wrongOwner := map[string]string{
+		"provider":           "langgraph",
+		"external_operation": "workflow.invoke",
+		"native_owner":       "N01",
+	}
+	_, err = e.Execute(context.Background(), ExternalFederationExecuteOperation, nil, wrongOwner)
+	if err == nil || !strings.Contains(err.Error(), "EXTERNAL_NATIVE_OWNER_MISMATCH") {
+		t.Fatalf("wrong native owner did not fail closed: %v", err)
+	}
+
+	wrongRevision := map[string]string{
+		"provider":           "langgraph",
+		"external_operation": "workflow.invoke",
+		"native_owner":       "N07",
+		"provider_revision":  strings.Repeat("0", 40),
+	}
+	_, err = e.Execute(context.Background(), ExternalFederationExecuteOperation, nil, wrongRevision)
+	if err == nil || !strings.Contains(err.Error(), "EXTERNAL_PROVIDER_REVISION_MISMATCH") {
+		t.Fatalf("provider revision drift did not fail closed: %v", err)
+	}
+
+	canonicalOwner := map[string]string{
+		"provider":           "langgraph",
+		"external_operation": "workflow.invoke",
+		"native_owner":       "N07",
+		"provider_revision":  "2d942085e214ef6b99b6f54ed4d544a7c7c5ac56",
+	}
+	_, err = e.Execute(context.Background(), ExternalFederationExecuteOperation, nil, canonicalOwner)
+	if err == nil || !strings.Contains(err.Error(), "EXTERNAL_ADAPTER_DISABLED") {
+		t.Fatalf("canonical owner and revision must still respect the default-disabled adapter gate: %v", err)
+	}
+}
+
+func TestExternalFederationDescribeIsAvailableWithoutExecutingProviders(t *testing.T) {
+	e, _ := newExternalTestEngine(t)
+	result, err := e.Execute(context.Background(), ExternalFederationDescribeOperation, nil, nil)
+	if err != nil {
+		t.Fatalf("federation describe should not require provider execution: %v", err)
+	}
+	if result.Status != "ok" || result.Metadata["federation_json"] == "" {
+		t.Fatalf("missing canonical federation observation: %#v", result)
+	}
+	var observation map[string]any
+	if err := json.Unmarshal([]byte(result.Metadata["federation_json"]), &observation); err != nil {
+		t.Fatalf("invalid federation description JSON: %v", err)
+	}
+	if observation["control_plane"] != "N07" {
+		t.Fatalf("wrong control plane: %#v", observation["control_plane"])
+	}
+	if observation["provider_count"] != float64(22) {
+		t.Fatalf("unexpected canonical adapter registry count: %#v", observation["provider_count"])
+	}
+}
+
 func TestExternalAdapterDegradedExecutionFailsClosed(t *testing.T) {
 	m := protocol.Message{CorrelationID: "corr-degraded"}
 	result, err := externalAdapterExecutionResult(m, map[string]any{
