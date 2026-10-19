@@ -248,6 +248,67 @@ func TestCopyStructuredSuperAGIFabricMetadata(t *testing.T) {
 }
 
 
+
+func TestCopyStructuredExternalFederationMetadataPreservesTransportAuthority(t *testing.T) {
+	metadata := map[string]string{
+		"provider":           "langgraph",
+		"external_operation": "workflow.invoke",
+		"native_owner":       "N07",
+		"payload_json":       "caller-must-not-control-this-field",
+	}
+	payload := map[string]any{
+		"prompt":   "summarize the supplied text",
+		"provider": "crewai",
+		"root":     "/tmp/attempted-escape",
+		"roles":    []any{"planner", "executor"},
+	}
+	if err := copyStructuredCapabilityMetadata(metadata, orchestrator.ExternalFederationExecuteOperation, payload); err != nil {
+		t.Fatal(err)
+	}
+	if metadata["provider"] != "langgraph" || metadata["external_operation"] != "workflow.invoke" || metadata["native_owner"] != "N07" {
+		t.Fatalf("caller payload overwrote canonical transport authority: %#v", metadata)
+	}
+	var forwarded map[string]any
+	if err := json.Unmarshal([]byte(metadata["payload_json"]), &forwarded); err != nil {
+		t.Fatalf("payload_json is invalid: %v", err)
+	}
+	if forwarded["prompt"] != "summarize the supplied text" || forwarded["root"] != "/tmp/attempted-escape" {
+		t.Fatalf("structured payload was not preserved for downstream fail-closed validation: %#v", forwarded)
+	}
+}
+
+func TestHTTPGatewayExternalFederationExecutionFailsClosedWhenAdapterDisabled(t *testing.T) {
+	t.Setenv("SOUL_EXTERNAL_EXECUTE_LANGGRAPH", "")
+	h := newTestGateway(t)
+	registry, err := orchestrator.NewExternalAdapterRegistry()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := orchestrator.RegisterExternalAdapterOperations(h.Engine, registry); err != nil {
+		t.Fatal(err)
+	}
+	wire := canonicalRequest("request", orchestrator.ExternalFederationExecuteOperation, "trace-external-disabled", nil)
+	wire["payload"] = map[string]any{
+		"payload": map[string]any{"prompt": "real provider call must remain disabled in tests"},
+		"metadata": map[string]any{
+			"provider":           "langgraph",
+			"external_operation": "workflow.invoke",
+			"native_owner":       "N07",
+			"provider_revision":  "2d942085e214ef6b99b6f54ed4d544a7c7c5ac56",
+		},
+	}
+	got, code := postWire(t, h, wire)
+	if code != http.StatusBadRequest || got.Kind != "error" {
+		t.Fatalf("disabled external adapter did not return canonical Mesh error: code=%d envelope=%+v", code, got)
+	}
+	if got.Payload["code"] != "EXTERNAL_ADAPTER_DISABLED" {
+		t.Fatalf("expected explicit disabled state, got %#v", got.Payload)
+	}
+	if got.CorrelationID != "trace-external-disabled" || got.Source != "N07" || got.Target != "N01" {
+		t.Fatalf("external federation error lost Mesh identity/correlation: %+v", got)
+	}
+}
+
 func TestEnhancedFederatedGatewayAuthenticatedPingDoesNotReuseNonce(t *testing.T) {
 	t.Setenv("N07_MESH_HMAC_SECRET", testSecret)
 	t.Setenv("N07_MESH_ALLOW_UNAUTH_LOCAL", "false")

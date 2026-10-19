@@ -338,20 +338,24 @@ func (g *HTTPGateway) Handler(w http.ResponseWriter, r *http.Request) {
 	message.Metadata = metadata
 	result, err := g.Engine.Submit(r.Context(), message)
 	status := http.StatusOK
+	responseType := "TASK_RESULT"
+	payload := map[string]any{"values": result.Payload, "status": result.Status, "metadata": result.Metadata}
 	if err != nil {
 		status = http.StatusBadRequest
+		responseType = "ERROR"
+		if result.Error != "" {
+			payload["code"] = result.Error
+			payload["error"] = result.Error
+		}
 	}
-	payload := map[string]any{"values": result.Payload, "status": result.Status, "metadata": result.Metadata}
-	if result.Error != "" {
-		payload["error"] = result.Error
-	}
-	g.respond(w, status, envelope, "TASK_RESULT", payload)
+	g.respond(w, status, envelope, responseType, payload)
 }
 func structuredMeshCapability(capability string) bool {
 	capability = strings.TrimSpace(capability)
 	return strings.HasPrefix(capability, "cooperation.") ||
 		strings.HasPrefix(capability, "mesh.supergpu.") ||
-		strings.HasPrefix(capability, "superagi.fabric.")
+		strings.HasPrefix(capability, "superagi.fabric.") ||
+		strings.HasPrefix(capability, "external.federation.")
 }
 
 func copyStructuredCapabilityMetadata(metadata map[string]string, capability string, payload map[string]any) error {
@@ -377,6 +381,24 @@ func copyStructuredCapabilityMetadata(metadata map[string]string, capability str
 		return copySuperAGIFabricMetadata(metadata, payload)
 	case "superagi.fabric.describe@1.0.0", "superagi.fabric.describe":
 		return nil
+	case orchestrator.ExternalFederationDescribeOperation:
+		// The global registry describe operation requires no caller-supplied owner
+		// or provider selector; it reports the canonical N07 registry and evidence.
+		return nil
+	case orchestrator.ExternalFederationExecuteOperation:
+		provider := strings.TrimSpace(metadata["provider"])
+		operation := strings.TrimSpace(metadata["external_operation"])
+		nativeOwner := strings.TrimSpace(metadata["native_owner"])
+		if provider == "" || operation == "" || nativeOwner == "" {
+			return errors.New("external federation execution requires provider, external_operation and native_owner")
+		}
+		// Keep structured input intact for the Python runner; its merge policy does
+		// not permit payload keys to replace transport authority (provider/mode/root).
+		raw, err := json.Marshal(payload)
+		if err != nil {
+			return fmt.Errorf("external federation payload encode: %w", err)
+		}
+		metadata["payload_json"] = string(raw)
 	case "cooperation.handshake", "cooperation.handshake@1.0.0":
 		target, ok := payload["target"].(string)
 		if !ok || strings.TrimSpace(target) == "" {

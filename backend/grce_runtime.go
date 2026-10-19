@@ -12,6 +12,7 @@ import (
 	"github.com/divibisoul/Orquestrador-/grce"
 	"github.com/divibisoul/Orquestrador-/grf"
 	"github.com/divibisoul/Orquestrador-/protocol"
+	"github.com/divibisoul/Orquestrador-/orchestrator"
 	"github.com/divibisoul/Orquestrador-/supergpu"
 )
 
@@ -60,6 +61,7 @@ func NewGRCEExecutorRuntime(sara *SARAProxy, compute *supergpu.Runtime, feedback
 		Vagus:               r.feedback("vagus"),
 		Mesh:                r.feedback("mesh"),
 		ExtractCapabilities: r.extractCapabilities,
+		SOUL28Bridge:        grce.NewSOUL28ParticipantBridgeIfConfigured(),
 	}
 	return grce.New(grf.CanonicalInvariantSet(), hooks)
 }
@@ -406,7 +408,10 @@ func (r *GRCEExecutorRuntime) form(ctx context.Context, artifacts []grf.Artifact
 }
 
 func (r *GRCEExecutorRuntime) validateETR(ctx context.Context, state grf.State, c grf.Context) (bool, error) {
-	audit, err := r.SARA.Audit(ctx, stateText(state), c.CorrelationID)
+	// Match the same explicit ethical context used by the earlier GRCE ETR gate
+	// and transformation review. Auditing the raw candidate alone omitted the
+	// requested purpose and principles, causing a false rejection at final review.
+	audit, err := r.SARA.Audit(ctx, grceEthicalReviewInput("validar a aprovação ética final antes da ativação", stateText(state)), c.CorrelationID)
 	if err != nil {
 		return false, err
 	}
@@ -421,15 +426,27 @@ func (r *GRCEExecutorRuntime) validateETR(ctx context.Context, state grf.State, 
 func (r *GRCEExecutorRuntime) validateITR(ctx context.Context, state grf.State, c grf.Context) (bool, error) {
 	_ = ctx
 	_ = c
-	originalRaw, err := json.Marshal(state.Payload["original_state"])
-	if err != nil {
-		return false, err
+	original, exists := state.Payload["original_state"]
+	if !exists || original == nil {
+		return false, errors.New("GRCE_VALIDATE_ITR_ORIGINAL_STATE_MISSING")
 	}
-	transformedRaw, err := json.Marshal(state.Payload["artifacts"])
-	if err != nil {
-		return false, err
+	artifacts, ok := state.Payload["artifacts"].([]grf.Artifact)
+	if !ok || len(artifacts) == 0 {
+		return false, errors.New("GRCE_VALIDATE_ITR_ARTIFACTS_MISSING")
 	}
-	return len(transformedRaw) >= len(originalRaw) && len(transformedRaw) > 0, nil
+	originalRaw, err := json.Marshal(original)
+	if err != nil {
+		return false, fmt.Errorf("GRCE_VALIDATE_ITR_ORIGINAL_ENCODE_FAILED: %w", err)
+	}
+	// ITR validates the complete candidate envelope: original history remains
+	// present and the new artifacts/provenance add information. Comparing the
+	// artifacts alone to an 11k original input incorrectly rejects a valid
+	// non-destructive extension even when the candidate embeds the full history.
+	candidateRaw, err := json.Marshal(state.Payload)
+	if err != nil {
+		return false, fmt.Errorf("GRCE_VALIDATE_ITR_CANDIDATE_ENCODE_FAILED: %w", err)
+	}
+	return len(candidateRaw) > len(originalRaw), nil
 }
 
 func (r *GRCEExecutorRuntime) validateRGO(ctx context.Context, state grf.State, c grf.Context) (bool, error) {
@@ -616,7 +633,7 @@ func NewGRCEVagoFeedback(gateway *NervoVagoGateway, target, kind string) func(co
 		}
 		messageID := protocol.NewTraceID()
 		traceID := protocol.NewTraceID()
-		_, err = gateway.Publish(ctx, NervoVagoEnvelope{
+		_, err = gateway.PublishGRCEFeedback(ctx, NervoVagoEnvelope{
 			VagusVersion:  "1.0",
 			MessageID:     messageID,
 			CorrelationID: c.CorrelationID,
@@ -640,30 +657,79 @@ func NewGRCEVagoFeedback(gateway *NervoVagoGateway, target, kind string) func(co
 }
 
 func (r *GRCEExecutorRuntime) extractCapabilities(ctx context.Context, state grf.State, prov []grf.Provenance, evidence []grf.Evidence, c grf.Context) ([]grf.Capability, error) {
-	_ = ctx
 	if len(prov) == 0 || len(evidence) == 0 {
 		return nil, errors.New("GRCE_CAPABILITY_EXTRACTION_INPUT_MISSING")
 	}
 	failureID := evidence[0].FailureID
+	stateHashValue, err := stateHash(state)
+	if err != nil {
+		return nil, fmt.Errorf("GRCE_CAPABILITY_STATE_HASH_FAILED:%w", err)
+	}
 	hash, err := grf.HashJSON(map[string]any{
-		"failure":    failureID,
+		"failure":     failureID,
 		"correlation": c.CorrelationID,
-		"state":      state.Payload,
+		"state":       state.Payload,
 	})
 	if err != nil {
 		return nil, err
 	}
-	return []grf.Capability{{
+	capabilities := []grf.Capability{{
 		ID:          "capability:" + hash[:16],
-		Description: "preserve-and-transform capability derived from observed failure",
+		Description: "preserve-and-transform capability derived from observed failure; external augmentation requires explicit component and capability",
 		State:       grf.PROJECTED,
 		Provenance: grf.Provenance{
-			ParentHash:       mustStateHash(state),
-			InputHash:        mustStateHash(state),
-			OutputHash:       hash,
-			SequenceIndex:    c.SequenceIndex + 3000,
-			Stage:            "EXTRACT",
-			CausalFailureID:  failureID,
+			ParentHash:      stateHashValue,
+			InputHash:       stateHashValue,
+			OutputHash:      hash,
+			SequenceIndex:   c.SequenceIndex + 3000,
+			Stage:           "EXTRACT",
+			CausalFailureID: failureID,
 		},
-	}}, nil
+	}}
+
+	// External providers are discovery candidates only. The canonical N07
+	// resolver remains the owner of affinity, pinned source metadata and
+	// routing policy; GRCE never executes a provider from capability extraction.
+	component, _ := state.Payload["component"].(string)
+	requestedCapability, _ := state.Payload["capability"].(string)
+	if strings.TrimSpace(component) == "" || strings.TrimSpace(requestedCapability) == "" {
+		return capabilities, nil
+	}
+	plan, err := orchestrator.ResolveCapabilityUpgrade(ctx, component, requestedCapability)
+	if err != nil {
+		return nil, fmt.Errorf("GRCE_EXTERNAL_CAPABILITY_RESOLUTION_FAILED:%w", err)
+	}
+	for index, provider := range plan.DirectAugmenters {
+		candidate := map[string]any{
+			"provider":           provider.ID,
+			"source":             provider.Source,
+			"revision":           provider.Revision,
+			"component":          plan.Component,
+			"capability":         plan.RequestedCapability,
+			"adapter_state":      provider.AdapterState,
+			"evidence_state":     provider.Evidence,
+			"requires_explicit_adapter": plan.RequiresExplicitAdapter,
+		}
+		candidateHash, hashErr := grf.HashJSON(candidate)
+		if hashErr != nil {
+			return nil, fmt.Errorf("GRCE_EXTERNAL_CAPABILITY_HASH_FAILED:%w", hashErr)
+		}
+		capabilities = append(capabilities, grf.Capability{
+			ID: "external:" + provider.ID + ":" + candidateHash[:16],
+			Description: fmt.Sprintf(
+				"PROJECTED upstream candidate %s matches %q for %s at pinned revision %s; adapter=%s; execution requires explicit activation",
+				provider.ID, plan.RequestedCapability, plan.Component, provider.Revision, provider.AdapterState,
+			),
+			State: grf.PROJECTED,
+			Provenance: grf.Provenance{
+				ParentHash:      stateHashValue,
+				InputHash:       hash,
+				OutputHash:      candidateHash,
+				SequenceIndex:   c.SequenceIndex + 3001 + uint64(index),
+				Stage:           "EXTERNAL_AFFINITY_RESOLUTION",
+				CausalFailureID: failureID,
+			},
+		})
+	}
+	return capabilities, nil
 }

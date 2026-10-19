@@ -76,7 +76,8 @@
           "observed": "2026-10-06/live-mainline",
           "state": "CURRENT"
         }
-      ]
+      ],
+      "canonicalMeshContractPath": "src/core/mesh/SoulMeshProtocol.ts"
     },
     "N02": {
       "repository": "divibisoul/Eternium-",
@@ -117,10 +118,16 @@
         },
         {
           "sourceRef": "0516bfcffa266190910c36389c75df642e13da41",
+          "observed": "2026-10-15/post-merge-n02-pr59",
+          "state": "PRESERVED"
+        },
+        {
+          "sourceRef": "0516bfcffa266190910c36389c75df642e13da41",
           "observed": "2026-10-16/verified-mainline-after-functional-fusions-N02",
           "state": "CURRENT"
         }
-      ]
+      ],
+      "canonicalMeshContractPath": "src/soul-mesh/SoulMeshProtocol.ts"
     },
     "N03": {
       "repository": "divibisoul/nexus-aeternum-fusion",
@@ -161,11 +168,37 @@
           "state": "PRESERVED"
         },
         {
+          "sourceRef": "a8068ce15977a9624d9f2e11b7a4731c5bca0f9f",
+          "observed": "2026-10-12/integrity-reconciliation",
+          "state": "PRESERVED"
+        },
+        {
+          "sourceRef": "8deb6e86c33cb29674b99913ed4f86141086ba5e",
+          "observed": "2026-10-12/verified-main-head",
+          "state": "PRESERVED"
+        },
+        {
+          "sourceRef": "8deb6e86c33cb29674b99913ed4f86141086ba5e",
+          "observed": "2026-10-14/source-ref-drift-detected",
+          "state": "PRESERVED"
+        },
+        {
+          "sourceRef": "eda84858b87a612c5d544c5de0893e681a79b591",
+          "observed": "2026-10-14/verified-main-head",
+          "state": "PRESERVED"
+        },
+        {
+          "sourceRef": "676c20cb5e537944a5a75d8e4920ff48c010cfbf",
+          "observed": "2026-10-16/post-merge-n03-pr48",
+          "state": "PRESERVED"
+        },
+        {
           "sourceRef": "676c20cb5e537944a5a75d8e4920ff48c010cfbf",
           "observed": "2026-10-16/verified-mainline-after-functional-fusions-N03",
           "state": "CURRENT"
         }
-      ]
+      ],
+      "canonicalMeshContractPath": "lib/soul-mesh/SoulMeshProtocol.ts"
     },
     "N04": {
       "repository": "divibisoul/nextjs-ai-chatbots",
@@ -205,11 +238,27 @@
           "state": "PRESERVED"
         },
         {
+          "sourceRef": "f640b959d628176488b73bd2a44fa1a85ca84be4",
+          "observed": "2026-10-12/integrity-reconciliation",
+          "state": "PRESERVED"
+        },
+        {
+          "sourceRef": "0b364dba05bd986de040b6c4b3715dfdaebc75d2",
+          "observed": "2026-10-12/verified-main-head",
+          "state": "PRESERVED"
+        },
+        {
+          "sourceRef": "b3ca469c8063c143081ad44fbeb7c238153a60cd",
+          "observed": "2026-10-16/post-merge-n04-pr50",
+          "state": "PRESERVED"
+        },
+        {
           "sourceRef": "b3ca469c8063c143081ad44fbeb7c238153a60cd",
           "observed": "2026-10-16/verified-mainline-after-functional-fusions-N04",
           "state": "CURRENT"
         }
-      ]
+      ],
+      "canonicalMeshContractPath": "lib/soul-mesh/SoulMeshProtocol.ts"
     },
     "N05": {
       "repository": "divibisoul/nextjs-ai-chatbot",
@@ -252,6 +301,11 @@
         },
         {
           "sourceRef": "894c001e48da368b58ca0b67911e63b2a859c1f3",
+          "observed": "2026-10-16/post-merge-functional-cluster",
+          "state": "PRESERVED"
+        },
+        {
+          "sourceRef": "894c001e48da368b58ca0b67911e63b2a859c1f3",
           "observed": "2026-10-16/verified-mainline-after-functional-fusions-N05",
           "state": "PRESERVED"
         },
@@ -260,7 +314,9 @@
           "observed": "2026-10-16/merged-canonical-HMAC-response-interoperability-N05",
           "state": "CURRENT"
         }
-      ]
+      ],
+      "canonicalMeshContractPath": "lib/soul-mesh/SoulMeshProtocol.ts",
+      "validationPullRequest": 49
     },
     "N06": {
       "repository": "divibisoul/nextjs-ai-chatbot-2000",
@@ -302,6 +358,11 @@
         },
         {
           "sourceRef": "735b688be8b93768bcfe5f103a92947f28e4b5cb",
+          "observed": "2026-10-15/post-merge-n06-pr45",
+          "state": "PRESERVED"
+        },
+        {
+          "sourceRef": "735b688be8b93768bcfe5f103a92947f28e4b5cb",
           "observed": "2026-10-16/verified-mainline-after-functional-fusions-N06",
           "state": "PRESERVED"
         },
@@ -315,7 +376,8 @@
           "observed": "2026-10-19/merged-bidirectional-HMAC-interoperability-N06",
           "state": "CURRENT"
         }
-      ]
+      ],
+      "canonicalMeshContractPath": "lib/soul-mesh/SoulMeshProtocol.ts"
     },
     "N07": {
       "repository": "divibisoul/Orquestrador-",
@@ -394,7 +456,14 @@
           "GRF/GRCE"
         ],
         "rule": "external providers remain explicit adapters; no provider becomes a SOUL nucleus or second control plane"
-      }
+      },
+      "sourceRefHistory": [
+        {
+          "sourceRef": "release-identity:self",
+          "observed": "2026-10-19/verified-mainline-after-N07-153-merge",
+          "state": "CURRENT"
+        }
+      ]
     }
   },
   "transversal": {
@@ -407,7 +476,7 @@
       ],
       "authority": "sara.meta / sara.core / sara.governance",
       "sourceRef": "5633cdd95a067c1c40a4b731a38976971e173d1f",
-      "status": "main-live-source-ref-reconciled-2026-10-16-sara",
+      "status": "main-live-vagus-provenance-grce-hooks-append-only-eru-merged-2026-10-16",
       "previousSourceRef": "53a7760cc3db7f77456e415ef14b3638d52df816",
       "sourceRefHistory": [
         {
@@ -422,7 +491,7 @@
         },
         {
           "sourceRef": "5633cdd95a067c1c40a4b731a38976971e173d1f",
-          "observed": "2026-10-16/verified-mainline-after-functional-fusions-SARA",
+          "observed": "2026-10-16/post-merge-sara-pr44",
           "state": "CURRENT"
         }
       ]

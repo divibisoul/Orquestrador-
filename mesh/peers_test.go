@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
@@ -213,7 +214,8 @@ func TestPeerClientRetriesReuseLogicalMessageID(t *testing.T) {
 			correlation, _ := wire["correlationId"].(string)
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusInternalServerError)
-			// Retryable HTTP errors still require valid response authentication.
+			// The retryable server error must still be authenticated: the peer
+			// client correctly rejects unsigned responses before inspecting HTTP status.
 			_ = json.NewEncoder(w).Encode(signedPeerErrorResponse(correlation, "mesh.ping", secret))
 			return
 		}
@@ -298,5 +300,95 @@ func TestPeerClientRegisterPeerUpdatesCanonicalTable(t *testing.T) {
 	}
 	if got.URL != "http://127.0.0.1:18081" || !got.Healthy || got.Circuit != CircuitClosed {
 		t.Fatalf("unexpected registered peer: %+v", got)
+	}
+}
+
+
+func signedPeerErrorResponse(correlation, capability, secret string) map[string]any {
+	msgID := protocol.NewTraceID()
+	nonce := protocol.NewTraceID()
+	timestamp := time.Now().UnixMilli()
+	env := protocol.MeshEnvelope{
+		Version:         protocol.SoulMeshVersion,
+		ContractVersion: protocol.SoulMeshContractVersion,
+		MessageID:       msgID,
+		Source:          protocol.N01,
+		Target:          protocol.N07,
+		Timestamp:       timestamp,
+		Nonce:           nonce,
+		CorrelationID:   correlation,
+		Type:            "ERROR",
+		Payload: map[string]any{
+			"capability": capability,
+			"payload":    map[string]any{"error": "remote failure"},
+		},
+	}
+	if err := protocol.SignHMAC(&env, secret); err != nil {
+		panic(err)
+	}
+	return map[string]any{
+		"protocol":        "soul-mesh/1",
+		"contractVersion": protocol.SoulMeshContractVersion,
+		"id":              msgID,
+		"correlationId":   correlation,
+		"source":          protocol.N01,
+		"target":          protocol.N07,
+		"kind":            "error",
+		"capability":      capability,
+		"payload":         map[string]any{"error": "remote failure"},
+		"timestamp":       timestamp,
+		"nonce":           nonce,
+		"hmac":            env.HMAC,
+	}
+}
+
+func TestPeerClientRejectsUnauthenticatedHTTPErrorBeforeStatusHandling(t *testing.T) {
+	secret := "0123456789abcdef0123456789abcdef"
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		_, _ = w.Write([]byte("{\"protocol\":\"soul-mesh/1\",\"contractVersion\":\"1.1.0\",\"id\":\"bad\",\"correlationId\":\"corr-auth\",\"source\":\"N01\",\"target\":\"N07\",\"kind\":\"error\",\"capability\":\"mesh.ping\",\"payload\":{\"error\":\"unsigned\"}}"))
+	}))
+	defer server.Close()
+
+	t.Setenv("SOUL_MESH_N01_URL", server.URL)
+	t.Setenv("SOUL_MESH_HMAC_SECRET", secret)
+	p, err := NewPeerClient(server.Client())
+	if err != nil {
+		t.Fatal(err)
+	}
+	p.maxRetry = 1
+
+	_, err = p.CallWithCorrelation(context.Background(), protocol.N01, "mesh.ping", map[string]any{}, "corr-auth")
+	if err == nil || !strings.Contains(err.Error(), "HMAC") {
+		t.Fatalf("expected authentication failure for unsigned HTTP error, got %v", err)
+	}
+}
+
+func TestPeerClientAcceptsAuthenticatedHTTPErrorAfterVerification(t *testing.T) {
+	secret := "abcdef0123456789abcdef0123456789"
+	correlation := "corr-auth-valid"
+	response := signedPeerErrorResponse(correlation, "mesh.ping", secret)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(response)
+	}))
+	defer server.Close()
+
+	t.Setenv("SOUL_MESH_N01_URL", server.URL)
+	t.Setenv("SOUL_MESH_HMAC_SECRET", secret)
+	p, err := NewPeerClient(server.Client())
+	if err != nil {
+		t.Fatal(err)
+	}
+	p.maxRetry = 1
+
+	result, err := p.CallWithCorrelation(context.Background(), protocol.N01, "mesh.ping", map[string]any{}, correlation)
+	if err == nil || !strings.Contains(err.Error(), "peer request failed") {
+		t.Fatalf("expected authenticated remote HTTP error, got result=%#v err=%v", result, err)
+	}
+	if result["kind"] != "error" || result["correlationId"] != correlation {
+		t.Fatalf("authenticated error response lost contract fields: %#v", result)
 	}
 }
