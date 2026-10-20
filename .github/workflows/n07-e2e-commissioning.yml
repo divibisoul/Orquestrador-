@@ -5,23 +5,7 @@ concurrency:
   cancel-in-progress: true
 
 on:
-  push:
-    branches: [main, "fix/**"]
-    paths:
-      - '**/*.go'
-      - 'go.mod'
-      - 'go.sum'
-      - 'Dockerfile'
-      - 'mesh/**'
-      - 'orchestrator/**'
-      - '.github/workflows/n07-e2e-commissioning.yml'
   workflow_dispatch:
-    inputs:
-      run_credentialed_staging:
-        description: 'Run real credentialed staging only when repository secrets are configured'
-        required: false
-        default: false
-        type: boolean
 
 permissions:
   contents: read

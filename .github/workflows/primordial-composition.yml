@@ -4,18 +4,8 @@ concurrency:
   cancel-in-progress: true
 
 on:
-  push:
-    branches:
-      - "feat/primordial-essence-composition-ledger-2026-09-29"
-  pull_request:
-    branches: [main]
-    paths:
-      - "soul-nuclei.json"
-      - "docs/SOUL_ARCHITECTURE_LIVE.md"
-      - "scripts/verify-primordial-composition.mjs"
-      - "scripts/verify-primordial-essence.mjs"
-      - ".github/workflows/primordial-composition.yml"
   workflow_dispatch:
+
 permissions:
   contents: read
 jobs:
