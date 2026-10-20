@@ -5,23 +5,7 @@ concurrency:
   cancel-in-progress: true
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - "integrations/native-capability-augmentation.json"
-      - "orchestrator/capability_augmentation.go"
-      - "orchestrator/capability_augmentation_test.go"
-      - "cmd/nexus/main.go"
-      - "orchestrator/topology.go"
-      - ".github/workflows/soul-native-capability-augmentation.yml"
-  pull_request:
-    paths:
-      - "integrations/native-capability-augmentation.json"
-      - "orchestrator/capability_augmentation.go"
-      - "orchestrator/capability_augmentation_test.go"
-      - "cmd/nexus/main.go"
-      - "orchestrator/topology.go"
-      - ".github/workflows/soul-native-capability-augmentation.yml"
+  workflow_dispatch:
 
 permissions:
   contents: read

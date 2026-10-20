@@ -5,26 +5,6 @@ concurrency:
   cancel-in-progress: true
 
 on:
-  pull_request:
-    branches: [main]
-    paths:
-      - "ARCHITECTURE.md"
-      - "INFRASTRUCTURE.md"
-      - "MESH_CONTRACT.md"
-      - "CAPABILITY_REGISTRY.md"
-      - "OBSERVABILITY.md"
-      - "DEPLOYMENT.md"
-      - "LOCAL_DEV.md"
-      - "E2E_TEST_PLAN.md"
-      - "RUNBOOK.md"
-      - "contracts/**"
-      - "config/**"
-      - "infra/local/**"
-      - "scripts/validate-soul-blueprint.mjs"
-      - "scripts/soul-local-up.sh"
-      - ".github/workflows/soul-blueprint-contract.yml"
-  push:
-    branches: [main]
   workflow_dispatch:
 
 permissions:

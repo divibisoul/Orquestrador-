@@ -5,30 +5,7 @@ concurrency:
   cancel-in-progress: true
 
 on:
-  push:
-    paths:
-      - "agentarsenal/**"
-      - "orchestrator/agent_arsenal.go"
-      - "orchestrator/identity.go"
-      - "integrations/agent-arsenal/**"
-      - "integrations/soul-provider-contracts.json"
-      - "soul-capability-authority.json"
-      - "soul-nuclei.json"
-      - "cmd/nexus/main.go"
-      - ".env.example"
-      - ".github/workflows/soul-agent-arsenal.yml"
-  pull_request:
-    paths:
-      - "agentarsenal/**"
-      - "orchestrator/agent_arsenal.go"
-      - "orchestrator/identity.go"
-      - "integrations/agent-arsenal/**"
-      - "integrations/soul-provider-contracts.json"
-      - "soul-capability-authority.json"
-      - "soul-nuclei.json"
-      - "cmd/nexus/main.go"
-      - ".env.example"
-      - ".github/workflows/soul-agent-arsenal.yml"
+  workflow_dispatch:
 
 jobs:
   verify:

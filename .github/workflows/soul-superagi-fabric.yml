@@ -5,30 +5,7 @@ concurrency:
   cancel-in-progress: true
 
 on:
-  push:
-    paths:
-      - "supergpu/**"
-      - "orchestrator/supergpu_mesh.go"
-      - "orchestrator/superagi_fabric.go"
-      - "orchestrator/identity.go"
-      - "cmd/nexus/main.go"
-      - "integrations/superagi-fabric.json"
-      - "integrations/native-capability-augmentation.json"
-      - "soul-capability-authority.json"
-      - "soul-nuclei.json"
-      - ".github/workflows/soul-superagi-fabric.yml"
-  pull_request:
-    paths:
-      - "supergpu/**"
-      - "orchestrator/supergpu_mesh.go"
-      - "orchestrator/superagi_fabric.go"
-      - "orchestrator/identity.go"
-      - "cmd/nexus/main.go"
-      - "integrations/superagi-fabric.json"
-      - "integrations/native-capability-augmentation.json"
-      - "soul-capability-authority.json"
-      - "soul-nuclei.json"
-      - ".github/workflows/soul-superagi-fabric.yml"
+  workflow_dispatch:
 
 permissions:
   contents: read

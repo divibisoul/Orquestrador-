@@ -5,16 +5,7 @@ concurrency:
   cancel-in-progress: true
 
 on:
-  push:
-    paths:
-      - "integrations/langgraph/**"
-      - "integrations/nemo-agent-toolkit/**"
-      - ".github/workflows/soul-oss-bridges.yml"
-  pull_request:
-    paths:
-      - "integrations/langgraph/**"
-      - "integrations/nemo-agent-toolkit/**"
-      - ".github/workflows/soul-oss-bridges.yml"
+  workflow_dispatch:
 
 jobs:
   langgraph:

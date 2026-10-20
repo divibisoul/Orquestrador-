@@ -5,18 +5,7 @@ concurrency:
   cancel-in-progress: true
 
 on:
-  push:
-    paths:
-      - 'compute/transcendental/**'
-      - 'config/compute.yaml'
-      - 'go.mod'
-      - '.github/workflows/transcendental-compute.yml'
-  pull_request:
-    paths:
-      - 'compute/transcendental/**'
-      - 'config/compute.yaml'
-      - 'go.mod'
-      - '.github/workflows/transcendental-compute.yml'
+  workflow_dispatch:
 
 permissions:
   contents: read
