@@ -1,5 +1,9 @@
 name: N07 Orquestrador CI
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 on:
   push:
     paths:
@@ -32,10 +36,6 @@ on:
 permissions:
   contents: read
   actions: read
-
-concurrency:
-  group: n07-ci-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
 
 jobs:
   normalize-main:
