@@ -1,5 +1,9 @@
 name: Superpowers Crossfront Agents
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 on:
   pull_request:
     paths:
@@ -29,4 +33,3 @@ jobs:
           go-version-file: go.mod
           cache: true
       - run: go test ./...
-
