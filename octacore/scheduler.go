@@ -374,7 +374,10 @@ func barriersForReady(jobs []Job, results []Result, ready []int) map[string]Vagu
 		}
 		name := strings.TrimSpace(*job.Barrier)
 		corr := job.CorrelationID
-		out[name] = makeVagus(
+		// Preserve every barrier signal; multiple ready jobs may share the same
+		// barrier and must never overwrite each other's provenance.
+		key := name + "::" + job.JobID
+		out[key] = makeVagus(
 			"gpu.barrier",
 			"G7",
 			string(job.Source),
