@@ -102,6 +102,28 @@ func (CPUBackend) Execute(ctx context.Context, _ Device, op string, in []float64
 		return out, nil
 	}
 }
+func WithCorrelationID(ctx context.Context, correlationID string) context.Context {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	return context.WithValue(ctx, correlationContextKey{}, correlationID)
+}
+
+
+func CorrelationIDFromContext(ctx context.Context) string {
+	if ctx == nil {
+		return ""
+	}
+	value, _ := ctx.Value(correlationContextKey{}).(string)
+	return value
+}
+
+
+func (f ReporterFunc) Report(ctx context.Context, event ExecutionEvent) error {
+	return f(ctx, event)
+}
+
+
 func New(backend Backend) *Runtime {
 	if backend == nil {
 		backend = CPUBackend{}
