@@ -2,6 +2,7 @@ package octacore
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
@@ -189,5 +190,34 @@ func TestOctacoreWebGPUIsExplicitlyUnavailable(t *testing.T) {
 	}
 	if result.Error == nil || result.Error.Code != "BACKEND_UNAVAILABLE" {
 		t.Fatalf("unexpected WebGPU error: %#v", result.Error)
+	}
+}
+
+
+func TestOctacoreLargeWaveRetainsAllResultsWithBoundedWorkers(t *testing.T) {
+	s := newTestScheduler(t)
+	group := "large-wave"
+	const taskCount = 64
+	jobs := make([]Job, taskCount)
+	for i := 0; i < taskCount; i++ {
+		jobs[i] = job(fmt.Sprintf("wave-%d", i), G7, G7, &group, nil)
+	}
+
+	start := time.Now()
+	results := s.executePlan(context.Background(), jobs)
+	elapsed := time.Since(start)
+	if len(results) != taskCount {
+		t.Fatalf("expected %d results, got %d", taskCount, len(results))
+	}
+	for i, result := range results {
+		if !result.OK {
+			t.Fatalf("job %d failed: %#v", i, result.Error)
+		}
+		if result.JobID != jobs[i].JobID || result.CorrelationID != jobs[i].CorrelationID {
+			t.Fatalf("result ordering/provenance changed at %d: result=%+v job=%+v", i, result, jobs[i])
+		}
+	}
+	if elapsed <= 75*time.Millisecond {
+		t.Fatalf("large wave did not execute concurrently: elapsed=%s", elapsed)
 	}
 }
