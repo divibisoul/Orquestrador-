@@ -20,11 +20,12 @@ type Device struct {
 	Capabilities []string
 }
 type Reservation struct {
-	DeviceID  string
-	Owner     string
-	ExpiresAt time.Time
-	Priority  int
-	Metadata  map[string]string
+	DeviceID   string
+	Owner      string
+	ExpiresAt  time.Time
+	Priority   int
+	Metadata   map[string]string
+	LeaseCount int
 }
 type Backend interface {
 	Execute(context.Context, Device, string, []float64) ([]float64, error)
@@ -218,10 +219,16 @@ func (r *Runtime) Reserve(deviceID, owner string) error {
 		// CPU execution is intentionally shareable; no exclusive lease is stored.
 		return nil
 	}
-	if current, ok := r.reserved[deviceID]; ok && current.Owner != owner {
-		return errors.New("device already reserved")
+	if current, ok := r.reserved[deviceID]; ok {
+		if current.Owner != owner {
+			return errors.New("device already reserved")
+		}
+		current.LeaseCount++
+		current.ExpiresAt = time.Now().Add(30 * time.Second)
+		r.reserved[deviceID] = current
+		return nil
 	}
-	r.reserved[deviceID] = Reservation{DeviceID: deviceID, Owner: owner, ExpiresAt: time.Now().Add(30 * time.Second)}
+	r.reserved[deviceID] = Reservation{DeviceID: deviceID, Owner: owner, ExpiresAt: time.Now().Add(30 * time.Second), LeaseCount: 1}
 	return nil
 }
 func (r *Runtime) Release(deviceID, owner string) error {
@@ -233,6 +240,11 @@ func (r *Runtime) Release(deviceID, owner string) error {
 	}
 	if current.Owner != owner {
 		return errors.New("reservation owner mismatch")
+	}
+	if current.LeaseCount > 1 {
+		current.LeaseCount--
+		r.reserved[deviceID] = current
+		return nil
 	}
 	delete(r.reserved, deviceID)
 	return nil
