@@ -440,6 +440,12 @@ func (p *PeerClient) call(ctx context.Context, nucleus, capability string, paylo
 			}
 			return nil, decodeErr
 		}
+		// Authenticate every decoded response before trusting its HTTP status.
+		if err := verifyResponseHMAC(result, p.secret); err != nil {
+			lastErr = err
+			p.recordFailure(nucleus, latency, err.Error())
+			return nil, lastErr
+		}
 		if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 			lastErr = fmt.Errorf("peer request failed: %s", resp.Status)
 			p.recordFailure(nucleus, latency, lastErr.Error())
@@ -470,11 +476,6 @@ func (p *PeerClient) call(ctx context.Context, nucleus, capability string, paylo
 			lastErr = errors.New("mesh response kind mismatch")
 			p.recordFailure(nucleus, latency, lastErr.Error())
 			return nil, lastErr
-		}
-		if err := verifyResponseHMAC(result, p.secret); err != nil {
-			lastErr = err
-			p.recordFailure(nucleus, latency, err.Error())
-			return nil, err
 		}
 		p.recordSuccess(nucleus, latency)
 		return result, nil
