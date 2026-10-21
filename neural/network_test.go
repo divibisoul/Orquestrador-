@@ -57,3 +57,30 @@ func TestNetworkRejectsNonFiniteAndMalformedAttention(t *testing.T) {
 		t.Fatal("mismatched attention vectors accepted")
 	}
 }
+
+
+func TestNormalizeRemainsFiniteAtFloatExtremes(t *testing.T) {
+	n, err := New(3, .05)
+	if err != nil {
+		t.Fatal(err)
+	}
+	values := []float64{math.MaxFloat64, -math.MaxFloat64, math.MaxFloat64 / 2}
+	out, err := n.Normalize(values)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for i, value := range out {
+		if math.IsNaN(value) || math.IsInf(value, 0) {
+			t.Fatalf("normalization overflowed at index %d: %v", i, value)
+		}
+	}
+	zeros, err := n.Normalize([]float64{0, 0, 0})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for i, value := range zeros {
+		if value != 0 {
+			t.Fatalf("zero normalization changed at index %d: %v", i, value)
+		}
+	}
+}
