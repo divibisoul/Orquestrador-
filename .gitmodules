@@ -47,3 +47,18 @@
 [submodule "integrations/external/metagpt"]
   path = integrations/external/metagpt
   url = https://github.com/FoundationAgents/MetaGPT.git
+[submodule "integrations/external/bijux-core"]
+  path = integrations/external/bijux-core
+  url = https://github.com/bijux/bijux-core.git
+[submodule "integrations/external/ouro-loop"]
+  path = integrations/external/ouro-loop
+  url = https://github.com/VictorVVedtion/ouro-loop.git
+[submodule "integrations/external/recuris"]
+  path = integrations/external/recuris
+  url = https://github.com/Gen-Verse/Recuris.git
+[submodule "integrations/external/fedml"]
+  path = integrations/external/fedml
+  url = https://github.com/FedML-AI/FedML.git
+[submodule "integrations/external/hivemind"]
+  path = integrations/external/hivemind
+  url = https://github.com/learning-at-home/hivemind.git

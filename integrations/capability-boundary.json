@@ -6,7 +6,7 @@
   },
   "reason": "functional-complementation-and-system-integration",
   "canonical_control_plane": "N07",
-  "upstream_capability_source_count": 16,
+  "upstream_capability_source_count": 20,
   "soul_component_count": 9,
   "integration": {
     "agent_engineering": [
@@ -26,7 +26,37 @@
     "execution": "N07 Engine + SuperGPU + Octacore",
     "observation": "Clareira + correlated evidence",
     "structural_state": "REAL",
-    "runtime_state": "PROJECTED"
+    "runtime_state": "PROJECTED",
+    "grce": {
+      "operation": "grce.cycle.execute@1.0.0",
+      "participant": "SARA",
+      "hooks": [
+        "detect",
+        "characterize",
+        "regenerate",
+        "validate",
+        "freeze",
+        "trace"
+      ],
+      "evidence": "correlation_id + parent_hash + output_hash",
+      "state": "IMPLEMENTED/BLOCKED until real SARA runtime is configured"
+    },
+    "learning": {
+      "federated_provider": "fedml",
+      "decentralized_dependency": "hivemind",
+      "persistence_boundary": "N01.HortaCore",
+      "strategy_boundary": "N07.Prefrontal",
+      "transport_boundary": "SARA.NervoVago"
+    }
   },
-  "rule": "N07 coordinates; it does not absorb upstream ownership or create shadow authorities."
+  "rule": "N07 coordinates; it does not absorb upstream ownership or create shadow authorities.",
+  "soul_graph": "SOUL-29",
+  "foundation": [
+    "GRCE",
+    "bijux-core",
+    "ouro-loop",
+    "Recuris",
+    "FedML",
+    "Hivemind"
+  ]
 }
