@@ -33,7 +33,7 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - name: Verify upstream source through SOUL adapter
         run: |
-          printf '%s' '{"provider":"${{ matrix.provider }}","operation":"source.verify"}' |
+          printf '%s' '{"provider":"${{ matrix.provider }}","mode":"verify","operation":"source.verify"}' |
             python3 scripts/external-capability-adapter.py | tee "public-${{ matrix.provider }}.json"
       - uses: actions/upload-artifact@v4
         with:
@@ -74,7 +74,7 @@ jobs:
         run: ${{ matrix.install }}
       - name: Verify upstream source through SOUL adapter
         run: |
-          printf '%s' '{"provider":"${{ matrix.provider }}","operation":"source.verify"}' |
+          printf '%s' '{"provider":"${{ matrix.provider }}","mode":"verify","operation":"source.verify"}' |
             python3 scripts/external-capability-adapter.py | tee "public-${{ matrix.provider }}.json"
       - uses: actions/upload-artifact@v4
         with:
@@ -108,7 +108,7 @@ jobs:
         run: ${{ matrix.install }}
       - name: Verify upstream source through SOUL adapter
         run: |
-          printf '%s' '{"provider":"${{ matrix.provider }}","operation":"source.verify"}' |
+          printf '%s' '{"provider":"${{ matrix.provider }}","mode":"verify","operation":"source.verify"}' |
             python3 scripts/external-capability-adapter.py | tee "public-${{ matrix.provider }}.json"
       - uses: actions/upload-artifact@v4
         with:
@@ -136,7 +136,7 @@ jobs:
           go-version: "1.24"
       - name: Verify upstream source through SOUL adapter
         run: |
-          printf '%s' '{"provider":"${{ matrix.provider }}","operation":"source.verify"}' |
+          printf '%s' '{"provider":"${{ matrix.provider }}","mode":"verify","operation":"source.verify"}' |
             python3 scripts/external-capability-adapter.py | tee "public-${{ matrix.provider }}.json"
       - uses: actions/upload-artifact@v4
         with:
