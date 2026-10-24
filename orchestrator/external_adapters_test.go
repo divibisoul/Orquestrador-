@@ -89,6 +89,9 @@ func TestExternalFederationDescribeIncludesProjectedSourcesWithoutPromotingThem(
 			ID string `json:"id"`
 			State string `json:"state"`
 			ExecutionEnabled bool `json:"executionEnabled"`
+			ExecutionProven bool `json:"executionProven"`
+			MeshMetadataOperations []string `json:"meshMetadataOperations"`
+			RuntimeRouteOperations []string `json:"runtimeRouteOperations"`
 		} `json:"expansion_providers"`
 	}
 	if err := json.Unmarshal([]byte(raw), &report); err != nil {
@@ -104,8 +107,60 @@ func TestExternalFederationDescribeIncludesProjectedSourcesWithoutPromotingThem(
 		t.Fatalf("expansion inventory length=%d", len(report.ExpansionProviders))
 	}
 	for _, p := range report.ExpansionProviders {
-		if p.State != "PROJECTED" || p.ExecutionEnabled {
+		if p.State != "PROJECTED" || p.ExecutionEnabled || p.ExecutionProven {
 			t.Fatalf("projected source was promoted in descriptor: %#v", p)
+		}
+		if len(p.MeshMetadataOperations) != 2 || len(p.RuntimeRouteOperations) != 0 {
+			t.Fatalf("projected source metadata/execution route split invalid: %#v", p)
+		}
+	}
+}
+
+func TestProjectedExpansionSourcesExposeMeshMetadataWithoutExecuteRoutes(t *testing.T) {
+	e, r := newExternalTestEngine(t)
+	if len(r.expansionProviders) != 9 {
+		t.Fatalf("projected expansion providers=%d, want 9", len(r.expansionProviders))
+	}
+	for _, p := range r.expansionProviders {
+		for _, kind := range []string{"describe", "probe"} {
+			operation := "external." + p.ID + "." + kind + "@1.0.0"
+			result, err := e.Execute(context.Background(), operation, nil, nil)
+			if err != nil {
+				t.Fatalf("Mesh metadata route %s failed to execute: %v", operation, err)
+			}
+			raw := result.Metadata["external_result_json"]
+			var evidence struct {
+				State            string `json:"state"`
+				Provider          string `json:"provider"`
+				ExecutionEnabled  bool   `json:"executionEnabled"`
+				ExecutionProven   bool   `json:"executionProven"`
+				RuntimeEvidence   string `json:"runtimeEvidence"`
+				RuntimeRouteOperations []string `json:"runtimeRouteOperations"`
+				RevisionMatched   bool   `json:"revisionMatched"`
+				SourcePresent     bool   `json:"sourcePresent"`
+			}
+			if err := json.Unmarshal([]byte(raw), &evidence); err != nil {
+				t.Fatalf("Mesh metadata route %s returned invalid evidence: %v; raw=%s", operation, err, raw)
+			}
+			if evidence.Provider != p.ID {
+				t.Fatalf("Mesh metadata route %s returned provider=%q", operation, evidence.Provider)
+			}
+			if evidence.State != "PROJECTED" && evidence.State != "BLOCKED" {
+				t.Fatalf("projected source %s reported an invalid evidence state: %#v", p.ID, evidence)
+			}
+			if evidence.ExecutionEnabled || evidence.ExecutionProven || evidence.RuntimeEvidence != "UNVERIFIED" || len(evidence.RuntimeRouteOperations) != 0 {
+				t.Fatalf("projected source %s was promoted by a metadata route: %#v", p.ID, evidence)
+			}
+			if evidence.State == "PROJECTED" && (!evidence.SourcePresent || !evidence.RevisionMatched || result.Status != "degraded") {
+				t.Fatalf("projected source %s lacks exact-pin evidence or degraded status: result=%#v evidence=%#v", p.ID, result, evidence)
+			}
+			if evidence.State == "BLOCKED" && result.Status != "error" {
+				t.Fatalf("blocked source %s did not fail closed: result=%#v evidence=%#v", p.ID, result, evidence)
+			}
+		}
+		result, err := e.Execute(context.Background(), "external."+p.ID+".execute@1.0.0", nil, map[string]string{"external_operation": "execute"})
+		if err == nil && result.Status != "error" {
+			t.Fatalf("projected source %s unexpectedly exposes an execute route: %#v", p.ID, result)
 		}
 	}
 }
