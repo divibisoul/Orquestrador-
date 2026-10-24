@@ -32,10 +32,13 @@ func newExternalTestEngine(t *testing.T) (*Engine, ExternalAdapterRegistry) {
 	}
 	return e, r
 }
-func TestExternalAdapterManifestHasThirtyTwoProviders(t *testing.T) {
+func TestExternalAdapterManifestHasTwentyTwoProviders(t *testing.T) {
 	_, r := newExternalTestEngine(t)
-	if len(r.byID) != 32 {
-		t.Fatalf("providers=%d", len(r.byID))
+	if len(r.byID) != 22 {
+		t.Fatalf("adapter-backed providers=%d want=22", len(r.byID))
+	}
+	if len(r.expansionProviders) != 10 {
+		t.Fatalf("projected expansions=%d want=10", len(r.expansionProviders))
 	}
 }
 func TestExternalAdapterPrimarySixteenRemainIntact(t *testing.T) {
@@ -104,12 +107,50 @@ func TestExternalAdapterProbeDoesNotClaimRuntimeWithoutSourceWorktree(t *testing
 	}
 }
 
-func TestExternalAdapterAllThirtyTwoProvidersProbe(t *testing.T) {
+func TestExternalAdapterAllTwentyTwoProvidersProbe(t *testing.T) {
 	e, r := newExternalTestEngine(t)
 	for id := range r.byID {
 		operation := "external." + id + ".probe@1.0.0"
 		if _, err := e.Execute(context.Background(), operation, nil, nil); err != nil {
 			t.Fatalf("provider %s probe failed: %v", id, err)
+		}
+	}
+}
+
+func TestProjectedExpansionsAreMetadataOnly(t *testing.T) {
+	e, r := newExternalTestEngine(t)
+	if len(r.expansionProviders) != 10 {
+		t.Fatalf("projected expansions=%d want=10", len(r.expansionProviders))
+	}
+	for id, p := range r.expansionProviders {
+		if p.State != "PROJECTED" || p.ExecutionEnabled || p.ExecutionProven {
+			t.Fatalf("expansion %s was prematurely promoted: %+v", id, p)
+		}
+		if len(p.RuntimeRouteOperations) != 0 {
+			t.Fatalf("expansion %s has runtime routes: %v", id, p.RuntimeRouteOperations)
+		}
+		if !containsString(p.MetadataOperations, "external."+id+".describe@1.0.0") ||
+			!containsString(p.MetadataOperations, "external."+id+".probe@1.0.0") {
+			t.Fatalf("expansion %s lacks its metadata-only endpoints", id)
+		}
+
+		result, err := e.Execute(context.Background(), "external."+id+".probe@1.0.0", nil, nil)
+		if err != nil {
+			t.Fatalf("projected expansion %s metadata probe failed: %v", id, err)
+		}
+		var details map[string]any
+		if err := json.Unmarshal([]byte(result.Metadata["external_result_json"]), &details); err != nil {
+			t.Fatalf("projected expansion %s returned invalid JSON: %v", id, err)
+		}
+		if details["executionProven"] != false || details["executionEnabled"] != false {
+			t.Fatalf("projected expansion %s claimed execution proof: %#v", id, details)
+		}
+		state, _ := details["state"].(string)
+		if state != "PROJECTED" && state != "BLOCKED" {
+			t.Fatalf("projected expansion %s returned unexpected state %q", id, state)
+		}
+		if _, err := e.Execute(context.Background(), "external."+id+".execute@1.0.0", nil, nil); err == nil {
+			t.Fatalf("projected expansion %s unexpectedly exposes an execute route", id)
 		}
 	}
 }
