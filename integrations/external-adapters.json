@@ -244,5 +244,273 @@
       ],
       "package": null
     }
-  ]
+  ],
+  "projected_expansions": [
+    {
+      "id": "bijux-dag-runtime",
+      "owner": "N07",
+      "kind": "complementary-rust",
+      "root": "integrations/external/bijux-dag-runtime",
+      "package": null,
+      "revision": "f0f5f56b49f380196918c4c6910b725b2b30ab7d",
+      "targets": [
+        "N07",
+        "N06",
+        "SARA"
+      ],
+      "role": "complementary-rust",
+      "state": "PROJECTED",
+      "integration_state": "PINNED_SOURCE_METADATA_ONLY_RUNTIME_NOT_PROVEN",
+      "legacy_operations": [
+        "dag.execute"
+      ],
+      "metadata_operations": [
+        "external.bijux-dag-runtime.describe@1.0.0",
+        "external.bijux-dag-runtime.probe@1.0.0"
+      ],
+      "runtime_route_operations": [],
+      "execution_enabled": false,
+      "execution_proven": false
+    },
+    {
+      "id": "ouro-loop",
+      "owner": "N07",
+      "kind": "complementary-python",
+      "root": "integrations/external/ouro-loop",
+      "package": null,
+      "revision": "52f97e22dc2a72a45ffa025d452ea02c58cb6b94",
+      "targets": [
+        "N07",
+        "SARA"
+      ],
+      "role": "complementary-python",
+      "state": "PROJECTED",
+      "integration_state": "PINNED_SOURCE_METADATA_ONLY_RUNTIME_NOT_PROVEN",
+      "legacy_operations": [
+        "loop.verify"
+      ],
+      "metadata_operations": [
+        "external.ouro-loop.describe@1.0.0",
+        "external.ouro-loop.probe@1.0.0"
+      ],
+      "runtime_route_operations": [],
+      "execution_enabled": false,
+      "execution_proven": false
+    },
+    {
+      "id": "recuris",
+      "owner": "N06",
+      "kind": "complementary-python",
+      "root": "integrations/external/recuris",
+      "package": "recuris",
+      "revision": "7d3745ab787b1206ccd981cb1511100476097266",
+      "targets": [
+        "N06",
+        "N01",
+        "N07"
+      ],
+      "role": "complementary-python",
+      "state": "PROJECTED",
+      "integration_state": "PINNED_SOURCE_METADATA_ONLY_RUNTIME_NOT_PROVEN",
+      "legacy_operations": [
+        "memory.evolve"
+      ],
+      "metadata_operations": [
+        "external.recuris.describe@1.0.0",
+        "external.recuris.probe@1.0.0"
+      ],
+      "runtime_route_operations": [],
+      "execution_enabled": false,
+      "execution_proven": false
+    },
+    {
+      "id": "fedml",
+      "owner": "N07",
+      "kind": "complementary-python",
+      "root": "integrations/external/fedml",
+      "package": "fedml",
+      "revision": "03e11dfee69a458a9820ec4e05b531a5f935eb2b",
+      "targets": [
+        "N07",
+        "N01",
+        "N06"
+      ],
+      "role": "complementary-python",
+      "state": "PROJECTED",
+      "integration_state": "PINNED_SOURCE_METADATA_ONLY_RUNTIME_NOT_PROVEN",
+      "legacy_operations": [
+        "federated.train"
+      ],
+      "metadata_operations": [
+        "external.fedml.describe@1.0.0",
+        "external.fedml.probe@1.0.0"
+      ],
+      "runtime_route_operations": [],
+      "execution_enabled": false,
+      "execution_proven": false
+    },
+    {
+      "id": "hivemind",
+      "owner": "N07",
+      "kind": "complementary-python",
+      "root": "integrations/external/hivemind",
+      "package": "hivemind",
+      "revision": "4bd43b77895019b20d18d81d0d0c1a5ab9a10847",
+      "targets": [
+        "N07",
+        "N06",
+        "N01"
+      ],
+      "role": "complementary-python",
+      "state": "PROJECTED",
+      "integration_state": "PINNED_SOURCE_METADATA_ONLY_RUNTIME_NOT_PROVEN",
+      "legacy_operations": [
+        "swarm.join"
+      ],
+      "metadata_operations": [
+        "external.hivemind.describe@1.0.0",
+        "external.hivemind.probe@1.0.0"
+      ],
+      "runtime_route_operations": [],
+      "execution_enabled": false,
+      "execution_proven": false
+    },
+    {
+      "id": "temporal",
+      "owner": "N07",
+      "kind": "complementary-go",
+      "root": "integrations/external/temporal",
+      "package": null,
+      "revision": "6319f845fe9c813a2022389a5dd64b9d408dd72e",
+      "targets": [
+        "N07",
+        "SARA"
+      ],
+      "role": "complementary-go",
+      "state": "PROJECTED",
+      "integration_state": "PINNED_SOURCE_METADATA_ONLY_RUNTIME_NOT_PROVEN",
+      "legacy_operations": [
+        "workflow.selftest"
+      ],
+      "metadata_operations": [
+        "external.temporal.describe@1.0.0",
+        "external.temporal.probe@1.0.0"
+      ],
+      "runtime_route_operations": [],
+      "execution_enabled": false,
+      "execution_proven": false
+    },
+    {
+      "id": "cognitive-workspace",
+      "owner": "N06",
+      "kind": "complementary-python",
+      "root": "integrations/external/cognitive-workspace",
+      "package": null,
+      "revision": "6740fc3b69a842ccc49663ac6c371600d0d9fc2e",
+      "targets": [
+        "N06",
+        "N02",
+        "N01"
+      ],
+      "role": "complementary-python",
+      "state": "PROJECTED",
+      "integration_state": "PINNED_SOURCE_METADATA_ONLY_RUNTIME_NOT_PROVEN",
+      "legacy_operations": [
+        "workspace.broadcast"
+      ],
+      "metadata_operations": [
+        "external.cognitive-workspace.describe@1.0.0",
+        "external.cognitive-workspace.probe@1.0.0"
+      ],
+      "runtime_route_operations": [],
+      "execution_enabled": false,
+      "execution_proven": false
+    },
+    {
+      "id": "ravana",
+      "owner": "N06",
+      "kind": "complementary-python",
+      "root": "integrations/external/ravana",
+      "package": null,
+      "revision": "c5d5095b2f918657b9261a6b958e2f4f013305cb",
+      "targets": [
+        "N06",
+        "N01",
+        "N02"
+      ],
+      "role": "complementary-python",
+      "state": "PROJECTED",
+      "integration_state": "PINNED_SOURCE_METADATA_ONLY_RUNTIME_NOT_PROVEN",
+      "legacy_operations": [
+        "agent.initiate"
+      ],
+      "metadata_operations": [
+        "external.ravana.describe@1.0.0",
+        "external.ravana.probe@1.0.0"
+      ],
+      "runtime_route_operations": [],
+      "execution_enabled": false,
+      "execution_proven": false
+    },
+    {
+      "id": "ray",
+      "owner": "N07",
+      "kind": "complementary-python",
+      "root": "integrations/external/ray",
+      "package": "ray",
+      "revision": "378b6b1bfb7c51da47d5539423430af359b76e92",
+      "targets": [
+        "N07",
+        "N06",
+        "N01"
+      ],
+      "role": "complementary-python",
+      "state": "PROJECTED",
+      "integration_state": "PINNED_SOURCE_METADATA_ONLY_RUNTIME_NOT_PROVEN",
+      "legacy_operations": [
+        "distributed.execute"
+      ],
+      "metadata_operations": [
+        "external.ray.describe@1.0.0",
+        "external.ray.probe@1.0.0"
+      ],
+      "runtime_route_operations": [],
+      "execution_enabled": false,
+      "execution_proven": false
+    },
+    {
+      "id": "nats-go",
+      "owner": "N07",
+      "kind": "transport-go",
+      "root": "integrations/external/nats-go",
+      "package": null,
+      "revision": "f90b0a9f9df8f42a634a4f5351df1594dada4184",
+      "targets": [
+        "N07",
+        "N01",
+        "N02",
+        "N03",
+        "N04",
+        "N05",
+        "N06",
+        "SARA"
+      ],
+      "role": "Nervo Vago transport reinforcement; NATS is transport, not a second Mesh",
+      "state": "PROJECTED",
+      "integration_state": "TRANSPORT_ONLY_NO_SECOND_MESH_RUNTIME_PROJECTED",
+      "legacy_operations": [
+        "transport.connect"
+      ],
+      "metadata_operations": [
+        "external.nats-go.describe@1.0.0",
+        "external.nats-go.probe@1.0.0"
+      ],
+      "runtime_route_operations": [],
+      "execution_enabled": false,
+      "execution_proven": false
+    }
+  ],
+  "provider_count": 22,
+  "projected_expansion_count": 10,
+  "catalog_rule": "providers contains only primary + complementary adapter-backed sources; projected_expansions are metadata-only Mesh descriptors with no execute route."
 }

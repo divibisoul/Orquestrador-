@@ -138,6 +138,8 @@ func registerGRFGRCEOperationsWithExecutor(e *Engine, saraBridge GRFSaraBridge, 
 		raw, _ := json.Marshal(map[string]any{
 			"participants": []string{"N01","N02","N03","N04","N05","N06","N07","SARA","JEV"},
 			"new_external_contracts": 10,
+			"reused_existing_public_contracts": 1,
+			"public_transport_contracts": 1,
 			"original_soul25_preserved": true,
 			"canonical_mesh": "soul-mesh/1",
 			"epistemic_state": string(grf.PROJECTED),
@@ -360,10 +362,10 @@ func grceBindingInventory(e *Engine) []map[string]any {
 	stages := []stage{
 		{"L0", "canonical-soul-mesh", []string{"mesh.discovery@1.0.0","mesh.capability.resolve@1.0.0"}},
 		{"L1", "SARA/ERU", []string{"sara.state@1.0.0","sara.trace@1.0.0"}},
-		{"L2", "MMD", []string{"rgo.trinity.process@1.0.0"}},
+		{"L2", "MMD", []string{"sara.grce.hooks@1.0.0"}},
 		{"L3", "SARA/ARA", []string{"sara.regenerate@1.0.0"}},
 		{"L4", "SARA/ETR/JEV", []string{"sara.audit@1.0.0","jev.systemone@1.0.0"}},
-		{"L5", "SARA/ITR", []string{}},
+		{"L5", "SARA/ITR", []string{"sara.grce.hooks@1.0.0"}},
 		{"L6", "SARA/RGO", []string{"rgo.trinity.process@1.0.0"}},
 		{"L7", "N07/GRCE", []string{GRCECycleOperation}},
 	}
@@ -377,7 +379,7 @@ func grceBindingInventory(e *Engine) []map[string]any {
 		}
 		sort.Strings(missing)
 		state := string(grf.REAL)
-		if len(missing) > 0 || item.name == "L2" || item.name == "L5" {
+		if len(missing) > 0 {
 			state = string(grf.PROJECTED)
 		}
 		out = append(out, map[string]any{

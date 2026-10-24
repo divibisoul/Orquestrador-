@@ -105,22 +105,65 @@ jobs:
           print('GRF discovery: PASS')
           PY
 
-      - name: Assert 22-source federation
+      - name: Assert external federation matches the canonical registry
         run: |
           curl -fsS -H 'Authorization: Bearer e2e-n07-token-123456789' -H 'Content-Type: application/json' -X POST http://127.0.0.1:8080/v1/execute -d '{"operation":"external.federation.describe@1.0.0","metadata":{}}' | tee /tmp/federation.json
           python - <<'PY'
           import json
-          outer=json.load(open('/tmp/federation.json'))
-          raw=json.loads(next(v for k,v in outer['metadata'].items() if k.endswith('json')))
-          assert raw['provider_count']==22
-          print('22-source federation: PASS')
+          with open('integrations/external-capabilities.json', encoding='utf-8') as f:
+              registry = json.load(f)
+          with open('integrations/external-adapters.json', encoding='utf-8') as f:
+              adapters = json.load(f)
+          core_sources = registry.get('repositories', []) + registry.get('complementary_repositories', [])
+          projected_sources = registry.get('expansion_repositories', []) + registry.get('grce_complements', [])
+          core_expected = {item['id'] for item in core_sources}
+          projected_expected = {item['id'] for item in projected_sources}
+          adapters_core = {item['id'] for item in adapters.get('providers', [])}
+          adapters_projected = {item['id'] for item in adapters.get('projected_expansions', [])}
+          outer = json.load(open('/tmp/federation.json', encoding='utf-8'))
+          raw = json.loads(next(v for k, v in outer['metadata'].items() if k.endswith('json')))
+          runtime_core = {item['id'] for item in raw.get('providers', [])}
+          runtime_projected = {item['id'] for item in raw.get('expansion_providers', [])}
+          assert len(core_expected) == 22 and len(projected_expected) == 10
+          assert len(core_expected | projected_expected) == 32
+          assert adapters_core == core_expected, f'core adapter mismatch: missing={sorted(core_expected-adapters_core)} extra={sorted(adapters_core-core_expected)}'
+          assert runtime_core == core_expected, f'runtime core mismatch: missing={sorted(core_expected-runtime_core)} extra={sorted(runtime_core-core_expected)}'
+          assert raw['provider_count'] == 22, f"adapter-backed count must stay 22, got {raw['provider_count']}"
+          assert adapters_projected == projected_expected, f'projected registry mismatch: missing={sorted(projected_expected-adapters_projected)} extra={sorted(adapters_projected-projected_expected)}'
+          assert runtime_projected == projected_expected, f'projected runtime catalog mismatch: missing={sorted(projected_expected-runtime_projected)} extra={sorted(runtime_projected-projected_expected)}'
+          assert raw['expansion_provider_count'] == 10
+          for item in raw['providers']:
+              assert len(item['expectedRevision']) == 40, item
+              assert item['sourceState'] in ('PIN_MATCH', 'REVISION_MISMATCH', 'MISSING_WORKTREE', 'UNMEASURABLE'), item
+              assert isinstance(item['sourcePresent'], bool) and isinstance(item['revisionMatched'], bool), item
+              if item['sourceState'] == 'PIN_MATCH':
+                  assert item['sourcePresent'] is True and item['revisionMatched'] is True
+                  assert item['observedRevision'] == item['expectedRevision'], item
+              elif item['sourceState'] == 'REVISION_MISMATCH':
+                  assert item['sourcePresent'] is True and item['revisionMatched'] is False
+                  assert item['observedRevision'] and item['observedRevision'] != item['expectedRevision'], item
+              elif item['sourceState'] == 'UNMEASURABLE':
+                  assert item['sourcePresent'] is True and item['revisionMatched'] is False
+                  assert item['observedRevision'] == '', item
+              else:
+                  assert item['sourcePresent'] is False and item['revisionMatched'] is False, item
+          for item in raw['expansion_providers']:
+              assert item['state'] in ('PROJECTED', 'BLOCKED'), item
+              assert item['sourceState'] in ('PIN_MATCH', 'REVISION_MISMATCH', 'MISSING_WORKTREE', 'UNMEASURABLE'), item
+              assert item['executionEnabled'] is False and item['executionProven'] is False, item
+              assert item['nativeRuntimeExecutionProven'] is False, item
+              assert item['runtimeRouteOperations'] == [], item
+          print('External federation: 22 adapters, 10 metadata-only expansions, and per-source pin evidence: PASS')
           PY
 
       - name: Execute full GRCE -> C1-C7-C1 with real SARA authority
         run: |
           python - <<'PY'
           import json
-          text = ("preservar autonomia, rastreabilidade e estado historico. " * 220)
+          # Trigger a measurable ARA finding while proving the tagged source survives
+          # the C1-C7-C1 cycle unchanged and remains traceable.
+          text = ("preservar a identidade protegida 🔒IDENTITY ao acrescentar evidência; "
+                  "manter autonomia, transparência, responsabilidade e proveniência.")
           body = {
               "operation": "grce.cycle.execute@2.0.0",
               "correlationId": "grce-full-e2e-001",

@@ -31,7 +31,14 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          submodules: true
+          submodules: false
+          fetch-depth: 1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Materialize pinned SOUL public sources without recursion
+        run: node scripts/materialize-top-level-submodules.mjs
 
       - name: Setup Go
         uses: actions/setup-go@v5
