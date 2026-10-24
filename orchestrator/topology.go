@@ -36,14 +36,15 @@ func SOULTopology() map[string]any {
 		"adjacency":      [][]string{{protocol.N01, protocol.N02}, {protocol.N02, protocol.N03}, {protocol.N03, protocol.N04}, {protocol.N04, protocol.N05}, {protocol.N05, protocol.N06}, {protocol.N06, protocol.N07}},
 		"fusion_policy":  "adjacent-only-dynamic",
 		"mesh_connectivity_policy": "all-nuclei-peer-to-peer; capability-owner-enforced",
+		"mesh_route_model": "complete-directed-peer-graph; self-routing-forbidden",
 		"composition_policy": "adjacent-first-dynamic; cross-nucleus Mesh routing remains available",
 		"in_peer_count":  6,
 		"out_peer_count": 6,
 		"channels":       channels,
-		// "directional" is retained as the legacy count of adjacent-chain
-		// channel entries. It is not the count of all logical Mesh routes.
+		// "directional" counts N07's direct IN/OUT channels to its six peers.
+		// The full seven-nucleus network has 42 logical directed routes.
 		"directional":    len(channels),
-		"adjacent_directional_channels": len(channels),
+		"adjacent_directional_channels": 2 * (len(nuclei) - 1),
 		"channel_metrics": map[string]any{
 			"active_ai_nuclei": len(activeAI),
 			"active_ai_logical_directed_routes": activeAIDirectedRoutes,
@@ -53,7 +54,7 @@ func SOULTopology() map[string]any {
 			"total_identity_nuclei": len(nuclei),
 			"total_logical_directed_routes": totalLogicalDirectedRoutes,
 			"total_endpoint_surfaces": totalLogicalDirectedRoutes * 2,
-			"all_nuclei_mesh_connected": true,
+			"all_nuclei_mesh_routes_declared": true,
 			"mesh_direct_peer_count": len(nuclei) - 1,
 			"mesh_direct_directional_channels": len(channels),
 			"adjacent_fusion_edges": len(nuclei) - 1,
