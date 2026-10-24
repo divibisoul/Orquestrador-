@@ -134,18 +134,22 @@ jobs:
           assert raw['expansion_provider_count'] == 10
           for item in raw['providers']:
               assert len(item['expectedRevision']) == 40, item
-              assert item['sourceState'] in ('PIN_MATCH', 'REVISION_MISMATCH', 'MISSING_WORKTREE'), item
+              assert item['sourceState'] in ('PIN_MATCH', 'REVISION_MISMATCH', 'MISSING_WORKTREE', 'UNMEASURABLE'), item
               assert isinstance(item['sourcePresent'], bool) and isinstance(item['revisionMatched'], bool), item
               if item['sourceState'] == 'PIN_MATCH':
                   assert item['sourcePresent'] is True and item['revisionMatched'] is True
                   assert item['observedRevision'] == item['expectedRevision'], item
               elif item['sourceState'] == 'REVISION_MISMATCH':
-                  assert item['sourcePresent'] is True and item['revisionMatched'] is False, item
+                  assert item['sourcePresent'] is True and item['revisionMatched'] is False
+                  assert item['observedRevision'] and item['observedRevision'] != item['expectedRevision'], item
+              elif item['sourceState'] == 'UNMEASURABLE':
+                  assert item['sourcePresent'] is True and item['revisionMatched'] is False
+                  assert item['observedRevision'] == '', item
               else:
                   assert item['sourcePresent'] is False and item['revisionMatched'] is False, item
           for item in raw['expansion_providers']:
               assert item['state'] in ('PROJECTED', 'BLOCKED'), item
-              assert item['sourceState'] in ('PIN_MATCH', 'REVISION_MISMATCH', 'MISSING_WORKTREE'), item
+              assert item['sourceState'] in ('PIN_MATCH', 'REVISION_MISMATCH', 'MISSING_WORKTREE', 'UNMEASURABLE'), item
               assert item['executionEnabled'] is False and item['executionProven'] is False, item
               assert item['nativeRuntimeExecutionProven'] is False, item
               assert item['runtimeRouteOperations'] == [], item
