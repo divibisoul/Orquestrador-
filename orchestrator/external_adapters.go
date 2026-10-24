@@ -506,13 +506,17 @@ func RegisterExternalAdapterOperations(e *Engine, r ExternalAdapterRegistry) err
 			if !filepath.IsAbs(root) {
 				root = filepath.Join(repositoryRoot(), root)
 			}
-			_, err := os.Stat(filepath.Clean(root))
-			providers = append(providers, map[string]any{
+			observed := inspectExternalAdapterSource(filepath.Clean(root), r.revisions[p.ID])
+			provider := map[string]any{
 				"id": p.ID, "owner": p.Owner, "kind": p.Kind, "root": root,
 				"revision": r.revisions[p.ID], "operations": p.Operations,
-				"sourcePresent": err == nil, "executionEnabled": externalEnabled(p.ID),
+				"executionEnabled": externalEnabled(p.ID),
 				"executionProven": false,
-			})
+			}
+			for key, value := range observed {
+				provider[key] = value
+			}
+			providers = append(providers, provider)
 		}
 		expansions := make([]map[string]any, 0, len(r.expansionProviders))
 		for _, p := range r.expansionProviders {
@@ -630,12 +634,7 @@ func RegisterExternalAdapterOperations(e *Engine, r ExternalAdapterRegistry) err
 	return nil
 }
 
-func (r ExternalAdapterRegistry) projectedExpansionObservation(p ExternalProjectedExpansion, operation string) map[string]any {
-	root := p.Root
-	if !filepath.IsAbs(root) {
-		root = filepath.Join(repositoryRoot(), root)
-	}
-	root = filepath.Clean(root)
+func inspectExternalAdapterSource(root, expectedRevision string) map[string]any {
 	sourcePresent := sourceWorktreeIsGit(root)
 	observedRevision := ""
 	if sourcePresent {
@@ -646,28 +645,45 @@ func (r ExternalAdapterRegistry) projectedExpansionObservation(p ExternalProject
 		}
 		cancel()
 	}
-	revisionMatched := sourcePresent && observedRevision != "" && observedRevision == p.Revision
+	revisionMatched := sourcePresent && observedRevision != "" && observedRevision == expectedRevision
 	sourceState := "MISSING_WORKTREE"
-	state := "PROJECTED"
 	if sourcePresent && revisionMatched {
 		sourceState = "PIN_MATCH"
 	} else if sourcePresent {
 		sourceState = "REVISION_MISMATCH"
-		state = "BLOCKED"
 	}
 	return map[string]any{
-		"state": state,
+		"sourcePresent": sourcePresent,
+		"expectedRevision": expectedRevision,
+		"observedRevision": observedRevision,
+		"revisionMatched": revisionMatched,
+		"sourceState": sourceState,
+	}
+}
+
+func (r ExternalAdapterRegistry) projectedExpansionObservation(p ExternalProjectedExpansion, operation string) map[string]any {
+	root := p.Root
+	if !filepath.IsAbs(root) {
+		root = filepath.Join(repositoryRoot(), root)
+	}
+	root = filepath.Clean(root)
+	observation := inspectExternalAdapterSource(root, p.Revision)
+	state, _ := observation["sourceState"].(string)
+	if state != "PIN_MATCH" && state != "MISSING_WORKTREE" {
+		state = "REVISION_MISMATCH"
+	}
+	projectedState := "PROJECTED"
+	if state == "REVISION_MISMATCH" {
+		projectedState = "BLOCKED"
+	}
+	out := map[string]any{
+		"state": projectedState,
 		"provider": p.ID,
 		"operation": operation,
 		"owner": p.Owner,
 		"kind": p.Kind,
 		"root": root,
 		"revision": p.Revision,
-		"expectedRevision": p.Revision,
-		"observedRevision": observedRevision,
-		"sourceState": sourceState,
-		"sourcePresent": sourcePresent,
-		"revisionMatched": revisionMatched,
 		"targets": p.Targets,
 		"role": p.Role,
 		"integrationState": p.IntegrationState,
@@ -676,8 +692,13 @@ func (r ExternalAdapterRegistry) projectedExpansionObservation(p ExternalProject
 		"runtimeRouteOperations": []string{},
 		"executionEnabled": false,
 		"executionProven": false,
+		"nativeRuntimeExecutionProven": false,
 		"evidenceRule": "pinned source/metadata discovery is not native runtime execution proof",
 	}
+	for key, value := range observation {
+		out[key] = value
+	}
+	return out
 }
 
 func externalAdapterFailure(m protocol.Message, code string) (protocol.Result, error) {
