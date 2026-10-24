@@ -45,11 +45,13 @@ if(nervoNode.repository===selectedTransportRepository) {
 } else {
   throw new Error('NERVOVAGO_SOURCE_ALIGNMENT_INVALID');
 }
-if(contracts.contracts?.length!==10 || contracts.contracts_count!==10) throw new Error('GRF_NEW_CONTRACT_COUNT_INVALID');
+if(!Array.isArray(contracts.contracts) || contracts.contracts_count!==contracts.contracts.length)
+  throw new Error(`GRF_CONTRACT_COUNT_MISMATCH:declared=${contracts.contracts_count}:actual=${contracts.contracts?.length}`);
+if(contracts.new_public_contracts!==10) throw new Error('GRF_NEW_PUBLIC_CONTRACT_COUNT_INVALID');
 const required=['ingest','epistemicState','invariants','capabilities','failuresAbsorbed','provenance'];
 for(const c of contracts.contracts){
   for(const method of required) if(!c.interface?.includes(method)) throw new Error(`GRF_PARTICIPANT_INTERFACE_MISSING:${c.id}:${method}`);
-  if(!['PROJECTED','BLOCKED','REAL'].includes(c.state)) throw new Error(`GRF_PARTICIPANT_STATE_INVALID:${c.id}`);
+  if(!['PRESERVED','PROJECTED','BLOCKED','REAL','UNMEASURABLE'].includes(c.state)) throw new Error(`GRF_PARTICIPANT_STATE_INVALID:${c.id}`);
 }
 const invariantIds=['I1','I2','I3','I4','I5','I6','I7','I8','I9','I10','I11','I12','I13','I14','I15','I16','I17','I18'];
 if(invariantCatalog.count!==18 || JSON.stringify(invariantCatalog.invariants.map(x=>x.id))!==JSON.stringify(invariantIds)) throw new Error('GRF_INVARIANT_CATALOG_INVALID');
@@ -62,8 +64,17 @@ if(nervoVago.authority?.no_second_vagus!==true || nervoVago.authority?.no_second
 if(nervoVago.canonical_contract?.event_protocol!=='soul.vagus.event.v1') throw new Error('NERVOVAGO_EVENT_PROTOCOL_INVALID');
 if(nervoVago.etr_gate?.required_before_delivery!==true) throw new Error('NERVOVAGO_ETR_GATE_INVALID');
 const participants=contracts.contracts.map(x=>x.id).sort();
-const expected=['autogenesis','belel-protocol','cognifold','cuda-oxide','functional-graph-agi','hora-graph-core','mycelium','octos','prime-agent','opensinn-bus'].sort();
-if(JSON.stringify(participants)!==JSON.stringify(expected)) throw new Error('GRF_PARTICIPANT_SET_INVALID');
+if(new Set(participants).size!==participants.length) throw new Error('GRF_PARTICIPANT_DUPLICATE_ID');
+const expected=[
+  // Historical participants and existing complements remain recoverable.
+  'autogenesis','belel-protocol','cognifold','cuda-oxide','functional-graph-agi',
+  'hora-graph-core','mycelium','octos','prime-agent','opensinn-bus',
+  // The ten additional public sources are additive, not a replacement set.
+  'bijux-dag-runtime','ouro-loop','recuris','fedml','hivemind',
+  'temporal','cognitive-workspace','ravana','ray','nats-go'
+].sort();
+const missingParticipants=expected.filter(id=>!participants.includes(id));
+if(missingParticipants.length) throw new Error(`GRF_PARTICIPANTS_NOT_PRESERVED:${missingParticipants.join(',')}`);
 if(!binding.operations?.includes('nervo-vago.event@1.0.0') || !binding.operations?.includes('nervo-vago.describe@1.0.0')) {
   throw new Error('NERVOVAGO_OPERATIONS_MISSING');
 }
@@ -77,5 +88,6 @@ console.log(JSON.stringify({
   soul29_edges:soul29.edges.length,
   grf_invariants:invariantCatalog.count,
   grf_layers:8,
-  new_participant_contracts:10
+  participant_contracts:participants.length,
+  new_participant_contracts:contracts.new_public_contracts
 },null,2));
