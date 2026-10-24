@@ -152,6 +152,27 @@ func TestProjectedExpansionsAreMetadataOnly(t *testing.T) {
 		if _, err := e.Execute(context.Background(), "external."+id+".execute@1.0.0", nil, nil); err == nil {
 			t.Fatalf("projected expansion %s unexpectedly exposes an execute route", id)
 		}
+
+		// Even a caller-supplied activation flag cannot bypass the adapter registry.
+		envKey := "SOUL_EXTERNAL_EXECUTE_" + strings.ToUpper(strings.ReplaceAll(id, "-", "_"))
+		oldValue, wasSet := os.LookupEnv(envKey)
+		if err := os.Setenv(envKey, "true"); err != nil {
+			t.Fatal(err)
+		}
+		t.Cleanup(func() {
+			if wasSet {
+				_ = os.Setenv(envKey, oldValue)
+			} else {
+				_ = os.Unsetenv(envKey)
+			}
+		})
+		_, err = e.Execute(context.Background(), ExternalFederationExecuteOperation, nil, map[string]string{
+			"provider": id,
+			"external_operation": firstNonEmpty(p.LegacyOperations),
+		})
+		if err == nil || !strings.Contains(err.Error(), "EXTERNAL_PROVIDER_UNKNOWN") {
+			t.Fatalf("projected expansion %s bypassed core adapter registry with activation flag: %v", id, err)
+		}
 	}
 }
 
@@ -208,3 +229,13 @@ func TestExternalComplementaryDescribeContractsAreRegistered(t *testing.T) {
 		}
 	}
 }
+
+func firstNonEmpty(values []string) string {
+	for _, value := range values {
+		if strings.TrimSpace(value) != "" {
+			return value
+		}
+	}
+	return "source.verify"
+}
+
