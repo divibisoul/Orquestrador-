@@ -15,7 +15,18 @@ async function readOptional(root, relative, missing) {
 }
 
 function contractOf(text) {
-  return text.match(/(?:contractVersion|SOUL_MESH_CONTRACT_VERSION|contract)\s*[:=]\s*["'`]?((?:1)\.\d+\.\d+)/i)?.[1] ?? 'not-detected';
+  // Prefer explicit canonical constants over arbitrary object fields: telemetry
+  // and nested legacy payloads may carry an unrelated contractVersion.
+  const canonicalPatterns = [
+    /\bSOUL_MESH_CONTRACT_VERSION\s*=\s*["'\x60]((?:1)\.\d+\.\d+)["'\x60]/,
+    /\bCONTRACT_VERSION\s*=\s*["'\x60]((?:1)\.\d+\.\d+)["'\x60]/,
+    /\bContractVersion\s*[:=]\s*["'\x60]((?:1)\.\d+\.\d+)["'\x60]/,
+  ];
+  for (const pattern of canonicalPatterns) {
+    const match = text.match(pattern);
+    if (match) return match[1];
+  }
+  return text.match(/(?:contractVersion|contract)\s*[:=]\s*["'\x60]?((?:1)\.\d+\.\d+)/i)?.[1] ?? 'not-detected';
 }
 function has(text, terms) { const normalized = text.toLowerCase(); return terms.some((term) => normalized.includes(String(term).toLowerCase())); }
 
@@ -34,15 +45,17 @@ for (const [id, nucleus] of Object.entries(matrix.nuclei ?? {})) {
   }
   const joined = [...all.map((item) => item.content), ...contractEvidence].join('\n');
   const source = all[0]?.path ?? 'not-found';
+  const mesh = has(joined, ['soul-mesh/1', 'soul mesh', 'SOUL_MESH_PROTOCOL', 'SOUL_MESH_VERSION']);
   rows.push({
     id,
     repo: nucleus.repository,
     role: nucleus.role,
     contract: contractOf(joined),
-    mesh: has(joined, ['soul-mesh/1', 'soul mesh', 'SOUL_MESH_PROTOCOL', 'SOUL_MESH_VERSION']),
+    mesh,
     neuralBridge: has(joined, ['synapticnodebridge', 'neural', 'federation']),
     source,
-    state: missing.length > 0 || source === 'not-found' ? 'DEGRADED' : 'OBSERVED',
+    // File presence alone is not Mesh evidence; fail closed on missing Mesh proof.
+    state: missing.length > 0 || source === 'not-found' || !mesh ? 'DEGRADED' : 'OBSERVED',
     missing,
   });
 }
@@ -58,7 +71,7 @@ const lines = [
   '',
   '## Governance',
   '',
-  '- Canonical Mesh contract target: **soul-mesh/1 / 1.1.0**.',
+  `- Canonical Mesh contract target: **${matrix.canonicalMesh?.protocol ?? 'soul-mesh/1'} / ${matrix.canonicalMesh?.contractVersion ?? 'not-declared'}**.`,
   '- SOUL is one system; N01–N07 are specialized nuclei.',
   '- The matrix is the source of truth for nucleus identity, role and topology.',
   '- A legacy implementation may remain only as a compatibility adapter pointing at a canonical authority.',
