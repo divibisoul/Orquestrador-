@@ -262,7 +262,25 @@ jobs:
             sleep 1
           done
           curl -fsS             -H 'Authorization: Bearer ci'             -H 'Content-Type: application/json'             -X POST http://127.0.0.1:18082/execute             -d '{"operation":"external.federation.describe@1.0.0","metadata":{}}'             | tee /tmp/external-federation.json
-          grep -q '"provider_count":22' /tmp/external-federation.json
+          python3 - <<'PY'
+          import json
+          with open('integrations/external-capabilities.json', encoding='utf-8') as f:
+              registry = json.load(f)
+          with open('integrations/external-adapters.json', encoding='utf-8') as f:
+              adapters = json.load(f)
+          outer = json.load(open('/tmp/external-federation.json', encoding='utf-8'))
+          raw = json.loads(next(v for k, v in outer['metadata'].items() if k.endswith('_json')))
+          expected_ids = {
+              item['id']
+              for item in registry.get('repositories', []) + registry.get('complementary_repositories', [])
+          }
+          adapter_ids = {item['id'] for item in adapters.get('providers', [])}
+          runtime_ids = {item['id'] for item in raw.get('providers', [])}
+          assert expected_ids == adapter_ids, f'registry/adapter mismatch: registry={len(expected_ids)} adapters={len(adapter_ids)}'
+          assert raw['provider_count'] == len(expected_ids), f"runtime count mismatch: expected={len(expected_ids)} actual={raw['provider_count']}"
+          assert runtime_ids == expected_ids, f'runtime IDs mismatch: missing={sorted(expected_ids-runtime_ids)} extra={sorted(runtime_ids-expected_ids)}'
+          print(f'Production external federation: {len(expected_ids)} registered providers, IDs aligned')
+          PY
           curl -fsS             -H 'Authorization: Bearer ci'             -H 'Content-Type: application/json'             -X POST http://127.0.0.1:18082/execute             -d '{"operation":"external.langgraph.probe@1.0.0","metadata":{}}'             | tee /tmp/langgraph-probe.json
           grep -q '"state":"PASS"' /tmp/langgraph-probe.json
           grep -q '"source_present":true' /tmp/langgraph-probe.json
