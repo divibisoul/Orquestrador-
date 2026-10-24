@@ -448,12 +448,10 @@ func copyExternalFederationMetadata(metadata map[string]string, payload map[stri
 	if !ok || strings.TrimSpace(provider) == "" {
 		provider = strings.TrimSpace(metadata["provider"])
 	}
-	if requiresOperation && strings.TrimSpace(provider) == "" {
+	if strings.TrimSpace(provider) == "" {
 		return errors.New("external federation provider is required")
 	}
-	if strings.TrimSpace(provider) != "" {
-		metadata["provider"] = strings.ToLower(strings.TrimSpace(provider))
-	}
+	metadata["provider"] = strings.ToLower(strings.TrimSpace(provider))
 	if requiresOperation {
 		operation, ok := payload["external_operation"].(string)
 		if !ok || strings.TrimSpace(operation) == "" {
