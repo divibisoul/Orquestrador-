@@ -560,6 +560,9 @@ func RegisterExternalAdapterOperations(e *Engine, r ExternalAdapterRegistry) err
 				"sourceState": observation.State, "sourcePresent": observation.Present,
 				"operations": p.Operations, "state": p.State, "integrationState": p.IntegrationState,
 				"runtimeRequirement": p.RuntimeRequirement, "executionEnabled": false,
+				"meshMetadataOperations": []string{"external." + p.ID + ".describe@1.0.0", "external." + p.ID + ".probe@1.0.0"},
+				"runtimeRouteOperations": []string{},
+				"executionProven": false,
 			})
 		}
 		raw, _ := json.Marshal(map[string]any{
@@ -594,6 +597,21 @@ func RegisterExternalAdapterOperations(e *Engine, r ExternalAdapterRegistry) err
 		return externalAdapterExecutionResult(m, result)
 	}); err != nil {
 		return err
+	}
+	// Expose source-state metadata for every projected expansion source through
+	// the same Mesh control plane. These routes inspect provenance only; they do
+	// not invoke external code and deliberately have no execute counterpart.
+	for _, p := range r.expansionProviders {
+		spec := p
+		for _, routeKind := range []string{"describe", "probe"} {
+			kind := routeKind
+			opName := "external." + spec.ID + "." + kind + "@1.0.0"
+			if err := e.Register(opName, func(ctx context.Context, m protocol.Message) (protocol.Result, error) {
+				return externalProjectedSourceResult(m, r, spec, kind), nil
+			}); err != nil {
+				return err
+			}
+		}
 	}
 	for id := range r.byID {
 		provider := id
@@ -645,6 +663,44 @@ func RegisterExternalAdapterOperations(e *Engine, r ExternalAdapterRegistry) err
 	}
 	return nil
 }
+func externalProjectedSourceResult(m protocol.Message, r ExternalAdapterRegistry, p ExternalAdapterSpec, operation string) protocol.Result {
+	root := p.Root
+	if !filepath.IsAbs(root) {
+		root = filepath.Join(repositoryRoot(), root)
+	}
+	root = filepath.Clean(root)
+	observation := inspectExternalSource(root, r.revisions[p.ID])
+	state := "BLOCKED"
+	if observation.Present && observation.RevisionMatched {
+		state = "PROJECTED"
+	}
+	result := map[string]any{
+		"state": state,
+		"provider": p.ID,
+		"owner": p.Owner,
+		"operation": operation,
+		"root": root,
+		"revision": r.revisions[p.ID],
+		"expectedRevision": observation.ExpectedRevision,
+		"observedRevision": observation.ObservedRevision,
+		"revisionMatched": observation.RevisionMatched,
+		"sourceState": observation.State,
+		"sourcePresent": observation.Present,
+		"plannedOperations": p.Operations,
+		"runtimeRouteOperations": []string{},
+		"executionEnabled": false,
+		"executionProven": false,
+		"runtimeEvidence": "UNVERIFIED",
+		"requiredEvidence": []string{
+			"native-adapter-contract",
+			"exact-pinned-source",
+			"deterministic-contract-tests",
+			"authenticated-runtime-e2e",
+		},
+	}
+	return externalAdapterResult(m, result)
+}
+
 func externalAdapterFailure(m protocol.Message, code string) (protocol.Result, error) {
 	err := errors.New(code)
 	return protocol.Result{TraceID: m.TraceID, CorrelationID: m.CorrelationID, Source: "N07.external-federation", Target: m.Source, Status: "error", Error: code}, err
