@@ -174,6 +174,13 @@ func NewExternalAdapterRegistry() (ExternalAdapterRegistry, error) {
 		if item.ID == "" || item.Owner == "" || item.Root == "" || item.Revision == "" || item.State != "PROJECTED" {
 			return ExternalAdapterRegistry{}, fmt.Errorf("projected expansion descriptor incomplete or prematurely promoted: %s", item.ID)
 		}
+		expectedRoot := filepath.ToSlash(filepath.Join("integrations", "external", item.ID))
+		if filepath.ToSlash(filepath.Clean(item.Root)) != expectedRoot {
+			return ExternalAdapterRegistry{}, fmt.Errorf("projected expansion root is not canonical: %s", item.ID)
+		}
+		if !containsString(item.Targets, item.Owner) {
+			return ExternalAdapterRegistry{}, fmt.Errorf("projected expansion owner is not a declared target: %s", item.ID)
+		}
 		if _, core := by[item.ID]; core {
 			return ExternalAdapterRegistry{}, fmt.Errorf("projected expansion duplicates executable adapter: %s", item.ID)
 		}
