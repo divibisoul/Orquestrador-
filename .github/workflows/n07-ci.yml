@@ -179,6 +179,17 @@ jobs:
           set -euo pipefail
           node scripts/validate-external-adapters.mjs
           node scripts/validate-soul-external-submodules.mjs
+          python3 -m py_compile scripts/external-capability-adapter.py
+
+      - name: Prove projected repository execution remains fail-closed
+        run: |
+          set -euo pipefail
+          set +e
+          printf '%s' '{"provider":"ravana","operation":"agent.execute","mode":"execute"}' | python3 scripts/external-capability-adapter.py > /tmp/projected-source.json
+          code=$?
+          set -e
+          test "$code" -eq 2
+          jq -e '.state == "BLOCKED" and .code == "SOUL_V2_EXPANSION_RUNTIME_NOT_BOUND" and .epistemic_state == "PROJECTED" and .execution_enabled == false and .execution_proven == false' /tmp/projected-source.json >/dev/null
 
       - name: Assert declarative SOUL source
         run: |
