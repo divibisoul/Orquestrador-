@@ -47,8 +47,10 @@ type ExternalAdapterManifest struct {
 }
 
 const (
-	ExternalFederationDescribeOperation = "external.federation.describe@1.0.0"
-	ExternalFederationExecuteOperation  = "external.federation.execute@1.0.0"
+	ExternalFederationDescribeOperation       = "external.federation.describe@1.0.0"
+	ExternalFederationExecuteOperation        = "external.federation.execute@1.0.0"
+	ExternalFederationSourceDescribeOperation = "external.federation.source.describe@1.0.0"
+	ExternalFederationSourceProbeOperation   = "external.federation.source.probe@1.0.0"
 )
 
 type ExternalCapabilityRevision struct {
@@ -581,6 +583,25 @@ func RegisterExternalAdapterOperations(e *Engine, r ExternalAdapterRegistry) err
 	}); err != nil {
 		return err
 	}
+	// Canonical source metadata operations give every nucleus one stable
+	// Mesh call shape for any external repository. Per-provider aliases remain
+	// registered below for backwards compatibility.
+	for _, operation := range []string{ExternalFederationSourceDescribeOperation, ExternalFederationSourceProbeOperation} {
+		op := operation
+		if err := e.Register(op, func(ctx context.Context, m protocol.Message) (protocol.Result, error) {
+			provider := strings.ToLower(strings.TrimSpace(m.Metadata["provider"]))
+			if provider == "" {
+				return externalAdapterFailure(m, "EXTERNAL_PROVIDER_REQUIRED")
+			}
+			result, err := externalFederationSourceMetadata(r, provider, op)
+			if err != nil {
+				return externalAdapterFailure(m, err.Error())
+			}
+			return externalAdapterResult(m, result), nil
+		}); err != nil {
+			return err
+		}
+	}
 	if err := e.Register(ExternalFederationExecuteOperation, func(ctx context.Context, m protocol.Message) (protocol.Result, error) {
 		provider := strings.TrimSpace(m.Metadata["provider"])
 		op := strings.TrimSpace(m.Metadata["external_operation"])
@@ -663,6 +684,84 @@ func RegisterExternalAdapterOperations(e *Engine, r ExternalAdapterRegistry) err
 	}
 	return nil
 }
+func externalFederationSourceMetadata(r ExternalAdapterRegistry, providerID, operation string) (map[string]any, error) {
+	providerID = strings.ToLower(strings.TrimSpace(providerID))
+	var spec ExternalAdapterSpec
+	projected := false
+	if active, ok := r.byID[providerID]; ok {
+		spec = active
+	} else {
+		found := false
+		for _, candidate := range r.expansionProviders {
+			if candidate.ID == providerID {
+				spec = candidate
+				projected = true
+				found = true
+				break
+			}
+		}
+		if !found {
+			return nil, fmt.Errorf("EXTERNAL_PROVIDER_UNKNOWN:%s", providerID)
+		}
+	}
+	root := spec.Root
+	if !filepath.IsAbs(root) {
+		root = filepath.Join(repositoryRoot(), root)
+	}
+	root = filepath.Clean(root)
+	observation := inspectExternalSource(root, r.revisions[providerID])
+	state := "BLOCKED"
+	if projected {
+		if observation.Present && observation.RevisionMatched {
+			state = "PROJECTED"
+		}
+	} else if observation.Present && observation.RevisionMatched {
+		// Exact source provenance is measurable, but it is not proof of a
+		// successful provider invocation or live external service.
+		state = "UNMEASURABLE"
+	}
+	runtimeRoutes := []string{}
+	if !projected && externalEnabled(providerID) {
+		runtimeRoutes = append(runtimeRoutes, spec.Operations...)
+	}
+	operations := []string{
+		ExternalFederationSourceDescribeOperation,
+		ExternalFederationSourceProbeOperation,
+	}
+	if projected {
+		operations = append(operations,
+			"external."+providerID+".describe@1.0.0",
+			"external."+providerID+".probe@1.0.0",
+		)
+	}
+	return map[string]any{
+		"state": state,
+		"provider": providerID,
+		"owner": spec.Owner,
+		"operation": operation,
+		"root": root,
+		"revision": r.revisions[providerID],
+		"expectedRevision": observation.ExpectedRevision,
+		"observedRevision": observation.ObservedRevision,
+		"revisionMatched": observation.RevisionMatched,
+		"sourceState": observation.State,
+		"sourcePresent": observation.Present,
+		"adapterState": func() string { if projected { return "PROJECTED" }; return "REGISTERED" }(),
+		"registeredOperations": spec.Operations,
+		"meshMetadataOperations": operations,
+		"runtimeRouteOperations": runtimeRoutes,
+		"executionEnabled": !projected && externalEnabled(providerID),
+		"executionProven": false,
+		"runtimeEvidence": "UNVERIFIED",
+		"requiredEvidence": []string{
+			"native-adapter-contract",
+			"exact-pinned-source",
+			"deterministic-contract-tests",
+			"authenticated-runtime-e2e",
+		},
+	}, nil
+}
+
 func externalProjectedSourceResult(m protocol.Message, r ExternalAdapterRegistry, p ExternalAdapterSpec, operation string) protocol.Result {
 	root := p.Root
 	if !filepath.IsAbs(root) {
