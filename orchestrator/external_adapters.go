@@ -24,9 +24,29 @@ type ExternalAdapterSpec struct {
 	Operations []string `json:"operations"`
 	Package    *string  `json:"package"`
 }
+type ExternalProjectedExpansion struct {
+	ID                    string   `json:"id"`
+	Owner                 string   `json:"owner"`
+	Kind                  string   `json:"kind"`
+	Root                  string   `json:"root"`
+	Package               *string  `json:"package"`
+	Revision              string   `json:"revision"`
+	Targets               []string `json:"targets"`
+	Role                  string   `json:"role"`
+	State                 string   `json:"state"`
+	IntegrationState      string   `json:"integration_state"`
+	LegacyOperations      []string `json:"legacy_operations"`
+	MetadataOperations    []string `json:"metadata_operations"`
+	RuntimeRouteOperations []string `json:"runtime_route_operations"`
+	ExecutionEnabled      bool     `json:"execution_enabled"`
+	ExecutionProven       bool     `json:"execution_proven"`
+}
+
 type ExternalAdapterManifest struct {
 	SchemaVersion         string `json:"schema_version"`
 	CanonicalControlPlane string `json:"canonical_control_plane"`
+	ProviderCount         int    `json:"provider_count"`
+	ProjectedExpansionCount int  `json:"projected_expansion_count"`
 	RuntimeDefaults       struct {
 		Enabled               bool `json:"enabled"`
 		ProbeWithoutExecution bool `json:"probe_without_execution"`
@@ -39,7 +59,8 @@ type ExternalAdapterManifest struct {
 		Path           string `json:"path"`
 		InterpreterEnv string `json:"interpreter_env"`
 	} `json:"runner"`
-	Providers []ExternalAdapterSpec `json:"providers"`
+	Providers           []ExternalAdapterSpec       `json:"providers"`
+	ProjectedExpansions  []ExternalProjectedExpansion `json:"projected_expansions"`
 }
 
 const (
@@ -50,11 +71,15 @@ const (
 type ExternalCapabilityRevision struct {
 	ID       string `json:"id"`
 	Revision string `json:"revision"`
+	Targets  []string `json:"targets"`
+	Target   string `json:"target"`
 }
 
 type ExternalCapabilityRegistry struct {
 	Repositories              []ExternalCapabilityRevision `json:"repositories"`
 	ComplementaryRepositories []ExternalCapabilityRevision `json:"complementary_repositories"`
+	ExpansionRepositories     []ExternalCapabilityRevision `json:"expansion_repositories"`
+	GRCEComplements           []ExternalCapabilityRevision `json:"grce_complements"`
 }
 
 type ExternalRuntimeAttestation struct {
@@ -63,10 +88,11 @@ type ExternalRuntimeAttestation struct {
 }
 
 type ExternalAdapterRegistry struct {
-	manifest     ExternalAdapterManifest
-	byID         map[string]ExternalAdapterSpec
-	revisions    map[string]string
-	manifestPath string
+	manifest             ExternalAdapterManifest
+	byID                 map[string]ExternalAdapterSpec
+	expansionProviders   map[string]ExternalProjectedExpansion
+	revisions            map[string]string
+	manifestPath         string
 }
 
 func NewExternalAdapterRegistry() (ExternalAdapterRegistry, error) {
@@ -88,6 +114,10 @@ func NewExternalAdapterRegistry() (ExternalAdapterRegistry, error) {
 	if m.CanonicalControlPlane != "N07" || m.Runner.Path == "" {
 		return ExternalAdapterRegistry{}, errors.New("external adapter manifest contract invalid")
 	}
+	if m.ProviderCount != len(m.Providers) || m.ProjectedExpansionCount != len(m.ProjectedExpansions) {
+		return ExternalAdapterRegistry{}, fmt.Errorf("external adapter manifest count mismatch: providers=%d/%d projected_expansions=%d/%d",
+			len(m.Providers), m.ProviderCount, len(m.ProjectedExpansions), m.ProjectedExpansionCount)
+	}
 	by := make(map[string]ExternalAdapterSpec, len(m.Providers))
 	for _, p := range m.Providers {
 		if p.ID == "" || p.Owner == "" || p.Root == "" || len(p.Operations) == 0 {
@@ -107,23 +137,70 @@ func NewExternalAdapterRegistry() (ExternalAdapterRegistry, error) {
 	if err := json.Unmarshal(capRaw, &capabilityRegistry); err != nil {
 		return ExternalAdapterRegistry{}, fmt.Errorf("external capability registry JSON: %w", err)
 	}
-	allRevisions := append(append([]ExternalCapabilityRevision{}, capabilityRegistry.Repositories...), capabilityRegistry.ComplementaryRepositories...)
+	coreSources := append(append([]ExternalCapabilityRevision{}, capabilityRegistry.Repositories...), capabilityRegistry.ComplementaryRepositories...)
+	projectedSources := append(append([]ExternalCapabilityRevision{}, capabilityRegistry.ExpansionRepositories...), capabilityRegistry.GRCEComplements...)
+	allRevisions := append(append([]ExternalCapabilityRevision{}, coreSources...), projectedSources...)
 	revisions := make(map[string]string, len(allRevisions))
 	for _, item := range allRevisions {
 		if item.ID == "" || len(item.Revision) != 40 {
 			return ExternalAdapterRegistry{}, fmt.Errorf("external capability revision invalid: %s", item.ID)
 		}
 		if _, exists := revisions[item.ID]; exists {
-			return ExternalAdapterRegistry{}, fmt.Errorf("duplicate external capability revision: %s", item.ID)
+			return ExternalAdapterRegistry{}, fmt.Errorf("duplicate external provider/source ID: %s", item.ID)
 		}
 		revisions[item.ID] = item.Revision
 	}
+	if len(coreSources) != len(by) || len(by) != 22 {
+		return ExternalAdapterRegistry{}, fmt.Errorf("external core provider count mismatch: sources=%d adapters=%d expected=22", len(coreSources), len(by))
+	}
+	coreIDs := make(map[string]struct{}, len(coreSources))
+	for _, item := range coreSources {
+		coreIDs[item.ID] = struct{}{}
+		if _, ok := by[item.ID]; !ok {
+			return ExternalAdapterRegistry{}, fmt.Errorf("external core adapter missing: %s", item.ID)
+		}
+	}
 	for id := range by {
+		if _, ok := coreIDs[id]; !ok {
+			return ExternalAdapterRegistry{}, fmt.Errorf("external adapter outside primary/complementary catalog: %s", id)
+		}
 		if _, ok := revisions[id]; !ok {
 			return ExternalAdapterRegistry{}, fmt.Errorf("external capability revision missing: %s", id)
 		}
 	}
-	return ExternalAdapterRegistry{manifest: m, byID: by, revisions: revisions, manifestPath: path}, nil
+
+	expansions := make(map[string]ExternalProjectedExpansion, len(m.ProjectedExpansions))
+	for _, item := range m.ProjectedExpansions {
+		if item.ID == "" || item.Owner == "" || item.Root == "" || item.Revision == "" || item.State != "PROJECTED" {
+			return ExternalAdapterRegistry{}, fmt.Errorf("projected expansion descriptor incomplete or prematurely promoted: %s", item.ID)
+		}
+		if _, core := by[item.ID]; core {
+			return ExternalAdapterRegistry{}, fmt.Errorf("projected expansion duplicates executable adapter: %s", item.ID)
+		}
+		if _, exists := expansions[item.ID]; exists {
+			return ExternalAdapterRegistry{}, fmt.Errorf("duplicate projected expansion ID: %s", item.ID)
+		}
+		if pinned, ok := revisions[item.ID]; !ok || pinned != item.Revision {
+			return ExternalAdapterRegistry{}, fmt.Errorf("projected expansion revision mismatch: %s", item.ID)
+		}
+		if item.ExecutionEnabled || item.ExecutionProven || len(item.RuntimeRouteOperations) != 0 {
+			return ExternalAdapterRegistry{}, fmt.Errorf("projected expansion exposes runtime execution: %s", item.ID)
+		}
+		if !containsString(item.MetadataOperations, "external."+item.ID+".describe@1.0.0") ||
+			!containsString(item.MetadataOperations, "external."+item.ID+".probe@1.0.0") {
+			return ExternalAdapterRegistry{}, fmt.Errorf("projected expansion metadata operations incomplete: %s", item.ID)
+		}
+		expansions[item.ID] = item
+	}
+	if len(expansions) != 10 || len(revisions) != 32 {
+		return ExternalAdapterRegistry{}, fmt.Errorf("external catalog count mismatch: core=%d projected=%d declared=%d", len(by), len(expansions), len(revisions))
+	}
+	for _, item := range projectedSources {
+		if _, ok := expansions[item.ID]; !ok {
+			return ExternalAdapterRegistry{}, fmt.Errorf("projected expansion descriptor missing for pinned source: %s", item.ID)
+		}
+	}
+	return ExternalAdapterRegistry{manifest: m, byID: by, expansionProviders: expansions, revisions: revisions, manifestPath: path}, nil
 }
 func externalEnabled(provider string) bool {
 	key := "SOUL_EXTERNAL_EXECUTE_" + strings.ToUpper(strings.ReplaceAll(provider, "-", "_"))
@@ -544,4 +621,13 @@ func externalAdapterExecutionResult(m protocol.Message, result map[string]any) (
 		return externalAdapterFailure(m, code)
 	}
 	return externalAdapterResult(m, result), nil
+}
+
+func containsString(values []string, target string) bool {
+	for _, value := range values {
+		if value == target {
+			return true
+		}
+	}
+	return false
 }
