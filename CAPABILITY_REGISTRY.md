@@ -26,10 +26,18 @@ External providers never become authorities merely because they are vendored/sub
 
 ## 3. SOUL-25 provider fabric
 
-The current N07 repository pins 16 upstream repositories. Their implementation must flow through:
+The pinned public-upstream inventory is reconciled across **31 external repositories**:
+- 16 primary sources and 6 complementary sources have records in the canonical adapter registry (22 records total). A registry entry is not proof that the provider is enabled or executable.
+- 6 expansion sources and 3 GRCE complements are visible through federation discovery as `PROJECTED`; they are intentionally excluded from the runtime-routeable adapter map until a native adapter exists and passes its contract.
+- Source pins must match the capability manifest, Git submodule link and checked-out source revision. Unregistered external submodules fail the integrity gate.
+- Candidate-only sources that are not materialized as pinned submodules and historically blocked sources remain outside the 31-source route graph.
+
+Every canonical nucleus N01–N07 can discover the same N07 external-federation catalog through the canonical Mesh. The external provider retains its mapped owner, and every request still passes capability authorization, source-pin validation, timeout/deadline policy, HMAC/mTLS and provenance checks. No upstream repository becomes an eighth nucleus or a second control plane.
+
+Required path:
 provenance → contract → adapter → Mesh route → controlled execution → verification → observability → re-audit.
 
-Existing provider pins are preserved.
+Runtime activation remains fail-closed and disabled by default. Only an authenticated, exact-pin, real capability transaction may promote an expansion beyond `PROJECTED`.
 
 ## 4. Versioning
 
