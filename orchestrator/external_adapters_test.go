@@ -39,6 +39,77 @@ func TestExternalAdapterManifestHasTwentyTwoProviders(t *testing.T) {
 		t.Fatalf("providers=%d", len(r.byID))
 	}
 }
+func TestExternalExpansionProvidersRemainProjectedAndNonExecutable(t *testing.T) {
+	_, r := newExternalTestEngine(t)
+	if len(r.expansionProviders) != 9 {
+		t.Fatalf("projected expansion providers=%d, want 9", len(r.expansionProviders))
+	}
+	expected := map[string]bool{
+		"fedml": true, "hivemind": true, "temporal": true,
+		"cognitive-workspace": true, "ravana": true, "ray": true,
+		"bijux-dag-runtime": true, "ouro-loop": true, "recurs": true,
+	}
+	for _, p := range r.expansionProviders {
+		if !expected[p.ID] {
+			t.Fatalf("unexpected projected expansion provider %q", p.ID)
+		}
+		if p.State != "PROJECTED" || p.IntegrationState == "" || p.RuntimeRequirement == "" {
+			t.Fatalf("expansion evidence boundary missing for %s: %#v", p.ID, p)
+		}
+		if _, routeable := r.byID[p.ID]; routeable {
+			t.Fatalf("projected provider %s became runtime-routeable", p.ID)
+		}
+		for _, operation := range p.Operations {
+			if r.operationAllowed(p.ID, "execute", operation) {
+				t.Fatalf("projected operation unexpectedly executable: %s:%s", p.ID, operation)
+			}
+		}
+		delete(expected, p.ID)
+	}
+	if len(expected) != 0 {
+		t.Fatalf("projected expansion sources missing: %v", expected)
+	}
+}
+
+func TestExternalFederationDescribeIncludesProjectedSourcesWithoutPromotingThem(t *testing.T) {
+	e, _ := newExternalTestEngine(t)
+	result, err := e.Execute(context.Background(), ExternalFederationDescribeOperation, nil, nil)
+	if err != nil {
+		t.Fatalf("federation describe failed: %v", err)
+	}
+	raw := result.Metadata["federation_json"]
+	var report struct {
+		State string `json:"state"`
+		CatalogState string `json:"catalog_state"`
+		RuntimeEvidence string `json:"runtime_evidence"`
+		ProviderCount int `json:"provider_count"`
+		ExpansionProviderCount int `json:"expansion_provider_count"`
+		DeclaredExternalRepositoryCount int `json:"declared_external_repository_count"`
+		ExpansionProviders []struct {
+			ID string `json:"id"`
+			State string `json:"state"`
+			ExecutionEnabled bool `json:"executionEnabled"`
+		} `json:"expansion_providers"`
+	}
+	if err := json.Unmarshal([]byte(raw), &report); err != nil {
+		t.Fatalf("federation descriptor JSON invalid: %v; raw=%s", err, raw)
+	}
+	if report.State != "PASS" || report.CatalogState != "DECLARED_WITH_PROJECTED_EXPANSIONS" || report.RuntimeEvidence != "UNVERIFIED" {
+		t.Fatalf("catalog/runtime evidence states conflated: %#v", report)
+	}
+	if report.ProviderCount != 22 || report.ExpansionProviderCount != 9 || report.DeclaredExternalRepositoryCount != 31 {
+		t.Fatalf("unexpected federated inventory counts: %#v", report)
+	}
+	if len(report.ExpansionProviders) != 9 {
+		t.Fatalf("expansion inventory length=%d", len(report.ExpansionProviders))
+	}
+	for _, p := range report.ExpansionProviders {
+		if p.State != "PROJECTED" || p.ExecutionEnabled {
+			t.Fatalf("projected source was promoted in descriptor: %#v", p)
+		}
+	}
+}
+
 func TestExternalAdapterPrimarySixteenRemainIntact(t *testing.T) {
 	_, r := newExternalTestEngine(t)
 	primary := []string{
