@@ -61,6 +61,21 @@ func TestExternalAdapterExecutionFailsClosedByDefault(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 }
+
+func TestSourceWorktreeIsGitRejectsParentRepositoryFallback(t *testing.T) {
+	// A normal directory below the N07 checkout is not a provider worktree.
+	// Git may nevertheless find the parent repository when invoked with -C.
+	root, err := os.MkdirTemp(repositoryRoot(), ".external-unmaterialized-")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.RemoveAll(root) })
+
+	if sourceWorktreeIsGit(root) {
+		t.Fatalf("unmaterialized provider directory was mistaken for a Git worktree: %s", root)
+	}
+}
+
 func TestExternalAdapterProbeRegistered(t *testing.T) {
 	e, _ := newExternalTestEngine(t)
 	if _, err := e.Execute(context.Background(), "external.langgraph.probe@1.0.0", nil, nil); err != nil {
