@@ -103,6 +103,25 @@ The `adjacentPeers` chain is a preferred composition/fusion order, not an access
 
 The N07 topology endpoint publishes direct inbound and outbound channels for N01–N06 and reports the full graph as 42 logical directed routes. This is a structural declaration only: live connectivity remains unverified until authenticated real-runtime probes succeed.
 
+### 7.2 Public external repository fan-out
+
+The N07 external-federation catalog reconciles 31 pinned public upstream repositories while preserving one canonical Mesh and one control plane:
+
+- 22 adapter descriptors are in the current provider map (16 primary and 6 complementary). Their presence in the catalog does not by itself prove runtime readiness; adapter execution is disabled by default and separately gated.
+- 9 additional sources are disclosed as `PROJECTED`: FedML, Hivemind, Temporal, Cognitive Workspace, RAVANA, Ray, Bijux DAG Runtime, Ouro Loop and Recurs.
+- Federation discovery exposes the projected records and their pinned revision/evidence requirements, but the runtime route table excludes them. A projected operation must fail closed rather than fall through to an unregistered runner.
+- Every canonical nucleus N01–N07 is represented as an authorized consumer of the projected-source catalog, either as the declared primary owner or as a consumer. SARA remains a transversal authority, not an additional nucleus.
+- Candidate repositories without a materialized/pinned submodule, and sources marked `BLOCKED`, are not counted as routeable Mesh peers.
+
+Promotion gate for any projected source:
+1. exact source URL, revision, Gitlink and worktree reconciliation;
+2. native adapter contract and ownership/consumer validation;
+3. deterministic adapter tests, including failure/timeout behavior;
+4. authenticated Mesh conformance tests preserving correlation, provenance, HMAC/mTLS and destination ownership;
+5. real runtime execution evidence on the exact CI head.
+
+Catalog response status `PASS` means the catalog operation succeeded only. It must include `runtime_evidence: UNVERIFIED` until an independent runtime proof exists. A source is never marked executable merely because its public repository is reachable.
+
 ## 8. Error taxonomy
 
 | Code | Meaning | Retry |
