@@ -259,7 +259,17 @@ def source_verify(provider, rt):
         results.append(result)
         if p.returncode != 0:
             emit({"state":"BLOCKED","code":"PUBLIC_PROVIDER_VERIFY_FAILED","provider":provider,"results":results},2)
-    emit({"state":"PASS","provider":provider,"operation":"source.verify","execution_proven":True,"verification_kind":"upstream-source-execution","results":results})
+    emit({
+        "state":"PASS",
+        "provider":provider,
+        "operation":"source.verify",
+        "source_verification_proven":True,
+        "native_runtime_execution_proven":False,
+        "execution_proven":False,
+        "verification_kind":"upstream-source-validation",
+        "evidence_rule":"the recorded command validates the pinned upstream source; it does not prove a SOUL Mesh runtime route is active",
+        "results":results
+    })
 
 def execute(v,rt):
     provider=str(v.get("provider") or "").strip().lower()
