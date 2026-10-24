@@ -105,15 +105,27 @@ jobs:
           print('GRF discovery: PASS')
           PY
 
-      - name: Assert 22-source federation
+      - name: Assert external federation matches the canonical registry
         run: |
           curl -fsS -H 'Authorization: Bearer e2e-n07-token-123456789' -H 'Content-Type: application/json' -X POST http://127.0.0.1:8080/v1/execute -d '{"operation":"external.federation.describe@1.0.0","metadata":{}}' | tee /tmp/federation.json
           python - <<'PY'
           import json
-          outer=json.load(open('/tmp/federation.json'))
-          raw=json.loads(next(v for k,v in outer['metadata'].items() if k.endswith('json')))
-          assert raw['provider_count']==22
-          print('22-source federation: PASS')
+          with open('integrations/external-capabilities.json', encoding='utf-8') as f:
+              registry = json.load(f)
+          with open('integrations/external-adapters.json', encoding='utf-8') as f:
+              adapters = json.load(f)
+          expected_ids = {
+              item['id']
+              for item in registry.get('repositories', []) + registry.get('complementary_repositories', [])
+          }
+          adapter_ids = {item['id'] for item in adapters.get('providers', [])}
+          outer = json.load(open('/tmp/federation.json', encoding='utf-8'))
+          raw = json.loads(next(v for k, v in outer['metadata'].items() if k.endswith('json')))
+          runtime_ids = {item['id'] for item in raw.get('providers', [])}
+          assert expected_ids == adapter_ids, f'registry/adapter ID mismatch: expected={len(expected_ids)} adapters={len(adapter_ids)}'
+          assert raw['provider_count'] == len(expected_ids), f"runtime count mismatch: expected={len(expected_ids)} actual={raw['provider_count']}"
+          assert runtime_ids == expected_ids, f"runtime registry ID mismatch: missing={sorted(expected_ids-runtime_ids)} extra={sorted(runtime_ids-expected_ids)}"
+          print(f"{len(expected_ids)}-source external federation registry: PASS")
           PY
 
       - name: Execute full GRCE -> C1-C7-C1 with real SARA authority
