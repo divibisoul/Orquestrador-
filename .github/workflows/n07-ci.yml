@@ -270,16 +270,25 @@ jobs:
               adapters = json.load(f)
           outer = json.load(open('/tmp/external-federation.json', encoding='utf-8'))
           raw = json.loads(next(v for k, v in outer['metadata'].items() if k.endswith('_json')))
-          expected_ids = {
-              item['id']
-              for item in registry.get('repositories', []) + registry.get('complementary_repositories', [])
-          }
+          core_sources = registry.get('repositories', []) + registry.get('complementary_repositories', [])
+          projected_sources = registry.get('expansion_repositories', []) + registry.get('grce_complements', [])
+          core_expected = {item['id'] for item in core_sources}
+          projected_expected = {item['id'] for item in projected_sources}
           adapter_ids = {item['id'] for item in adapters.get('providers', [])}
+          projected_adapter_ids = {item['id'] for item in adapters.get('projected_expansions', [])}
           runtime_ids = {item['id'] for item in raw.get('providers', [])}
-          assert expected_ids == adapter_ids, f'registry/adapter mismatch: registry={len(expected_ids)} adapters={len(adapter_ids)}'
-          assert raw['provider_count'] == len(expected_ids), f"runtime count mismatch: expected={len(expected_ids)} actual={raw['provider_count']}"
-          assert runtime_ids == expected_ids, f'runtime IDs mismatch: missing={sorted(expected_ids-runtime_ids)} extra={sorted(runtime_ids-expected_ids)}'
-          print(f'Production external federation: {len(expected_ids)} registered providers, IDs aligned')
+          runtime_projected_ids = {item['id'] for item in raw.get('expansion_providers', [])}
+          assert len(core_expected) == 22 and len(projected_expected) == 10
+          assert len(core_expected | projected_expected) == 32
+          assert adapter_ids == core_expected, f'core adapter mismatch: missing={sorted(core_expected-adapter_ids)} extra={sorted(adapter_ids-core_expected)}'
+          assert raw['provider_count'] == 22 and runtime_ids == core_expected, f"core runtime count/IDs mismatch: count={raw.get('provider_count')} missing={sorted(core_expected-runtime_ids)} extra={sorted(runtime_ids-core_expected)}"
+          assert projected_adapter_ids == projected_expected
+          assert runtime_projected_ids == projected_expected
+          assert raw['expansion_provider_count'] == 10
+          for item in raw['expansion_providers']:
+              assert item['executionEnabled'] is False and item['executionProven'] is False, item
+              assert item['runtimeRouteOperations'] == [], item
+          print('Production external federation aligned: 22 adapter-backed + 10 metadata-only PROJECTED = 32')
           PY
           curl -fsS             -H 'Authorization: Bearer ci'             -H 'Content-Type: application/json'             -X POST http://127.0.0.1:18082/execute             -d '{"operation":"external.langgraph.probe@1.0.0","metadata":{}}'             | tee /tmp/langgraph-probe.json
           grep -q '"state":"PASS"' /tmp/langgraph-probe.json
