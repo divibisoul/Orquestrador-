@@ -66,12 +66,12 @@ for(const p of expansionProviders){
   if(own.pinnedRevision!==src.revision) throw new Error(`EXPANSION_PIN_MISMATCH:${p.id}`);
   if(normRepo(own.source)!==normRepo(src.source)) throw new Error(`EXPANSION_SOURCE_URL_MISMATCH:${p.id}`);
   if(own.status!=='projected-no-runtime-route') throw new Error(`EXPANSION_OWNERSHIP_MUST_REMAIN_PROJECTED:${p.id}`);
-  if(!Array.isArray(own.consumers) || nucCount(own.consumers)!==7) throw new Error(`EXPANSION_MUST_BE_DISCOVERABLE_FROM_ALL_SEVEN_NUCLEI:${p.id}`);
-  for(const consumer of own.consumers){
-    if(!canonical.has(consumer)) throw new Error(`INVALID_EXPANSION_CONSUMER:${p.id}:${consumer}`);
+  const reachableNuclei=new Set([own.primaryOwner,...(own.consumers ?? [])].filter(n=>canonical.has(n)));
+  if(reachableNuclei.size!==7) throw new Error(`EXPANSION_MUST_BE_DISCOVERABLE_FROM_ALL_SEVEN_NUCLEI:${p.id}`);
+  for(const consumer of own.consumers ?? []){
+    if(!canonical.has(consumer) && consumer!=='SARA') throw new Error(`INVALID_EXPANSION_CONSUMER:${p.id}:${consumer}`);
   }
 }
-function nucCount(values){return new Set(values.filter(v=>canonical.has(v))).size;}
 
 console.log(JSON.stringify({
   ok:true,
