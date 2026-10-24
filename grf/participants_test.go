@@ -75,8 +75,8 @@ func TestBlockedParticipantNeverClaimsActiveExecution(t *testing.T) {
 	if out.EpistemicState != BLOCKED || ev.State != BLOCKED || prov.Stage != "PARTICIPANT_INGEST_BLOCKED" {
 		t.Fatalf("unexpected blocked participant state: out=%#v prov=%#v ev=%#v", out, prov, ev)
 	}
-	payload, ok := out.Payload.(map[string]any)
-	if !ok || payload["external_execution"] != false {
+	payload := out.Payload
+	if payload["external_execution"] != false {
 		t.Fatalf("blocked participant claimed external execution: %#v", out.Payload)
 	}
 	failures := p.FailuresAbsorbed()
