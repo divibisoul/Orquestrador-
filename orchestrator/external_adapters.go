@@ -17,12 +17,15 @@ import (
 )
 
 type ExternalAdapterSpec struct {
-	ID         string   `json:"id"`
-	Owner      string   `json:"owner"`
-	Kind       string   `json:"kind"`
-	Root       string   `json:"root"`
-	Operations []string `json:"operations"`
-	Package    *string  `json:"package"`
+	ID                string   `json:"id"`
+	Owner             string   `json:"owner"`
+	Kind              string   `json:"kind"`
+	Root              string   `json:"root"`
+	Operations        []string `json:"operations"`
+	Package           *string  `json:"package"`
+	State             string   `json:"state"`
+	IntegrationState  string   `json:"integration_state"`
+	RuntimeRequirement string  `json:"runtime_requirement"`
 }
 type ExternalAdapterManifest struct {
 	SchemaVersion         string `json:"schema_version"`
@@ -39,7 +42,8 @@ type ExternalAdapterManifest struct {
 		Path           string `json:"path"`
 		InterpreterEnv string `json:"interpreter_env"`
 	} `json:"runner"`
-	Providers []ExternalAdapterSpec `json:"providers"`
+	Providers          []ExternalAdapterSpec `json:"providers"`
+	ExpansionProviders []ExternalAdapterSpec `json:"expansion_providers"`
 }
 
 const (
@@ -48,13 +52,18 @@ const (
 )
 
 type ExternalCapabilityRevision struct {
-	ID       string `json:"id"`
-	Revision string `json:"revision"`
+	ID       string   `json:"id"`
+	Revision string   `json:"revision"`
+	Source   string   `json:"source"`
+	Targets  []string `json:"targets"`
+	Target   string   `json:"target"`
 }
 
 type ExternalCapabilityRegistry struct {
 	Repositories              []ExternalCapabilityRevision `json:"repositories"`
 	ComplementaryRepositories []ExternalCapabilityRevision `json:"complementary_repositories"`
+	ExpansionRepositories     []ExternalCapabilityRevision `json:"expansion_repositories"`
+	GRCEComplements           []ExternalCapabilityRevision `json:"grce_complements"`
 }
 
 type ExternalRuntimeAttestation struct {
@@ -64,10 +73,11 @@ type ExternalRuntimeAttestation struct {
 }
 
 type ExternalAdapterRegistry struct {
-	manifest     ExternalAdapterManifest
-	byID         map[string]ExternalAdapterSpec
-	revisions    map[string]string
-	manifestPath string
+	manifest           ExternalAdapterManifest
+	byID               map[string]ExternalAdapterSpec
+	expansionProviders []ExternalAdapterSpec
+	revisions          map[string]string
+	manifestPath       string
 }
 
 func NewExternalAdapterRegistry() (ExternalAdapterRegistry, error) {
@@ -108,14 +118,20 @@ func NewExternalAdapterRegistry() (ExternalAdapterRegistry, error) {
 	if err := json.Unmarshal(capRaw, &capabilityRegistry); err != nil {
 		return ExternalAdapterRegistry{}, fmt.Errorf("external capability registry JSON: %w", err)
 	}
-	allRevisions := append(append([]ExternalCapabilityRevision{}, capabilityRegistry.Repositories...), capabilityRegistry.ComplementaryRepositories...)
+	allRevisions := append([]ExternalCapabilityRevision{}, capabilityRegistry.Repositories...)
+	allRevisions = append(allRevisions, capabilityRegistry.ComplementaryRepositories...)
+	allRevisions = append(allRevisions, capabilityRegistry.ExpansionRepositories...)
+	allRevisions = append(allRevisions, capabilityRegistry.GRCEComplements...)
 	revisions := make(map[string]string, len(allRevisions))
 	for _, item := range allRevisions {
 		if item.ID == "" || !isGitRevision(item.Revision) {
 			return ExternalAdapterRegistry{}, fmt.Errorf("external capability revision invalid: %s", item.ID)
 		}
-		if _, exists := revisions[item.ID]; exists {
-			return ExternalAdapterRegistry{}, fmt.Errorf("duplicate external capability revision: %s", item.ID)
+		if prior, exists := revisions[item.ID]; exists {
+			if prior != item.Revision {
+				return ExternalAdapterRegistry{}, fmt.Errorf("conflicting external capability revision: %s", item.ID)
+			}
+			continue // hora-graph-core is deliberately reused by active and expansion ledgers.
 		}
 		revisions[item.ID] = item.Revision
 	}
@@ -124,7 +140,54 @@ func NewExternalAdapterRegistry() (ExternalAdapterRegistry, error) {
 			return ExternalAdapterRegistry{}, fmt.Errorf("external capability revision missing: %s", id)
 		}
 	}
-	return ExternalAdapterRegistry{manifest: m, byID: by, revisions: revisions, manifestPath: path}, nil
+
+	canonicalOwners := map[string]bool{"N01": true, "N02": true, "N03": true, "N04": true, "N05": true, "N06": true, "N07": true}
+	projected := make([]ExternalAdapterSpec, 0, len(m.ExpansionProviders))
+	seenProjected := make(map[string]struct{}, len(m.ExpansionProviders))
+	for _, p := range m.ExpansionProviders {
+		if p.ID == "" || p.Owner == "" || p.Root == "" || len(p.Operations) == 0 {
+			return ExternalAdapterRegistry{}, errors.New("external expansion provider incomplete")
+		}
+		if p.State != "PROJECTED" || p.IntegrationState == "" || p.RuntimeRequirement == "" {
+			return ExternalAdapterRegistry{}, fmt.Errorf("external expansion provider must remain explicitly projected: %s", p.ID)
+		}
+		if !canonicalOwners[p.Owner] {
+			return ExternalAdapterRegistry{}, fmt.Errorf("external expansion provider owner invalid: %s:%s", p.ID, p.Owner)
+		}
+		if _, exists := by[p.ID]; exists {
+			return ExternalAdapterRegistry{}, fmt.Errorf("projected expansion duplicates active provider: %s", p.ID)
+		}
+		if _, exists := seenProjected[p.ID]; exists {
+			return ExternalAdapterRegistry{}, fmt.Errorf("duplicate projected expansion provider: %s", p.ID)
+		}
+		seenProjected[p.ID] = struct{}{}
+		if _, ok := revisions[p.ID]; !ok {
+			return ExternalAdapterRegistry{}, fmt.Errorf("external expansion revision missing: %s", p.ID)
+		}
+		expectedRoot := filepath.Clean(filepath.Join("integrations", "external", p.ID))
+		if filepath.Clean(p.Root) != expectedRoot {
+			return ExternalAdapterRegistry{}, fmt.Errorf("external expansion root non-canonical: %s", p.ID)
+		}
+		targetDeclared := false
+		for _, source := range append(append([]ExternalCapabilityRevision{}, capabilityRegistry.ExpansionRepositories...), capabilityRegistry.GRCEComplements...) {
+			if source.ID != p.ID {
+				continue
+			}
+			for _, target := range source.Targets {
+				if target == p.Owner {
+					targetDeclared = true
+				}
+			}
+			if source.Target == p.Owner {
+				targetDeclared = true
+			}
+		}
+		if !targetDeclared {
+			return ExternalAdapterRegistry{}, fmt.Errorf("external expansion owner is not a declared target: %s:%s", p.ID, p.Owner)
+		}
+		projected = append(projected, p)
+	}
+	return ExternalAdapterRegistry{manifest: m, byID: by, expansionProviders: projected, revisions: revisions, manifestPath: path}, nil
 }
 type externalSourceObservation struct {
 	Present          bool
@@ -483,7 +546,34 @@ func RegisterExternalAdapterOperations(e *Engine, r ExternalAdapterRegistry) err
 				"sourcePresent": observation.Present, "executionEnabled": externalEnabled(p.ID),
 			})
 		}
-		raw, _ := json.Marshal(map[string]any{"state": "PASS", "control_plane": "N07", "provider_count": len(providers), "manifest": r.manifestPath, "providers": providers})
+		expansionProviders := make([]map[string]any, 0, len(r.expansionProviders))
+		for _, p := range r.expansionProviders {
+			root := p.Root
+			if !filepath.IsAbs(root) {
+				root = filepath.Join(repositoryRoot(), root)
+			}
+			observation := inspectExternalSource(filepath.Clean(root), r.revisions[p.ID])
+			expansionProviders = append(expansionProviders, map[string]any{
+				"id": p.ID, "owner": p.Owner, "kind": p.Kind, "root": root,
+				"revision": r.revisions[p.ID], "expectedRevision": observation.ExpectedRevision,
+				"observedRevision": observation.ObservedRevision, "revisionMatched": observation.RevisionMatched,
+				"sourceState": observation.State, "sourcePresent": observation.Present,
+				"operations": p.Operations, "state": p.State, "integrationState": p.IntegrationState,
+				"runtimeRequirement": p.RuntimeRequirement, "executionEnabled": false,
+			})
+		}
+		raw, _ := json.Marshal(map[string]any{
+			"state": "PASS",
+			"catalog_state": "DECLARED_WITH_PROJECTED_EXPANSIONS",
+			"runtime_evidence": "UNVERIFIED",
+			"control_plane": "N07",
+			"provider_count": len(providers),
+			"expansion_provider_count": len(expansionProviders),
+			"declared_external_repository_count": len(r.revisions),
+			"manifest": r.manifestPath,
+			"providers": providers,
+			"expansion_providers": expansionProviders,
+		})
 		return protocol.Result{TraceID: m.TraceID, CorrelationID: m.CorrelationID, Source: "N07.external-federation", Target: m.Source, Status: "ok", Metadata: map[string]string{"federation_json": string(raw)}}, nil
 	}); err != nil {
 		return err
