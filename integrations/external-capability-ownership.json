@@ -371,7 +371,10 @@
       ],
       "status": "adapter-planned",
       "mode": "complementary"
-    },
+    }
+  ],
+  "public_integration_rule": "All public sources are reachable through N07 canonical federation, with preferred affinity by function; no source becomes a SOUL authority.",
+  "expansion_capabilities": [
     {
       "id": "bijux-dag-runtime",
       "source": "bijux/bijux-core",
@@ -386,7 +389,7 @@
         "provenance"
       ],
       "status": "adapter-planned",
-      "mode": "complementary"
+      "mode": "expansion"
     },
     {
       "id": "ouro-loop",
@@ -402,7 +405,7 @@
         "self-remediation"
       ],
       "status": "adapter-planned",
-      "mode": "complementary"
+      "mode": "expansion"
     },
     {
       "id": "recuris",
@@ -418,7 +421,7 @@
         "memory-evolution"
       ],
       "status": "adapter-planned",
-      "mode": "complementary"
+      "mode": "expansion"
     },
     {
       "id": "fedml",
@@ -435,7 +438,7 @@
         "model-deployment"
       ],
       "status": "adapter-planned",
-      "mode": "complementary"
+      "mode": "expansion"
     },
     {
       "id": "hivemind",
@@ -451,7 +454,7 @@
         "fault-tolerant-aggregation"
       ],
       "status": "adapter-planned",
-      "mode": "complementary"
+      "mode": "expansion"
     },
     {
       "id": "temporal",
@@ -467,7 +470,7 @@
         "workflow-state"
       ],
       "status": "adapter-planned",
-      "mode": "complementary"
+      "mode": "expansion"
     },
     {
       "id": "cognitive-workspace",
@@ -484,7 +487,7 @@
         "cognitive-context"
       ],
       "status": "adapter-planned",
-      "mode": "complementary"
+      "mode": "expansion"
     },
     {
       "id": "ravana",
@@ -501,7 +504,7 @@
         "long-term-memory"
       ],
       "status": "adapter-planned",
-      "mode": "complementary"
+      "mode": "expansion"
     },
     {
       "id": "ray",
@@ -517,7 +520,7 @@
         "parallel-tasks"
       ],
       "status": "adapter-planned",
-      "mode": "complementary"
+      "mode": "expansion"
     },
     {
       "id": "nats-go",
@@ -539,8 +542,13 @@
         "request-reply"
       ],
       "status": "adapter-planned",
-      "mode": "complementary"
+      "mode": "expansion"
     }
   ],
-  "public_integration_rule": "All public sources are reachable through N07 canonical federation, with preferred affinity by function; no source becomes a SOUL authority."
+  "target_semantics": "primaryOwner is the canonical source/adapter authority; consumers are Mesh-reachable capabilities. Expanded sources are listed in expansion_capabilities and remain PROJECTED until an explicit native adapter and runtime proof exist.",
+  "counts": {
+    "primary_and_complementary": 22,
+    "projected_expansions": 10,
+    "total": 32
+  }
 }
