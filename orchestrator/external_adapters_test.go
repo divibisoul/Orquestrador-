@@ -165,6 +165,83 @@ func TestProjectedExpansionSourcesExposeMeshMetadataWithoutExecuteRoutes(t *test
 	}
 }
 
+func TestCanonicalFederationSourceMetadataContractCoversAllThirtyOneSources(t *testing.T) {
+	e, r := newExternalTestEngine(t)
+	ids := make([]string, 0, len(r.byID)+len(r.expansionProviders))
+	for id := range r.byID {
+		ids = append(ids, id)
+	}
+	for _, p := range r.expansionProviders {
+		ids = append(ids, p.ID)
+	}
+	if len(ids) != 31 || len(r.revisions) != 31 {
+		t.Fatalf("canonical external inventory mismatch: ids=%d revisions=%d", len(ids), len(r.revisions))
+	}
+
+	for _, id := range ids {
+		result, err := e.Execute(context.Background(), ExternalFederationSourceDescribeOperation, nil, map[string]string{"provider": id})
+		if err != nil {
+			t.Fatalf("canonical source describe failed for %s: %v", id, err)
+		}
+		raw := result.Metadata["external_result_json"]
+		var evidence struct {
+			State                  string   `json:"state"`
+			Provider               string   `json:"provider"`
+			Owner                  string   `json:"owner"`
+			ExpectedRevision       string   `json:"expectedRevision"`
+			ExecutionEnabled       bool     `json:"executionEnabled"`
+			ExecutionProven        bool     `json:"executionProven"`
+			RuntimeEvidence        string   `json:"runtimeEvidence"`
+			RegisteredOperations   []string `json:"registeredOperations"`
+			MeshMetadataOperations []string `json:"meshMetadataOperations"`
+			RuntimeRouteOperations []string `json:"runtimeRouteOperations"`
+		}
+		if err := json.Unmarshal([]byte(raw), &evidence); err != nil {
+			t.Fatalf("canonical source describe returned invalid JSON for %s: %v; raw=%s", id, err, raw)
+		}
+		if evidence.Provider != id || evidence.Owner == "" || evidence.ExpectedRevision == "" {
+			t.Fatalf("canonical source describe omitted identity/pin/owner for %s: %#v", id, evidence)
+		}
+		if evidence.ExecutionProven || evidence.RuntimeEvidence != "UNVERIFIED" {
+			t.Fatalf("metadata route claimed execution proof for %s: %#v", id, evidence)
+		}
+		if len(evidence.MeshMetadataOperations) < 2 {
+			t.Fatalf("canonical metadata operations missing for %s: %#v", id, evidence)
+		}
+		if evidence.State != "PROJECTED" && evidence.State != "UNMEASURABLE" && evidence.State != "BLOCKED" {
+			t.Fatalf("canonical source describe returned ambiguous state for %s: %#v", id, evidence)
+		}
+		if result.Status != "degraded" && result.Status != "error" {
+			t.Fatalf("metadata route must not imply execution success for %s: result=%#v evidence=%#v", id, result, evidence)
+		}
+		if evidence.State == "PROJECTED" && evidence.ExecutionEnabled {
+			t.Fatalf("projected source %s unexpectedly enabled execution", id)
+		}
+	}
+
+	for _, id := range []string{"ravana", "langgraph"} {
+		result, err := e.Execute(context.Background(), ExternalFederationSourceProbeOperation, nil, map[string]string{"provider": id})
+		if err != nil {
+			t.Fatalf("canonical source probe failed for %s: %v", id, err)
+		}
+		var evidence map[string]any
+		if err := json.Unmarshal([]byte(result.Metadata["external_result_json"]), &evidence); err != nil {
+			t.Fatalf("canonical source probe returned invalid JSON for %s: %v", id, err)
+		}
+		if evidence["provider"] != id || evidence["executionProven"] != false || evidence["runtimeEvidence"] != "UNVERIFIED" {
+			t.Fatalf("canonical source probe reported inconsistent evidence for %s: %#v", id, evidence)
+		}
+	}
+}
+
+func TestCanonicalFederationSourceMetadataRejectsUnknownSource(t *testing.T) {
+	e, _ := newExternalTestEngine(t)
+	_, err := e.Execute(context.Background(), ExternalFederationSourceDescribeOperation, nil, map[string]string{"provider": "not-registered"})
+	if err == nil || !strings.Contains(err.Error(), "EXTERNAL_PROVIDER_UNKNOWN:not-registered") {
+		t.Fatalf("unknown source was not rejected fail-closed: %v", err)
+	}
+}
+
 func TestExternalAdapterPrimarySixteenRemainIntact(t *testing.T) {
 	_, r := newExternalTestEngine(t)
 	primary := []string{
