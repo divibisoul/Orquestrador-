@@ -109,7 +109,8 @@ The N07 external-federation catalog reconciles 31 pinned public upstream reposit
 
 - 22 adapter descriptors are in the current provider map (16 primary and 6 complementary). Their presence in the catalog does not by itself prove runtime readiness; adapter execution is disabled by default and separately gated.
 - 9 additional sources are disclosed as `PROJECTED`: FedML, Hivemind, Temporal, Cognitive Workspace, RAVANA, Ray, Bijux DAG Runtime, Ouro Loop and Recurs.
-- Federation discovery exposes the projected records and their pinned revision/evidence requirements, but the runtime route table excludes them. A projected operation must fail closed rather than fall through to an unregistered runner.
+- Each projected source has metadata-only Mesh routes `external.<id>.describe@1.0.0` and `external.<id>.probe@1.0.0`. They expose source-presence and exact-pin evidence through N07; they do not run external code or grant a runtime execution route.
+- Federation discovery exposes the projected records and their pinned revision/evidence requirements, but the runtime route table excludes their native operations. A projected operation must fail closed rather than fall through to an unregistered runner.
 - Every canonical nucleus N01–N07 is represented as an authorized consumer of the projected-source catalog, either as the declared primary owner or as a consumer. SARA remains a transversal authority, not an additional nucleus.
 - Candidate repositories without a materialized/pinned submodule, and sources marked `BLOCKED`, are not counted as routeable Mesh peers.
 
