@@ -694,6 +694,14 @@ func (r ExternalAdapterRegistry) projectedExpansionObservation(p ExternalProject
 		"nativeRuntimeExecutionProven": false,
 		"evidenceRule": "pinned source/metadata discovery is not native runtime execution proof",
 	}
+	switch state {
+	case "REVISION_MISMATCH":
+		out["code"] = "PROJECTED_SOURCE_REVISION_MISMATCH"
+	case "MISSING_WORKTREE":
+		out["code"] = "PROJECTED_SOURCE_NOT_MATERIALIZED"
+	case "UNMEASURABLE":
+		out["code"] = "PROJECTED_SOURCE_PIN_UNMEASURABLE"
+	}
 	for key, value := range observation {
 		out[key] = value
 	}
