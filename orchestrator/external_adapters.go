@@ -500,9 +500,29 @@ func RegisterExternalAdapterOperations(e *Engine, r ExternalAdapterRegistry) err
 				root = filepath.Join(repositoryRoot(), root)
 			}
 			_, err := os.Stat(filepath.Clean(root))
-			providers = append(providers, map[string]any{"id": p.ID, "owner": p.Owner, "kind": p.Kind, "root": root, "revision": r.revisions[p.ID], "operations": p.Operations, "sourcePresent": err == nil, "executionEnabled": externalEnabled(p.ID)})
+			providers = append(providers, map[string]any{
+				"id": p.ID, "owner": p.Owner, "kind": p.Kind, "root": root,
+				"revision": r.revisions[p.ID], "operations": p.Operations,
+				"sourcePresent": err == nil, "executionEnabled": externalEnabled(p.ID),
+				"executionProven": false,
+			})
 		}
-		raw, _ := json.Marshal(map[string]any{"state": "PASS", "control_plane": "N07", "provider_count": len(providers), "manifest": r.manifestPath, "providers": providers})
+		expansions := make([]map[string]any, 0, len(r.expansionProviders))
+		for _, p := range r.expansionProviders {
+			expansions = append(expansions, r.projectedExpansionObservation(p, "describe"))
+		}
+		raw, _ := json.Marshal(map[string]any{
+			"state": "PASS",
+			"catalog_state": "DECLARED_WITH_PROJECTED_EXPANSIONS",
+			"runtime_evidence": "UNVERIFIED",
+			"control_plane": "N07",
+			"provider_count": len(providers),
+			"providers": providers,
+			"expansion_provider_count": len(expansions),
+			"expansion_providers": expansions,
+			"declared_external_repository_count": len(r.revisions),
+			"manifest": r.manifestPath,
+		})
 		return protocol.Result{TraceID: m.TraceID, CorrelationID: m.CorrelationID, Source: "N07.external-federation", Target: m.Source, Status: "ok", Metadata: map[string]string{"federation_json": string(raw)}}, nil
 	}); err != nil {
 		return err
@@ -572,8 +592,87 @@ func RegisterExternalAdapterOperations(e *Engine, r ExternalAdapterRegistry) err
 			return err
 		}
 	}
+
+	// Expansion candidates are intentionally metadata-only. Their former operation
+	// names remain in the manifest as provenance, but no execution route is registered.
+	for id, expansion := range r.expansionProviders {
+		provider := id
+		if containsString(expansion.MetadataOperations, "external."+provider+".describe@1.0.0") {
+			if err := e.Register("external."+provider+".describe@1.0.0", func(ctx context.Context, m protocol.Message) (protocol.Result, error) {
+				projected, ok := r.expansionProviders[provider]
+				if !ok {
+					return externalAdapterFailure(m, "EXTERNAL_PROJECTED_EXPANSION_NOT_REGISTERED")
+				}
+				return externalAdapterResult(m, r.projectedExpansionObservation(projected, "describe")), nil
+			}); err != nil {
+				return err
+			}
+		}
+		if containsString(expansion.MetadataOperations, "external."+provider+".probe@1.0.0") {
+			if err := e.Register("external."+provider+".probe@1.0.0", func(ctx context.Context, m protocol.Message) (protocol.Result, error) {
+				projected, ok := r.expansionProviders[provider]
+				if !ok {
+					return externalAdapterFailure(m, "EXTERNAL_PROJECTED_EXPANSION_NOT_REGISTERED")
+				}
+				return externalAdapterResult(m, r.projectedExpansionObservation(projected, "probe")), nil
+			}); err != nil {
+				return err
+			}
+		}
+	}
 	return nil
 }
+
+func (r ExternalAdapterRegistry) projectedExpansionObservation(p ExternalProjectedExpansion, operation string) map[string]any {
+	root := p.Root
+	if !filepath.IsAbs(root) {
+		root = filepath.Join(repositoryRoot(), root)
+	}
+	root = filepath.Clean(root)
+	sourcePresent := sourceWorktreeIsGit(root)
+	observedRevision := ""
+	if sourcePresent {
+		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+		cmd := exec.CommandContext(ctx, "git", "-C", root, "rev-parse", "HEAD")
+		if out, err := cmd.Output(); err == nil {
+			observedRevision = strings.TrimSpace(string(out))
+		}
+		cancel()
+	}
+	revisionMatched := sourcePresent && observedRevision != "" && observedRevision == p.Revision
+	sourceState := "MISSING_WORKTREE"
+	state := "PROJECTED"
+	if sourcePresent && revisionMatched {
+		sourceState = "PIN_MATCH"
+	} else if sourcePresent {
+		sourceState = "REVISION_MISMATCH"
+		state = "BLOCKED"
+	}
+	return map[string]any{
+		"state": state,
+		"provider": p.ID,
+		"operation": operation,
+		"owner": p.Owner,
+		"kind": p.Kind,
+		"root": root,
+		"revision": p.Revision,
+		"expectedRevision": p.Revision,
+		"observedRevision": observedRevision,
+		"sourceState": sourceState,
+		"sourcePresent": sourcePresent,
+		"revisionMatched": revisionMatched,
+		"targets": p.Targets,
+		"role": p.Role,
+		"integrationState": p.IntegrationState,
+		"legacyOperations": p.LegacyOperations,
+		"metadataOperations": p.MetadataOperations,
+		"runtimeRouteOperations": []string{},
+		"executionEnabled": false,
+		"executionProven": false,
+		"evidenceRule": "pinned source/metadata discovery is not native runtime execution proof",
+	}
+}
+
 func externalAdapterFailure(m protocol.Message, code string) (protocol.Result, error) {
 	err := errors.New(code)
 	return protocol.Result{TraceID: m.TraceID, CorrelationID: m.CorrelationID, Source: "N07.external-federation", Target: m.Source, Status: "error", Error: code}, err
