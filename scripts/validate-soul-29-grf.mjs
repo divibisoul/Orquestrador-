@@ -75,6 +75,22 @@ const expected=[
 ].sort();
 const missingParticipants=expected.filter(id=>!participants.includes(id));
 if(missingParticipants.length) throw new Error(`GRF_PARTICIPANTS_NOT_PRESERVED:${missingParticipants.join(',')}`);
+
+// Keep evidence state semantics intact: obsolete/unavailable historical sources
+// are PRESERVED; the ten added upstream integrations stay PROJECTED until live E2E.
+const stateById=new Map(contracts.contracts.map(c=>[c.id,c.state]));
+const preservedHistoricalIds=['autogenesis','cognifold','belel-protocol','opensinn-bus','functional-graph-agi'];
+for(const id of preservedHistoricalIds) {
+  if(stateById.get(id)!=='PRESERVED') throw new Error(`GRF_HISTORICAL_SOURCE_STATE_CHANGED:${id}:${stateById.get(id)}`);
+}
+const projectedSourceIds=[
+  'octos','hora-graph-core','mycelium','prime-agent','cuda-oxide',
+  'bijux-dag-runtime','ouro-loop','recuris','fedml','hivemind',
+  'temporal','cognitive-workspace','ravana','ray','nats-go'
+];
+for(const id of projectedSourceIds) {
+  if(stateById.get(id)!=='PROJECTED') throw new Error(`GRF_SOURCE_PREMATURELY_PROMOTED:${id}:${stateById.get(id)}`);
+}
 if(!binding.operations?.includes('nervo-vago.event@1.0.0') || !binding.operations?.includes('nervo-vago.describe@1.0.0')) {
   throw new Error('NERVOVAGO_OPERATIONS_MISSING');
 }
