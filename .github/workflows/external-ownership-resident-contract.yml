@@ -5,6 +5,12 @@ on: [push, pull_request, workflow_dispatch]
 permissions:
   contents: read
 
+# Keep only the newest validation per PR/branch. This workflow validates JSON
+# ownership contracts and does not need to clone 31 upstream repositories.
+concurrency:
+  group: external-ownership-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   validate:
     runs-on: ubuntu-latest
@@ -14,8 +20,6 @@ jobs:
         with:
           submodules: false
 
-      - name: Materialize SOUL top-level submodules without recursion
-        run: node scripts/materialize-top-level-submodules.mjs
       - uses: actions/setup-node@v4
         with:
           node-version: 22
