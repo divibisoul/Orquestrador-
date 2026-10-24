@@ -12,13 +12,13 @@ if (typeof expectedContract !== 'string' || !expectedContract) {
 
 for (const id of nuclei) {
   const row = rows.get(id);
-  if (!row) throw new Error(\`CROSSFRONT_NUCLEUS_MISSING:\${id}\`);
+  if (!row) throw new Error('CROSSFRONT_NUCLEUS_MISSING:' + id);
   if (row.source === 'not-found' || row.state !== 'OBSERVED') {
-    throw new Error(\`CROSSFRONT_EVIDENCE_NOT_OBSERVED:\${id}:\${row.state}:\${row.source}\`);
+    throw new Error('CROSSFRONT_EVIDENCE_NOT_OBSERVED:' + id + ':' + row.state + ':' + row.source);
   }
-  if (row.mesh !== true) throw new Error(\`CROSSFRONT_MESH_DISCOVERY_FAILED:\${id}\`);
+  if (row.mesh !== true) throw new Error('CROSSFRONT_MESH_DISCOVERY_FAILED:' + id);
   if (row.contract !== expectedContract) {
-    throw new Error(\`CROSSFRONT_CONTRACT_MISMATCH:\${id}:\${row.contract}:expected:\${expectedContract}\`);
+    throw new Error('CROSSFRONT_CONTRACT_MISMATCH:' + id + ':' + row.contract + ':expected:' + expectedContract);
   }
 }
 
