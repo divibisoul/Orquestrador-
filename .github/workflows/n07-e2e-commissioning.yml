@@ -54,16 +54,19 @@ jobs:
       - name: N01 to N07 real federation E2E when configured
         env:
           SOUL_MESH_HMAC_SECRET: ${{ secrets.SOUL_MESH_HMAC_SECRET }}
+          SOUL_MESH_N01_URL: ${{ secrets.SOUL_MESH_N01_URL }}
+          SOUL_MESH_N02_URL: ${{ secrets.SOUL_MESH_N02_URL }}
+          SOUL_MESH_N03_URL: ${{ secrets.SOUL_MESH_N03_URL }}
           SOUL_MESH_N04_URL: ${{ secrets.SOUL_MESH_N04_URL }}
           SOUL_MESH_N05_URL: ${{ secrets.SOUL_MESH_N05_URL }}
           SOUL_MESH_N06_URL: ${{ secrets.SOUL_MESH_N06_URL }}
         run: |
           set -euo pipefail
-          if [ -z "$SOUL_MESH_HMAC_SECRET" ] || [ -z "$SOUL_MESH_N04_URL" ] || [ -z "$SOUL_MESH_N05_URL" ] || [ -z "$SOUL_MESH_N06_URL" ]; then
+          if [ -z "$SOUL_MESH_HMAC_SECRET" ] || [ -z "$SOUL_MESH_N01_URL" ] || [ -z "$SOUL_MESH_N02_URL" ] || [ -z "$SOUL_MESH_N03_URL" ] || [ -z "$SOUL_MESH_N04_URL" ] || [ -z "$SOUL_MESH_N05_URL" ] || [ -z "$SOUL_MESH_N06_URL" ]; then
             echo 'REAL_MESH_E2E: BLOCKED_ENV — staging federation endpoints/secrets are not configured; local execution is not promoted to online proof.'
             exit 0
           fi
-          go test -tags integration ./mesh -run '^TestN07FederatesToRealN04N05N06NativeCapabilities$' -count=1 -v
+          go test -tags integration ./mesh -run '^TestN07FederatesToEveryOtherNucleusNativeCapabilities$' -count=1 -v
 
       - name: Build current N07 image for deterministic local smoke
         run: docker build -t soul-n07-commissioning:current .
