@@ -171,11 +171,6 @@ func (r ExternalAdapterRegistry) validateRegisteredPin(ctx context.Context, p Ex
 	if root != canonical {
 		return fmt.Errorf("EXTERNAL_PROVIDER_ROOT_NON_CANONICAL:%s", p.ID)
 	}
-	// Never resolve HEAD for an unmaterialized submodule path: Git can walk
-	// upward and report the N07 parent commit, disguising it as a provider SHA.
-	if !sourceWorktreeIsGit(root) {
-		return fmt.Errorf("EXTERNAL_SUBMODULE_NOT_MATERIALIZED:%s", p.ID)
-	}
 	rel, err := filepath.Rel(rootDir, root)
 	if err != nil || strings.HasPrefix(rel, ".."+string(os.PathSeparator)) || rel == ".." {
 		return fmt.Errorf("EXTERNAL_PROVIDER_ROOT_INVALID:%s", p.ID)
@@ -256,6 +251,11 @@ func (r ExternalAdapterRegistry) validateMaterializedPin(ctx context.Context, p 
 	canonical := filepath.Clean(filepath.Join(rootDir, "integrations", "external", p.ID))
 	if root != canonical {
 		return fmt.Errorf("EXTERNAL_PROVIDER_ROOT_NON_CANONICAL:%s", p.ID)
+	}
+	// Never resolve HEAD for an unmaterialized submodule path: Git can walk
+	// upward and report the N07 parent commit, disguising it as a provider SHA.
+	if !sourceWorktreeIsGit(root) {
+		return fmt.Errorf("EXTERNAL_SUBMODULE_NOT_MATERIALIZED:%s", p.ID)
 	}
 	rel, err := filepath.Rel(rootDir, root)
 	if err != nil || strings.HasPrefix(rel, ".."+string(os.PathSeparator)) || rel == ".." {
