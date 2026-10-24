@@ -351,7 +351,8 @@ func structuredMeshCapability(capability string) bool {
 	capability = strings.TrimSpace(capability)
 	return strings.HasPrefix(capability, "cooperation.") ||
 		strings.HasPrefix(capability, "mesh.supergpu.") ||
-		strings.HasPrefix(capability, "superagi.fabric.")
+		strings.HasPrefix(capability, "superagi.fabric.") ||
+		strings.HasPrefix(capability, "external.federation.")
 }
 
 func copyStructuredCapabilityMetadata(metadata map[string]string, capability string, payload map[string]any) error {
@@ -362,13 +363,23 @@ func copyStructuredCapabilityMetadata(metadata map[string]string, capability str
 	if capability == "" {
 		return errors.New("capability is required")
 	}
-	if capability != "cooperation.health@1.0.0" && payload == nil {
-		return errors.New("structured cooperative payload is required")
+	if capability != "cooperation.health@1.0.0" &&
+		capability != "external.federation.describe@1.0.0" &&
+		capability != "external.federation.describe" &&
+		payload == nil {
+		return errors.New("structured capability payload is required")
 	}
 	if payload == nil {
 		payload = map[string]any{}
 	}
 	switch capability {
+	case "external.federation.describe@1.0.0", "external.federation.describe":
+		return nil
+	case "external.federation.source.describe@1.0.0", "external.federation.source.describe",
+		"external.federation.source.probe@1.0.0", "external.federation.source.probe":
+		return copyExternalFederationMetadata(metadata, payload, false)
+	case "external.federation.execute@1.0.0", "external.federation.execute":
+		return copyExternalFederationMetadata(metadata, payload, true)
 	case "mesh.supergpu.execute@1.0.0", "mesh.supergpu.execute":
 		return copySuperGPUMetadata(metadata, payload, true)
 	case "mesh.supergpu.parallel@1.0.0", "mesh.supergpu.parallel":
@@ -410,6 +421,51 @@ func copyStructuredCapabilityMetadata(metadata map[string]string, capability str
 		metadata["cooperation_mode"] = "canonical-mesh"
 	default:
 		return errors.New("unsupported structured cooperation capability: " + capability)
+	}
+	return nil
+}
+
+func copyExternalFederationMetadata(metadata map[string]string, payload map[string]any, requiresOperation bool) error {
+	if metadata == nil {
+		return errors.New("external federation metadata is required")
+	}
+	if payload == nil {
+		return errors.New("external federation payload is required")
+	}
+	if nested, ok := payload["metadata"].(map[string]any); ok {
+		for key, value := range nested {
+			switch v := value.(type) {
+			case string:
+				metadata[key] = strings.TrimSpace(v)
+			case bool:
+				metadata[key] = strconv.FormatBool(v)
+			case float64:
+				metadata[key] = strconv.FormatFloat(v, 'f', -1, 64)
+			}
+		}
+	}
+	provider, ok := payload["provider"].(string)
+	if !ok || strings.TrimSpace(provider) == "" {
+		provider = strings.TrimSpace(metadata["provider"])
+	}
+	if requiresOperation && strings.TrimSpace(provider) == "" {
+		return errors.New("external federation provider is required")
+	}
+	if strings.TrimSpace(provider) != "" {
+		metadata["provider"] = strings.ToLower(strings.TrimSpace(provider))
+	}
+	if requiresOperation {
+		operation, ok := payload["external_operation"].(string)
+		if !ok || strings.TrimSpace(operation) == "" {
+			operation, _ = payload["operation"].(string)
+		}
+		if strings.TrimSpace(operation) == "" {
+			operation = strings.TrimSpace(metadata["external_operation"])
+		}
+		if strings.TrimSpace(operation) == "" {
+			return errors.New("external federation operation is required")
+		}
+		metadata["external_operation"] = strings.TrimSpace(operation)
 	}
 	return nil
 }
