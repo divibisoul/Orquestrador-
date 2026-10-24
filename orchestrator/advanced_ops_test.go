@@ -11,17 +11,53 @@ import (
 	"github.com/divibisoul/Orquestrador-/supergpu"
 )
 
-func TestSOULTopologyIsSevenNucleusAdjacentChain(t *testing.T) {
+func TestSOULTopologyExposesAllSixOtherNucleiBidirectionally(t *testing.T) {
 	top := SOULTopology()
 	nuclei, ok := top["nuclei"].([]string)
 	if !ok || len(nuclei) != 7 {
 		t.Fatalf("invalid nuclei topology: %#v", top["nuclei"])
 	}
 	if top["directional"] != 12 {
-		t.Fatalf("expected 12 directional channels, got %v", top["directional"])
+		t.Fatalf("expected 12 N07 direct directional channels, got %v", top["directional"])
+	}
+	if top["mesh_connectivity_policy"] != "all-nuclei-peer-to-peer; capability-owner-enforced" {
+		t.Fatalf("unexpected Mesh connectivity policy: %v", top["mesh_connectivity_policy"])
 	}
 	if top["fusion_policy"] != "adjacent-only-dynamic" {
-		t.Fatalf("unexpected fusion policy: %v", top["fusion_policy"])
+		t.Fatalf("preferred composition/fusion policy unexpectedly changed: %v", top["fusion_policy"])
+	}
+
+	channels, ok := top["channels"].([]PeerChannel)
+	if !ok || len(channels) != 12 {
+		t.Fatalf("expected twelve direct N07 Mesh channels, got %#v", top["channels"])
+	}
+	seen := make(map[string]bool, len(channels))
+	for _, channel := range channels {
+		if channel.Peer == protocol.N07 {
+			t.Fatal("self-routing must not be represented as a peer channel")
+		}
+		if channel.Direction != "IN" && channel.Direction != "OUT" {
+			t.Fatalf("invalid channel direction: %#v", channel)
+		}
+		seen[channel.Peer+"|"+channel.Direction] = true
+	}
+	for _, peer := range nuclei {
+		if peer == protocol.N07 {
+			continue
+		}
+		for _, direction := range []string{"IN", "OUT"} {
+			if !seen[peer+"|"+direction] {
+				t.Errorf("missing direct %s channel for %s", direction, peer)
+			}
+		}
+	}
+
+	metrics, ok := top["channel_metrics"].(map[string]any)
+	if !ok || metrics["all_nuclei_mesh_connected"] != true || metrics["mesh_direct_peer_count"] != 6 || metrics["mesh_direct_directional_channels"] != 12 {
+		t.Fatalf("incomplete all-nuclei Mesh metrics: %#v", top["channel_metrics"])
+	}
+	if metrics["total_logical_directed_routes"] != 42 {
+		t.Fatalf("expected 42 logical directed routes for seven nuclei, got %v", metrics["total_logical_directed_routes"])
 	}
 }
 
