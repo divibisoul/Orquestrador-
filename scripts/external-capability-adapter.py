@@ -23,14 +23,31 @@ def load():
 
 def root(v):
     provider=str(v.get("provider") or "").strip().lower()
+    mode=str(v.get("mode") or "probe").strip().lower()
+    operation=str(v.get("operation") or "").strip().lower()
     configured=REPO_ROOT/"integrations/external-adapters.json"
     try:
         adapters=json.loads(configured.read_text(encoding="utf-8"))
     except Exception as e:
         emit({"state":"BLOCKED","code":"EXTERNAL_ADAPTER_REGISTRY_UNREADABLE","detail":str(e)},2)
     entry=next((p for p in adapters.get("providers",[]) if p.get("id")==provider),None)
-    if not entry:
-        emit({"state":"BLOCKED","code":"EXTERNAL_PROVIDER_NOT_REGISTERED","provider":provider},2)
+    if entry is None:
+        projected=next((p for p in adapters.get("projected_expansions",[]) if p.get("id")==provider),None)
+        if projected is None:
+            emit({"state":"BLOCKED","code":"EXTERNAL_PROVIDER_NOT_REGISTERED","provider":provider},2)
+        # A projected expansion may run a source-verification command in CI,
+        # but that is not a native SOUL runtime route and cannot be invoked as
+        # probe/describe/execute through the capability adapter.
+        if mode != "verify" or operation != "source.verify":
+            emit({
+                "state":"BLOCKED",
+                "code":"EXTERNAL_EXPANSION_RUNTIME_ROUTE_DISABLED",
+                "provider":provider,
+                "mode":mode,
+                "operation":operation,
+                "execution_proven":False,
+            },2)
+        entry=projected
     expected=(REPO_ROOT/str(entry["root"])).resolve()
     requested=pathlib.Path(str(v.get("root") or entry["root"]))
     if not requested.is_absolute():
@@ -42,9 +59,9 @@ def root(v):
         emit({"state":"BLOCKED","code":"EXTERNAL_ROOT_ESCAPE","provider":provider,"root":str(p)},2)
     if p != expected:
         emit({"state":"BLOCKED","code":"EXTERNAL_ROOT_NOT_CANONICAL","provider":provider,"expected":str(expected),"requested":str(p)},2)
-    mode=str(v.get("mode") or "probe").strip().lower()
     # Probe/describe report registration and source presence independently.
-    # Only execute/verify operations require a materialized source directory.
+    # Source-verification mode requires a materialized source but does not
+    # establish that the N07 production execution route is enabled.
     if not p.exists() and mode not in {"probe","describe"}:
         emit({"state":"BLOCKED","code":"EXTERNAL_SOURCE_NOT_PRESENT","root":str(p)},2)
     return p
