@@ -8,7 +8,7 @@ permissions:
 # Keep only the newest validation per PR/branch. This workflow validates JSON
 # ownership contracts and does not need to clone 31 upstream repositories.
 concurrency:
-  group: external-ownership-${{ github.event.pull_request.number || github.ref }}
+  group: external-ownership-${{ github.event.pull_request.head.ref || github.ref_name }}
   cancel-in-progress: true
 
 jobs:
