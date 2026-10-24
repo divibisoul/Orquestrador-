@@ -64,7 +64,7 @@ permissions:
   actions: read
 
 concurrency:
-  group: n07-ci-${{ github.workflow }}-${{ github.ref }}
+  group: n07-ci-${{ github.workflow }}-${{ github.event.pull_request.head.ref || github.ref_name }}
   cancel-in-progress: true
 
 jobs:
