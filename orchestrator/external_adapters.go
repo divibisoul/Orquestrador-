@@ -206,10 +206,38 @@ func (r ExternalAdapterRegistry) validateRegisteredPin(ctx context.Context, p Ex
 }
 
 func sourceWorktreeIsGit(root string) bool {
+	// git -C <missing-submodule-path> can walk up to the parent N07 repository
+	// and return success. That proves only that a parent worktree exists, not
+	// that this provider path is a materialized Git worktree.
+	expected, err := filepath.Abs(root)
+	if err != nil {
+		return false
+	}
+	expected, err = filepath.EvalSymlinks(expected)
+	if err != nil {
+		return false
+	}
+
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 	cmd := exec.CommandContext(ctx, "git", "-C", root, "rev-parse", "--show-toplevel")
-	return cmd.Run() == nil
+	out, err := cmd.Output()
+	if err != nil {
+		return false
+	}
+	actual := strings.TrimSpace(string(out))
+	if actual == "" {
+		return false
+	}
+	actual, err = filepath.Abs(actual)
+	if err != nil {
+		return false
+	}
+	actual, err = filepath.EvalSymlinks(actual)
+	if err != nil {
+		return false
+	}
+	return actual == expected
 }
 
 func (r ExternalAdapterRegistry) validateMaterializedPin(ctx context.Context, p ExternalAdapterSpec) error {
