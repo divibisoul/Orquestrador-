@@ -7,6 +7,12 @@ on:
 permissions:
   contents: read
 
+# Keep one current PR run; the complete top-level pins are materialized by this
+# test workflow and by N07's end-to-end validation, not by every historical push.
+concurrency:
+  group: soul-25-upgrade-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   contract:
     runs-on: ubuntu-latest
