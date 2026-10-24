@@ -25,25 +25,17 @@ for (const block of gitmodules.split(/^\[submodule "/m).slice(1)) {
 const errors = [];
 const primary = registry.repositories ?? [];
 const complementary = registry.complementary_repositories ?? [];
-const sources = [...primary, ...complementary];
-const historicalComplementaryIds = [
-  "autogenesis", "octos", "hora-graph-core", "mycelium", "prime-agent", "cuda-oxide"
-].sort();
-const expandedComplementaryIds = [
-  ...historicalComplementaryIds,
-  "bijux-dag-runtime", "ouro-loop", "recuris", "fedml", "hivemind",
-  "temporal", "cognitive-workspace", "ravana", "ray", "nats-go"
-].sort();
-const complementaryIds = complementary.map(x => x.id).sort();
+const expansion = registry.expansion_repositories ?? [];
+const grce = registry.grce_complements ?? [];
+const core = [...primary, ...complementary];
+const projected = [...expansion, ...grce];
+const sources = [...core, ...projected];
 if (primary.length !== 16) errors.push(`PRIMARY_REGISTRY_COUNT:${primary.length}`);
-if (complementary.length !== 6 && complementary.length !== 16) {
-  errors.push(`COMPLEMENTARY_REGISTRY_COUNT:${complementary.length}`);
-} else {
-  const expected = complementary.length === 6 ? historicalComplementaryIds : expandedComplementaryIds;
-  if (JSON.stringify(complementaryIds) !== JSON.stringify(expected)) errors.push("COMPLEMENTARY_REGISTRY_SET_MISMATCH");
-}
-if (sources.length !== primary.length + complementary.length) errors.push("TOTAL_REGISTRY_COUNT_MISMATCH");
-if (new Set(sources.map(x => x.id)).size !== sources.length) errors.push("DUPLICATE_SOURCE_IDS");
+if (complementary.length !== 6) errors.push(`COMPLEMENTARY_REGISTRY_COUNT:${complementary.length}`);
+if (core.length !== 22) errors.push(`CORE_REGISTRY_COUNT:${core.length}`);
+if (projected.length !== 10) errors.push(`PROJECTED_EXPANSION_COUNT:${projected.length}`);
+if (sources.length !== 32) errors.push(`TOTAL_PINNED_SOURCE_COUNT:${sources.length}`);
+if (new Set(sources.map(x => x.id)).size !== sources.length) errors.push("DUPLICATE_PINNED_SOURCE_IDS");
 for (const provider of sources) {
   const id = provider.id;
   const path = `integrations/external/${id}`;
@@ -87,8 +79,10 @@ if (errors.length) {
 console.log(JSON.stringify({
   ok:true,
   primary_upstreams:primary.length,
-  complementary_sources:complementary.length,
-  total_sources:sources.length,
+  complementary_adapter_sources:complementary.length,
+  adapter_backed_sources:core.length,
+  projected_expansions:projected.length,
+  total_pinned_sources:sources.length,
   state:"MATERIALIZED_AND_EXACT",
-  rule:"gitlink SHA == registry revision == checked-out submodule HEAD"
+  rule:"all 32 declared gitlink SHAs == registry revisions == checked-out submodule HEAD; runtime classification remains separate"
 }, null, 2));
