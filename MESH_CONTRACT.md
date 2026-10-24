@@ -95,6 +95,14 @@ POST /mesh/register:
 - refreshes capability/agent state
 - never transfers ownership
 
+### 7.1 Complete peer reachability
+
+The canonical peer set is N01, N02, N03, N04, N05, N06 and N07. Every nucleus declares all six other nuclei as peers; each source-to-target route is represented in both directions at the network level. A nucleus must never route to itself.
+
+The `adjacentPeers` chain is a preferred composition/fusion order, not an access-control or reachability restriction. Cross-nucleus calls may route directly to any peer when that peer advertises the requested executable capability. Capability ownership remains with the destination nucleus; complete connectivity does not transfer execution authority.
+
+The N07 topology endpoint publishes direct inbound and outbound channels for N01–N06 and reports the full graph as 42 logical directed routes. This is a structural declaration only: live connectivity remains unverified until authenticated real-runtime probes succeed.
+
 ## 8. Error taxonomy
 
 | Code | Meaning | Retry |
