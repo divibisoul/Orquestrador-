@@ -199,6 +199,18 @@ def execute_letta(v,rt):
         emit({"state":"PASS","provider":"letta-code","operation":"memory.execute","result":p.stdout[:MAX_OUTPUT]})
     except Exception as e: emit({"state":"BLOCKED","code":"LETTA_PROCESS_FAILED","detail":str(e)},2)
 
+def is_projected_expansion(provider):
+    try:
+        manifest=json.loads((REPO_ROOT/"integrations/external-adapters.json").read_text(encoding="utf-8"))
+    except Exception as e:
+        emit({"state":"BLOCKED","code":"EXTERNAL_ADAPTER_REGISTRY_UNREADABLE","detail":str(e)},2)
+    return any(
+        str(item.get("id") or "").strip().lower()==str(provider or "").strip().lower()
+        and str(item.get("state") or "").strip().upper()=="PROJECTED"
+        for item in manifest.get("expansion_providers",[])
+    )
+
+
 def execute(v,rt):
     provider=str(v.get("provider") or "").strip().lower()
     op=str(v.get("operation") or "").strip().lower()
@@ -325,19 +337,32 @@ def execute(v,rt):
             out.parent.mkdir(parents=True,exist_ok=True); sf.write(str(out),np.concatenate(chunks),24000)
             emit({"state":"PASS","provider":provider,"operation":op,"output_path":str(out)})
         except Exception as e: emit({"state":"BLOCKED","code":"KOKORO_EXECUTION_BLOCKED","detail":str(e)},2)
-    if provider in {"fedml","hivemind","temporal","cognitive-workspace","ravana","ray"} and op not in {
-        "federated.describe","swarm.describe","workflow.describe","workspace.describe","agent.describe","cluster.describe"
-    }:
+    if is_projected_expansion(provider) and not op.endswith(".describe"):
         emit({
             "state":"BLOCKED",
             "code":"SOUL_V2_EXPANSION_RUNTIME_NOT_BOUND",
             "provider":provider,
             "operation":op,
             "reason":"native adapter and observed runtime are required before execution promotion",
-            "epistemic_state":"PROJECTED"
+            "epistemic_state":"PROJECTED",
+            "execution_enabled":False,
+            "execution_proven":False,
         },2)
 
     if op.endswith(".describe"):
+        if is_projected_expansion(provider):
+            emit({
+                "state":"PROJECTED" if rt.exists() else "BLOCKED",
+                "code":"SOUL_V2_EXPANSION_ADAPTER_REQUIRED",
+                "provider":provider,
+                "operation":op,
+                "source_present":rt.exists(),
+                "package_available":package_available(provider),
+                "execution_enabled":False,
+                "execution_proven":False,
+                "epistemic_state":"PROJECTED",
+                "reason":"pinned public source presence does not prove a native adapter or live runtime",
+            },2)
         emit({
             "state":"REAL" if rt.exists() else "BLOCKED",
             "provider":provider,
@@ -345,11 +370,36 @@ def execute(v,rt):
             "source_present":rt.exists(),
             "package_available":package_available(provider),
             "execution_proven":False,
+            "runtime_evidence":"UNVERIFIED",
         })
     emit({"state":"BLOCKED","code":"EXTERNAL_ADAPTER_OPERATION_NOT_AVAILABLE","provider":provider,"operation":op},2)
 
 v=load()
 rt=root(v)
 if str(v.get("mode") or "probe").strip().lower()=="probe":
-    emit({"state":"PASS","provider":str(v.get("provider") or ""),"mode":"probe","source_present":rt.exists(),"package_available":package_available(str(v.get("provider") or "")),"root":str(rt)})
+    provider=str(v.get("provider") or "")
+    if is_projected_expansion(provider):
+        emit({
+            "state":"PROJECTED" if rt.exists() else "BLOCKED",
+            "code":"SOUL_V2_EXPANSION_ADAPTER_REQUIRED",
+            "provider":provider,
+            "mode":"probe",
+            "source_present":rt.exists(),
+            "package_available":package_available(provider),
+            "execution_enabled":False,
+            "execution_proven":False,
+            "epistemic_state":"PROJECTED",
+            "root":str(rt),
+        },2)
+    emit({
+        "state":"PASS" if rt.exists() else "BLOCKED",
+        "provider":provider,
+        "mode":"probe",
+        "source_present":rt.exists(),
+        "package_available":package_available(provider),
+        "source_integrity_only":True,
+        "execution_proven":False,
+        "runtime_evidence":"UNVERIFIED",
+        "root":str(rt),
+    },0 if rt.exists() else 2)
 execute(v,rt)
