@@ -9,8 +9,9 @@ type PeerChannel struct {
 	Transports []string `json:"transports"`
 }
 
-// SOULTopology models the canonical seven-nucleus chain. Fusion is adjacent-only;
-// non-adjacent work is delegated through normal Mesh routing.
+// SOULTopology publishes direct, bidirectional Mesh channels from N07 to every
+// other canonical nucleus. The adjacency list remains the preferred composition
+// order; it must not be interpreted as a Mesh reachability restriction.
 func SOULTopology() map[string]any {
 	nuclei := []string{protocol.N01, protocol.N02, protocol.N03, protocol.N04, protocol.N05, protocol.N06, protocol.N07}
 	activeAI := []string{protocol.N01, protocol.N02, protocol.N03, protocol.N04, protocol.N05, protocol.N06}
@@ -19,12 +20,14 @@ func SOULTopology() map[string]any {
 	structuralN07AdditionalRoutes := totalLogicalDirectedRoutes - activeAIDirectedRoutes
 	ops := []string{"mesh.ping", "mesh.health", "mesh.discovery", "mesh.capabilities", "mesh.capability.resolve@1.0.0", "mesh.delegate", "mesh.fusion.describe", "mesh.fusion.execute", "mesh.supergpu.describe", "mesh.supergpu.execute", "mesh.supergpu.parallel", "supergpu.federated.execute", "prefrontal.admission", "prefrontal.orbital.evaluate@1.0.0", "transcendental.estimate@1.0.0", "neural.forward", "neural.learn", "jev.systemone@1.0.0", "cooperation.handshake@1.0.0", "cooperation.exchange@1.0.0", "cooperation.health@1.0.0", "cognitive.planning.sources@1.0.0", "superpowers.agent.describe@1.0.0", "superpowers.agent.route@1.0.0", "soul.integration.engineers.describe@1.0.0", "soul.integration.engineer.prepare@1.0.0", "soul.capability.upgrade.describe@1.0.0", "soul.capability.upgrade.resolve@1.0.0", "soul.capability.augment.describe@1.0.0", "soul.capability.augment.resolve@1.0.0", "grf.describe@2.0.0", "grf.participant.describe@2.0.0", "grce.describe@2.0.0", "grce.bindings.describe@2.0.0", "grce.cycle.execute@2.0.0", "grf.participant.ingest@2.0.0", "grce.sara.authoritative.execute@2.0.0"}
 	transports := []string{"IN_PROCESS", "LOOPBACK_HTTP", "HTTP", "REALTIME", "EVENT"}
-	channels := make([]PeerChannel, 0, 12)
-	for i := 0; i < len(nuclei)-1; i++ {
-		left, right := nuclei[i], nuclei[i+1]
+	channels := make([]PeerChannel, 0, (len(nuclei)-1)*2)
+	for _, peer := range nuclei {
+		if peer == protocol.N07 {
+			continue // A nucleus never routes to itself.
+		}
 		channels = append(channels,
-			PeerChannel{Peer: right, Direction: "OUT", Operations: append([]string(nil), ops...), Transports: append([]string(nil), transports...)},
-			PeerChannel{Peer: left, Direction: "IN", Operations: append([]string(nil), ops...), Transports: append([]string(nil), transports...)},
+			PeerChannel{Peer: peer, Direction: "OUT", Operations: append([]string(nil), ops...), Transports: append([]string(nil), transports...)},
+			PeerChannel{Peer: peer, Direction: "IN", Operations: append([]string(nil), ops...), Transports: append([]string(nil), transports...)},
 		)
 	}
 	return map[string]any{
@@ -32,6 +35,8 @@ func SOULTopology() map[string]any {
 		"nuclei":         nuclei,
 		"adjacency":      [][]string{{protocol.N01, protocol.N02}, {protocol.N02, protocol.N03}, {protocol.N03, protocol.N04}, {protocol.N04, protocol.N05}, {protocol.N05, protocol.N06}, {protocol.N06, protocol.N07}},
 		"fusion_policy":  "adjacent-only-dynamic",
+		"mesh_connectivity_policy": "all-nuclei-peer-to-peer; capability-owner-enforced",
+		"composition_policy": "adjacent-first-dynamic; cross-nucleus Mesh routing remains available",
 		"in_peer_count":  6,
 		"out_peer_count": 6,
 		"channels":       channels,
@@ -48,8 +53,11 @@ func SOULTopology() map[string]any {
 			"total_identity_nuclei": len(nuclei),
 			"total_logical_directed_routes": totalLogicalDirectedRoutes,
 			"total_endpoint_surfaces": totalLogicalDirectedRoutes * 2,
+			"all_nuclei_mesh_connected": true,
+			"mesh_direct_peer_count": len(nuclei) - 1,
+			"mesh_direct_directional_channels": len(channels),
 			"adjacent_fusion_edges": len(nuclei) - 1,
-			"adjacent_fusion_directional_channels": len(channels),
+			"adjacent_fusion_directional_channels": 2 * (len(nuclei) - 1),
 			"topology_state": "LOGICAL_UNVERIFIED",
 		},
 		"transports":     transports,
