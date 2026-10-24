@@ -5,6 +5,19 @@ concurrency:
   cancel-in-progress: true
 
 on:
+  pull_request:
+    paths:
+      - ".github/workflows/crossfront-state-verification.yml"
+      - "scripts/generate-crossfront-state.mjs"
+      - "scripts/assert-crossfront-state.mjs"
+      - "soul-nuclei.json"
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/crossfront-state-verification.yml"
+      - "scripts/generate-crossfront-state.mjs"
+      - "scripts/assert-crossfront-state.mjs"
+      - "soul-nuclei.json"
   workflow_dispatch:
 
 permissions:
@@ -56,5 +69,5 @@ jobs:
         run: node scripts/generate-crossfront-state.mjs
       - name: Inspect generated evidence
         run: cat SOUL-CROSSFRONT-EVIDENCE.json
-      - name: Assert N05/N07 discovery
+      - name: Assert every canonical nucleus and contract
         run: node scripts/assert-crossfront-state.mjs

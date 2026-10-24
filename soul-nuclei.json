@@ -112,7 +112,8 @@
       "sourceRef": "7a56c4d07d31e3dacfb0fa8ef3114ab0c253a49c",
       "status": "main-live-composition-contract-reconciled",
       "contractEvidencePaths": [
-        "src/mesh/SoulMeshProtocol.ts"
+        "src/mesh/SoulMeshProtocol.ts",
+        "lib/soul-mesh/SoulMeshProtocol.ts"
       ]
     },
     "N04": {
