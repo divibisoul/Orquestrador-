@@ -19,6 +19,7 @@ function contractOf(text) {
   // and nested legacy payloads may carry an unrelated contractVersion.
   const canonicalPatterns = [
     /\bSOUL_MESH_CONTRACT_VERSION\s*=\s*["'\x60]((?:1)\.\d+\.\d+)["'\x60]/,
+    /\bSoulMeshContractVersion\s*=\s*["'\x60]((?:1)\.\d+\.\d+)["'\x60]/,
     /\bCONTRACT_VERSION\s*=\s*["'\x60]((?:1)\.\d+\.\d+)["'\x60]/,
     /\bContractVersion\s*[:=]\s*["'\x60]((?:1)\.\d+\.\d+)["'\x60]/,
   ];
