@@ -55,9 +55,9 @@ func advertisedCapability(description map[string]any, capability string) bool {
 	return false
 }
 
-func TestN07FederatesToRealN04N05N06NativeCapabilities(t *testing.T) {
+func TestN07FederatesToEveryOtherNucleusNativeCapabilities(t *testing.T) {
 	requiredEnv(t, "SOUL_MESH_HMAC_SECRET")
-	for _, nucleus := range []string{"N04", "N05", "N06"} {
+	for _, nucleus := range []string{"N01", "N02", "N03", "N04", "N05", "N06"} {
 		requiredEnv(t, "SOUL_MESH_"+nucleus+"_URL")
 	}
 
@@ -73,14 +73,47 @@ func TestN07FederatesToRealN04N05N06NativeCapabilities(t *testing.T) {
 		validate   func(t *testing.T, payload map[string]any)
 	}{
 		{
+			nucleus:    "N01",
+			capability: "mesh.ping",
+			payload:    map[string]any{"probe": "all-nuclei-mesh", "requestedBy": "N07"},
+			validate: func(t *testing.T, payload map[string]any) {
+				t.Helper()
+				if payload["ok"] != true || payload["nucleus"] != "N01" {
+					t.Fatalf("N01 native Mesh ping failed: %#v", payload)
+				}
+			},
+		},
+		{
+			nucleus:    "N02",
+			capability: "mesh.peer.ping",
+			payload:    map[string]any{"probe": "all-nuclei-mesh", "requestedBy": "N07"},
+			validate: func(t *testing.T, payload map[string]any) {
+				t.Helper()
+				if payload["ok"] != true || payload["peer"] != "N01" {
+					t.Fatalf("N02 native outbound Mesh peer probe did not confirm N01: %#v", payload)
+				}
+			},
+		},
+		{
+			nucleus:    "N03",
+			capability: "mesh.ping",
+			payload:    map[string]any{"probe": "all-nuclei-mesh", "requestedBy": "N07"},
+			validate: func(t *testing.T, payload map[string]any) {
+				t.Helper()
+				if payload["ok"] != true || payload["nucleus"] != "N03" {
+					t.Fatalf("N03 native Mesh ping failed: %#v", payload)
+				}
+			},
+		},
+		{
 			nucleus:    "N04",
 			capability: "core.health",
-			payload:    map[string]any{"probe": "phase1", "requestedBy": "N07"},
+			payload:    map[string]any{"probe": "all-nuclei-mesh", "requestedBy": "N07"},
 		},
 		{
 			nucleus:    "N05",
 			capability: "core.health",
-			payload:    map[string]any{"probe": "phase1", "requestedBy": "N07"},
+			payload:    map[string]any{"probe": "all-nuclei-mesh", "requestedBy": "N07"},
 		},
 		{
 			nucleus:    "N06",
