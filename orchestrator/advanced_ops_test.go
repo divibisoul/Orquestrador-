@@ -53,7 +53,7 @@ func TestSOULTopologyExposesAllSixOtherNucleiBidirectionally(t *testing.T) {
 	}
 
 	metrics, ok := top["channel_metrics"].(map[string]any)
-	if !ok || metrics["all_nuclei_mesh_connected"] != true || metrics["mesh_direct_peer_count"] != 6 || metrics["mesh_direct_directional_channels"] != 12 {
+	if !ok || metrics["all_nuclei_mesh_routes_declared"] != true || metrics["mesh_direct_peer_count"] != 6 || metrics["mesh_direct_directional_channels"] != 12 {
 		t.Fatalf("incomplete all-nuclei Mesh metrics: %#v", top["channel_metrics"])
 	}
 	if metrics["total_logical_directed_routes"] != 42 {
