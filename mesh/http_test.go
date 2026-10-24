@@ -268,7 +268,9 @@ func TestCanonicalExternalFederationSourceCallWorksOverMesh(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	handler := NewHTTPGateway(engine)
+	// This test targets payload compatibility and cross-capability dispatch; auth
+	// policy is covered independently by the gateway HMAC tests above.
+	handler := &HTTPGateway{Engine: engine, AllowUnauthenticatedLocal: true}
 	for _, capability := range []string{
 		"external.federation.source.describe@1.0.0",
 		"external.federation.source.probe@1.0.0",
