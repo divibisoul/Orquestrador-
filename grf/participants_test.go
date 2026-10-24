@@ -6,7 +6,7 @@ import (
 	"testing"
 )
 
-func TestParticipantRegistryContainsTenRequestedContracts(t *testing.T) {
+func TestParticipantRegistryContainsRequestedPublicContracts(t *testing.T) {
 	r, err := ParticipantRegistry()
 	if err != nil {
 		t.Fatal(err)
