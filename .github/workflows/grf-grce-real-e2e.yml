@@ -114,18 +114,29 @@ jobs:
               registry = json.load(f)
           with open('integrations/external-adapters.json', encoding='utf-8') as f:
               adapters = json.load(f)
-          expected_ids = {
-              item['id']
-              for item in registry.get('repositories', []) + registry.get('complementary_repositories', [])
-          }
-          adapter_ids = {item['id'] for item in adapters.get('providers', [])}
+          core_sources = registry.get('repositories', []) + registry.get('complementary_repositories', [])
+          projected_sources = registry.get('expansion_repositories', []) + registry.get('grce_complements', [])
+          core_expected = {item['id'] for item in core_sources}
+          projected_expected = {item['id'] for item in projected_sources}
+          adapters_core = {item['id'] for item in adapters.get('providers', [])}
+          adapters_projected = {item['id'] for item in adapters.get('projected_expansions', [])}
           outer = json.load(open('/tmp/federation.json', encoding='utf-8'))
           raw = json.loads(next(v for k, v in outer['metadata'].items() if k.endswith('json')))
-          runtime_ids = {item['id'] for item in raw.get('providers', [])}
-          assert expected_ids == adapter_ids, f'registry/adapter ID mismatch: expected={len(expected_ids)} adapters={len(adapter_ids)}'
-          assert raw['provider_count'] == len(expected_ids), f"runtime count mismatch: expected={len(expected_ids)} actual={raw['provider_count']}"
-          assert runtime_ids == expected_ids, f"runtime registry ID mismatch: missing={sorted(expected_ids-runtime_ids)} extra={sorted(runtime_ids-expected_ids)}"
-          print(f"{len(expected_ids)}-source external federation registry: PASS")
+          runtime_core = {item['id'] for item in raw.get('providers', [])}
+          runtime_projected = {item['id'] for item in raw.get('expansion_providers', [])}
+          assert len(core_expected) == 22 and len(projected_expected) == 10
+          assert len(core_expected | projected_expected) == 32
+          assert adapters_core == core_expected, f'core adapter mismatch: missing={sorted(core_expected-adapters_core)} extra={sorted(adapters_core-core_expected)}'
+          assert runtime_core == core_expected, f'runtime core mismatch: missing={sorted(core_expected-runtime_core)} extra={sorted(runtime_core-core_expected)}'
+          assert raw['provider_count'] == 22, f"adapter-backed count must stay 22, got {raw['provider_count']}"
+          assert adapters_projected == projected_expected, f'projected registry mismatch: missing={sorted(projected_expected-adapters_projected)} extra={sorted(adapters_projected-projected_expected)}'
+          assert runtime_projected == projected_expected, f'projected runtime catalog mismatch: missing={sorted(projected_expected-runtime_projected)} extra={sorted(runtime_projected-projected_expected)}'
+          assert raw['expansion_provider_count'] == 10
+          for item in raw['expansion_providers']:
+              assert item['state'] in ('PROJECTED', 'BLOCKED'), item
+              assert item['executionEnabled'] is False and item['executionProven'] is False, item
+              assert item['runtimeRouteOperations'] == [], item
+          print('External federation: 22 adapter-backed + 10 metadata-only PROJECTED expansions = 32 unique pinned sources')
           PY
 
       - name: Execute full GRCE -> C1-C7-C1 with real SARA authority
