@@ -649,6 +649,8 @@ func inspectExternalAdapterSource(root, expectedRevision string) map[string]any 
 	sourceState := "MISSING_WORKTREE"
 	if sourcePresent && revisionMatched {
 		sourceState = "PIN_MATCH"
+	} else if sourcePresent && observedRevision == "" {
+		sourceState = "UNMEASURABLE"
 	} else if sourcePresent {
 		sourceState = "REVISION_MISMATCH"
 	}
@@ -669,9 +671,6 @@ func (r ExternalAdapterRegistry) projectedExpansionObservation(p ExternalProject
 	root = filepath.Clean(root)
 	observation := inspectExternalAdapterSource(root, p.Revision)
 	state, _ := observation["sourceState"].(string)
-	if state != "PIN_MATCH" && state != "MISSING_WORKTREE" {
-		state = "REVISION_MISMATCH"
-	}
 	projectedState := "PROJECTED"
 	if state == "REVISION_MISMATCH" {
 		projectedState = "BLOCKED"
