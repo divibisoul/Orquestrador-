@@ -721,8 +721,12 @@ func externalFederationSourceMetadata(r ExternalAdapterRegistry, providerID, ope
 		state = "UNMEASURABLE"
 	}
 	runtimeRoutes := []string{}
-	if !projected && externalEnabled(providerID) {
-		runtimeRoutes = append(runtimeRoutes, spec.Operations...)
+	executionEnabled := !projected && externalEnabled(providerID)
+	if executionEnabled {
+		runtimeRoutes = append(runtimeRoutes,
+			ExternalFederationExecuteOperation,
+			"external."+providerID+".execute@1.0.0",
+		)
 	}
 	operations := []string{
 		ExternalFederationSourceDescribeOperation,
@@ -750,7 +754,7 @@ func externalFederationSourceMetadata(r ExternalAdapterRegistry, providerID, ope
 		"registeredOperations": spec.Operations,
 		"meshMetadataOperations": operations,
 		"runtimeRouteOperations": runtimeRoutes,
-		"executionEnabled": !projected && externalEnabled(providerID),
+		"executionEnabled": executionEnabled,
 		"executionProven": false,
 		"runtimeEvidence": "UNVERIFIED",
 		"requiredEvidence": []string{
