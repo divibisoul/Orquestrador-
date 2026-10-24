@@ -56,6 +56,11 @@ for (const id of IDS) {
   const peers=Array.isArray(n.peers)?n.peers:[];
   const invalid=peers.filter(p=>!PEERS.has(p)||p===id);
   if (invalid.length) add(report.topologyConflicts,{nucleus:id,type:'invalid-peer-set',invalid});
+  const expectedPeers=IDS.filter(peer=>peer!==id).sort();
+  const actualPeers=[...peers].sort();
+  if (JSON.stringify(actualPeers)!==JSON.stringify(expectedPeers)) {
+    add(report.topologyConflicts,{nucleus:id,type:'complete-peer-set-mismatch',expected:expectedPeers,actual:actualPeers});
+  }
   const expected=EXPECTED_ADJACENCY[id] ?? [];
   const actual=Array.isArray(n.adjacentPeers)?[...n.adjacentPeers].sort():[];
   if (JSON.stringify(actual)!==JSON.stringify([...expected].sort())) add(report.topologyConflicts,{nucleus:id,type:'adjacency-mismatch',expected,actual});
