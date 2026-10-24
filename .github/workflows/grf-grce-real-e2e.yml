@@ -132,7 +132,10 @@ jobs:
         run: |
           python - <<'PY'
           import json
-          text = ("preservar autonomia, rastreabilidade e estado historico. " * 220)
+          # Trigger a measurable ARA finding while proving the tagged source survives
+          # the C1-C7-C1 cycle unchanged and remains traceable.
+          text = ("preservar a identidade protegida 🔒IDENTITY ao acrescentar evidência; "
+                  "manter autonomia, transparência, responsabilidade e proveniência.")
           body = {
               "operation": "grce.cycle.execute@2.0.0",
               "correlationId": "grce-full-e2e-001",
