@@ -16,10 +16,13 @@ if (paths.length === 0) {
   process.exit(0);
 }
 
-for (const path of paths) {
-  console.log("MATERIALIZE_TOP_LEVEL:", path);
-  run(["submodule", "update", "--init", "--", path]);
-}
+// Fetch independent upstreams concurrently, but keep the fan-out bounded to
+// avoid exhausting GitHub/API limits. Only the explicitly registered top-level
+// paths are materialized; upstream-internal submodules remain untouched.
+console.log(`MATERIALIZE_TOP_LEVEL_COUNT: ${paths.length}`);
+console.log("MATERIALIZE_TOP_LEVEL_JOBS: 4");
+for (const path of paths) console.log("MATERIALIZE_TOP_LEVEL:", path);
+run(["submodule", "update", "--init", "--jobs=4", "--", ...paths]);
 
 const autogenesis = "integrations/external/autogenesis";
 try {
