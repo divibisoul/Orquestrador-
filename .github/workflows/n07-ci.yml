@@ -17,9 +17,11 @@ on:
       - 'scripts/crewai_runner.py'
       - 'scripts/metagpt_runner.py'
       - 'scripts/validate-soul-external-submodules.mjs'
+      - 'scripts/validate-external-adapters.mjs'
       - 'scripts/materialize-top-level-submodules.mjs'
       - 'integrations/external-adapters.json'
       - 'integrations/external-capabilities.json'
+      - 'integrations/external-capability-ownership.json'
       - 'integrations/external/**'
       - 'config/soul-external-recovery-manifest.json'
       - '.github/workflows/n07-ci.yml'
@@ -172,6 +174,12 @@ jobs:
       - name: Materialize top-level SOUL submodules without unsafe recursion
         run: node scripts/materialize-top-level-submodules.mjs
 
+      - name: Validate the external 31-source fan-out contracts
+        run: |
+          set -euo pipefail
+          node scripts/validate-external-adapters.mjs
+          node scripts/validate-soul-external-submodules.mjs
+
       - name: Assert declarative SOUL source
         run: |
           set -euo pipefail
@@ -265,7 +273,7 @@ jobs:
             sleep 1
           done
           curl -fsS             -H 'Authorization: Bearer ci'             -H 'Content-Type: application/json'             -X POST http://127.0.0.1:18082/execute             -d '{"operation":"external.federation.describe@1.0.0","metadata":{}}'             | tee /tmp/external-federation.json
-          jq -e '.metadata.federation_json | fromjson | .provider_count == 22' /tmp/external-federation.json >/dev/null
+          jq -e '.metadata.federation_json | fromjson | .provider_count == 22 and .expansion_provider_count == 9 and .declared_external_repository_count == 31 and .runtime_evidence == "UNVERIFIED" and (.expansion_providers | length) == 9 and all(.expansion_providers[]; .state == "PROJECTED" and .executionEnabled == false)' /tmp/external-federation.json >/dev/null
           curl -fsS             -H 'Authorization: Bearer ci'             -H 'Content-Type: application/json'             -X POST http://127.0.0.1:18082/execute             -d '{"operation":"external.langgraph.probe@1.0.0","metadata":{}}'             | tee /tmp/langgraph-probe.json
           jq -e '.metadata.external_result_json | fromjson | .state == "PASS"' /tmp/langgraph-probe.json >/dev/null
           jq -e '.metadata.external_result_json | fromjson | .source_present == true' /tmp/langgraph-probe.json >/dev/null
