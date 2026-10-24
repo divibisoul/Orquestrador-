@@ -32,7 +32,25 @@ func TestSOULTopologyExposesAllSixOtherNucleiBidirectionally(t *testing.T) {
 		t.Fatalf("expected twelve direct N07 Mesh channels, got %#v", top["channels"])
 	}
 	seen := make(map[string]bool, len(channels))
+	canonicalExternalMeshOperations := []string{
+		"external.federation.describe@1.0.0",
+		"external.federation.execute@1.0.0",
+		"external.federation.source.describe@1.0.0",
+		"external.federation.source.probe@1.0.0",
+	}
 	for _, channel := range channels {
+		for _, operation := range canonicalExternalMeshOperations {
+			found := false
+			for _, advertised := range channel.Operations {
+				if advertised == operation {
+					found = true
+					break
+				}
+			}
+			if !found {
+				t.Errorf("Mesh channel to %s (%s) does not advertise canonical external operation %q", channel.Peer, channel.Direction, operation)
+			}
+		}
 		if channel.Peer == protocol.N07 {
 			t.Fatal("self-routing must not be represented as a peer channel")
 		}
