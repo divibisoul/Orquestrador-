@@ -8,7 +8,10 @@
     "pin_external_revisions": true,
     "runtime_activation_requires_explicit_adapter": true,
     "public_sources_are_executable_inputs": true,
-    "native_affinity_required": true
+    "native_affinity_required": true,
+    "runtime_execution_requires_registered_adapter": true,
+    "projected_expansions_are_metadata_only": true,
+    "metadata_discovery_is_not_execution_proof": true
   },
   "repositories": [
     {
