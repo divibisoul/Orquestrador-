@@ -205,6 +205,87 @@ func TestHTTPGatewayHonorsContextCancellation(t *testing.T) {
 	}
 }
 
+func TestCopyStructuredExternalFederationMetadata(t *testing.T) {
+	metadata := map[string]string{}
+	if err := copyStructuredCapabilityMetadata(metadata, "external.federation.source.describe@1.0.0", map[string]any{"provider": " RAVANA "}); err != nil {
+		t.Fatal(err)
+	}
+	if metadata["provider"] != "ravana" {
+		t.Fatalf("provider payload was not normalized: %#v", metadata)
+	}
+
+	nested := map[string]string{}
+	if err := copyStructuredCapabilityMetadata(nested, "external.federation.source.probe@1.0.0", map[string]any{
+		"metadata": map[string]any{"provider": "LangGraph"},
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if nested["provider"] != "langgraph" {
+		t.Fatalf("nested provider metadata was not normalized: %#v", nested)
+	}
+
+	execute := map[string]string{}
+	if err := copyStructuredCapabilityMetadata(execute, "external.federation.execute@1.0.0", map[string]any{
+		"provider": "langgraph", "external_operation": "workflow.invoke",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if execute["provider"] != "langgraph" || execute["external_operation"] != "workflow.invoke" {
+		t.Fatalf("external execution metadata was not normalized: %#v", execute)
+	}
+	if err := copyStructuredCapabilityMetadata(map[string]string{}, "external.federation.source.describe@1.0.0", map[string]any{}); err == nil {
+		t.Fatal("missing provider must fail closed")
+	}
+}
+
+func TestCanonicalExternalFederationSourceCallWorksOverMesh(t *testing.T) {
+	n, err := neural.New(4, .05)
+	if err != nil {
+		t.Fatal(err)
+	}
+	c, err := prefrontal.New(.10, 8)
+	if err != nil {
+		t.Fatal(err)
+	}
+	g := supergpuCompat.New(nil)
+	g.Discover()
+	engine, err := orchestrator.New(n, c, g)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, operation := range []string{
+		"external.federation.source.describe@1.0.0",
+		"external.federation.source.probe@1.0.0",
+	} {
+		op := operation
+		if err := engine.Register(op, func(ctx context.Context, m protocol.Message) (protocol.Result, error) {
+			provider := m.Metadata["provider"]
+			if provider != "ravana" {
+				return protocol.Result{TraceID: m.TraceID, CorrelationID: m.CorrelationID, Source: "N07", Target: m.Source, Status: "error", Error: "PROVIDER_NOT_NORMALIZED"}, nil
+			}
+			return protocol.Result{TraceID: m.TraceID, CorrelationID: m.CorrelationID, Source: "N07", Target: m.Source, Status: "ok", Metadata: map[string]string{"provider": provider}}, nil
+		}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	handler := NewHTTPGateway(engine)
+	for _, capability := range []string{
+		"external.federation.source.describe@1.0.0",
+		"external.federation.source.probe@1.0.0",
+	} {
+		wire := canonicalRequest("request", capability, "trace-"+capability, nil)
+		wire["payload"].(map[string]any)["provider"] = "RAVANA" // same payload shape used by PeerClient
+		got, code := postWire(t, handler, wire)
+		if code != http.StatusOK {
+			t.Fatalf("Mesh source route %s failed: code=%d payload=%#v", capability, code, got.Payload)
+		}
+		metadata, ok := got.Payload["metadata"].(map[string]any)
+		if !ok || metadata["provider"] != "ravana" {
+			t.Fatalf("Mesh source route %s did not propagate normalized provider metadata: %#v", capability, got.Payload)
+		}
+	}
+}
+
 func TestCopyStructuredSuperGPUMetadata(t *testing.T) {
 	metadata := map[string]string{}
 	err := copyStructuredCapabilityMetadata(metadata, "mesh.supergpu.execute@1.0.0", map[string]any{
