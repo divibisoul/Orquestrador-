@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"sync"
 	"testing"
 	"time"
 
@@ -334,6 +335,96 @@ func TestPeerMeshEndpointAcceptsBaseOrCompleteURL(t *testing.T) {
 				t.Fatalf("peerMeshEndpoint(%q) = %q, want %q", tc.input, got, tc.want)
 			}
 		})
+	}
+}
+
+func TestPeerClientDiscoverUsesMeshDescribeBootstrapFirst(t *testing.T) {
+	secret := "n07-describe-first-secret-0123456789abcdef"
+	var mu sync.Mutex
+	var calls []string
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
+		var wire map[string]any
+		if err := json.NewDecoder(r.Body).Decode(&wire); err != nil {
+			t.Errorf("decode peer request: %v", err)
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		capability, _ := wire["capability"].(string)
+		mu.Lock()
+		calls = append(calls, capability)
+		mu.Unlock()
+		if capability != "mesh.describe" {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusNotFound)
+			_ = json.NewEncoder(w).Encode(map[string]any{"error": "LEGACY_DISCOVERY_NOT_SUPPORTED"})
+			return
+		}
+		correlation, _ := wire["correlationId"].(string)
+		timestamp := time.Now().UnixMilli()
+		nonce := protocol.NewTraceID()
+		payload := map[string]any{
+			"nucleus": "N01",
+			"declaredCapabilities": []string{"legacy-only"},
+			"executableCapabilities": []string{"mesh.describe", "mesh.ping", "neural.forward@1.0.0"},
+		}
+		envelope := protocol.MeshEnvelope{
+			Version: protocol.SoulMeshVersion,
+			ContractVersion: protocol.SoulMeshContractVersion,
+			MessageID: protocol.NewTraceID(),
+			Source: protocol.N01,
+			Target: protocol.N07,
+			Timestamp: timestamp,
+			Nonce: nonce,
+			CorrelationID: correlation,
+			Type: "TASK_RESULT",
+			Payload: map[string]any{"capability": "mesh.describe", "payload": payload},
+		}
+		if err := protocol.SignHMAC(&envelope, secret); err != nil {
+			t.Errorf("sign discovery response: %v", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"protocol": "soul-mesh/1",
+			"contractVersion": protocol.SoulMeshContractVersion,
+			"id": envelope.MessageID,
+			"correlationId": correlation,
+			"source": protocol.N01,
+			"target": protocol.N07,
+			"kind": "response",
+			"capability": "mesh.describe",
+			"payload": payload,
+			"timestamp": timestamp,
+			"nonce": nonce,
+			"hmac": envelope.HMAC,
+		})
+	}))
+	defer server.Close()
+	t.Setenv("SOUL_MESH_N01_URL", server.URL)
+	t.Setenv("SOUL_MESH_HMAC_SECRET", secret)
+	client, err := NewPeerClient(server.Client())
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	result, err := client.Discover(ctx, protocol.N01)
+	if err != nil {
+		t.Fatalf("mesh.describe discovery should succeed: %v", err)
+	}
+	mu.Lock()
+	gotCalls := append([]string(nil), calls...)
+	mu.Unlock()
+	if len(gotCalls) != 1 || gotCalls[0] != "mesh.describe" {
+		t.Fatalf("common discovery should use mesh.describe once before legacy fallback: %#v", gotCalls)
+	}
+	if !supportsExecutableCapability(result, "neural.forward@1.0.0") {
+		t.Fatalf("discovered executable capability was not available for routing: %#v", result)
+	}
+	if supportsExecutableCapability(result, "legacy-only") {
+		t.Fatalf("declared-only capability must not be routed: %#v", result)
 	}
 }
 

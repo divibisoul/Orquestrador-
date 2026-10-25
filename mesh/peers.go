@@ -118,7 +118,7 @@ func (p *PeerClient) Discover(ctx context.Context, nucleus string) (map[string]a
 	if cached, ok := p.discoveryFromCache(nucleus); ok {
 		return cached, nil
 	}
-	result, err := p.CallWithCorrelation(ctx, nucleus, "mesh.discovery", map[string]any{"from": protocol.N07}, protocol.NewTraceID())
+	result, err := p.CallWithCorrelation(ctx, nucleus, "mesh.describe", map[string]any{"from": protocol.N07}, protocol.NewTraceID())
 	if err == nil {
 		p.storeDiscovery(nucleus, result)
 		return clonePeerMap(result), nil
@@ -126,7 +126,9 @@ func (p *PeerClient) Discover(ctx context.Context, nucleus string) (map[string]a
 	if ctx.Err() != nil {
 		return nil, ctx.Err()
 	}
-	result, err = p.CallWithCorrelation(ctx, nucleus, "mesh.describe", map[string]any{"from": protocol.N07}, protocol.NewTraceID())
+	// Compatibility only: older peers may expose mesh.discovery but not the
+	// shared mesh.describe bootstrap contract.
+	result, err = p.CallWithCorrelation(ctx, nucleus, "mesh.discovery", map[string]any{"from": protocol.N07}, protocol.NewTraceID())
 	if err != nil {
 		return nil, err
 	}
