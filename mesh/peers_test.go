@@ -304,7 +304,7 @@ func TestPeerClientRegisterPeerUpdatesCanonicalTable(t *testing.T) {
 }
 
 
-func signedPeerErrorResponse(correlation, capability, secret string) map[string]any {
+func signedPeerErrorResponseForCanonicalPeerRegistration(correlation, capability, secret string) map[string]any {
 	msgID := protocol.NewTraceID()
 	nonce := protocol.NewTraceID()
 	timestamp := time.Now().UnixMilli()
@@ -368,7 +368,7 @@ func TestPeerClientRejectsUnauthenticatedHTTPErrorBeforeStatusHandling(t *testin
 func TestPeerClientAcceptsAuthenticatedHTTPErrorAfterVerification(t *testing.T) {
 	secret := "abcdef0123456789abcdef0123456789"
 	correlation := "corr-auth-valid"
-	response := signedPeerErrorResponse(correlation, "mesh.ping", secret)
+	response := signedPeerErrorResponseForCanonicalPeerRegistration(correlation, "mesh.ping", secret)
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusBadRequest)
