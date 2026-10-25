@@ -425,13 +425,18 @@ func (r *GRCEExecutorRuntime) validateITR(ctx context.Context, state grf.State, 
 	return len(transformedRaw) >= len(originalRaw) && len(transformedRaw) > 0, nil
 }
 
-func grceInputText(state grf.State) string {
-	if original, ok := state.Payload["original_state"].(map[string]any); ok {
-		if value, exists := original["text"].(string); exists && strings.TrimSpace(value) != "" {
-			return value
-		}
+func grceRGOContent(state grf.State) (string, error) {
+	review := map[string]any{
+		"candidate_id":              state.ID,
+		"candidate_epistemic_state": string(state.EpistemicState),
+		"candidate_parent_hash":     state.ParentHash,
+		"source_and_transformations": state.Payload,
 	}
-	return stateText(state)
+	raw, err := json.Marshal(review)
+	if err != nil {
+		return "", fmt.Errorf("GRCE_RGO_CANDIDATE_SERIALIZATION_FAILED:%w", err)
+	}
+	return string(raw), nil
 }
 
 func buildGRCERGOFinding(state grf.State, c grf.Context) (map[string]any, error) {
@@ -448,7 +453,10 @@ func buildGRCERGOFinding(state grf.State, c grf.Context) (map[string]any, error)
 	if len(inputHash) < 16 {
 		return nil, errors.New("GRCE_RGO_STATE_HASH_INVALID")
 	}
-	content := grceInputText(state)
+	content, err := grceRGOContent(state)
+	if err != nil {
+		return nil, err
+	}
 	if strings.TrimSpace(content) == "" {
 		return nil, errors.New("GRCE_RGO_CONTENT_REQUIRED")
 	}
