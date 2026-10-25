@@ -83,8 +83,9 @@ type ExternalCapabilityRegistry struct {
 }
 
 type ExternalRuntimeAttestation struct {
-	SchemaVersion string            `json:"schema_version"`
-	Repositories  map[string]string `json:"repositories"`
+	SchemaVersion                string            `json:"schema_version"`
+	GeneratedFromMaterializedGit bool              `json:"generated_from_materialized_git"`
+	Repositories                 map[string]string `json:"repositories"`
 }
 
 type ExternalAdapterRegistry struct {
@@ -239,6 +240,56 @@ func (r ExternalAdapterRegistry) operationAllowed(provider, mode, operation stri
 	return false
 }
 
+// validateRuntimeAttestationPin validates exact source revisions included in a
+// production image when the image intentionally has no .git directory.
+func (r ExternalAdapterRegistry) validateRuntimeAttestationPin(p ExternalAdapterSpec) error {
+	rootDir := repositoryRoot()
+	attestationPath := strings.TrimSpace(os.Getenv("SOUL_EXTERNAL_RUNTIME_ATTESTATION"))
+	if attestationPath == "" {
+		attestationPath = filepath.Join(rootDir, "config", "soul-external-runtime-attestation.json")
+	} else if !filepath.IsAbs(attestationPath) {
+		attestationPath = filepath.Join(rootDir, attestationPath)
+	}
+	raw, err := os.ReadFile(attestationPath)
+	if err != nil {
+		return fmt.Errorf("EXTERNAL_RUNTIME_ATTESTATION_UNAVAILABLE:%s", p.ID)
+	}
+	var attestation ExternalRuntimeAttestation
+	if err := json.Unmarshal(raw, &attestation); err != nil {
+		return fmt.Errorf("EXTERNAL_RUNTIME_ATTESTATION_INVALID:%s", p.ID)
+	}
+	if attestation.SchemaVersion != "soul.external.runtime-attestation.v1" || !attestation.GeneratedFromMaterializedGit {
+		return fmt.Errorf("EXTERNAL_RUNTIME_ATTESTATION_UNTRUSTED:%s", p.ID)
+	}
+	expectedRevision := r.revisions[p.ID]
+	if expectedRevision == "" || attestation.Repositories[p.ID] != expectedRevision {
+		return fmt.Errorf("EXTERNAL_RUNTIME_ATTESTATION_REVISION_MISMATCH:%s", p.ID)
+	}
+	root := p.Root
+	if !filepath.IsAbs(root) {
+		root = filepath.Join(rootDir, root)
+	}
+	root = filepath.Clean(root)
+	canonical := filepath.Clean(filepath.Join(rootDir, "integrations", "external", p.ID))
+	if root != canonical {
+		return fmt.Errorf("EXTERNAL_PROVIDER_ROOT_NON_CANONICAL:%s", p.ID)
+	}
+	entries, err := os.ReadDir(root)
+	if err != nil {
+		return fmt.Errorf("EXTERNAL_SOURCE_NOT_PRESENT:%s", p.ID)
+	}
+	hasSourceFiles := false
+	for _, entry := range entries {
+		if entry.Name() != ".git" {
+			hasSourceFiles = true
+			break
+		}
+	}
+	if !hasSourceFiles {
+		return fmt.Errorf("EXTERNAL_SOURCE_NOT_PRESENT:%s", p.ID)
+	}
+	return nil
+}
 // validateRegisteredPin validates the immutable source pin from the parent repository
 // without fetching or executing the public source. It is intended only for
 // read-only probe/describe operations; execute mode still requires a clean,
@@ -262,7 +313,9 @@ func (r ExternalAdapterRegistry) validateRegisteredPin(ctx context.Context, p Ex
 	gitCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 	if _, err := os.Stat(filepath.Join(rootDir, ".git")); err != nil {
-		return fmt.Errorf("EXTERNAL_GITLINK_CHECK_UNAVAILABLE:%s", p.ID)
+		// Production images omit Git administration data. Their build-time attestation
+		// is emitted only after every materialized submodule matches its parent gitlink.
+		return r.validateRuntimeAttestationPin(p)
 	}
 	treeCmd := exec.CommandContext(gitCtx, "git", "-C", rootDir, "ls-tree", "HEAD", "--", filepath.ToSlash(rel))
 	treeOut, err := treeCmd.Output()
