@@ -1754,3 +1754,27 @@ Draft não é um estado de aceitação. Cada rascunho ativo deve ter ação conc
 - N06 #30 tem quatro checks verdes na sua execução anterior, mas a PR continua não-mergeável; a ancestralidade/integração precisa ser reconciliada.
 - JEV #5 tem checks anteriores bem-sucedidos, mas permanece draft e não-mergeado.
 - O total de 291 PRs foi inventariado, mas ainda não terminou a análise funcional de cada PR, a atribuição de destino para toda capacidade útil, nem a prova de todos os pares em runtime. Este ledger coordena a execução; não declara a fusão global concluída.
+
+
+## Follow-up checkpoint — GRCE / SARA contract and crossfront propagation (2026-10-25)
+
+### Runtime contract fixes on the three N07 candidates
+- **#152 current head** `c2a4590aa36a4aae2e9de36d25e3de436681f6fb` (branch `forensic/public-capability-integration-2026-10-06`).
+- **#148 current head** `ad93ea5922f9a8ffffa7dcf2e00ca5e896657f51` (branch `restructure/soul-v2-foundation-2026-10-06`).
+- **#160 current head** `7f292f3cbb64811ad8289be7b34462d7dfd37ec8` (branch `fusion/n07-soul28-foundation-20261019`).
+
+Correction sequence (additive, no history rewrite):
+1. The previous real E2E had an ARA finding and an approved ETR result, then failed at `VALIDATE_RGO` with `SARA HTTP 422 / RGO_ENUM_INVALID`. Root cause: N07 sent a partial `finding_id/description/provenance` object, not SARA's canonical RGO envelope.
+2. `backend/grce_runtime.go` now builds the RGO envelope using SARA's exact schema and enums: schema version, stable object/finding identity, timestamp, trace/correlation, source/version, epistemic/actionability status, failure and correction boundary, dual status, nonempty state-hash evidence, and provenance. `verification_state=UNVERIFIED` explicitly avoids claiming approval before the independent SARA run.
+3. Follow-up preserved-input audit found the first serializer only passed the original text, which could omit transformed candidate artifacts. The serializer now submits the full candidate representation (candidate ID/epistemic state/parent hash plus complete original state and transformed artifacts) as the RGO review description.
+4. `backend/grce_runtime_test.go` now verifies the canonical schema plus serialization of both the original protected identity text and the transformed candidate artifact. It does not fake the SARA result.
+5. The #148/#160 builds exposed another crossfront omission: their `SARAProxy` lacked `GRCEHooks` although the GRCE executor invoked it. The same real HTTP method already present on #152 was copied to #148/#160, and all three branches now include `TestSARAProxyGRCEHooksUsesCanonicalHTTPBoundary`, which checks `/v1/grce/hooks`, cycle ID, correlation ID, unmodified finding body and returned hook evidence.
+6. The earlier #160 Go build failure `NameError: is_projected_expansion is not defined` was corrected in that branch before the current crossfront changes; current #160 still requires exact-head CI.
+
+### Exact-head validation state after latest changes
+- #152: `N07 Orquestrador CI` run `40240715490` pending; real SARA E2E run `40240715541` queued. Other PR-triggered integration workflows are queued. **No PASS claimed for this head yet.**
+- #148: `N07 Orquestrador CI` run `40240715116`, `SOUL 25 Capability Upgrade - N07` run `40240715100`, and external-ownership run `40240715131` queued. Previous #148 head had failed at compile time for missing `SARAProxy.GRCEHooks`; that head is obsolete and must not be used as the result for the current commit.
+- #160: `N07 Orquestrador CI` run `40240721144`, `SOUL 25 Capability Upgrade - N07` run `40240721142`, and external-ownership run `40240721167` queued. Previous head with the absent helper is obsolete; exact-head checks remain required.
+- N07 branch lineage remains unresolved: #148 is based on `main`; #160 targets the #148 branch but has a stale base SHA and reports `mergeable=false/dirty`; #152 is on the recovery base. No blind merge/rebase/force-push is allowed. Consolidation must reconcile ancestry and file overlap after runtime contract tests are green.
+- N01 #108 remains non-draft and mergeable at exact head `e08079bc...`, with lock-root assertion, `npm ci`, 3/3 correlation tests, and N01 capability checks passing. The source PR remains unmerged while #106 reconciles the same function into the combined N01 candidate. Production N01↔N02 connectivity remains separate.
+- N04↔N05 real-process HTTP/HMAC E2E remains PASS at run `40214678457`, but N04 #51 and N05 #53 require their own remaining exact-head evidence before promotion.
