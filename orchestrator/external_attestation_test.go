@@ -128,7 +128,7 @@ func TestInspectAttestedExternalSourceRejectsUntrustedBuildMarker(t *testing.T) 
 	if err != nil { t.Fatal(err) }
 	if err := os.WriteFile(attestationPath, raw, 0600); err != nil { t.Fatal(err) }
 	got := inspectAttestedExternalSource(root, revision, attestationPath)
-	if got.Present || got.RevisionMatched || got.State != "ATTESTATION_UNTRUSTED" {
+	if !got.Present || got.RevisionMatched || got.ObservedRevision != "" || got.EvidenceMode != "filesystem-unattested" || got.State != "ATTESTATION_UNTRUSTED" {
 		t.Fatalf("untrusted attestation promoted source: %#v", got)
 	}
 }
