@@ -1,0 +1,88 @@
+# SOUL — auditoria dos upstreams públicos e equilíbrio de capacidades
+**Data:** 2026-10-25  
+**Base N07 main:** `c4582f178a6bc82ad7a7a2ebbe4332cd7982439d`  
+**Branch de auditoria:** `audit/external-capability-balance-2026-10-25`  
+**Escopo:** os 16 upstreams públicos catalogados no N07 e seus contratos de ownership, adapters e acesso pelos núcleos nativos.
+
+## Resumo executivo
+
+- **16/16 upstreams catalogados** no registro `integrations/external-capabilities.json`.
+- **16/16 gitlinks/submodules pinados** sob `integrations/external/*`; cada gitlink possui SHA explícito. Isso é proveniência reproduzível, não prova de runtime.
+- Há um runner central e operações declaradas para os 16 upstreams. A execução externa é **desligada por padrão** e deve permanecer assim até a prova isolada por provider.
+- O validador estrutural confirma que o catálogo, a lista de adapters e a lista de ownership contêm os mesmos 16 IDs e que cada owner pertence aos targets declarados. O teste Go existente confirma registro de 16 providers, fail-closed por padrão e probe de LangGraph.
+- **Nenhum dos 16 foi provado como execução externa live autenticada nesta auditoria.** Não promover estado a `adapter-live` apenas por código, submodule ou CI.
+
+## Inventário pinado
+
+| Upstream | Repositório público | SHA fixado | Owner principal | Capacidade-alvo |
+|---|---|---|---|---|
+| Superpowers | [obra/superpowers](https://github.com/obra/superpowers) | `8ca22dba9a94f28898bbce59f2537ff4d87c747d` | N07 | método de engenharia, skills, TDD/revisão |
+| SuperAGI | [TransformerOptimus/SuperAGI](https://github.com/TransformerOptimus/SuperAGI) | `c3c1982e7bd6a11cfed53c5a193ea502f924b1b6` | N07 | agentes, ferramentas e memória |
+| LangGraph | [langchain-ai/langgraph](https://github.com/langchain-ai/langgraph) | `157a06dda988d85afeb8751ff27b35ab3f4f8bf4` | N07 | workflow com estado e orquestração |
+| CrewAI | [crewAIInc/crewAI](https://github.com/crewAIInc/crewAI) | `8078f9130c35a47be95d4a55bf1d73b3fd44fc88` | N07 | equipes multiagente |
+| Microsoft Agent Framework | [microsoft/agent-framework](https://github.com/microsoft/agent-framework) | `a2f4506c0ba30cea7c9bbe907fc158c0db2cc6a3` | N07 | agentes, workflows, MCP/A2A |
+| OpenHands | [OpenHands/OpenHands](https://github.com/OpenHands/OpenHands) | `2414d6ee5e31bede2e78211f72b58e9949575a75` | N06 | agente de engenharia de software |
+| MetaGPT | [FoundationAgents/MetaGPT](https://github.com/FoundationAgents/MetaGPT) | `11cdf466d042aece04fc6cfd13b28e1a70341b1f` | N07 | papéis e processo de software |
+| AgentScope | [agentscope-ai/agentscope](https://github.com/agentscope-ai/agentscope) | `72f3f6fa0b2fc38b8517f408ab616f0f2bd229e6` | N03 | agentes, equipes e voz |
+| Letta Code | [letta-ai/letta-code](https://github.com/letta-ai/letta-code) | `1fcc9666817ab852bc2532a3a989f712e1fd6c19` | N01 | memória persistente e identidade |
+| Browser Use | [browser-use/browser-use](https://github.com/browser-use/browser-use) | `302d8fcb245a7a63fb7531a4734c9ce3c7792779` | N04 | automação de navegador |
+| SmolAgents | [huggingface/smolagents](https://github.com/huggingface/smolagents) | `c30b115286e000e98711fae5e85993547b73d826` | N06 | agentes de código e ferramentas |
+| Pydantic AI | [pydantic/pydantic-ai](https://github.com/pydantic/pydantic-ai) | `6bc07cf18b0641ea92343d8c589cfb922108b802` | N01 | agentes tipados e contratos |
+| LlamaIndex | [run-llama/llama_index](https://github.com/run-llama/llama_index) | `962940ddc079cc21701d28d1237c84c82a7c5164` | N05 | RAG, indexação e recuperação |
+| DSPy | [stanfordnlp/dspy](https://github.com/stanfordnlp/dspy) | `ba3f9198efe5d125c7c1a2b40b1f1e6166209bd2` | N06 | programação/otimização de pipelines de raciocínio |
+| Whisper | [openai/whisper](https://github.com/openai/whisper) | `86098128c0b4f24f0e2aa2994de830614b474227` | N03 | transcrição de fala |
+| Kokoro | [hexgrad/kokoro](https://github.com/hexgrad/kokoro) | `dfb907a02bba8152ca444717ca5d78747ccb4bec` | N03 | síntese de fala |
+
+## Estado por camada
+
+| Camada | Evidência observada | Estado |
+|---|---|---|
+| Fonte e proveniência | 16 gitlinks pinados e registrados em `.gitmodules` e `integrations/external-capabilities.json` | **REAL — estrutural** |
+| Catálogo de capacidades | 16 IDs e targets por núcleo no registro | **REAL — estrutural** |
+| Ownership | owner primário e consumers definidos separadamente | **REAL — estrutural; contrato precisa permanecer canônico** |
+| Adapter central | `scripts/external-capability-adapter.py` e operações no manifesto | **REAL — código presente** |
+| Registro no executor N07 | `orchestrator/external_adapters.go` e testes de registro | **REAL — código/testes presentes** |
+| Provider importado e executado com sucesso | Não executado nesta auditoria para os 16 providers | **PROJECTED / UNVERIFIED** |
+| E2E pelo Mesh com owner, HMAC, correlação e resultado validado | Não demonstrado para os 16 providers | **PROJECTED / UNVERIFIED** |
+
+## Achados de equilíbrio e possíveis conflitos
+
+### E1 — Semântica de estado divergente entre documentos
+
+`integrations/external-capability-ownership.json` marca todos os 16 como `adapter-planned`, enquanto `integrations/native-capability-augmentation.json` usa `ADAPTER_BOUND`. Essas expressões não são equivalentes: a primeira diz adapter previsto/estrutural, a segunda pode ser lida como integração pronta. **Não alterar para `adapter-live` sem execução E2E.** Próxima correção recomendada: normalizar os documentos para o vocabulário canônico `structural-only / adapter-planned / adapter-live` e definir `adapter-planned` como padrão até teste de execução.
+
+### E2 — Duas raízes históricas de integração
+
+Além de `integrations/external/*`, o repositório contém raízes como `integrations/langgraph`, `integrations/superpowers` e `integrations/nemo-agent-toolkit`. Elas não são listadas como os mesmos submodules canônicos de `integrations/external/*` no `.gitmodules`. **Não apagar nem fundir por suposição.** É necessário identificar se são protótipos, adapters locais, assets ou uma segunda implementação antes de decidir seu papel. Até essa reconciliação, não criar uma segunda rota de execução para o mesmo provider.
+
+### E3 — CI de contrato manual apenas
+
+`.github/workflows/external-adapter-contract.yml` e `.github/workflows/external-ownership-resident-contract.yml` declaram somente `workflow_dispatch`. Isso significa que uma alteração normal de código pode não executar esses gates automaticamente. Recomenda-se criar gatilhos de PR/push filtrados para os manifestos, scripts, adapters, testes e contratos relevantes; isso deve ser feito sem reativar fan-out de workflows irrelevantes.
+
+### E4 — Registro não é execução
+
+Os testes existentes demonstram registro e fail-closed de LangGraph, além do probe. Eles não demonstram que todos os 16 providers importam, iniciam, chamam modelo/serviço e retornam resultado. Cada provider precisa de dois níveis separados: teste determinístico de contrato sem credenciais e smoke/E2E opcional com dependências reais.
+
+### E5 — Dependências, licenças e segurança upstream
+
+O inventário atual fixa revisões, mas esta rodada não completou uma matriz de licenças por arquivo/pacote, vulnerabilidades transitivas, versões de runtime, consumo de memória/CPU, compatibilidade de dependências nem revisão de permissões. Isso precisa ser verificado antes de ativar qualquer provider. O pinning reduz deriva inesperada, mas não prova segurança nem compatibilidade.
+
+### E6 — Nomes de pacotes e capacidades precisam ser verificados no upstream pinado
+
+O adapter central faz resolução de imports por pacote e roteia para runners específicos. Para cada upstream, é necessário validar no SHA pinado: API realmente usada, versão de Python/Node, extras opcionais, requisitos de modelo/credenciais, limites de execução e formato do resultado. Um import disponível não basta para provar operação correta.
+
+## Próxima sequência finita
+
+1. Executar os validadores de registry, ownership e resident contract; compilar runners Python e rodar testes Go do executor.
+2. Corrigir apenas defeitos demonstrados nesses gates.
+3. Normalizar a semântica dos estados, sem declarar execução live.
+4. Auditar raízes históricas duplicadas e o caso `nemo-agent-toolkit`, preservando arquivos até classificar sua função.
+5. Criar matriz de compatibilidade por upstream: licença, SHA, runtime, dependências, APIs chamadas, limites, segredos, timeout/cancelamento, operação Mesh e teste.
+6. Testar providers por grupos pequenos, começando pelos que têm dependências menores e maior aderência ao owner; desativados por padrão.
+7. Só depois validar E2E por núcleo e a integração federada N07 → núcleo proprietário → resultado correlacionado.
+
+## Critério de conclusão
+
+Um upstream só recebe estado **adapter-live** após uma execução real controlada que comprove: SHA de origem conhecido, owner correto, operação permitida, limites aplicados, falha fechada, resposta validada, HMAC/correlação preservados e evidência registrada. CI verde sozinho não satisfaz esse critério.
+
+**Limite desta auditoria:** nenhum upstream foi ativado e nenhuma dependência pública foi atualizada. Este documento registra achados e sequência de correção; não altera `main`.
