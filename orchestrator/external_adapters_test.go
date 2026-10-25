@@ -39,6 +39,244 @@ func TestExternalAdapterManifestHasTwentyTwoProviders(t *testing.T) {
 		t.Fatalf("providers=%d", len(r.byID))
 	}
 }
+func TestExternalExpansionProvidersRemainProjectedAndNonExecutable(t *testing.T) {
+	_, r := newExternalTestEngine(t)
+	if len(r.expansionProviders) != 10 {
+		t.Fatalf("projected expansion providers=%d, want 10", len(r.expansionProviders))
+	}
+	expected := map[string]bool{
+		"fedml": true, "hivemind": true, "temporal": true,
+		"cognitive-workspace": true, "ravana": true, "ray": true,
+		"bijux-dag-runtime": true, "ouro-loop": true, "recuris": true, "nats-go": true,
+	}
+	for _, p := range r.expansionProviders {
+		if !expected[p.ID] {
+			t.Fatalf("unexpected projected expansion provider %q", p.ID)
+		}
+		if p.State != "PROJECTED" || p.IntegrationState == "" || p.RuntimeRequirement == "" {
+			t.Fatalf("expansion evidence boundary missing for %s: %#v", p.ID, p)
+		}
+		if _, routeable := r.byID[p.ID]; routeable {
+			t.Fatalf("projected provider %s became runtime-routeable", p.ID)
+		}
+		for _, operation := range p.Operations {
+			if r.operationAllowed(p.ID, "execute", operation) {
+				t.Fatalf("projected operation unexpectedly executable: %s:%s", p.ID, operation)
+			}
+		}
+		delete(expected, p.ID)
+	}
+	if len(expected) != 0 {
+		t.Fatalf("projected expansion sources missing: %v", expected)
+	}
+}
+
+func TestExternalFederationDescribeIncludesProjectedSourcesWithoutPromotingThem(t *testing.T) {
+	e, _ := newExternalTestEngine(t)
+	result, err := e.Execute(context.Background(), ExternalFederationDescribeOperation, nil, nil)
+	if err != nil {
+		t.Fatalf("federation describe failed: %v", err)
+	}
+	raw := result.Metadata["federation_json"]
+	var report struct {
+		State string `json:"state"`
+		CatalogState string `json:"catalog_state"`
+		RuntimeEvidence string `json:"runtime_evidence"`
+		ProviderCount int `json:"provider_count"`
+		ExpansionProviderCount int `json:"expansion_provider_count"`
+		DeclaredExternalRepositoryCount int `json:"declared_external_repository_count"`
+		ExpansionProviders []struct {
+			ID string `json:"id"`
+			State string `json:"state"`
+			ExecutionEnabled bool `json:"executionEnabled"`
+			ExecutionProven bool `json:"executionProven"`
+			MeshMetadataOperations []string `json:"meshMetadataOperations"`
+			RuntimeRouteOperations []string `json:"runtimeRouteOperations"`
+		} `json:"expansion_providers"`
+	}
+	if err := json.Unmarshal([]byte(raw), &report); err != nil {
+		t.Fatalf("federation descriptor JSON invalid: %v; raw=%s", err, raw)
+	}
+	if report.State != "PASS" || report.CatalogState != "DECLARED_WITH_PROJECTED_EXPANSIONS" || report.RuntimeEvidence != "UNVERIFIED" {
+		t.Fatalf("catalog/runtime evidence states conflated: %#v", report)
+	}
+	if report.ProviderCount != 22 || report.ExpansionProviderCount != 10 || report.DeclaredExternalRepositoryCount != 32 {
+		t.Fatalf("unexpected federated inventory counts: %#v", report)
+	}
+	if len(report.ExpansionProviders) != 10 {
+		t.Fatalf("expansion inventory length=%d", len(report.ExpansionProviders))
+	}
+	for _, p := range report.ExpansionProviders {
+		if p.State != "PROJECTED" || p.ExecutionEnabled || p.ExecutionProven {
+			t.Fatalf("projected source was promoted in descriptor: %#v", p)
+		}
+		if len(p.MeshMetadataOperations) != 2 || len(p.RuntimeRouteOperations) != 0 {
+			t.Fatalf("projected source metadata/execution route split invalid: %#v", p)
+		}
+	}
+}
+
+func TestProjectedExpansionSourcesExposeMeshMetadataWithoutExecuteRoutes(t *testing.T) {
+	e, r := newExternalTestEngine(t)
+	if len(r.expansionProviders) != 10 {
+		t.Fatalf("projected expansion providers=%d, want 10", len(r.expansionProviders))
+	}
+	for _, p := range r.expansionProviders {
+		for _, kind := range []string{"describe", "probe"} {
+			operation := "external." + p.ID + "." + kind + "@1.0.0"
+			result, err := e.Execute(context.Background(), operation, nil, nil)
+			if err != nil {
+				t.Fatalf("Mesh metadata route %s failed to execute: %v", operation, err)
+			}
+			raw := result.Metadata["external_result_json"]
+			var evidence struct {
+				State            string `json:"state"`
+				Provider          string `json:"provider"`
+				ExecutionEnabled  bool   `json:"executionEnabled"`
+				ExecutionProven   bool   `json:"executionProven"`
+				RuntimeEvidence   string `json:"runtimeEvidence"`
+				RuntimeRouteOperations []string `json:"runtimeRouteOperations"`
+				RevisionMatched   bool   `json:"revisionMatched"`
+				SourcePresent     bool   `json:"sourcePresent"`
+			}
+			if err := json.Unmarshal([]byte(raw), &evidence); err != nil {
+				t.Fatalf("Mesh metadata route %s returned invalid evidence: %v; raw=%s", operation, err, raw)
+			}
+			if evidence.Provider != p.ID {
+				t.Fatalf("Mesh metadata route %s returned provider=%q", operation, evidence.Provider)
+			}
+			if evidence.State != "PROJECTED" && evidence.State != "BLOCKED" {
+				t.Fatalf("projected source %s reported an invalid evidence state: %#v", p.ID, evidence)
+			}
+			if evidence.ExecutionEnabled || evidence.ExecutionProven || evidence.RuntimeEvidence != "UNVERIFIED" || len(evidence.RuntimeRouteOperations) != 0 {
+				t.Fatalf("projected source %s was promoted by a metadata route: %#v", p.ID, evidence)
+			}
+			if evidence.State == "PROJECTED" && (!evidence.SourcePresent || !evidence.RevisionMatched || result.Status != "degraded") {
+				t.Fatalf("projected source %s lacks exact-pin evidence or degraded status: result=%#v evidence=%#v", p.ID, result, evidence)
+			}
+			if evidence.State == "BLOCKED" && result.Status != "error" {
+				t.Fatalf("blocked source %s did not fail closed: result=%#v evidence=%#v", p.ID, result, evidence)
+			}
+		}
+		result, err := e.Execute(context.Background(), "external."+p.ID+".execute@1.0.0", nil, map[string]string{"external_operation": "execute"})
+		if err == nil && result.Status != "error" {
+			t.Fatalf("projected source %s unexpectedly exposes an execute route: %#v", p.ID, result)
+		}
+	}
+}
+
+func TestCanonicalFederationSourceMetadataContractCoversAllThirtyTwoSources(t *testing.T) {
+	e, r := newExternalTestEngine(t)
+	ids := make([]string, 0, len(r.byID)+len(r.expansionProviders))
+	for id := range r.byID {
+		ids = append(ids, id)
+	}
+	for _, p := range r.expansionProviders {
+		ids = append(ids, p.ID)
+	}
+	if len(ids) != 32 || len(r.revisions) != 32 {
+		t.Fatalf("canonical external inventory mismatch: ids=%d revisions=%d", len(ids), len(r.revisions))
+	}
+
+	for _, id := range ids {
+		result, err := e.Execute(context.Background(), ExternalFederationSourceDescribeOperation, nil, map[string]string{"provider": id})
+		if err != nil {
+			t.Fatalf("canonical source describe failed for %s: %v", id, err)
+		}
+		raw := result.Metadata["external_result_json"]
+		var evidence struct {
+			State                  string   `json:"state"`
+			Provider               string   `json:"provider"`
+			Owner                  string   `json:"owner"`
+			ExpectedRevision       string   `json:"expectedRevision"`
+			ExecutionEnabled       bool     `json:"executionEnabled"`
+			ExecutionProven        bool     `json:"executionProven"`
+			RuntimeEvidence        string   `json:"runtimeEvidence"`
+			RegisteredOperations   []string `json:"registeredOperations"`
+			MeshMetadataOperations []string `json:"meshMetadataOperations"`
+			RuntimeRouteOperations []string `json:"runtimeRouteOperations"`
+		}
+		if err := json.Unmarshal([]byte(raw), &evidence); err != nil {
+			t.Fatalf("canonical source describe returned invalid JSON for %s: %v; raw=%s", id, err, raw)
+		}
+		if evidence.Provider != id || evidence.Owner == "" || evidence.ExpectedRevision == "" {
+			t.Fatalf("canonical source describe omitted identity/pin/owner for %s: %#v", id, evidence)
+		}
+		if evidence.ExecutionProven || evidence.RuntimeEvidence != "UNVERIFIED" {
+			t.Fatalf("metadata route claimed execution proof for %s: %#v", id, evidence)
+		}
+		if len(evidence.MeshMetadataOperations) < 2 {
+			t.Fatalf("canonical metadata operations missing for %s: %#v", id, evidence)
+		}
+		if evidence.State != "PROJECTED" && evidence.State != "UNMEASURABLE" && evidence.State != "BLOCKED" {
+			t.Fatalf("canonical source describe returned ambiguous state for %s: %#v", id, evidence)
+		}
+		if result.Status != "degraded" && result.Status != "error" {
+			t.Fatalf("metadata route must not imply execution success for %s: result=%#v evidence=%#v", id, result, evidence)
+		}
+		if evidence.State == "PROJECTED" && evidence.ExecutionEnabled {
+			t.Fatalf("projected source %s unexpectedly enabled execution", id)
+		}
+	}
+
+	for _, id := range []string{"ravana", "langgraph"} {
+		result, err := e.Execute(context.Background(), ExternalFederationSourceProbeOperation, nil, map[string]string{"provider": id})
+		if err != nil {
+			t.Fatalf("canonical source probe failed for %s: %v", id, err)
+		}
+		var evidence map[string]any
+		if err := json.Unmarshal([]byte(result.Metadata["external_result_json"]), &evidence); err != nil {
+			t.Fatalf("canonical source probe returned invalid JSON for %s: %v", id, err)
+		}
+		if evidence["provider"] != id || evidence["executionProven"] != false || evidence["runtimeEvidence"] != "UNVERIFIED" {
+			t.Fatalf("canonical source probe reported inconsistent evidence for %s: %#v", id, evidence)
+		}
+	}
+}
+
+func TestCanonicalFederationSourceProbeDoesNotClaimExecution(t *testing.T) {
+	e, _ := newExternalTestEngine(t)
+	for _, provider := range []struct {
+		id string
+		projected bool
+	}{
+		{id: "langgraph"},
+		{id: "ray", projected: true},
+		{id: "nats-go", projected: true},
+	} {
+		result, err := e.Execute(context.Background(), ExternalFederationSourceProbeOperation, nil, map[string]string{"provider": provider.id})
+		if err != nil {
+			t.Fatalf("source probe failed for %s: %v", provider.id, err)
+		}
+		var evidence map[string]any
+		if err := json.Unmarshal([]byte(result.Metadata["external_result_json"]), &evidence); err != nil {
+			t.Fatalf("source probe returned invalid JSON for %s: %v", provider.id, err)
+		}
+		probe, ok := evidence["sourceProbe"].(map[string]any)
+		if !ok || evidence["provider"] != provider.id || evidence["executionProven"] != false ||
+			evidence["runtimeEvidence"] != "UNVERIFIED" || probe["source_integrity_only"] != true ||
+			probe["execution_proven"] != false {
+			t.Fatalf("source probe claimed execution or omitted health evidence for %s: %#v", provider.id, evidence)
+		}
+		if provider.projected {
+			if probe["execution_enabled"] != false ||
+				(evidence["sourceProbeState"] != "PROJECTED" && evidence["sourceProbeState"] != "BLOCKED") {
+				t.Fatalf("projected source %s must remain non-executable: %#v", provider.id, evidence)
+			}
+		} else if _, ok := probe["package_available"].(bool); !ok {
+			t.Fatalf("active source %s probe must expose package availability: %#v", provider.id, probe)
+		}
+	}
+}
+
+func TestCanonicalFederationSourceMetadataRejectsUnknownSource(t *testing.T) {
+	e, _ := newExternalTestEngine(t)
+	_, err := e.Execute(context.Background(), ExternalFederationSourceDescribeOperation, nil, map[string]string{"provider": "not-registered"})
+	if err == nil || !strings.Contains(err.Error(), "EXTERNAL_PROVIDER_UNKNOWN:not-registered") {
+		t.Fatalf("unknown source was not rejected fail-closed: %v", err)
+	}
+}
+
 func TestExternalAdapterPrimarySixteenRemainIntact(t *testing.T) {
 	_, r := newExternalTestEngine(t)
 	primary := []string{
@@ -76,74 +314,6 @@ func TestExternalAdapterAllTwentyTwoProvidersProbe(t *testing.T) {
 		if _, err := e.Execute(context.Background(), operation, nil, nil); err != nil {
 			t.Fatalf("provider %s probe failed: %v", id, err)
 		}
-	}
-}
-
-
-func TestExternalFederationExecutionRequiresCanonicalNativeOwner(t *testing.T) {
-	e, _ := newExternalTestEngine(t)
-	t.Setenv("SOUL_EXTERNAL_EXECUTE_LANGGRAPH", "")
-
-	base := map[string]string{
-		"provider":           "langgraph",
-		"external_operation": "workflow.invoke",
-	}
-	_, err := e.Execute(context.Background(), ExternalFederationExecuteOperation, nil, base)
-	if err == nil || !strings.Contains(err.Error(), "EXTERNAL_NATIVE_OWNER_REQUIRED") {
-		t.Fatalf("missing native owner did not fail closed: %v", err)
-	}
-
-	wrongOwner := map[string]string{
-		"provider":           "langgraph",
-		"external_operation": "workflow.invoke",
-		"native_owner":       "N01",
-	}
-	_, err = e.Execute(context.Background(), ExternalFederationExecuteOperation, nil, wrongOwner)
-	if err == nil || !strings.Contains(err.Error(), "EXTERNAL_NATIVE_OWNER_MISMATCH") {
-		t.Fatalf("wrong native owner did not fail closed: %v", err)
-	}
-
-	wrongRevision := map[string]string{
-		"provider":           "langgraph",
-		"external_operation": "workflow.invoke",
-		"native_owner":       "N07",
-		"provider_revision":  strings.Repeat("0", 40),
-	}
-	_, err = e.Execute(context.Background(), ExternalFederationExecuteOperation, nil, wrongRevision)
-	if err == nil || !strings.Contains(err.Error(), "EXTERNAL_PROVIDER_REVISION_MISMATCH") {
-		t.Fatalf("provider revision drift did not fail closed: %v", err)
-	}
-
-	canonicalOwner := map[string]string{
-		"provider":           "langgraph",
-		"external_operation": "workflow.invoke",
-		"native_owner":       "N07",
-		"provider_revision":  "2d942085e214ef6b99b6f54ed4d544a7c7c5ac56",
-	}
-	_, err = e.Execute(context.Background(), ExternalFederationExecuteOperation, nil, canonicalOwner)
-	if err == nil || !strings.Contains(err.Error(), "EXTERNAL_ADAPTER_DISABLED") {
-		t.Fatalf("canonical owner and revision must still respect the default-disabled adapter gate: %v", err)
-	}
-}
-
-func TestExternalFederationDescribeIsAvailableWithoutExecutingProviders(t *testing.T) {
-	e, _ := newExternalTestEngine(t)
-	result, err := e.Execute(context.Background(), ExternalFederationDescribeOperation, nil, nil)
-	if err != nil {
-		t.Fatalf("federation describe should not require provider execution: %v", err)
-	}
-	if result.Status != "ok" || result.Metadata["federation_json"] == "" {
-		t.Fatalf("missing canonical federation observation: %#v", result)
-	}
-	var observation map[string]any
-	if err := json.Unmarshal([]byte(result.Metadata["federation_json"]), &observation); err != nil {
-		t.Fatalf("invalid federation description JSON: %v", err)
-	}
-	if observation["control_plane"] != "N07" {
-		t.Fatalf("wrong control plane: %#v", observation["control_plane"])
-	}
-	if observation["provider_count"] != float64(22) {
-		t.Fatalf("unexpected canonical adapter registry count: %#v", observation["provider_count"])
 	}
 }
 
@@ -292,5 +462,72 @@ func TestInspectExternalSourceRequiresOwnGitWorktreeAndPinnedRevision(t *testing
 	}
 	if inspectExternalSource(filepath.Join(root, "does-not-exist"), revision).Present {
 		t.Fatal("nonexistent external source reported present")
+	}
+}
+
+func TestExternalFederationExecutionRequiresCanonicalNativeOwner(t *testing.T) {
+	e, _ := newExternalTestEngine(t)
+	t.Setenv("SOUL_EXTERNAL_EXECUTE_LANGGRAPH", "")
+
+	base := map[string]string{
+		"provider":           "langgraph",
+		"external_operation": "workflow.invoke",
+	}
+	_, err := e.Execute(context.Background(), ExternalFederationExecuteOperation, nil, base)
+	if err == nil || !strings.Contains(err.Error(), "EXTERNAL_NATIVE_OWNER_REQUIRED") {
+		t.Fatalf("missing native owner did not fail closed: %v", err)
+	}
+
+	wrongOwner := map[string]string{
+		"provider":           "langgraph",
+		"external_operation": "workflow.invoke",
+		"native_owner":       "N01",
+	}
+	_, err = e.Execute(context.Background(), ExternalFederationExecuteOperation, nil, wrongOwner)
+	if err == nil || !strings.Contains(err.Error(), "EXTERNAL_NATIVE_OWNER_MISMATCH") {
+		t.Fatalf("wrong native owner did not fail closed: %v", err)
+	}
+
+	wrongRevision := map[string]string{
+		"provider":           "langgraph",
+		"external_operation": "workflow.invoke",
+		"native_owner":       "N07",
+		"provider_revision":  strings.Repeat("0", 40),
+	}
+	_, err = e.Execute(context.Background(), ExternalFederationExecuteOperation, nil, wrongRevision)
+	if err == nil || !strings.Contains(err.Error(), "EXTERNAL_PROVIDER_REVISION_MISMATCH") {
+		t.Fatalf("provider revision drift did not fail closed: %v", err)
+	}
+
+	canonicalOwner := map[string]string{
+		"provider":           "langgraph",
+		"external_operation": "workflow.invoke",
+		"native_owner":       "N07",
+		"provider_revision":  "2d942085e214ef6b99b6f54ed4d544a7c7c5ac56",
+	}
+	_, err = e.Execute(context.Background(), ExternalFederationExecuteOperation, nil, canonicalOwner)
+	if err == nil || !strings.Contains(err.Error(), "EXTERNAL_ADAPTER_DISABLED") {
+		t.Fatalf("canonical owner and revision must still respect the default-disabled adapter gate: %v", err)
+	}
+}
+
+func TestExternalFederationDescribeIsAvailableWithoutExecutingProviders(t *testing.T) {
+	e, _ := newExternalTestEngine(t)
+	result, err := e.Execute(context.Background(), ExternalFederationDescribeOperation, nil, nil)
+	if err != nil {
+		t.Fatalf("federation describe should not require provider execution: %v", err)
+	}
+	if result.Status != "ok" || result.Metadata["federation_json"] == "" {
+		t.Fatalf("missing canonical federation observation: %#v", result)
+	}
+	var observation map[string]any
+	if err := json.Unmarshal([]byte(result.Metadata["federation_json"]), &observation); err != nil {
+		t.Fatalf("invalid federation description JSON: %v", err)
+	}
+	if observation["control_plane"] != "N07" {
+		t.Fatalf("wrong control plane: %#v", observation["control_plane"])
+	}
+	if observation["provider_count"] != float64(22) {
+		t.Fatalf("unexpected canonical adapter registry count: %#v", observation["provider_count"])
 	}
 }
