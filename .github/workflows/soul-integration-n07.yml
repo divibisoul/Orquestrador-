@@ -1,8 +1,7 @@
 name: SOUL Integration CI - N07
 on:
-  push:
-    branches: [main, feat/soul-oss-fusion-wave1]
-  pull_request:
+  workflow_dispatch:
+
 permissions:
   contents: read
 jobs:

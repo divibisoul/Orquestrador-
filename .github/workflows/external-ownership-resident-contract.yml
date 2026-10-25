@@ -1,14 +1,6 @@
 name: SOUL External Ownership + Resident Contract CI
 
 on:
-  pull_request:
-    branches: [main]
-    paths:
-      - integrations/external-capabilities.json
-      - integrations/external-capability-ownership.json
-      - integrations/resident-agent-contract.json
-      - scripts/validate-external-capability-ownership.mjs
-      - docs/SOUL_RESIDENT_AGENT_ARCHITECTURE.md
   workflow_dispatch:
 
 permissions:

@@ -1,9 +1,5 @@
 name: SOUL-34 System Integration Gate
 on:
-  push:
-    branches: [feat/soul-oss-fusion-wave1]
-  pull_request:
-    branches: [main]
   workflow_dispatch:
 
 permissions:

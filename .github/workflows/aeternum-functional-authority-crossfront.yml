@@ -1,16 +1,7 @@
 name: Aeternum Functional Authority Crossfront
 
 on:
-  pull_request:
-    paths:
-      - "contracts/aeternum-functional-authority.json"
-      - "scripts/verify-aeternum-functional-authority.mjs"
-      - ".github/workflows/aeternum-functional-authority-crossfront.yml"
-  push:
-    branches:
-      - main
-      - "feat/**"
-      - "recovery/**"
+  workflow_dispatch:
 
 jobs:
   verify:
