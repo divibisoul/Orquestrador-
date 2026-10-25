@@ -54,6 +54,15 @@ func TestGRCEExecutorRuntimeCompletesWithHTTPBoundaryFixture(t *testing.T) {
 				"trace_hash":             "sha256:test-trace",
 				"federated_context_hash": "sha256:test-context",
 			})
+		case "/v1/grce/hooks":
+			writeGRCEJSONTest(w, map[string]any{
+				"final_status": "VALIDATED",
+				"all_hooks_observed": true,
+				"hook_evidence": map[string]any{
+					"RGO": true, "ARA": true, "ITR": true,
+					"ETR": true, "ERU": true, "MMD": true,
+				},
+			})
 		case "/v1/rgo/trinity":
 			// Assert the boundary validates the hash-linked candidate envelope,
 			// not a second copy of the entire original input. Original state must

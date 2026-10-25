@@ -117,13 +117,13 @@ func (g *NervoVagoGateway) publish(ctx context.Context, envelope NervoVagoEnvelo
 		return nil, fmt.Errorf("NERVO_VAGO_ENVELOPE_ENCODE:%w", err)
 	}
 	auditContent := string(raw)
-	auditPurpose := "avaliar a segurança, integridade e proveniência do evento antes da publicação no Vagus"
+	auditPurpose := "avaliar a segurança, integridade e proveniência do evento antes da publicação no Vagus; contexto adicional: evento do Nervo Vago"
 	if internalGRCEFeedback {
 		auditContent, err = buildGRCEFeedbackAuditSummary(envelope, raw)
 		if err != nil {
 			return nil, fmt.Errorf("NERVO_VAGO_BLOCKED:GRCE_FEEDBACK_AUDIT_SUMMARY:%w", err)
 		}
-		auditPurpose = "avaliar legitimidade, destino e integridade do feedback técnico interno do GRCE; o payload integral continua vinculado por hash e só será entregue após aprovação ética"
+		auditPurpose = "avaliar a segurança, integridade e proveniência do evento antes da publicação no Vagus; no contexto do evento do Nervo Vago, avaliar também legitimidade, destino e integridade do feedback técnico interno do GRCE; o payload integral continua vinculado por hash e só será entregue após aprovação ética"
 	}
 	auditInput := grceEthicalReviewInput(auditPurpose, auditContent)
 	audit, err := g.sara.Audit(ctx, auditInput, envelope.CorrelationID)

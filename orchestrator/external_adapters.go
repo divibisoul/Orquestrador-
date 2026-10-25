@@ -898,7 +898,15 @@ func externalFederationSourceMetadata(r ExternalAdapterRegistry, providerID, ope
  			evidence["sourceProbeState"] = "BLOCKED"
  			return evidence
  		}
- 		evidence["sourceProbe"] = probe
+ 		// A successful source probe proves source integrity/package probing only;
+		// it is not evidence that the provider executed an agent task.
+		probe["provider"] = providerID
+		probe["mode"] = "probe"
+		probe["source_integrity_only"] = true
+		probe["execution_enabled"] = false
+		probe["execution_proven"] = false
+		probe["runtime_evidence"] = "UNVERIFIED"
+		evidence["sourceProbe"] = probe
  		state, _ := probe["state"].(string)
  		if state == "" {
  			state = "BLOCKED"
