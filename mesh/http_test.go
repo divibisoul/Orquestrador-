@@ -100,7 +100,7 @@ func TestCanonicalN01BytesOmitsUndefinedTransportButKeepsMeta(t *testing.T) {
 	if err := json.Unmarshal(raw, &encoded); err != nil {
 		t.Fatal(err)
 	}
-	if string(encoded["transport"]) != "`HTTP`" {
+	if string(encoded["transport"]) != "\"HTTP\"" {
 		t.Fatalf("defined transport must be preserved, got %s", encoded["transport"])
 	}
 	if string(encoded["meta"]) != "{\"transport\":\"HTTP\"}" {
