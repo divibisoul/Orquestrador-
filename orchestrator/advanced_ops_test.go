@@ -38,17 +38,32 @@ func TestSOULTopologyExposesAllSixOtherNucleiBidirectionally(t *testing.T) {
 		"external.federation.source.describe@1.0.0",
 		"external.federation.source.probe@1.0.0",
 	}
-	for _, channel := range channels {
-		for _, operation := range canonicalExternalMeshOperations {
-			found := false
-			for _, advertised := range channel.Operations {
-				if advertised == operation {
-					found = true
-					break
-				}
+	declared, ok := top["n07_declared_operations"].([]string)
+	if !ok {
+		t.Fatalf("N07 declared operations are missing: %#v", top["n07_declared_operations"])
+	}
+	for _, operation := range canonicalExternalMeshOperations {
+		found := false
+		for _, advertised := range declared {
+			if advertised == operation {
+				found = true
+				break
 			}
-			if !found {
-				t.Errorf("Mesh channel to %s (%s) does not advertise canonical external operation %q", channel.Peer, channel.Direction, operation)
+		}
+		if !found {
+			t.Errorf("N07 declaration omits canonical external operation %q", operation)
+		}
+	}
+	if top["capability_routing_policy"] != "discover-at-destination; only runtime-advertised executable capabilities may be called" {
+		t.Fatalf("unexpected capability routing policy: %v", top["capability_routing_policy"])
+	}
+	for _, channel := range channels {
+		if len(channel.Operations) != 1 || channel.Operations[0] != "mesh.describe" {
+			t.Errorf("channel %s (%s) must expose only the common discovery entry point, got %#v", channel.Peer, channel.Direction, channel.Operations)
+		}
+		for _, transport := range channel.Transports {
+			if transport != "HTTP" && transport != "HTTPS" {
+				t.Errorf("channel %s (%s) claims unverified transport %q", channel.Peer, channel.Direction, transport)
 			}
 		}
 		if channel.Peer == protocol.N07 {
