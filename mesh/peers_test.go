@@ -2,6 +2,9 @@ package mesh
 
 import (
 	"context"
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -300,3 +303,54 @@ func TestPeerClientRegisterPeerUpdatesCanonicalTable(t *testing.T) {
 		t.Fatalf("unexpected registered peer: %+v", got)
 	}
 }
+
+func TestPeerResponseVerifierAcceptsCanonicalN06AndRejectsReplay(t *testing.T) {
+	secret := "n07-canonical-response-secret-0123456789"
+	nonce := "nonce-canonical-response-1"
+	correlation := "correlation-canonical-response-1"
+	timestamp := time.Now().UnixMilli()
+	canonical := fmt.Sprintf(
+		`{"protocol":"soul-mesh/1","contractVersion":"1.1.0","id":"response-canonical-1","correlationId":"%s","source":"N06","target":"N07","kind":"response","capability":"mesh.describe","payload":{"nucleus":"N06","executableCapabilities":["mesh.describe"]},"timestamp":%d,"transport":"HTTP","meta":{"runtime":"nextjs-ai-chatbot-2000","transport":"HTTP","encoding":"json","version":"1.1.0","nonce":"%s","traceId":"%s"},"nonce":"%s"}`,
+		correlation, timestamp, nonce, correlation, nonce,
+	)
+	mac := hmac.New(sha256.New, []byte(secret))
+	_, _ = mac.Write([]byte(canonical))
+	signature := hex.EncodeToString(mac.Sum(nil))
+	raw := []byte(fmt.Sprintf(
+		`{"protocol":"soul-mesh/1","contractVersion":"1.1.0","id":"response-canonical-1","correlationId":"%s","source":"N06","target":"N07","kind":"response","capability":"mesh.describe","payload":{"nucleus":"N06","executableCapabilities":["mesh.describe"]},"timestamp":%d,"transport":"HTTP","nonce":"%s","meta":{"runtime":"nextjs-ai-chatbot-2000","transport":"HTTP","encoding":"json","version":"1.1.0","nonce":"%s","traceId":"%s"},"hmac":"%s"}`,
+		correlation, timestamp, nonce, nonce, correlation, signature,
+	))
+	var result map[string]any
+	if err := json.Unmarshal(raw, &result); err != nil {
+		t.Fatal(err)
+	}
+	gotCanonical, err := canonicalResponseBytes(raw)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(gotCanonical) != canonical {
+		t.Fatalf("canonical response bytes differ from cross-runtime contract:\nwant %s\n got %s", canonical, gotCanonical)
+	}
+	if !canonicalResponseHMACMatches(raw, secret, signature) {
+		t.Fatal("canonical N06 response HMAC was rejected")
+	}
+	if err := verifyResponseHMACWithRaw(result, raw, secret); err != nil {
+		t.Fatalf("canonical N06 response should verify: %v", err)
+	}
+	if err := verifyResponseHMACWithRaw(result, raw, secret); err == nil {
+		t.Fatal("canonical response replay must be rejected")
+	}
+}
+
+func TestPeerResponseVerifierStillAcceptsLegacyN01Response(t *testing.T) {
+	secret := "n07-legacy-response-secret-0123456789"
+	result := signedPeerErrorResponse("correlation-legacy-response", "mesh.ping", secret)
+	raw, err := json.Marshal(result)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := verifyResponseHMACWithRaw(result, raw, secret); err != nil {
+		t.Fatalf("legacy N01 response should remain compatible: %v", err)
+	}
+}
+
