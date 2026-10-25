@@ -1521,3 +1521,66 @@ A ordem de promoção segue inalterada: N06↔N05 → N05↔N04 → N04↔N03 �
 - N07 #147: 2 SUCCESS / 13 FAILURE; N07 #149: 10 SUCCESS / 11 FAILURE. Nenhuma dessas PRs pode ser promovida como verde.
 - N07 #148 continua DRAFT e sem checks no head original; o ramo de fundação não deve ser promovido diretamente a main até concluir a reconciliação por camadas.
 - Sem exclusões, force-push, fechamento de PR histórica ou alteração direta em main nesta rodada.
+
+
+---
+
+## Plano operacional sistêmico — início, execução paralela e encerramento (revisão 2026-10-25 UTC)
+
+Este plano atualiza a execução sem substituir o inventário histórico. O livro de controle permanece a frente de coordenação documental; cada alteração de runtime fica no repositório/branch proprietário e nas candidatas já existentes.
+
+### Objetivo final verificável
+
+Entregar uma SOUL em que N01–N07 preservem suas autoridades e ferramentas nativas, compartilhem o contrato canônico soul-mesh/1 / versão 1.1.0, possam descobrir e chamar capacidades dos pares sem depender da ordem linear de composição, e usem SARA como autoridade transversal de governança/proveniência — sem transformar SARA em oitavo núcleo, sem criar um segundo Mesh ou segundo Nervo Vago. Fontes externas só são promovidas a execução real quando adaptador, dependências, prova determinística e E2E autenticado estiverem verdes no SHA exato.
+
+### Estrutura de execução: começo → meio → fim
+
+| Etapa | Trabalho | Critério de saída obrigatório |
+|---|---|---|
+| **P0 — mapa e baseline** | Congelar snapshot de cada PR/branch, identificar proprietário de cada arquivo/contrato, ancestralidade, diffs e dependências entre candidatas. Classificar cada PR como ORIGEM, ATIVA, CANDIDATA-DE-FUSÃO, DRAFT-REDUNDANTE, BLOQUEADA ou JÁ-MESCLADA. | Nenhuma mudança sem owner, SHA/base e propósito conhecidos; divergências listadas antes de cherry-pick/merge. |
+| **P1 — contrato de comunicação** | Reconciliar protocolo/versão, identidade do núcleo, HMAC nas requisições e respostas em produção, nonce/replay, correlation_id/trace_id/message_id, envelopes de erro, timeouts/retries e discovery/health. Adaptar cada núcleo sem substituir sua API nativa. | Testes de contrato passam nos 7 núcleos; resposta não autenticada é rejeitada antes de interpretar status; retry lógico preserva message_id e cada tentativa preserva nonce próprio. |
+| **P2 — prova entre processos** | Fazer primeiro um elo real em ambos os sentidos, depois ampliar a matriz: N01↔N04, N04↔N05, N05↔N06, N06↔N07 e N02↔N01; validar N03 no caminho de voz/áudio e todos os pares configurados pelo registro de peers. | Cada elo tem processo real, SHA dependente fixado, prova de autenticação válida/inválida, correlação preservada e resultado PASS/SKIP/BLOCKED por direção. Nenhum teste unitário substitui E2E. |
+| **P3 — GRF/GRCE e órgãos nativos** | Ligar o ciclo C1→C7→C1 aos hooks reais de ERU/MMD/ARA/ETR/ITR/RGO; Nervo Vago transporta sinais; HortaCore mantém estado; SARA/ETR arbitra entrega; N07 orquestra. | Ciclo autenticado com SARA real, snapshot/hash/proveniência encadeados, recusa ETR comprovada sem entrega, replays idempotentes e falha preservada. Se faltar hook/segredo/serviço, estado é BLOCKED/PROJECTED, não PASS. |
+| **P4 — federação pública** | Reconciliar external-capabilities.json, external-adapters.json, ownership, afinidade SOUL-25, SOUL-29/GRF, .gitmodules, gitlinks, SHAs e worktrees. Adaptador metadata-only não vira execução. | Conjuntos de IDs e pins iguais em todos os contratos relevantes; 16 fontes primárias + 6 complementares registadas; 10 projetadas isoladas sem rota execute; NATS é transporte projetado, não Mesh adicional. |
+| **P5 — fundir os deltas compatíveis** | Um candidato de integração por núcleo/cluster; portar mudanças exclusivas por arquivo, conservando PRs/branches de origem como proveniência. Resolver duplicações de lógica/teste, não copiar árvores inteiras divergentes. | Testes unitários/contratuais, análise estática, E2E aplicáveis e CI verdes no SHA final; review dos diffs contra cada origem; nenhum arquivo/funcionalidade desaparece sem substituto comprovado. |
+| **P6 — encerramento** | Confirmar os 7 núcleos, SARA e JEV no registro canônico; classificar os 291 PRs; ligar cada contribuição incorporada a uma origem e ao SHA final; separar bloqueios de infraestrutura de falhas de código. | Registro final com origens absorvidas, duplicatas obsoletas demonstradas, fontes preservadas, evidências e blockers residuais. Só então solicitar merge humano conforme política do repositório. |
+
+### Dependência e paralelismo entre as frentes
+
+- **Faixa de segurança Mesh:** N01 #106, N02 #59 (já mesclada), N04 #51, N05 #53 e N06 #46 (já mesclada) fornecem correções de identidade/HMAC e E2E; N07 #139 autentica resposta antes de tratar status; N07 #162 valida evidência de contrato canônico. N03 precisa ser verificado no mesmo contrato sem duplicar sua camada de áudio/voz. Cada PR continua pertencendo ao seu núcleo.
+- **Faixa GRF/GRCE:** SARA #42 e #44 estão mescladas em SARA; a main observada de SARA é bad23bf1a3d7585d91573a584454f1683e5d2cfe. N07 #148 é a fundação de peers/Mesh, #161 restaura API neural por extensão, #156/#158 são fontes SOUL-28/afinidade e #160 tenta reconciliá-las. #153 está fechada sem merge; não a tratar como origem corrente. #147/#149 são alternativas de reconciliação e não substituem automaticamente #148/#160.
+- **Faixa de federação:** N07 #152 traz o registro de 32 entradas declaradas (16 primárias + 6 complementares + 10 projetadas), enquanto os snapshots consultados de #148/#160 ainda mantêm um registro antigo com HORA duplicado entre categorias, ausência do pin nats-go e typo histórico recurs versus ID canônico recuris. A reconciliação deve manter um registro canônico sem duplicar HORA nem perder a proveniência do ID legado. O conjunto repositories + complementary_repositories é o de registros com adaptador; expansion_repositories + grce_complements é metadata-only. Não declarar os 22 registros automaticamente executáveis.
+- **Faixa das fontes nativas:** N01 #106 não substitui N01 #99/#102/#104 por inteiro; N02 #57 pertence à linha de resiliência/HMAC já consolidada pela #59; N03 #43/#30, N04 #51, N05 #53 e N06 #30 precisam ser avaliados contra seus próprios HEADs atuais. SARA é transversal; JEV permanece guardrail de decisão e não vira núcleo adicional.
+
+### Snapshot multirrepositório observado em 2026-10-25
+
+| Núcleo/faixa | Candidata atual observada | Relação / risco que exige reconciliação |
+|---|---|---|
+| N01 | #106 d6164048798945f2ab7ccffd4f91454ebb02fc8f | Draft, não mergeable; sobrepõe #102, #99 e #104. Testes Android dependem de runner/emulador; verificar CI do SHA atual. |
+| N02 | #57 1b671751d13927cc78ccd7512e6382b245b06ece; #59 já mesclada | Não promover a antiga #57 como candidata independente; reconciliar apenas delta exclusivo com main atual e #59. |
+| N03 | #43 3bb5741e1c2dbf57a6c00f07f5e050cf1502f033; #30 9b4d4f729b1ff7b6dd983354c30b9e374842d22d | Gate de CI e consumidor de capabilities são finalidades diferentes; unir somente após validar os contratos de voz/áudio e Mesh. |
+| N04 | #51 aa544747740d2d0840d10f115db1b0597d287201 | Corrige HMAC de resposta; #47 é alternativa ampla não mergeable e não deve competir como segunda consolidação automática. |
+| N05 | #53 6315f2d58e68c65ef5f97406fd0c759dc78333e0 | HMAC em ingress/egress; #50 é baseline de protocolo e não é mergeável no snapshot consultado. |
+| N06 | #30 f8f34cec02e4bcbe4d3f2fd256cc7b825c624952 | Bridge cooperativa não mergeable; #39 adapter MetaGPT também divergente. Preservar capacidades e provar bridge real antes de consolidar. |
+| N07 — base | #148 be26da55f3934c46972b5e449cf2b8414724d8c9 | Draft, não mergeable; base de trabalho, não autorizada a merge. |
+| N07 — federação | #152 f9f02340e7c4debf10a0bbefe6ebd1d6d9609e2f | 43 arquivos; base recovery separada de #148; não copiar branch inteira. CI do SHA atual foi reenfileirada; aguardando conclusão. |
+| N07 — GRCE/SOUL-28 | #160 e3f96b81a9bb3773343e9bf270f8160a39f41f4a | Draft, não mergeable; sobrepõe #148 e #152 nos adapters/workflows, precisa receber os mesmos contratos compatíveis e passar CI no head exato. |
+| N07 — evidência | #162 bb723afa7fd70ee7f06ea3321d92f66b1251ea56 | PR pequena de verificação; não substitui a prova de runtime. Status combinado retornou sem checks utilizáveis nesta consulta. |
+| SARA | #42/#44 mescladas; main bad23bf1a3d7585d91573a584454f1683e5d2cfe | Atualizar dependências de teste para SHA exato atual, não ficar preso ao antigo #40 90fe0c9... |
+| JEV | #4 035ba013bb88f7bcf8f48c7ebe970b69912b3118; #5 c63d6bae6744a9625809083c2808b4da111fb1e3 | #4 não mergeable; #5 draft. Guardrails precisam continuar transversais e fail-closed. |
+
+O mapa acima é um snapshot, não declaração de conclusão. CI QUEUED/PENDING/ausente é UNMEASURABLE; falha de compilação/teste é FAIL até correção e novo run no SHA atual.
+
+### Critério de correção de rascunhos e contribuições duplicadas
+
+Um draft não é eliminado só por estar velho ou falhando. Ele só pode ser classificado como DRAFT-REDUNDANTE após: (1) identificar sua contribuição exclusiva; (2) apontar o commit/arquivo/teste onde essa função está preservada na candidata proprietária; (3) demonstrar o comportamento com testes; (4) registrar a proveniência; e (5) manter o branch de origem recuperável. Se qualquer função não tiver substituto comprovado, permanece ORIGEM/PENDENTE. Fechar PR redundante não significa apagar código nem histórico.
+
+### Estado da rodada
+
+**REAL:** revisão multi-repositório executada; conflitos de inventário/contratos e dependências de runtime identificados; correções pontuais já gravadas em #152 e #160; main não foi alterada.
+
+**PENDENTE DE CI:** as correções no atual #152 estão com novos runs enfileirados; as alterações recentes no #160 precisam de uma execução conclusiva no head atual.
+
+**BLOQUEIOS CONHECIDOS:** runners/filas de Actions; N01 Android emulator; E2E autenticado com endpoints/segredos de todos os pares; reconciliação de nats-go/HORA/IDs projetados entre os snapshots de #148/#152/#160.
+
+**Regra de saída desta rodada:** não abrir uma nova PR de fusão, não alterar main, não mesclar branches divergentes por inteiro e não declarar uma frente ABSORBED antes de CI verde no SHA final.
