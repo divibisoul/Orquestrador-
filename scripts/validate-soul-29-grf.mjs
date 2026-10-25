@@ -37,7 +37,7 @@ if(nervoNode.repository===selectedTransportRepository) {
   if(nervoNode.previous_repository!==historicalNervoRepository) throw new Error('NERVOVAGO_HISTORICAL_SOURCE_NOT_PRESERVED');
   if(nervoNode.state!=='PROJECTED') throw new Error('NERVOVAGO_NATS_STATE_INVALID');
   if(!String(nervoNode.role||'').includes('not a second Mesh')) throw new Error('NERVOVAGO_NATS_MUST_REMAIN_TRANSPORT_ONLY');
-  const natsPin=(externalRegistry.complementary_repositories||[]).find(x=>x.id==='nats-go');
+  const natsPin=[...(externalRegistry.repositories||[]), ...(externalRegistry.complementary_repositories||[]), ...(externalRegistry.expansion_repositories||[]), ...(externalRegistry.grce_complements||[])].find(x=>x.id==='nats-go');
   if(!natsPin || natsPin.source!=='https://github.com/nats-io/nats.go' || natsPin.revision!==nervoNode.replacement_revision)
     throw new Error('NERVOVAGO_NATS_PIN_MISMATCH');
 } else if(nervoNode.repository===historicalNervoRepository) {
