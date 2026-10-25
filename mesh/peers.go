@@ -314,9 +314,18 @@ func supportsExecutableCapability(description map[string]any, capability string)
 	}
 	raw, ok := description["executableCapabilities"]
 	if !ok {
-		if nested, ok := description["payload"].(map[string]any); ok {
+		if nested, hasPayload := description["payload"].(map[string]any); hasPayload {
 			raw = nested["executableCapabilities"]
+			// N01's current native Mesh descriptor publishes its registered
+			// operations under "capabilities". Keep this compatibility scoped
+			// to N01; never treat arbitrary declaredCapabilities as executable.
+			if raw == nil && nested["nucleus"] == protocol.N01 {
+				raw = nested["capabilities"]
+			}
 		}
+	}
+	if raw == nil && description["nucleus"] == protocol.N01 {
+		raw = description["capabilities"]
 	}
 	items, ok := raw.([]any)
 	if !ok {
