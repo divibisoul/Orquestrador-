@@ -36,7 +36,7 @@ func TestInspectExternalSourceUsesBuildAttestationWhenImageOmitsGitMetadata(t *t
 	}
 	t.Setenv("SOUL_EXTERNAL_RUNTIME_ATTESTATION", attestationPath)
 
-	got := inspectExternalSource(sourceRoot, revision)
+	got := inspectAttestedExternalSource(sourceRoot, revision, attestationPath)
 	if !got.Present || !got.RevisionMatched || got.State != "ATTESTED_PIN_MATCH" ||
 		got.EvidenceMode != "build-attestation" || got.ObservedRevision != revision {
 		t.Fatalf("attested source not recognized: %#v", got)
@@ -71,7 +71,7 @@ func TestInspectExternalSourceAttestationMustMatchExpectedPin(t *testing.T) {
 	}
 	t.Setenv("SOUL_EXTERNAL_RUNTIME_ATTESTATION", attestationPath)
 
-	got := inspectExternalSource(sourceRoot, expectedRevision)
+	got := inspectAttestedExternalSource(sourceRoot, expectedRevision, attestationPath)
 	if !got.Present || got.RevisionMatched || got.State != "ATTESTATION_REVISION_MISMATCH" ||
 		got.EvidenceMode != "build-attestation" || got.ObservedRevision != attestedRevision {
 		t.Fatalf("mismatched attestation incorrectly accepted: %#v", got)
