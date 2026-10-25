@@ -87,6 +87,30 @@ def source_worktree_present(rt):
         return pathlib.Path(result.stdout.strip()).resolve() == rt.resolve()
     except Exception:
         return False
+def source_runtime_present(rt):
+    # Prefer a real provider worktree. Production images omit Git metadata, so
+    # accept only an immutable build attestation generated after checking each
+    # materialized source against the parent repository gitlink.
+    if source_worktree_present(rt):
+        return True
+    if not rt.is_dir():
+        return False
+    try:
+        if not any(entry.name != ".git" for entry in rt.iterdir()):
+            return False
+        provider = rt.name
+        attestation = json.loads((REPO_ROOT / "config/soul-external-runtime-attestation.json").read_text(encoding="utf-8"))
+        if attestation.get("schema_version") != "soul.external.runtime-attestation.v1":
+            return False
+        if attestation.get("generated_from_materialized_git") is not True:
+            return False
+        revisions = json.loads((REPO_ROOT / "integrations/external-capabilities.json").read_text(encoding="utf-8"))
+        expected = None
+        for tier in ("repositories", "complementary_repositories", "expansion_repositories", "grce_complements"):
+            expected = next((item.get("revision") for item in revisions.get(tier, []) if item.get("id") == provider), expected)
+        return bool(expected) and attestation.get("repositories", {}).get(provider) == expected
+    except Exception:
+        return False
 
 
 def external_io_root():
@@ -417,7 +441,7 @@ def execute(v,rt):
     if op == "source.verify" or verify_operations.get(provider) == op:
         source_verify(provider, rt)
     if op.endswith(".describe"):
-        source_present=source_worktree_present(rt)
+        source_present=source_runtime_present(rt)
         emit({
             "state":"PROJECTED" if not source_present else "PASS",
             "provider":provider,
@@ -425,14 +449,14 @@ def execute(v,rt):
             "source_present":source_present,
             "package_available":package_available(provider),
             "execution_proven":False,
-            "evidence_rule":"source presence is not runtime execution evidence",
+            "evidence_rule":"source presence is not runtime execution evidence; build attestation does not prove provider execution",
         })
     emit({"state":"BLOCKED","code":"EXTERNAL_ADAPTER_OPERATION_NOT_AVAILABLE","provider":provider,"operation":op},2)
 
 v=load()
 rt=root(v)
 if str(v.get("mode") or "probe").strip().lower()=="probe":
-    source_present=source_worktree_present(rt)
+    source_present=source_runtime_present(rt)
     emit({
         "state":"PASS" if source_present else "PROJECTED",
         "provider":str(v.get("provider") or ""),
@@ -440,7 +464,7 @@ if str(v.get("mode") or "probe").strip().lower()=="probe":
         "source_present":source_present,
         "package_available":package_available(str(v.get("provider") or "")),
         "execution_proven":False,
-        "evidence_rule":"probe validates registration/worktree state only; it does not execute the source",
+        "evidence_rule":"probe validates the source worktree or exact build attestation; it never proves provider execution",
         "root":str(rt),
     })
 execute(v,rt)
