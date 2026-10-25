@@ -40,7 +40,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: divibisoul/SARA
-          ref: 5633cdd95a067c1c40a4b731a38976971e173d1f
+          ref: bad23bf1a3d7585d91573a584454f1683e5d2cfe
           path: .e2e/SARA
           fetch-depth: 1
 
