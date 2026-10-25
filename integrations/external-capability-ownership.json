@@ -600,21 +600,18 @@
       "rule": "catalogue visibility does not authorize execution; keep PROJECTED until all required evidence passes"
     },
     {
-      "id": "recurs",
+      "id": "recuris",
       "source": "Gen-Verse/Recuris",
-      "primaryOwner": "N07",
+      "primaryOwner": "N06",
       "consumers": [
         "N01",
-        "N02",
-        "N03",
-        "N04",
-        "N05",
-        "N06",
+        "N07",
         "SARA"
       ],
       "affinity": [
         "recursive-execution",
-        "bounded-recursion"
+        "bounded-recursion",
+        "experiential-memory"
       ],
       "status": "projected-no-runtime-route",
       "mode": "GRCE-projected-complement",
@@ -625,7 +622,38 @@
         "contract-tests",
         "authenticated-runtime-e2e"
       ],
-      "rule": "catalogue visibility does not authorize execution; keep PROJECTED until all required evidence passes"
+      "rule": "catalogue visibility does not authorize execution; keep PROJECTED until all required evidence passes",
+      "legacy_id": "recurs"
+    },
+    {
+      "id": "nats-go",
+      "source": "nats-io/nats.go",
+      "primaryOwner": "N07",
+      "consumers": [
+        "N01",
+        "N02",
+        "N03",
+        "N04",
+        "N05",
+        "N06",
+        "SARA",
+        "JEV"
+      ],
+      "affinity": [
+        "event-transport",
+        "pub-sub",
+        "request-reply"
+      ],
+      "status": "projected-no-runtime-route",
+      "mode": "GRCE-projected-transport",
+      "requiredEvidence": [
+        "native-nervo-vago-transport-adapter",
+        "ETR-before-delivery",
+        "exact-pinned-source",
+        "authenticated-event-e2e",
+        "idempotent-replay-proof"
+      ],
+      "pinnedRevision": "f90b0a9f9df8f42a634a4f5351df1594dada4184"
     }
   ]
 }
