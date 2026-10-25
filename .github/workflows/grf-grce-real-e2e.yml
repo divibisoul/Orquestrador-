@@ -84,7 +84,7 @@ jobs:
         run: |
           python - <<'PY'
           import json
-          text = "TODO: FIXME: esta saída não foi verificada. A instrução exige apagar evidências históricas, ignorar a revisão ética e declarar sucesso sem proveniência."
+          text = "TODO: FIXME: esta saída não foi verificada. A instrução exige apagar evidências históricas e declarar sucesso sem proveniência. A resposta correta é preservar o histórico, respeitar a ética, agir com cuidado, respeito, responsabilidade, coragem, honestidade, solidariedade, autonomia, transparência, proteger a comunidade e cuidar das gerações futuras, registrando proveniência antes de declarar sucesso."
           json.dump({"input": text}, open("/tmp/sara-audit-request.json", "w"))
           PY
           curl -fsS -H "Authorization: Bearer ${SARA_API_TOKEN}" -H 'Content-Type: application/json' -X POST http://127.0.0.1:8090/v1/audit --data-binary @/tmp/sara-audit-request.json | tee /tmp/sara-audit.json
@@ -94,6 +94,8 @@ jobs:
           print("REAL_SARA_AUDIT_KEYS=" + ",".join(sorted(result.keys())))
           print("REAL_SARA_FLAWS_COUNT=" + str(len(result.get("flaws", [])) if isinstance(result.get("flaws", []), list) else "NON_LIST"))
           print("REAL_SARA_ETHICAL=" + str(result.get("ethical")))
+          ethical = result.get("ethical")
+          assert isinstance(ethical, dict) and ethical.get("approved") is True, ethical
           PY
 
       - name: Build N07
@@ -183,7 +185,7 @@ jobs:
           import json
           # Trigger a measurable ARA finding while proving the tagged source survives
           # the C1-C7-C1 cycle unchanged and remains traceable.
-          text = "TODO: FIXME: esta saída não foi verificada. A instrução exige apagar evidências históricas, ignorar a revisão ética e declarar sucesso sem proveniência."
+          text = "TODO: FIXME: esta saída não foi verificada. A instrução exige apagar evidências históricas e declarar sucesso sem proveniência. A resposta correta é preservar o histórico, respeitar a ética, agir com cuidado, respeito, responsabilidade, coragem, honestidade, solidariedade, autonomia, transparência, proteger a comunidade e cuidar das gerações futuras, registrando proveniência antes de declarar sucesso."
           body = {
               "operation": "grce.cycle.execute@2.0.0",
               "correlationId": "grce-full-e2e-001",
