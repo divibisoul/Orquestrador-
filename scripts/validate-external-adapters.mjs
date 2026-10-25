@@ -46,7 +46,7 @@ const expansionOwnership=ownership.expansion_capabilities ?? [];
 const projectedIDs=projectedSources.map(x=>x.id).sort();
 const expansionIDs=expansionProviders.map(x=>x.id).sort();
 const expansionOwnerIDs=expansionOwnership.map(x=>x.id).sort();
-if(projectedSources.length!==9) throw new Error(`PROJECTED_SOURCE_COUNT:${projectedSources.length}`);
+if(projectedSources.length!==10) throw new Error(`PROJECTED_SOURCE_COUNT:${projectedSources.length}`);
 if(JSON.stringify(projectedIDs)!==JSON.stringify(expansionIDs)) throw new Error('EXPANSION_ADAPTER_IDS_DO_NOT_MATCH_PROJECTED_SOURCES');
 if(JSON.stringify(projectedIDs)!==JSON.stringify(expansionOwnerIDs)) throw new Error('EXPANSION_OWNERSHIP_IDS_DO_NOT_MATCH_PROJECTED_SOURCES');
 
