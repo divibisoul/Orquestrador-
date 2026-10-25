@@ -4,7 +4,7 @@
   "component_id": "N07",
   "component_repository": "divibisoul/Orquestrador-",
   "native_authority": "preserved",
-  "access_model": "All 16 upstream sources remain catalogued by N07; only providers with direct_affinity=true are direct N07 adapter candidates. Other providers are routed to their native-affinity nuclei through canonical federation.",
+  "access_model": "All 16 upstream sources remain catalogued by N07. direct_adapter_hosts is the complete direct-affinity host set; direct_adapter_host remains a backward-compatible preferred-host alias. Providers with direct_affinity=true include N07 in the complete host set; others route through their native-affinity host(s) via canonical federation.",
   "external_provider_count": 16,
   "external_providers": [
     {
@@ -22,7 +22,10 @@
       "structural_state": "REAL",
       "runtime_state": "PROJECTED",
       "requires_adapter": true,
-      "direct_adapter_host": "N07"
+      "direct_adapter_host": "N07",
+      "direct_adapter_hosts": [
+        "N07"
+      ]
     },
     {
       "id": "superagi",
@@ -38,7 +41,10 @@
       "structural_state": "REAL",
       "runtime_state": "PROJECTED",
       "requires_adapter": true,
-      "direct_adapter_host": "N07"
+      "direct_adapter_host": "N07",
+      "direct_adapter_hosts": [
+        "N07"
+      ]
     },
     {
       "id": "langgraph",
@@ -52,7 +58,11 @@
       "structural_state": "REAL",
       "runtime_state": "PROJECTED",
       "requires_adapter": true,
-      "direct_adapter_host": "N07"
+      "direct_adapter_host": "N07",
+      "direct_adapter_hosts": [
+        "N07",
+        "N01"
+      ]
     },
     {
       "id": "crewai",
@@ -66,7 +76,10 @@
       "structural_state": "REAL",
       "runtime_state": "PROJECTED",
       "requires_adapter": true,
-      "direct_adapter_host": "N07"
+      "direct_adapter_host": "N07",
+      "direct_adapter_hosts": [
+        "N07"
+      ]
     },
     {
       "id": "microsoft-agent-framework",
@@ -81,7 +94,10 @@
       "structural_state": "REAL",
       "runtime_state": "PROJECTED",
       "requires_adapter": true,
-      "direct_adapter_host": "N07"
+      "direct_adapter_host": "N07",
+      "direct_adapter_hosts": [
+        "N07"
+      ]
     },
     {
       "id": "openhands",
@@ -95,7 +111,10 @@
       "structural_state": "REAL",
       "runtime_state": "PROJECTED",
       "requires_adapter": true,
-      "direct_adapter_host": "N06"
+      "direct_adapter_host": "N06",
+      "direct_adapter_hosts": [
+        "N06"
+      ]
     },
     {
       "id": "metagpt",
@@ -109,7 +128,10 @@
       "structural_state": "REAL",
       "runtime_state": "PROJECTED",
       "requires_adapter": true,
-      "direct_adapter_host": "N07"
+      "direct_adapter_host": "N07",
+      "direct_adapter_hosts": [
+        "N07"
+      ]
     },
     {
       "id": "agentscope",
@@ -127,7 +149,11 @@
       "structural_state": "REAL",
       "runtime_state": "PROJECTED",
       "requires_adapter": true,
-      "direct_adapter_host": "N03"
+      "direct_adapter_host": "N03",
+      "direct_adapter_hosts": [
+        "N03",
+        "N07"
+      ]
     },
     {
       "id": "letta-code",
@@ -141,7 +167,10 @@
       "structural_state": "REAL",
       "runtime_state": "PROJECTED",
       "requires_adapter": true,
-      "direct_adapter_host": "N01"
+      "direct_adapter_host": "N01",
+      "direct_adapter_hosts": [
+        "N01"
+      ]
     },
     {
       "id": "browser-use",
@@ -154,7 +183,10 @@
       "structural_state": "REAL",
       "runtime_state": "PROJECTED",
       "requires_adapter": true,
-      "direct_adapter_host": "N04"
+      "direct_adapter_host": "N04",
+      "direct_adapter_hosts": [
+        "N04"
+      ]
     },
     {
       "id": "smolagents",
@@ -169,7 +201,10 @@
       "structural_state": "REAL",
       "runtime_state": "PROJECTED",
       "requires_adapter": true,
-      "direct_adapter_host": "N06"
+      "direct_adapter_host": "N06",
+      "direct_adapter_hosts": [
+        "N06"
+      ]
     },
     {
       "id": "pydantic-ai",
@@ -184,7 +219,11 @@
       "structural_state": "REAL",
       "runtime_state": "PROJECTED",
       "requires_adapter": true,
-      "direct_adapter_host": "N01"
+      "direct_adapter_host": "N01",
+      "direct_adapter_hosts": [
+        "N01",
+        "JEV"
+      ]
     },
     {
       "id": "llama-index",
@@ -199,7 +238,10 @@
       "structural_state": "REAL",
       "runtime_state": "PROJECTED",
       "requires_adapter": true,
-      "direct_adapter_host": "N05"
+      "direct_adapter_host": "N05",
+      "direct_adapter_hosts": [
+        "N05"
+      ]
     },
     {
       "id": "dspy",
@@ -213,7 +255,10 @@
       "structural_state": "REAL",
       "runtime_state": "PROJECTED",
       "requires_adapter": true,
-      "direct_adapter_host": "N06"
+      "direct_adapter_host": "N06",
+      "direct_adapter_hosts": [
+        "N06"
+      ]
     },
     {
       "id": "whisper",
@@ -225,7 +270,10 @@
       "structural_state": "REAL",
       "runtime_state": "PROJECTED",
       "requires_adapter": true,
-      "direct_adapter_host": "N03"
+      "direct_adapter_host": "N03",
+      "direct_adapter_hosts": [
+        "N03"
+      ]
     },
     {
       "id": "kokoro",
@@ -237,7 +285,10 @@
       "structural_state": "REAL",
       "runtime_state": "PROJECTED",
       "requires_adapter": true,
-      "direct_adapter_host": "N03"
+      "direct_adapter_host": "N03",
+      "direct_adapter_hosts": [
+        "N03"
+      ]
     }
   ],
   "soul_peer_count": 9,
@@ -268,5 +319,5 @@
     ]
   },
   "rule": "External capabilities reinforce native SOUL functions; they do not replace ownership. Runtime success requires real adapter/configuration/evidence.",
-  "direct_affinity_rule": "direct_affinity identifies adapter-host affinity, never native ownership"
+  "direct_affinity_rule": "direct_adapter_hosts is authoritative and matches the source registry targets and SOUL-25 direct-affinity edges; direct_adapter_host is a preserved preferred-host alias contained in that list. direct_affinity=true iff N07 is in direct_adapter_hosts. Direct affinity identifies host affinity, never native ownership."
 }

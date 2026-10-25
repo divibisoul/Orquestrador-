@@ -1,12 +1,16 @@
 package backend
 
 import (
+	"time"
+	"fmt"
 	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
+	"github.com/divibisoul/Orquestrador-/grce"
 	"github.com/divibisoul/Orquestrador-/grf"
 	"github.com/divibisoul/Orquestrador-/supergpu"
 )
@@ -35,10 +39,14 @@ func TestGRCEExecutorRuntimeCompletesWithHTTPBoundaryFixture(t *testing.T) {
 				"trace_hash":             "sha256:test-trace",
 				"federated_context_hash": "sha256:test-context",
 			})
-		case "/v1/rgo/trinity":
+		case "/v1/grce/hooks":
 			writeGRCEJSONTest(w, map[string]any{
 				"final_status": "VALIDATED",
 				"finding_id": "grce:corr-test",
+				"all_hooks_observed": true,
+				"hook_evidence": map[string]any{
+					"RGO": true, "ARA": true, "ITR": true, "ETR": true, "ERU": true, "MMD": true,
+				},
 			})
 		default:
 			http.NotFound(w, r)
@@ -97,3 +105,132 @@ func writeGRCEJSONTest(w http.ResponseWriter, payload map[string]any) {
 	w.Header().Set("Content-Type", "application/json")
 	_ = json.NewEncoder(w).Encode(payload)
 }
+
+
+func TestGRCEEthicalReviewInputPreservesFullContent(t *testing.T) {
+	content := "simulação de auditoria com modificar 🔒IDENTITY; manter o original intacto"
+	got := grceEthicalReviewInput("avaliar a necessidade e os limites da transformação", content)
+	for _, required := range []string{
+		"Princípios do ciclo GRCE",
+		"autonomia",
+		"transparência",
+		"responsabilidade",
+		"cuidado com a comunidade",
+		"histórico causal",
+		"proveniência",
+		"Finalidade da avaliação: avaliar a necessidade e os limites da transformação",
+		content,
+	} {
+		if !strings.Contains(got, required) {
+			t.Fatalf("ethical review input lost required context %q: %q", required, got)
+		}
+	}
+}
+
+func TestBuildGRCERGOFindingMatchesSARAEnvelopeSchema(t *testing.T) {
+	const originalText = "preservar 🔒IDENTITY, evidências e proveniência"
+	const transformedText = "candidate-transformed-output-preserving-history"
+	state := grf.State{
+		ID:              "grce-candidate-001",
+		EpistemicState: grf.PRESERVED,
+		Payload: map[string]any{
+			"original_state": map[string]any{"text": originalText},
+			"artifacts": []grf.Artifact{{
+				ID:    "candidate-artifact-001",
+				Stage: "ITR",
+				State: grf.REAL,
+				Payload: map[string]any{
+					"transformed": transformedText,
+				},
+			}},
+		},
+	}
+	context := grf.Context{TraceID: "trace-rgo-001", CorrelationID: "corr-rgo-001", SequenceIndex: 7}
+	finding, err := buildGRCERGOFinding(state, context)
+	if err != nil {
+		t.Fatal(err)
+	}
+	requiredStrings := map[string]string{
+		"schema_version": "1.0.0",
+		"finding_id":     "grce:corr-rgo-001",
+		"object_id":      state.ID,
+		"correlation_id": context.CorrelationID,
+		"trace_id":       context.TraceID,
+	}
+	for key, want := range requiredStrings {
+		if got, ok := finding[key].(string); !ok || got != want {
+			t.Fatalf("%s=%v, want %q", key, finding[key], want)
+		}
+	}
+	timestamp, ok := finding["timestamp"].(string)
+	if !ok {
+		t.Fatalf("timestamp missing or non-string: %T", finding["timestamp"])
+	}
+	if _, err := time.Parse(time.RFC3339Nano, timestamp); err != nil {
+		t.Fatalf("timestamp does not satisfy RFC3339Nano: %q: %v", timestamp, err)
+	}
+	source, ok := finding["source"].(map[string]any)
+	if !ok || source["system"] != "SOUL" || source["module"] != "N07.GRCE" || source["version"] != grce.Version {
+		t.Fatalf("invalid SARA source contract: %#v", finding["source"])
+	}
+	epistemic, ok := finding["epistemic"].(map[string]any)
+	if !ok || epistemic["mode"] != "EXECUTION" || epistemic["verification_state"] != "UNVERIFIED" {
+		t.Fatalf("invalid or overstated epistemic state: %#v", finding["epistemic"])
+	}
+	actionability, ok := finding["actionability"].(map[string]any)
+	if !ok || actionability["status"] != "ACTIONABLE" {
+		t.Fatalf("invalid actionability contract: %#v", finding["actionability"])
+	}
+	dual, ok := finding["dual"].(map[string]any)
+	if !ok || dual["status"] != "UNRESOLVED" {
+		t.Fatalf("invalid dual contract: %#v", finding["dual"])
+	}
+	evidence, ok := finding["evidence"].([]any)
+	if !ok || len(evidence) != 1 {
+		t.Fatalf("expected one state-hash evidence reference, got %#v", finding["evidence"])
+	}
+	ref, ok := evidence[0].(map[string]any)
+	if !ok || ref["id"] == "" || ref["kind"] != "GRCE_STATE_HASH" || !strings.HasPrefix(fmt.Sprint(ref["ref"]), "sha256:") {
+		t.Fatalf("invalid state-hash evidence reference: %#v", evidence[0])
+	}
+	provenance, ok := finding["provenance"].(map[string]any)
+	if !ok || provenance["origin"] != "N07.GRCE" || provenance["input_hash"] == "" {
+		t.Fatalf("invalid GRCE provenance: %#v", finding["provenance"])
+	}
+	failure, ok := finding["failure"].(map[string]any)
+	if !ok {
+		t.Fatalf("RGO failure record is missing: %#v", finding["failure"])
+	}
+	description, ok := failure["description"].(string)
+	if !ok {
+		t.Fatalf("RGO candidate description must remain a complete serialized string: %T", failure["description"])
+	}
+	var reviewed map[string]any
+	if err := json.Unmarshal([]byte(description), &reviewed); err != nil {
+		t.Fatalf("RGO candidate representation is not valid JSON: %v", err)
+	}
+	if reviewed["candidate_id"] != state.ID || reviewed["candidate_epistemic_state"] != string(grf.PRESERVED) {
+		t.Fatalf("candidate identity/epistemic state was lost: %#v", reviewed)
+	}
+	candidatePayload, ok := reviewed["source_and_transformations"].(map[string]any)
+	if !ok {
+		t.Fatalf("original state and transformations were dropped from RGO payload: %#v", reviewed["source_and_transformations"])
+	}
+	original, ok := candidatePayload["original_state"].(map[string]any)
+	if !ok || original["text"] != originalText {
+		t.Fatalf("original source content/protected tag was not preserved: %#v", candidatePayload["original_state"])
+	}
+	artifacts, ok := candidatePayload["artifacts"].([]any)
+	if !ok || len(artifacts) != 1 {
+		t.Fatalf("candidate transformation artifacts were not preserved: %#v", candidatePayload["artifacts"])
+	}
+	artifact, ok := artifacts[0].(map[string]any)
+	if !ok || artifact["id"] != "candidate-artifact-001" {
+		t.Fatalf("candidate artifact identity was lost: %#v", artifacts[0])
+	}
+	artifactPayload, ok := artifact["payload"].(map[string]any)
+	if !ok || artifactPayload["transformed"] != transformedText {
+		t.Fatalf("transformed candidate content was lost: %#v", artifact["payload"])
+	}
+}
+

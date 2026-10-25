@@ -26,18 +26,30 @@ jobs:
           fi
       - name: Validate exact SOUL external submodule pins
         run: node scripts/validate-soul-external-submodules.mjs
-      - name: Validate 16-repository registry
+      - name: Validate core adapters and projected expansion inventory
         if: github.event.repository.name == 'Orquestrador-'
         run: |
           python - <<'PY'
           import json
-          d=json.load(open('integrations/external-capabilities.json'))
-          assert len(d['repositories']) == 16
-          assert len(d.get('complementary_repositories', [])) == 6
-          all_sources=d['repositories']+d['complementary_repositories']
-          assert len(all_sources) == 22
-          for x in all_sources:
+          d=json.load(open('integrations/external-capabilities.json', encoding='utf-8'))
+          a=json.load(open('integrations/external-adapters.json', encoding='utf-8'))
+          o=json.load(open('integrations/external-capability-ownership.json', encoding='utf-8'))
+          core=d['repositories']+d['complementary_repositories']
+          projected=d.get('expansion_repositories',[])+d.get('grce_complements',[])
+          core_ids={x['id'] for x in core}
+          projected_ids={x['id'] for x in projected}
+          assert len(d['repositories'])==16 and len(d['complementary_repositories'])==6
+          assert len(core_ids)==22 and len(projected_ids)==10 and len(core_ids|projected_ids)==32
+          assert {x['id'] for x in a['providers']}==core_ids
+          assert {x['id'] for x in a['projected_expansions']}==projected_ids
+          assert len(o['capabilities'])==22 and {x['id'] for x in o['capabilities']}==core_ids
+          assert len(o['expansion_capabilities'])==10 and {x['id'] for x in o['expansion_capabilities']}==projected_ids
+          for x in core+projected:
               assert x['source'].startswith('https://github.com/')
-              assert x['revision'] and x['targets']
-          print('16/16 primary + 6/6 complementary = 22 external sources: VALID')
+              assert len(x['revision'])==40
+              assert x.get('targets') or x.get('target')
+          for x in a['projected_expansions']:
+              assert x['state']=='PROJECTED' and not x['execution_enabled'] and not x['execution_proven']
+              assert x['runtime_route_operations']==[]
+          print('16 primary + 6 complementary adapter-backed + 10 projected expansions = 32 pinned sources: VALID')
           PY

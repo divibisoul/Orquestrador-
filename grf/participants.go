@@ -84,16 +84,31 @@ func (p *BoundaryParticipant) Provenance() []Provenance {
 
 func ParticipantDescriptors() []ParticipantDescriptor {
 	return []ParticipantDescriptor{
-		{ID:"autogenesis",Source:"DVampire/Autogenesis",Role:"self-evolution",State:PROJECTED},
-		{ID:"cognifold",Source:"OpenNerve/CogniFold",Role:"neocortex",State:BLOCKED},
-		{ID:"belel-protocol",Source:"TTOPM/belel-protocol",Role:"nervo-vago",State:BLOCKED},
-		{ID:"opensinn-bus",Source:"OpenSIN-AI/OpenSIN-Neural-Bus",Role:"vagus-bus",State:BLOCKED},
-		{ID:"octos",Source:"lispking/octos",Role:"octacore reinforcement",State:PROJECTED},
-		{ID:"hora-graph-core",Source:"Vivien83/hora-graph-core",Role:"hortacore reinforcement",State:PROJECTED},
-		{ID:"mycelium",Source:"mycelium-io/mycelium",Role:"clareira workspace",State:PROJECTED},
-		{ID:"prime-agent",Source:"PrimeIntellect-ai/prime-agent",Role:"recursive neocortex/clareira",State:PROJECTED},
-		{ID:"cuda-oxide",Source:"SuperInstance/cuda-oxide",Role:"supergpu reinforcement",State:PROJECTED},
-		{ID:"functional-graph-agi",Source:"kexi-bq/functional-graph-agi",Role:"supergpu-agi",State:BLOCKED},
+		// Historical candidates are preserved as evidence; they are not active authorities.
+		{ID:"autogenesis",Source:"DVampire/Autogenesis",Role:"historical self-evolution source",State:PRESERVED},
+		{ID:"cognifold",Source:"OpenNerve/CogniFold",Role:"historical neocortex candidate; source unavailable",State:PRESERVED},
+		{ID:"belel-protocol",Source:"TTOPM/belel-protocol",Role:"historical Nervo Vago candidate; superseded",State:PRESERVED},
+		{ID:"opensinn-bus",Source:"OpenSIN-AI/OpenSIN-Neural-Bus",Role:"historical Nervo Vago transport candidate; source unavailable",State:PRESERVED},
+		{ID:"functional-graph-agi",Source:"kexi-bq/functional-graph-agi",Role:"historical graph-AGI candidate; source unavailable",State:PRESERVED},
+
+		// Existing materialized GRF sources remain active in the registry.
+		{ID:"octos",Source:"lispking/octos",Role:"Octacore reinforcement",State:PROJECTED},
+		{ID:"hora-graph-core",Source:"Vivien83/hora-graph-core",Role:"HortaCore biological-memory reinforcement",State:PROJECTED},
+		{ID:"mycelium",Source:"mycelium-io/mycelium",Role:"Clareira workspace reinforcement",State:PROJECTED},
+		{ID:"prime-agent",Source:"PrimeIntellect-ai/prime-agent",Role:"recursive neocortex/Clareira reinforcement",State:PROJECTED},
+		{ID:"cuda-oxide",Source:"SuperInstance/cuda-oxide",Role:"SuperGPU reinforcement",State:PROJECTED},
+
+		// New public capability participants. Each is a complement, never an authority replacement.
+		{ID:"bijux-dag-runtime",Source:"bijux/bijux-core",Role:"deterministic DAG execution and provenance",State:PROJECTED},
+		{ID:"ouro-loop",Source:"VictorVVedtion/ouro-loop",Role:"bounded verification and self-remediation",State:PROJECTED},
+		{ID:"recuris",Source:"Gen-Verse/Recuris",Role:"experiential memory and failure localization",State:PROJECTED},
+		{ID:"fedml",Source:"FedML-AI/FedML",Role:"federated learning",State:PROJECTED},
+		{ID:"hivemind",Source:"learning-at-home/hivemind",Role:"decentralized P2P learning",State:PROJECTED},
+		{ID:"temporal",Source:"temporalio/temporal",Role:"durable workflow execution",State:PROJECTED},
+		{ID:"cognitive-workspace",Source:"tao-hpu/cognitive-workspace",Role:"global cognitive workspace",State:PROJECTED},
+		{ID:"ravana",Source:"OpenSource-Syndicate/RAVANA",Role:"proactive cognition and reflection",State:PROJECTED},
+		{ID:"ray",Source:"ray-project/ray",Role:"distributed compute and stateful actors",State:PROJECTED},
+		{ID:"nats-go",Source:"nats-io/nats.go",Role:"Nervo Vago transport reinforcement; not a second Mesh",State:PROJECTED},
 	}
 }
 

@@ -24,9 +24,29 @@ type ExternalAdapterSpec struct {
 	Operations []string `json:"operations"`
 	Package    *string  `json:"package"`
 }
+type ExternalProjectedExpansion struct {
+	ID                    string   `json:"id"`
+	Owner                 string   `json:"owner"`
+	Kind                  string   `json:"kind"`
+	Root                  string   `json:"root"`
+	Package               *string  `json:"package"`
+	Revision              string   `json:"revision"`
+	Targets               []string `json:"targets"`
+	Role                  string   `json:"role"`
+	State                 string   `json:"state"`
+	IntegrationState      string   `json:"integration_state"`
+	LegacyOperations      []string `json:"legacy_operations"`
+	MetadataOperations    []string `json:"metadata_operations"`
+	RuntimeRouteOperations []string `json:"runtime_route_operations"`
+	ExecutionEnabled      bool     `json:"execution_enabled"`
+	ExecutionProven       bool     `json:"execution_proven"`
+}
+
 type ExternalAdapterManifest struct {
 	SchemaVersion         string `json:"schema_version"`
 	CanonicalControlPlane string `json:"canonical_control_plane"`
+	ProviderCount         int    `json:"provider_count"`
+	ProjectedExpansionCount int  `json:"projected_expansion_count"`
 	RuntimeDefaults       struct {
 		Enabled               bool `json:"enabled"`
 		ProbeWithoutExecution bool `json:"probe_without_execution"`
@@ -39,7 +59,8 @@ type ExternalAdapterManifest struct {
 		Path           string `json:"path"`
 		InterpreterEnv string `json:"interpreter_env"`
 	} `json:"runner"`
-	Providers []ExternalAdapterSpec `json:"providers"`
+	Providers           []ExternalAdapterSpec       `json:"providers"`
+	ProjectedExpansions  []ExternalProjectedExpansion `json:"projected_expansions"`
 }
 
 const (
@@ -50,23 +71,29 @@ const (
 type ExternalCapabilityRevision struct {
 	ID       string `json:"id"`
 	Revision string `json:"revision"`
+	Targets  []string `json:"targets"`
+	Target   string `json:"target"`
 }
 
 type ExternalCapabilityRegistry struct {
 	Repositories              []ExternalCapabilityRevision `json:"repositories"`
 	ComplementaryRepositories []ExternalCapabilityRevision `json:"complementary_repositories"`
+	ExpansionRepositories     []ExternalCapabilityRevision `json:"expansion_repositories"`
+	GRCEComplements           []ExternalCapabilityRevision `json:"grce_complements"`
 }
 
 type ExternalRuntimeAttestation struct {
-	SchemaVersion string            `json:"schema_version"`
-	Repositories  map[string]string `json:"repositories"`
+	SchemaVersion                string            `json:"schema_version"`
+	GeneratedFromMaterializedGit bool              `json:"generated_from_materialized_git"`
+	Repositories                 map[string]string `json:"repositories"`
 }
 
 type ExternalAdapterRegistry struct {
-	manifest     ExternalAdapterManifest
-	byID         map[string]ExternalAdapterSpec
-	revisions    map[string]string
-	manifestPath string
+	manifest             ExternalAdapterManifest
+	byID                 map[string]ExternalAdapterSpec
+	expansionProviders   map[string]ExternalProjectedExpansion
+	revisions            map[string]string
+	manifestPath         string
 }
 
 func NewExternalAdapterRegistry() (ExternalAdapterRegistry, error) {
@@ -88,6 +115,10 @@ func NewExternalAdapterRegistry() (ExternalAdapterRegistry, error) {
 	if m.CanonicalControlPlane != "N07" || m.Runner.Path == "" {
 		return ExternalAdapterRegistry{}, errors.New("external adapter manifest contract invalid")
 	}
+	if m.ProviderCount != len(m.Providers) || m.ProjectedExpansionCount != len(m.ProjectedExpansions) {
+		return ExternalAdapterRegistry{}, fmt.Errorf("external adapter manifest count mismatch: providers=%d/%d projected_expansions=%d/%d",
+			len(m.Providers), m.ProviderCount, len(m.ProjectedExpansions), m.ProjectedExpansionCount)
+	}
 	by := make(map[string]ExternalAdapterSpec, len(m.Providers))
 	for _, p := range m.Providers {
 		if p.ID == "" || p.Owner == "" || p.Root == "" || len(p.Operations) == 0 {
@@ -107,23 +138,77 @@ func NewExternalAdapterRegistry() (ExternalAdapterRegistry, error) {
 	if err := json.Unmarshal(capRaw, &capabilityRegistry); err != nil {
 		return ExternalAdapterRegistry{}, fmt.Errorf("external capability registry JSON: %w", err)
 	}
-	allRevisions := append(append([]ExternalCapabilityRevision{}, capabilityRegistry.Repositories...), capabilityRegistry.ComplementaryRepositories...)
+	coreSources := append(append([]ExternalCapabilityRevision{}, capabilityRegistry.Repositories...), capabilityRegistry.ComplementaryRepositories...)
+	projectedSources := append(append([]ExternalCapabilityRevision{}, capabilityRegistry.ExpansionRepositories...), capabilityRegistry.GRCEComplements...)
+	allRevisions := append(append([]ExternalCapabilityRevision{}, coreSources...), projectedSources...)
 	revisions := make(map[string]string, len(allRevisions))
 	for _, item := range allRevisions {
 		if item.ID == "" || len(item.Revision) != 40 {
 			return ExternalAdapterRegistry{}, fmt.Errorf("external capability revision invalid: %s", item.ID)
 		}
 		if _, exists := revisions[item.ID]; exists {
-			return ExternalAdapterRegistry{}, fmt.Errorf("duplicate external capability revision: %s", item.ID)
+			return ExternalAdapterRegistry{}, fmt.Errorf("duplicate external provider/source ID: %s", item.ID)
 		}
 		revisions[item.ID] = item.Revision
 	}
+	if len(coreSources) != len(by) || len(by) != 22 {
+		return ExternalAdapterRegistry{}, fmt.Errorf("external core provider count mismatch: sources=%d adapters=%d expected=22", len(coreSources), len(by))
+	}
+	coreIDs := make(map[string]struct{}, len(coreSources))
+	for _, item := range coreSources {
+		coreIDs[item.ID] = struct{}{}
+		if _, ok := by[item.ID]; !ok {
+			return ExternalAdapterRegistry{}, fmt.Errorf("external core adapter missing: %s", item.ID)
+		}
+	}
 	for id := range by {
+		if _, ok := coreIDs[id]; !ok {
+			return ExternalAdapterRegistry{}, fmt.Errorf("external adapter outside primary/complementary catalog: %s", id)
+		}
 		if _, ok := revisions[id]; !ok {
 			return ExternalAdapterRegistry{}, fmt.Errorf("external capability revision missing: %s", id)
 		}
 	}
-	return ExternalAdapterRegistry{manifest: m, byID: by, revisions: revisions, manifestPath: path}, nil
+
+	expansions := make(map[string]ExternalProjectedExpansion, len(m.ProjectedExpansions))
+	for _, item := range m.ProjectedExpansions {
+		if item.ID == "" || item.Owner == "" || item.Root == "" || item.Revision == "" || item.State != "PROJECTED" {
+			return ExternalAdapterRegistry{}, fmt.Errorf("projected expansion descriptor incomplete or prematurely promoted: %s", item.ID)
+		}
+		expectedRoot := filepath.ToSlash(filepath.Join("integrations", "external", item.ID))
+		if filepath.ToSlash(filepath.Clean(item.Root)) != expectedRoot {
+			return ExternalAdapterRegistry{}, fmt.Errorf("projected expansion root is not canonical: %s", item.ID)
+		}
+		if !containsString(item.Targets, item.Owner) {
+			return ExternalAdapterRegistry{}, fmt.Errorf("projected expansion owner is not a declared target: %s", item.ID)
+		}
+		if _, core := by[item.ID]; core {
+			return ExternalAdapterRegistry{}, fmt.Errorf("projected expansion duplicates executable adapter: %s", item.ID)
+		}
+		if _, exists := expansions[item.ID]; exists {
+			return ExternalAdapterRegistry{}, fmt.Errorf("duplicate projected expansion ID: %s", item.ID)
+		}
+		if pinned, ok := revisions[item.ID]; !ok || pinned != item.Revision {
+			return ExternalAdapterRegistry{}, fmt.Errorf("projected expansion revision mismatch: %s", item.ID)
+		}
+		if item.ExecutionEnabled || item.ExecutionProven || len(item.RuntimeRouteOperations) != 0 {
+			return ExternalAdapterRegistry{}, fmt.Errorf("projected expansion exposes runtime execution: %s", item.ID)
+		}
+		if !containsString(item.MetadataOperations, "external."+item.ID+".describe@1.0.0") ||
+			!containsString(item.MetadataOperations, "external."+item.ID+".probe@1.0.0") {
+			return ExternalAdapterRegistry{}, fmt.Errorf("projected expansion metadata operations incomplete: %s", item.ID)
+		}
+		expansions[item.ID] = item
+	}
+	if len(expansions) != 10 || len(revisions) != 32 {
+		return ExternalAdapterRegistry{}, fmt.Errorf("external catalog count mismatch: core=%d projected=%d declared=%d", len(by), len(expansions), len(revisions))
+	}
+	for _, item := range projectedSources {
+		if _, ok := expansions[item.ID]; !ok {
+			return ExternalAdapterRegistry{}, fmt.Errorf("projected expansion descriptor missing for pinned source: %s", item.ID)
+		}
+	}
+	return ExternalAdapterRegistry{manifest: m, byID: by, expansionProviders: expansions, revisions: revisions, manifestPath: path}, nil
 }
 func externalEnabled(provider string) bool {
 	key := "SOUL_EXTERNAL_EXECUTE_" + strings.ToUpper(strings.ReplaceAll(provider, "-", "_"))
@@ -155,6 +240,143 @@ func (r ExternalAdapterRegistry) operationAllowed(provider, mode, operation stri
 	return false
 }
 
+// validateRuntimeAttestationPin validates exact source revisions included in a
+// production image when the image intentionally has no .git directory.
+func (r ExternalAdapterRegistry) validateRuntimeAttestationPin(p ExternalAdapterSpec) error {
+	rootDir := repositoryRoot()
+	attestationPath := strings.TrimSpace(os.Getenv("SOUL_EXTERNAL_RUNTIME_ATTESTATION"))
+	if attestationPath == "" {
+		attestationPath = filepath.Join(rootDir, "config", "soul-external-runtime-attestation.json")
+	} else if !filepath.IsAbs(attestationPath) {
+		attestationPath = filepath.Join(rootDir, attestationPath)
+	}
+	raw, err := os.ReadFile(attestationPath)
+	if err != nil {
+		return fmt.Errorf("EXTERNAL_RUNTIME_ATTESTATION_UNAVAILABLE:%s", p.ID)
+	}
+	var attestation ExternalRuntimeAttestation
+	if err := json.Unmarshal(raw, &attestation); err != nil {
+		return fmt.Errorf("EXTERNAL_RUNTIME_ATTESTATION_INVALID:%s", p.ID)
+	}
+	if attestation.SchemaVersion != "soul.external.runtime-attestation.v1" || !attestation.GeneratedFromMaterializedGit {
+		return fmt.Errorf("EXTERNAL_RUNTIME_ATTESTATION_UNTRUSTED:%s", p.ID)
+	}
+	expectedRevision := r.revisions[p.ID]
+	if expectedRevision == "" || attestation.Repositories[p.ID] != expectedRevision {
+		return fmt.Errorf("EXTERNAL_RUNTIME_ATTESTATION_REVISION_MISMATCH:%s", p.ID)
+	}
+	root := p.Root
+	if !filepath.IsAbs(root) {
+		root = filepath.Join(rootDir, root)
+	}
+	root = filepath.Clean(root)
+	canonical := filepath.Clean(filepath.Join(rootDir, "integrations", "external", p.ID))
+	if root != canonical {
+		return fmt.Errorf("EXTERNAL_PROVIDER_ROOT_NON_CANONICAL:%s", p.ID)
+	}
+	entries, err := os.ReadDir(root)
+	if err != nil {
+		return fmt.Errorf("EXTERNAL_SOURCE_NOT_PRESENT:%s", p.ID)
+	}
+	hasSourceFiles := false
+	for _, entry := range entries {
+		if entry.Name() != ".git" {
+			hasSourceFiles = true
+			break
+		}
+	}
+	if !hasSourceFiles {
+		return fmt.Errorf("EXTERNAL_SOURCE_NOT_PRESENT:%s", p.ID)
+	}
+	return nil
+}
+// validateRegisteredPin validates the immutable source pin from the parent repository
+// without fetching or executing the public source. It is intended only for
+// read-only probe/describe operations; execute mode still requires a clean,
+// materialized worktree at the exact pinned revision.
+func (r ExternalAdapterRegistry) validateRegisteredPin(ctx context.Context, p ExternalAdapterSpec) error {
+	revision := r.revisions[p.ID]
+	rootDir := repositoryRoot()
+	root := p.Root
+	if !filepath.IsAbs(root) {
+		root = filepath.Join(rootDir, root)
+	}
+	root = filepath.Clean(root)
+	canonical := filepath.Clean(filepath.Join(rootDir, "integrations", "external", p.ID))
+	if root != canonical {
+		return fmt.Errorf("EXTERNAL_PROVIDER_ROOT_NON_CANONICAL:%s", p.ID)
+	}
+	rel, err := filepath.Rel(rootDir, root)
+	if err != nil || strings.HasPrefix(rel, ".."+string(os.PathSeparator)) || rel == ".." {
+		return fmt.Errorf("EXTERNAL_PROVIDER_ROOT_INVALID:%s", p.ID)
+	}
+	gitCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+	if _, err := os.Stat(filepath.Join(rootDir, ".git")); err != nil {
+		// Production images omit Git administration data. Their build-time attestation
+		// is emitted only after every materialized submodule matches its parent gitlink.
+		return r.validateRuntimeAttestationPin(p)
+	}
+	treeCmd := exec.CommandContext(gitCtx, "git", "-C", rootDir, "ls-tree", "HEAD", "--", filepath.ToSlash(rel))
+	treeOut, err := treeCmd.Output()
+	if err != nil {
+		if gitCtx.Err() != nil {
+			return fmt.Errorf("EXTERNAL_GITLINK_CHECK_TIMEOUT:%s", p.ID)
+		}
+		return fmt.Errorf("EXTERNAL_GITLINK_CHECK_FAILED:%s", p.ID)
+	}
+	fields := strings.Fields(string(treeOut))
+	if len(fields) < 3 || fields[0] != "160000" || fields[1] != "commit" {
+		return fmt.Errorf("EXTERNAL_GITLINK_NOT_REGISTERED:%s", p.ID)
+	}
+	validRevision := len(revision) == 40
+	for _, ch := range strings.ToLower(revision) {
+		if (ch < '0' || ch > '9') && (ch < 'a' || ch > 'f') {
+			validRevision = false
+			break
+		}
+	}
+	if !validRevision || !strings.EqualFold(fields[2], revision) {
+		return fmt.Errorf("EXTERNAL_GITLINK_REVISION_MISMATCH:%s:expected=%s:actual=%s", p.ID, revision, fields[2])
+	}
+	return nil
+}
+
+func sourceWorktreeIsGit(root string) bool {
+	// git -C <missing-submodule-path> can walk up to the parent N07 repository
+	// and return success. That proves only that a parent worktree exists, not
+	// that this provider path is a materialized Git worktree.
+	expected, err := filepath.Abs(root)
+	if err != nil {
+		return false
+	}
+	expected, err = filepath.EvalSymlinks(expected)
+	if err != nil {
+		return false
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, "git", "-C", root, "rev-parse", "--show-toplevel")
+	out, err := cmd.Output()
+	if err != nil {
+		return false
+	}
+	actual := strings.TrimSpace(string(out))
+	if actual == "" {
+		return false
+	}
+	actual, err = filepath.Abs(actual)
+	if err != nil {
+		return false
+	}
+	actual, err = filepath.EvalSymlinks(actual)
+	if err != nil {
+		return false
+	}
+	return actual == expected
+}
+
 func (r ExternalAdapterRegistry) validateMaterializedPin(ctx context.Context, p ExternalAdapterSpec) error {
 	revision := r.revisions[p.ID]
 	rootDir := repositoryRoot()
@@ -166,6 +388,11 @@ func (r ExternalAdapterRegistry) validateMaterializedPin(ctx context.Context, p 
 	canonical := filepath.Clean(filepath.Join(rootDir, "integrations", "external", p.ID))
 	if root != canonical {
 		return fmt.Errorf("EXTERNAL_PROVIDER_ROOT_NON_CANONICAL:%s", p.ID)
+	}
+	// Never resolve HEAD for an unmaterialized submodule path: Git can walk
+	// upward and report the N07 parent commit, disguising it as a provider SHA.
+	if !sourceWorktreeIsGit(root) {
+		return fmt.Errorf("EXTERNAL_SUBMODULE_NOT_MATERIALIZED:%s", p.ID)
 	}
 	rel, err := filepath.Rel(rootDir, root)
 	if err != nil || strings.HasPrefix(rel, ".."+string(os.PathSeparator)) || rel == ".." {
@@ -250,8 +477,16 @@ func (r ExternalAdapterRegistry) run(ctx context.Context, provider, mode, operat
 	if !r.operationAllowed(p.ID, mode, operation) {
 		return nil, fmt.Errorf("EXTERNAL_OPERATION_NOT_REGISTERED:%s:%s", p.ID, operation)
 	}
-	if err := r.validateMaterializedPin(ctx, p); err != nil {
-		return nil, err
+	readOnlyMetadataOperation := strings.EqualFold(strings.TrimSpace(mode), "probe") ||
+		strings.EqualFold(strings.TrimSpace(mode), "describe")
+	if readOnlyMetadataOperation && !sourceWorktreeIsGit(filepath.Join(repositoryRoot(), p.Root)) {
+		if err := r.validateRegisteredPin(ctx, p); err != nil {
+			return nil, err
+		}
+	} else {
+		if err := r.validateMaterializedPin(ctx, p); err != nil {
+			return nil, err
+		}
 	}
 	root := p.Root
 	if !filepath.IsAbs(root) {
@@ -262,7 +497,7 @@ func (r ExternalAdapterRegistry) run(ctx context.Context, provider, mode, operat
 	if !strings.HasPrefix(root, externalRoot+string(os.PathSeparator)) {
 		return nil, errors.New("EXTERNAL_PROVIDER_ROOT_INVALID")
 	}
-	if _, err := os.Stat(root); err != nil {
+	if _, err := os.Stat(root); err != nil && !readOnlyMetadataOperation {
 		return nil, fmt.Errorf("EXTERNAL_SOURCE_NOT_PRESENT:%s", provider)
 	}
 	runner := r.manifest.Runner.Path
@@ -324,10 +559,34 @@ func RegisterExternalAdapterOperations(e *Engine, r ExternalAdapterRegistry) err
 			if !filepath.IsAbs(root) {
 				root = filepath.Join(repositoryRoot(), root)
 			}
-			_, err := os.Stat(filepath.Clean(root))
-			providers = append(providers, map[string]any{"id": p.ID, "owner": p.Owner, "kind": p.Kind, "root": root, "revision": r.revisions[p.ID], "operations": p.Operations, "sourcePresent": err == nil, "executionEnabled": externalEnabled(p.ID)})
+			observed := inspectExternalAdapterSource(filepath.Clean(root), r.revisions[p.ID])
+			provider := map[string]any{
+				"id": p.ID, "owner": p.Owner, "kind": p.Kind, "root": root,
+				"revision": r.revisions[p.ID], "operations": p.Operations,
+				"executionEnabled": externalEnabled(p.ID),
+				"executionProven": false,
+			}
+			for key, value := range observed {
+				provider[key] = value
+			}
+			providers = append(providers, provider)
 		}
-		raw, _ := json.Marshal(map[string]any{"state": "PASS", "control_plane": "N07", "provider_count": len(providers), "manifest": r.manifestPath, "providers": providers})
+		expansions := make([]map[string]any, 0, len(r.expansionProviders))
+		for _, p := range r.expansionProviders {
+			expansions = append(expansions, r.projectedExpansionObservation(p, "describe"))
+		}
+		raw, _ := json.Marshal(map[string]any{
+			"state": "PASS",
+			"catalog_state": "DECLARED_WITH_PROJECTED_EXPANSIONS",
+			"runtime_evidence": "UNVERIFIED",
+			"control_plane": "N07",
+			"provider_count": len(providers),
+			"providers": providers,
+			"expansion_provider_count": len(expansions),
+			"expansion_providers": expansions,
+			"declared_external_repository_count": len(r.revisions),
+			"manifest": r.manifestPath,
+		})
 		return protocol.Result{TraceID: m.TraceID, CorrelationID: m.CorrelationID, Source: "N07.external-federation", Target: m.Source, Status: "ok", Metadata: map[string]string{"federation_json": string(raw)}}, nil
 	}); err != nil {
 		return err
@@ -397,8 +656,111 @@ func RegisterExternalAdapterOperations(e *Engine, r ExternalAdapterRegistry) err
 			return err
 		}
 	}
+
+	// Expansion candidates are intentionally metadata-only. Their former operation
+	// names remain in the manifest as provenance, but no execution route is registered.
+	for id, expansion := range r.expansionProviders {
+		provider := id
+		if containsString(expansion.MetadataOperations, "external."+provider+".describe@1.0.0") {
+			if err := e.Register("external."+provider+".describe@1.0.0", func(ctx context.Context, m protocol.Message) (protocol.Result, error) {
+				projected, ok := r.expansionProviders[provider]
+				if !ok {
+					return externalAdapterFailure(m, "EXTERNAL_PROJECTED_EXPANSION_NOT_REGISTERED")
+				}
+				return externalAdapterResult(m, r.projectedExpansionObservation(projected, "describe")), nil
+			}); err != nil {
+				return err
+			}
+		}
+		if containsString(expansion.MetadataOperations, "external."+provider+".probe@1.0.0") {
+			if err := e.Register("external."+provider+".probe@1.0.0", func(ctx context.Context, m protocol.Message) (protocol.Result, error) {
+				projected, ok := r.expansionProviders[provider]
+				if !ok {
+					return externalAdapterFailure(m, "EXTERNAL_PROJECTED_EXPANSION_NOT_REGISTERED")
+				}
+				return externalAdapterResult(m, r.projectedExpansionObservation(projected, "probe")), nil
+			}); err != nil {
+				return err
+			}
+		}
+	}
 	return nil
 }
+
+func inspectExternalAdapterSource(root, expectedRevision string) map[string]any {
+	sourcePresent := sourceWorktreeIsGit(root)
+	observedRevision := ""
+	if sourcePresent {
+		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+		cmd := exec.CommandContext(ctx, "git", "-C", root, "rev-parse", "HEAD")
+		if out, err := cmd.Output(); err == nil {
+			observedRevision = strings.TrimSpace(string(out))
+		}
+		cancel()
+	}
+	revisionMatched := sourcePresent && observedRevision != "" && observedRevision == expectedRevision
+	sourceState := "MISSING_WORKTREE"
+	if sourcePresent && revisionMatched {
+		sourceState = "PIN_MATCH"
+	} else if sourcePresent && observedRevision == "" {
+		sourceState = "UNMEASURABLE"
+	} else if sourcePresent {
+		sourceState = "REVISION_MISMATCH"
+	}
+	return map[string]any{
+		"sourcePresent": sourcePresent,
+		"expectedRevision": expectedRevision,
+		"observedRevision": observedRevision,
+		"revisionMatched": revisionMatched,
+		"sourceState": sourceState,
+	}
+}
+
+func (r ExternalAdapterRegistry) projectedExpansionObservation(p ExternalProjectedExpansion, operation string) map[string]any {
+	root := p.Root
+	if !filepath.IsAbs(root) {
+		root = filepath.Join(repositoryRoot(), root)
+	}
+	root = filepath.Clean(root)
+	observation := inspectExternalAdapterSource(root, p.Revision)
+	state, _ := observation["sourceState"].(string)
+	projectedState := "PROJECTED"
+	if state == "REVISION_MISMATCH" {
+		projectedState = "BLOCKED"
+	}
+	out := map[string]any{
+		"state": projectedState,
+		"provider": p.ID,
+		"operation": operation,
+		"owner": p.Owner,
+		"kind": p.Kind,
+		"root": root,
+		"revision": p.Revision,
+		"targets": p.Targets,
+		"role": p.Role,
+		"integrationState": p.IntegrationState,
+		"legacyOperations": p.LegacyOperations,
+		"metadataOperations": p.MetadataOperations,
+		"runtimeRouteOperations": []string{},
+		"executionEnabled": false,
+		"executionProven": false,
+		"nativeRuntimeExecutionProven": false,
+		"evidenceRule": "pinned source/metadata discovery is not native runtime execution proof",
+	}
+	switch state {
+	case "REVISION_MISMATCH":
+		out["code"] = "PROJECTED_SOURCE_REVISION_MISMATCH"
+	case "MISSING_WORKTREE":
+		out["code"] = "PROJECTED_SOURCE_NOT_MATERIALIZED"
+	case "UNMEASURABLE":
+		out["code"] = "PROJECTED_SOURCE_PIN_UNMEASURABLE"
+	}
+	for key, value := range observation {
+		out[key] = value
+	}
+	return out
+}
+
 func externalAdapterFailure(m protocol.Message, code string) (protocol.Result, error) {
 	err := errors.New(code)
 	return protocol.Result{TraceID: m.TraceID, CorrelationID: m.CorrelationID, Source: "N07.external-federation", Target: m.Source, Status: "error", Error: code}, err
@@ -446,4 +808,13 @@ func externalAdapterExecutionResult(m protocol.Message, result map[string]any) (
 		return externalAdapterFailure(m, code)
 	}
 	return externalAdapterResult(m, result), nil
+}
+
+func containsString(values []string, target string) bool {
+	for _, value := range values {
+		if value == target {
+			return true
+		}
+	}
+	return false
 }

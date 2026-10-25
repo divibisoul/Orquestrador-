@@ -18,6 +18,7 @@ on:
       - 'scripts/metagpt_runner.py'
       - 'scripts/validate-soul-external-submodules.mjs'
       - 'scripts/materialize-top-level-submodules.mjs'
+      - 'scripts/generate-external-runtime-attestation.mjs'
       - 'integrations/external-adapters.json'
       - 'integrations/external-capabilities.json'
       - 'integrations/external/**'
@@ -40,6 +41,7 @@ on:
       - 'scripts/metagpt_runner.py'
       - 'scripts/validate-soul-external-submodules.mjs'
       - 'scripts/materialize-top-level-submodules.mjs'
+      - 'scripts/generate-external-runtime-attestation.mjs'
       - 'scripts/validate-external-adapters.mjs'
       - 'scripts/validate-external-capability-ownership.mjs'
       - 'scripts/validate-soul-29-grf.mjs'
@@ -76,7 +78,19 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          submodules: true
+          # Formatting normalization operates on tracked Go files, not source worktrees.
+          submodules: false
+
+      - name: Prove projected repository execution remains fail-closed
+        run: |
+          set -euo pipefail
+          set +e
+          printf '%s' '{"provider":"ravana","operation":"agent.execute","mode":"execute"}' | python3 scripts/external-capability-adapter.py > /tmp/projected-source.json
+          code=$?
+          set -e
+          test "$code" -eq 2
+          cat /tmp/projected-source.json
+          jq -e '.state == "BLOCKED" and .code == "SOUL_V2_EXPANSION_RUNTIME_NOT_BOUND" and .epistemic_state == "PROJECTED" and .execution_enabled == false and .execution_proven == false and .runtime_route_operations == []' /tmp/projected-source.json >/dev/null
 
       - uses: actions/setup-go@v5
         with:
@@ -169,9 +183,8 @@ jobs:
           fetch-depth: 0
           submodules: false
 
-      - name: Materialize top-level SOUL submodules without unsafe recursion
-        run: node scripts/materialize-top-level-submodules.mjs
-
+      # Go tests validate adapter contracts against committed gitlinks; runtime
+      # source materialization is performed by integrity and container jobs.
       - name: Assert declarative SOUL source
         run: |
           set -euo pipefail
@@ -243,6 +256,9 @@ jobs:
       - name: Materialize top-level SOUL submodules without unsafe recursion
         run: node scripts/materialize-top-level-submodules.mjs
 
+      - name: Generate and verify source-pin attestation before Docker context packaging
+        run: node scripts/generate-external-runtime-attestation.mjs
+
       - name: Build production image
         run: docker build --pull --tag n07-orquestrador:ci .
 
@@ -262,7 +278,61 @@ jobs:
             sleep 1
           done
           curl -fsS             -H 'Authorization: Bearer ci'             -H 'Content-Type: application/json'             -X POST http://127.0.0.1:18082/execute             -d '{"operation":"external.federation.describe@1.0.0","metadata":{}}'             | tee /tmp/external-federation.json
-          grep -q '"provider_count":22' /tmp/external-federation.json
+          python3 - <<'PY'
+          import json
+          with open('integrations/external-capabilities.json', encoding='utf-8') as f:
+              registry = json.load(f)
+          with open('integrations/external-adapters.json', encoding='utf-8') as f:
+              adapters = json.load(f)
+          outer = json.load(open('/tmp/external-federation.json', encoding='utf-8'))
+          raw = json.loads(next(v for k, v in outer['metadata'].items() if k.endswith('_json')))
+          core_sources = registry.get('repositories', []) + registry.get('complementary_repositories', [])
+          projected_sources = registry.get('expansion_repositories', []) + registry.get('grce_complements', [])
+          core_expected = {item['id'] for item in core_sources}
+          projected_expected = {item['id'] for item in projected_sources}
+          adapter_ids = {item['id'] for item in adapters.get('providers', [])}
+          projected_adapter_ids = {item['id'] for item in adapters.get('projected_expansions', [])}
+          runtime_ids = {item.get('id', item.get('provider')) for item in raw.get('providers', [])}
+          runtime_projected_ids = {item.get('id', item.get('provider')) for item in raw.get('expansion_providers', [])}
+          assert None not in runtime_ids and None not in runtime_projected_ids, 'runtime provider entry missing canonical id/provider'
+          assert len(core_expected) == 22 and len(projected_expected) == 10
+          assert len(core_expected | projected_expected) == 32
+          assert adapter_ids == core_expected, f'core adapter mismatch: missing={sorted(core_expected-adapter_ids)} extra={sorted(adapter_ids-core_expected)}'
+          assert raw['provider_count'] == 22 and runtime_ids == core_expected, f"core runtime count/IDs mismatch: count={raw.get('provider_count')} missing={sorted(core_expected-runtime_ids)} extra={sorted(runtime_ids-core_expected)}"
+          assert projected_adapter_ids == projected_expected
+          assert runtime_projected_ids == projected_expected
+          assert raw['expansion_provider_count'] == 10
+          for item in raw['providers']:
+              assert len(item['expectedRevision']) == 40, item
+              assert item['sourceState'] in ('PIN_MATCH', 'REVISION_MISMATCH', 'MISSING_WORKTREE', 'UNMEASURABLE'), item
+              if item['sourceState'] == 'PIN_MATCH':
+                  assert item['observedRevision'] == item['expectedRevision'] and item['revisionMatched'] is True, item
+              elif item['sourceState'] == 'REVISION_MISMATCH':
+                  assert item['sourcePresent'] is True and item['revisionMatched'] is False
+                  assert item['observedRevision'] and item['observedRevision'] != item['expectedRevision'], item
+              elif item['sourceState'] == 'UNMEASURABLE':
+                  assert item['sourcePresent'] is True and item['revisionMatched'] is False and item['observedRevision'] == '', item
+              else:
+                  assert item['sourcePresent'] is False and item['revisionMatched'] is False, item
+          for item in raw['expansion_providers']:
+              assert item['state'] in ('PROJECTED', 'BLOCKED'), item
+              assert item['sourceState'] in ('PIN_MATCH', 'REVISION_MISMATCH', 'MISSING_WORKTREE', 'UNMEASURABLE'), item
+              assert item['executionEnabled'] is False and item['executionProven'] is False, item
+              assert item['nativeRuntimeExecutionProven'] is False, item
+              assert item['runtimeRouteOperations'] == [], item
+          print('Production federation aligned: source pin evidence separated from runtime authority')
+          PY
           curl -fsS             -H 'Authorization: Bearer ci'             -H 'Content-Type: application/json'             -X POST http://127.0.0.1:18082/execute             -d '{"operation":"external.langgraph.probe@1.0.0","metadata":{}}'             | tee /tmp/langgraph-probe.json
-          grep -q '"state":"PASS"' /tmp/langgraph-probe.json
-          grep -q '"source_present":true' /tmp/langgraph-probe.json
+          # The Mesh envelope stores the adapter result as JSON text. Parse
+          # that nested value rather than grepping escaped quotes in the outer JSON.
+          # The provider-specific probe returns the adapter's source-state schema.
+          # Runtime execution is explicitly unproven; do not require fields that the
+          # adapter contract does not emit (source_integrity_only/runtime_evidence).
+          jq -e '(.metadata.external_result_json | fromjson) as $probe
+            | $probe.state == "PASS"
+              and $probe.provider == "langgraph"
+              and $probe.mode == "probe"
+              and $probe.source_present == true
+              and $probe.execution_proven == false
+              and ($probe.evidence_rule | contains("never proves provider execution"))
+              and ($probe.package_available | type == "boolean")' /tmp/langgraph-probe.json >/dev/null
