@@ -57,6 +57,65 @@ func New(size int, learningRate float64) (*Network, error) {
 	}
 	return &Network{size: size, edges: make(map[int][]Edge), bias: make([]float64, size), learningRate: learningRate, config: Config{Layers: []Layer{{Activation: "tanh"}}, Optimizer: "adam", Regularization: 1e-6, GradientClip: 1.0, Heads: 1, BatchCache: 128}, adamM: make([]float64, size), adamV: make([]float64, size), edgeM: make(map[string]float64), edgeV: make(map[string]float64), cache: make(map[string][]float64)}, nil
 }
+// validateNetworkConfig rejects settings that the preserved runtime cannot honor.
+func validateNetworkConfig(config Config) error {
+	if len(config.Layers) == 0 {
+		return errors.New("at least one neural layer is required")
+	}
+	if config.Optimizer != "sgd" && config.Optimizer != "rmsprop" && config.Optimizer != "adam" {
+		return errors.New("optimizer must be one of sgd, rmsprop, adam")
+	}
+	if config.Regularization < 0 || math.IsNaN(config.Regularization) || math.IsInf(config.Regularization, 0) {
+		return errors.New("regularization must be finite and non-negative")
+	}
+	if config.GradientClip < 0 || math.IsNaN(config.GradientClip) || math.IsInf(config.GradientClip, 0) {
+		return errors.New("gradient clip must be finite and non-negative")
+	}
+	if config.Heads < 1 {
+		return errors.New("attention heads must be positive")
+	}
+	if config.BatchCache < 1 {
+		return errors.New("batch cache capacity must be positive")
+	}
+	for _, layer := range config.Layers {
+		switch layer.Activation {
+		case "relu", "sigmoid", "linear", "tanh", "":
+		default:
+			return errors.New("unsupported activation: " + layer.Activation)
+		}
+		// The legacy runtime has no dropout execution path. Reject non-zero values
+		// rather than accepting configuration that would not actually be applied.
+		if layer.DropoutRate != 0 {
+			return errors.New("dropout is not supported by the preserved runtime")
+		}
+	}
+	return nil
+}
+
+// Configure adds the recovered configuration API without replacing the existing
+// graph, weights, biases, or public execution methods. Changing optimizer family
+// resets only optimizer accumulators; every configuration change invalidates cache.
+func (n *Network) Configure(config Config) error {
+	if n == nil {
+		return errors.New("network unavailable")
+	}
+	if err := validateNetworkConfig(config); err != nil {
+		return err
+	}
+	n.mu.Lock()
+	defer n.mu.Unlock()
+	if n.config.Optimizer != "" && n.config.Optimizer != config.Optimizer {
+		n.adamM = make([]float64, n.size)
+		n.adamV = make([]float64, n.size)
+		n.edgeM = make(map[string]float64)
+		n.edgeV = make(map[string]float64)
+	}
+	config.Layers = append([]Layer(nil), config.Layers...)
+	n.config = config
+	n.cache = make(map[string][]float64)
+	return nil
+}
+
 func (n *Network) AddEdge(from, to int, weight float64) error {
 	n.mu.Lock()
 	defer n.mu.Unlock()
