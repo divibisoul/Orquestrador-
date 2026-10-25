@@ -16,7 +16,7 @@ concurrency:
 jobs:
   mesh-invariants:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     steps:
       - name: Checkout exact branch head
         uses: actions/checkout@v4
@@ -26,6 +26,19 @@ jobs:
         with:
           go-version: '1.25.x'
           cache: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install pinned LangGraph bridge
+        run: python -m pip install -e integrations/langgraph
 
       - name: Check Go formatting for changed files
         run: test -z "$(gofmt -l mesh/peers.go mesh/peers_auth_retry_test.go)"
@@ -38,6 +51,18 @@ jobs:
 
       - name: Run Mesh race tests
         run: go test -race ./mesh -count=1
+
+      - name: Run LangGraph bridge tests
+        run: python -m unittest discover -s integrations/langgraph -p 'test_*.py' -v
+
+      - name: Reject false LangGraph adapter success
+        run: python scripts/test_external_capability_adapter.py
+
+      - name: Validate upstream-to-adapter registry
+        run: node scripts/validate-external-adapters.mjs
+
+      - name: Validate Python adapter syntax
+        run: python -m py_compile scripts/external-capability-adapter.py scripts/test_external_capability_adapter.py scripts/crewai_runner.py scripts/metagpt_runner.py
 
       - name: Build all Go packages
         run: go build ./...
