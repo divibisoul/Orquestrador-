@@ -283,6 +283,40 @@ func TestPeerClientRetriesReuseLogicalMessageID(t *testing.T) {
 }
 
 
+
+func TestPeerDiscoverySupportsN01LegacyCapabilitiesWithoutTrustingDeclarations(t *testing.T) {
+	n01 := map[string]any{
+		"payload": map[string]any{
+			"nucleus": "N01",
+			"capabilities": []any{"mesh.describe", "external.capability.execute@1.0.0"},
+		},
+	}
+	if !supportsExecutableCapability(n01, "external.capability.execute@1.0.0") {
+		t.Fatal("N01's current registered-capability format must remain interoperable")
+	}
+	if supportsExecutableCapability(n01, "unknown.capability@1.0.0") {
+		t.Fatal("N01 discovery must not authorize a capability absent from its actual list")
+	}
+	n02 := map[string]any{
+		"payload": map[string]any{
+			"nucleus": "N02",
+			"capabilities": []any{"declared.only"},
+		},
+	}
+	if supportsExecutableCapability(n02, "declared.only") {
+		t.Fatal("legacy capabilities fallback must remain scoped to N01")
+	}
+	n01DeclaredOnly := map[string]any{
+		"payload": map[string]any{
+			"nucleus": "N01",
+			"declaredCapabilities": []any{"not-executable"},
+		},
+	}
+	if supportsExecutableCapability(n01DeclaredOnly, "not-executable") {
+		t.Fatal("declared-only entries must never authorize execution")
+	}
+}
+
 func TestPeerClientRegisterPeerUpdatesCanonicalTable(t *testing.T) {
 	p, err := NewPeerClient(nil)
 	if err != nil {
