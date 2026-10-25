@@ -41,13 +41,13 @@ func TestExternalAdapterManifestHasTwentyTwoProviders(t *testing.T) {
 }
 func TestExternalExpansionProvidersRemainProjectedAndNonExecutable(t *testing.T) {
 	_, r := newExternalTestEngine(t)
-	if len(r.expansionProviders) != 9 {
-		t.Fatalf("projected expansion providers=%d, want 9", len(r.expansionProviders))
+	if len(r.expansionProviders) != 10 {
+		t.Fatalf("projected expansion providers=%d, want 10", len(r.expansionProviders))
 	}
 	expected := map[string]bool{
 		"fedml": true, "hivemind": true, "temporal": true,
 		"cognitive-workspace": true, "ravana": true, "ray": true,
-		"bijux-dag-runtime": true, "ouro-loop": true, "recurs": true,
+		"bijux-dag-runtime": true, "ouro-loop": true, "recuris": true, "nats-go": true,
 	}
 	for _, p := range r.expansionProviders {
 		if !expected[p.ID] {
@@ -100,10 +100,10 @@ func TestExternalFederationDescribeIncludesProjectedSourcesWithoutPromotingThem(
 	if report.State != "PASS" || report.CatalogState != "DECLARED_WITH_PROJECTED_EXPANSIONS" || report.RuntimeEvidence != "UNVERIFIED" {
 		t.Fatalf("catalog/runtime evidence states conflated: %#v", report)
 	}
-	if report.ProviderCount != 22 || report.ExpansionProviderCount != 9 || report.DeclaredExternalRepositoryCount != 31 {
+	if report.ProviderCount != 22 || report.ExpansionProviderCount != 10 || report.DeclaredExternalRepositoryCount != 32 {
 		t.Fatalf("unexpected federated inventory counts: %#v", report)
 	}
-	if len(report.ExpansionProviders) != 9 {
+	if len(report.ExpansionProviders) != 10 {
 		t.Fatalf("expansion inventory length=%d", len(report.ExpansionProviders))
 	}
 	for _, p := range report.ExpansionProviders {
@@ -118,8 +118,8 @@ func TestExternalFederationDescribeIncludesProjectedSourcesWithoutPromotingThem(
 
 func TestProjectedExpansionSourcesExposeMeshMetadataWithoutExecuteRoutes(t *testing.T) {
 	e, r := newExternalTestEngine(t)
-	if len(r.expansionProviders) != 9 {
-		t.Fatalf("projected expansion providers=%d, want 9", len(r.expansionProviders))
+	if len(r.expansionProviders) != 10 {
+		t.Fatalf("projected expansion providers=%d, want 10", len(r.expansionProviders))
 	}
 	for _, p := range r.expansionProviders {
 		for _, kind := range []string{"describe", "probe"} {
@@ -165,7 +165,7 @@ func TestProjectedExpansionSourcesExposeMeshMetadataWithoutExecuteRoutes(t *test
 	}
 }
 
-func TestCanonicalFederationSourceMetadataContractCoversAllThirtyOneSources(t *testing.T) {
+func TestCanonicalFederationSourceMetadataContractCoversAllThirtyTwoSources(t *testing.T) {
 	e, r := newExternalTestEngine(t)
 	ids := make([]string, 0, len(r.byID)+len(r.expansionProviders))
 	for id := range r.byID {
@@ -174,7 +174,7 @@ func TestCanonicalFederationSourceMetadataContractCoversAllThirtyOneSources(t *t
 	for _, p := range r.expansionProviders {
 		ids = append(ids, p.ID)
 	}
-	if len(ids) != 31 || len(r.revisions) != 31 {
+	if len(ids) != 32 || len(r.revisions) != 32 {
 		t.Fatalf("canonical external inventory mismatch: ids=%d revisions=%d", len(ids), len(r.revisions))
 	}
 
@@ -242,6 +242,7 @@ func TestCanonicalFederationSourceProbeDoesNotClaimExecution(t *testing.T) {
 	}{
 		{id: "langgraph"},
 		{id: "ray", projected: true},
+		{id: "nats-go", projected: true},
 	} {
 		result, err := e.Execute(context.Background(), ExternalFederationSourceProbeOperation, nil, map[string]string{"provider": provider.id})
 		if err != nil {
@@ -461,5 +462,72 @@ func TestInspectExternalSourceRequiresOwnGitWorktreeAndPinnedRevision(t *testing
 	}
 	if inspectExternalSource(filepath.Join(root, "does-not-exist"), revision).Present {
 		t.Fatal("nonexistent external source reported present")
+	}
+}
+
+func TestExternalFederationExecutionRequiresCanonicalNativeOwner(t *testing.T) {
+	e, _ := newExternalTestEngine(t)
+	t.Setenv("SOUL_EXTERNAL_EXECUTE_LANGGRAPH", "")
+
+	base := map[string]string{
+		"provider":           "langgraph",
+		"external_operation": "workflow.invoke",
+	}
+	_, err := e.Execute(context.Background(), ExternalFederationExecuteOperation, nil, base)
+	if err == nil || !strings.Contains(err.Error(), "EXTERNAL_NATIVE_OWNER_REQUIRED") {
+		t.Fatalf("missing native owner did not fail closed: %v", err)
+	}
+
+	wrongOwner := map[string]string{
+		"provider":           "langgraph",
+		"external_operation": "workflow.invoke",
+		"native_owner":       "N01",
+	}
+	_, err = e.Execute(context.Background(), ExternalFederationExecuteOperation, nil, wrongOwner)
+	if err == nil || !strings.Contains(err.Error(), "EXTERNAL_NATIVE_OWNER_MISMATCH") {
+		t.Fatalf("wrong native owner did not fail closed: %v", err)
+	}
+
+	wrongRevision := map[string]string{
+		"provider":           "langgraph",
+		"external_operation": "workflow.invoke",
+		"native_owner":       "N07",
+		"provider_revision":  strings.Repeat("0", 40),
+	}
+	_, err = e.Execute(context.Background(), ExternalFederationExecuteOperation, nil, wrongRevision)
+	if err == nil || !strings.Contains(err.Error(), "EXTERNAL_PROVIDER_REVISION_MISMATCH") {
+		t.Fatalf("provider revision drift did not fail closed: %v", err)
+	}
+
+	canonicalOwner := map[string]string{
+		"provider":           "langgraph",
+		"external_operation": "workflow.invoke",
+		"native_owner":       "N07",
+		"provider_revision":  "2d942085e214ef6b99b6f54ed4d544a7c7c5ac56",
+	}
+	_, err = e.Execute(context.Background(), ExternalFederationExecuteOperation, nil, canonicalOwner)
+	if err == nil || !strings.Contains(err.Error(), "EXTERNAL_ADAPTER_DISABLED") {
+		t.Fatalf("canonical owner and revision must still respect the default-disabled adapter gate: %v", err)
+	}
+}
+
+func TestExternalFederationDescribeIsAvailableWithoutExecutingProviders(t *testing.T) {
+	e, _ := newExternalTestEngine(t)
+	result, err := e.Execute(context.Background(), ExternalFederationDescribeOperation, nil, nil)
+	if err != nil {
+		t.Fatalf("federation describe should not require provider execution: %v", err)
+	}
+	if result.Status != "ok" || result.Metadata["federation_json"] == "" {
+		t.Fatalf("missing canonical federation observation: %#v", result)
+	}
+	var observation map[string]any
+	if err := json.Unmarshal([]byte(result.Metadata["federation_json"]), &observation); err != nil {
+		t.Fatalf("invalid federation description JSON: %v", err)
+	}
+	if observation["control_plane"] != "N07" {
+		t.Fatalf("wrong control plane: %#v", observation["control_plane"])
+	}
+	if observation["provider_count"] != float64(22) {
+		t.Fatalf("unexpected canonical adapter registry count: %#v", observation["provider_count"])
 	}
 }
