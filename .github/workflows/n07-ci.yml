@@ -287,8 +287,9 @@ jobs:
           projected_expected = {item['id'] for item in projected_sources}
           adapter_ids = {item['id'] for item in adapters.get('providers', [])}
           projected_adapter_ids = {item['id'] for item in adapters.get('projected_expansions', [])}
-          runtime_ids = {item['id'] for item in raw.get('providers', [])}
-          runtime_projected_ids = {item['id'] for item in raw.get('expansion_providers', [])}
+          runtime_ids = {item.get('id', item.get('provider')) for item in raw.get('providers', [])}
+          runtime_projected_ids = {item.get('id', item.get('provider')) for item in raw.get('expansion_providers', [])}
+          assert None not in runtime_ids and None not in runtime_projected_ids, 'runtime provider entry missing canonical id/provider'
           assert len(core_expected) == 22 and len(projected_expected) == 10
           assert len(core_expected | projected_expected) == 32
           assert adapter_ids == core_expected, f'core adapter mismatch: missing={sorted(core_expected-adapter_ids)} extra={sorted(adapter_ids-core_expected)}'
