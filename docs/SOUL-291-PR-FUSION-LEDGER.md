@@ -1584,3 +1584,44 @@ Um draft não é eliminado só por estar velho ou falhando. Ele só pode ser cla
 **BLOQUEIOS CONHECIDOS:** runners/filas de Actions; N01 Android emulator; E2E autenticado com endpoints/segredos de todos os pares; reconciliação de nats-go/HORA/IDs projetados entre os snapshots de #148/#152/#160.
 
 **Regra de saída desta rodada:** não abrir uma nova PR de fusão, não alterar main, não mesclar branches divergentes por inteiro e não declarar uma frente ABSORBED antes de CI verde no SHA final.
+
+## Plano de convergência global — execução por etapas
+
+**Objetivo de encerramento:** todos os núcleos N01–N07 e SARA/JEV conservam suas capacidades nativas, negociam um contrato Mesh canônico, trocam mensagens autenticadas com correlação e têm seus caminhos de execução classificados por evidência. A federação externa amplia capacidades por adaptadores, sem confundir fonte fixada, adaptador registrado e execução real.
+
+### Ordem de execução e portas de saída
+
+| Etapa | Começa quando | Trabalho obrigatório | Só avança quando |
+|---|---|---|---|
+| **G0 — Inventário e congelamento de evidências** | Imediato; antes de novas consolidações | Capturar SHA/head/base, árvore de dependências, workflows e estado de cada PR; separar código nativo, contrato, adaptador, fixture e rascunho; manter ledger das 291 PRs | Cada frente ativa tem dono, função, dependências, arquivos compartilhados e resultado CI associado ao SHA exato |
+| **G1 — Contrato comum e não rejeição** | G0 identificou os contratos ativos | Reconciliar Mesh `1.1.0`, identidade de operação, trace/correlation ID, autenticação, versão/capability discovery, envelopes de erro e compatibilidade de aliases; adicionar adaptadores de borda em vez de impor reescrita aos núcleos | Testes de contrato provam aceitação de mensagens válidas e rejeição explícita/segura de mensagens inválidas em cada implementação ativa |
+| **G2 — Comunicação núcleo-a-núcleo** | G1 verde nos participantes do primeiro cluster | Validar ida e volta N01↔N04, N07↔N01, N07↔SARA e depois N02/N03/N05/N06/JEV; testar timeout, replay, assinatura, retry e preservação de correlação | Cada par tem E2E real, duas direções quando aplicável, evidência de trace e SHA verde; SKIP/BLOCKED não conta como PASS |
+| **G3 — Unificação da federação externa** | G1 estável e runtime interno com evidência | Reconciliar pin/submodule, catálogo de capacidades, ownership, targets/affinities, adaptadores e workflows; separar fontes preservadas, projetadas e materializadas; provar que o catálogo não habilita execução sem attestation e política explícita | IDs e pins batem entre manifests/graph/runtime; testes confirmam materialização exata; fontes PROJECTED continuam não executáveis; provedores só viram ONLINE após chamada real verificada |
+| **G4 — Fusão funcional dos núcleos** | G2 e G3 demonstram interfaces estáveis | Classificar as 291 PRs por função e ancestralidade; agrupar correções compatíveis; ativar funções úteis de PRs antigas/drafts através de commits selecionados/adaptadores; preservar PRs de origem como proveniência | Cada cluster tem matriz origem→capacidade→destino, testes de regressão e justificativa explícita para rascunhos obsoletos, duplicados ou incompatíveis |
+| **G5 — E2E sistêmico** | Clusters funcionais e interfaces estão verdes | Rodar fluxo correlacionado N01–N07/SARA/JEV conforme a topologia implementada; validar HortaCore como estado, VagusBus como sinal, ARA→ETR→ITR, GRF/GRCE e persistência/proveniência | Trace ponta a ponta comprova início, transições, retorno e hashes/sequence_index; nenhuma etapa é inferida apenas por registro estático |
+| **G6 — Fechamento controlado** | G5 verde e regressões completas | Atualizar ledger, classificar cada PR de origem (absorvida por SHA, preservada, substituída por capacidade equivalente, bloqueada com causa ou ainda em análise); executar CI final sobre os SHAs candidatos | Zero claims sem evidência; nenhuma capacidade útil perdida; branches/PRs de origem permanecem preservadas até política de encerramento aprovada |
+
+### Mapa inicial de frentes e dependências (não é aprovação automática de merge)
+
+- **Fundação e Mesh:** #148 é a frente estrutural candidata sobre `main`; #162 trata detecção/evidência de contrato Mesh. #148 e #162 compartilham `soul-nuclei.json`; reconciliar esse arquivo uma única vez no candidato estrutural e não copiar mudanças cegamente.
+- **Federação externa:** #152 contém 44 arquivos e compartilha 42 arquivos com #148, além de 23 com #160 e 30 com a recovery #129. Portanto, #152 não pode ser tratada como um patch independente de `main`: validar sua base `recovery/soul-25-external-materialization-2026-10-06`, reconciliar seus commits com a fundação e evitar uma segunda cópia de workflows/manifestos. #129 é a origem da recovery, não uma segunda implementação a mesclar por inteiro.
+- **GRF/GRCE + SOUL-28:** #160 e #156 compartilham 33 arquivos e usam #148 como base; #160 também compartilha 36 arquivos com #148. Escolher uma cadeia de integração por função e ancestralidade, mantendo os demais ramos como proveniência, em vez de tentar mesclar três snapshots divergentes.
+- **API neural N07:** #161 é uma restauração aditiva sobre a fundação. Reconciliar com #148/#160 antes de declarar a API ativa e sem regressão.
+- **Livro de fusão:** #157 é o registro de orientação e classificação das 291 PRs; deve permanecer como ledger, não como runtime. Este plano amplia o ledger sem abrir uma nova PR.
+- **Correções pontuais antigas:** #139 (autenticação de resposta), #151 (identidade estável em retry) e os ramos RGO/Octacore/Prefrontal precisam ser agrupados por função e arquivo comum, com especial cuidado em `mesh/peers.go`. Uma PR aberta ou draft não prova que a capacidade está na linha executada.
+
+### Bloqueios reais observados na frente de federação em 2026-10-25
+
+1. **GRF/GRCE E2E — FAIL no SHA `309467b262cf1aa7e0e73f1a32613cb220f6bf48`:** o endpoint respondeu HTTP 200, mas o resultado veio `epistemic_state=IDLE`, `outcome=IDLE`, apenas uma etapa `PREFLIGHT`, sem `evidence` nem `capabilities`. O teste exigia `ACTIVE`; isso é uma falha funcional do fluxo, não deve ser “corrigida” enfraquecendo a asserção. Investigar por que o caminho C1→C7→C1 não avança e quais gates/autoridade SARA estão ausentes.
+2. **N07 production external federation smoke — FAIL no mesmo SHA:** o validador termina em `KeyError: 'id'` ao interpretar a lista de expansão, cuja representação atual pode usar alias `provider`. Corrigir o consumidor para aceitar o alias canônico documentado, preservando validação de IDs e contagem; não mascarar ausência de dados.
+3. **Checkout/cleanup de submódulos:** a CI reportou que a recursão entra em `integrations/external/autogenesis/datasets/leetcode` e falha porque não há URL correspondente em `.gitmodules`. Determinar se é submódulo upstream aninhado ou resíduo de checkout; não remover diretórios/funções nem alterar a proveniência upstream sem confirmar a origem. A etapa de cleanup não deve obscurecer o resultado primário.
+4. **Execução externa:** catálogo, pins e source-present não equivalem a execução real. Estados `PROJECTED`, `UNMEASURABLE` e `BLOCKED` devem permanecer honestos até materialização, attestation e teste de execução reais.
+
+### Regras de correção e encerramento
+
+- Corrigir a causa na camada proprietária: protocolo no contrato/adapter de Mesh; roteamento no dispatcher; estado e transições no GRF/GRCE; materialização/pin no validador de fontes; orquestração/CI no workflow. Não espalhar workarounds de um núcleo para todos.
+- Para cada mudança transversal, listar consumidores afetados e executar a matriz de regressão correspondente. O teste de contrato pode ser compartilhado; a lógica nativa permanece no núcleo dono.
+- Um rascunho só é candidato a descarte após comparação de ancestralidade e inventário de capacidades. Remoção de arquivo, dependência, branch ou PR exige revisão explícita; até lá, preservar e registrar a decisão.
+- Não rebasear ou trocar bases em massa enquanto checks estiverem pendentes. Não usar resultados de SHA anterior como prova do head atual.
+- Critério global de encerramento: todas as 291 PRs classificadas por função e destino; capacidades úteis ativadas ou bloqueadas com motivo; todos os pares de conexão definidos no mapa de arquitetura testados; CI verde no SHA final de cada candidato; nenhum estado PROJECTED promovido por inferência.
+
