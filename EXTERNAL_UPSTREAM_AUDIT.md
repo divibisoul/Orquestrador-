@@ -107,6 +107,19 @@ A gitlink SHA does not prove the runtime uses that code. Each adapter needs:
 ### 4. License and supply-chain gates
 Keep references in the source registry but block shipping execution until terms are verified for HASHIRU and Xun; Codette has a non-commercial CSAL 1.0; Chyren’s pinned source requires URL/commit resolution. For every upstream, check the license at the pinned SHA, transitive dependencies, model/weight licenses, subprocess privileges and network-egress permissions before bundling.
 
+## Corrective work in the isolated N07 branch
+
+The following narrow corrections are in `fix/n07-mesh-auth-retry-2026-10-25`, not main, and passed exact-head expanded CI at `dc281511c15ddb19d16dd90f62b84a751aaba3c1` (run [40191936673](https://github.com/divibisoul/Orquestrador-/actions/runs/40191936673)):
+
+- **Execution-context integrity:** `orchestrator/external_adapters.go` now writes reserved fields (provider, mode, operation, pinned root, nested metadata) after copying request metadata. Untrusted request fields can no longer redirect the adapter to a different provider or submodule root. `TestExternalAdapterMetadataCannotOverrideExecutionContext` covers this.
+- **LangGraph no longer echoes input as PASS:** the adapter calls the actual SOUL LangGraph graph, requires `N07_APP_TOKEN` and correlation, checks the pinned installed package version, and validates the correlation returned in N07 response metadata. Six Python tests cover real graph structure, canonical model, request auth header, correlation propagation and mismatched-correlation rejection.
+- **Browser Use fail-closed:** direct generic execution requires an explicit allowed-domain list and `BROWSER_USE_API_KEY`, caps a task at 20 steps, creates a browser session with allowed/prohibited domains and closes it after execution.
+- **Endpoint configuration ownership:** request-provided `base_url` is no longer accepted as the execution destination for OpenHands/SuperAGI; those endpoints must come from operator environment configuration.
+- **Persistent-agent identity:** the generic Letta call now requires an explicit existing agent ID instead of implicitly creating a new persistent agent when ID is missing.
+- **Regression gate:** the same exact-head CI also passed Go formatting, `go vet ./mesh`, Mesh tests, `go test -race ./mesh`, `go build ./...`, `go test ./...`, Python syntax checks and the 16-provider adapter registry validation.
+
+These are structural and automated-test corrections. No production upstream API call, real browser navigation, real Letta/SuperAGI/OpenHands operation, or online seven-nucleus E2E was executed, so upstreams remain `adapter-planned` / `RUNTIME_UNVERIFIED` until their provider-specific smoke test passes.
+
 ## Priority execution plan
 
 **P0 — Freeze and record.** Do not change pinned submodule SHAs across the ecosystem yet. Re-read current default and feature branch heads before any later mutation. Preserve all 50 references and existing branches.
