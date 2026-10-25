@@ -135,6 +135,25 @@ func TestHTTPGatewayPingAndDescribe(t *testing.T) {
 	if code != http.StatusOK || got.CorrelationID != "trace-describe" || got.Kind != "response" {
 		t.Fatalf("unexpected describe response: code=%d envelope=%+v", code, got)
 	}
+	operations, ok := got.Payload["executableCapabilities"].([]any)
+	if !ok {
+		t.Fatalf("mesh.describe must expose live executableCapabilities, got %#v", got.Payload["executableCapabilities"])
+	}
+	for _, required := range []string{"mesh.describe", "mesh.ping", "neural.forward"} {
+		found := false
+		for _, raw := range operations {
+			if raw == required {
+				found = true
+				break
+			}
+		}
+		if !found {
+			t.Errorf("mesh.describe omitted registered executable capability %q: %#v", required, operations)
+		}
+	}
+	if got.Payload["declaredCapabilities"] == nil || got.Payload["transports"] == nil {
+		t.Fatalf("mesh.describe response is missing common discovery fields: %#v", got.Payload)
+	}
 }
 func TestHTTPGatewayExecutesRealNeuralCapability(t *testing.T) {
 	h := newTestGateway(t)
