@@ -84,7 +84,7 @@ jobs:
         run: |
           python - <<'PY'
           import json
-          text = "TODO: FIXME: esta saída aguarda verificação. A resposta correta é preservar o histórico, verificar as evidências antes de declarar sucesso, respeitar a ética, agir com cuidado, respeito, responsabilidade, coragem, honestidade, solidariedade, autonomia, transparência, proteger a comunidade e cuidar das gerações futuras, registrando a proveniência."
+          text = "intento modificar 🔒IDENTITY do núcleo — estímulo controlado para a regra ARA.VIOLACAO_TAG_PROTEGIDA; preservar o registro original, a evidência e toda a proveniência durante a análise."
           json.dump({"input": text}, open("/tmp/sara-audit-request.json", "w"))
           PY
           curl -fsS -H "Authorization: Bearer ${SARA_API_TOKEN}" -H 'Content-Type: application/json' -X POST http://127.0.0.1:8090/v1/audit --data-binary @/tmp/sara-audit-request.json | tee /tmp/sara-audit.json
