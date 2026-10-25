@@ -168,7 +168,7 @@ func TestProjectedExpansionsAreMetadataOnly(t *testing.T) {
 		})
 		_, err = e.Execute(context.Background(), ExternalFederationExecuteOperation, nil, map[string]string{
 			"provider": id,
-			"external_operation": firstNonEmpty(p.LegacyOperations),
+			"external_operation": firstNonEmptySlice(p.LegacyOperations),
 		})
 		if err == nil || !strings.Contains(err.Error(), "EXTERNAL_PROVIDER_UNKNOWN") {
 			t.Fatalf("projected expansion %s bypassed core adapter registry with activation flag: %v", id, err)
@@ -230,7 +230,7 @@ func TestExternalComplementaryDescribeContractsAreRegistered(t *testing.T) {
 	}
 }
 
-func firstNonEmpty(values []string) string {
+func firstNonEmptySlice(values []string) string {
 	for _, value := range values {
 		if strings.TrimSpace(value) != "" {
 			return value
