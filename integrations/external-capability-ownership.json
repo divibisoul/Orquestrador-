@@ -372,5 +372,291 @@
       "status": "adapter-planned",
       "mode": "complementary"
     }
+  ],
+  "expansion_capabilities": [
+    {
+      "id": "fedml",
+      "source": "FedML-AI/FedML",
+      "primaryOwner": "N07",
+      "consumers": [
+        "N01",
+        "N02",
+        "N03",
+        "N04",
+        "N05",
+        "N06",
+        "SARA"
+      ],
+      "affinity": [
+        "federated-learning",
+        "distributed-training"
+      ],
+      "status": "projected-no-runtime-route",
+      "mode": "projected-no-native-adapter",
+      "pinnedRevision": "03e11dfee69a458a9820ec4e05b531a5f935eb2b",
+      "requiredEvidence": [
+        "native-adapter-contract",
+        "exact-pinned-source",
+        "contract-tests",
+        "authenticated-runtime-e2e"
+      ],
+      "rule": "catalogue visibility does not authorize execution; keep PROJECTED until all required evidence passes"
+    },
+    {
+      "id": "hivemind",
+      "source": "learning-at-home/hivemind",
+      "primaryOwner": "N06",
+      "consumers": [
+        "N01",
+        "N02",
+        "N03",
+        "N04",
+        "N05",
+        "N07",
+        "SARA"
+      ],
+      "affinity": [
+        "decentralized-peer-learning",
+        "distributed-learning"
+      ],
+      "status": "projected-no-runtime-route",
+      "mode": "projected-no-native-adapter",
+      "pinnedRevision": "4bd43b77895019b20d18d81d0d0c1a5ab9a10847",
+      "requiredEvidence": [
+        "native-adapter-contract",
+        "exact-pinned-source",
+        "contract-tests",
+        "authenticated-runtime-e2e"
+      ],
+      "rule": "catalogue visibility does not authorize execution; keep PROJECTED until all required evidence passes"
+    },
+    {
+      "id": "temporal",
+      "source": "temporalio/temporal",
+      "primaryOwner": "N07",
+      "consumers": [
+        "N01",
+        "N02",
+        "N03",
+        "N04",
+        "N05",
+        "N06",
+        "SARA"
+      ],
+      "affinity": [
+        "durable-workflows",
+        "distributed-workflow-orchestration"
+      ],
+      "status": "projected-no-runtime-route",
+      "mode": "projected-no-native-adapter",
+      "pinnedRevision": "d955aa6b97a9b618b7f0bcfd5232964505d42120",
+      "requiredEvidence": [
+        "native-adapter-contract",
+        "exact-pinned-source",
+        "contract-tests",
+        "authenticated-runtime-e2e"
+      ],
+      "rule": "catalogue visibility does not authorize execution; keep PROJECTED until all required evidence passes"
+    },
+    {
+      "id": "cognitive-workspace",
+      "source": "tao-hpu/cognitive-workspace",
+      "primaryOwner": "N01",
+      "consumers": [
+        "N02",
+        "N03",
+        "N04",
+        "N05",
+        "N06",
+        "N07",
+        "SARA"
+      ],
+      "affinity": [
+        "global-workspace",
+        "multi-agent-coordination"
+      ],
+      "status": "projected-no-runtime-route",
+      "mode": "projected-no-native-adapter",
+      "pinnedRevision": "6740fc3b69a842ccc49663ac6c371600d0d9fc2e",
+      "requiredEvidence": [
+        "native-adapter-contract",
+        "exact-pinned-source",
+        "contract-tests",
+        "authenticated-runtime-e2e"
+      ],
+      "rule": "catalogue visibility does not authorize execution; keep PROJECTED until all required evidence passes"
+    },
+    {
+      "id": "ravana",
+      "source": "OpenSource-Syndicate/RAVANA",
+      "primaryOwner": "N06",
+      "consumers": [
+        "N01",
+        "N02",
+        "N03",
+        "N04",
+        "N05",
+        "N07",
+        "SARA"
+      ],
+      "affinity": [
+        "proactive-autonomous-agent",
+        "bounded-agent-execution"
+      ],
+      "status": "projected-no-runtime-route",
+      "mode": "projected-no-native-adapter",
+      "pinnedRevision": "c5d5095b2f918657b9261a6b958e2f4f013305cb",
+      "requiredEvidence": [
+        "native-adapter-contract",
+        "exact-pinned-source",
+        "contract-tests",
+        "authenticated-runtime-e2e"
+      ],
+      "rule": "catalogue visibility does not authorize execution; keep PROJECTED until all required evidence passes"
+    },
+    {
+      "id": "ray",
+      "source": "ray-project/ray",
+      "primaryOwner": "N07",
+      "consumers": [
+        "N01",
+        "N02",
+        "N03",
+        "N04",
+        "N05",
+        "N06",
+        "SARA"
+      ],
+      "affinity": [
+        "distributed-compute",
+        "task-execution",
+        "actor-runtime"
+      ],
+      "status": "projected-no-runtime-route",
+      "mode": "projected-no-native-adapter",
+      "pinnedRevision": "9b6495fc965c3a231417854bb8cfe8a8fdf0d305",
+      "requiredEvidence": [
+        "native-adapter-contract",
+        "exact-pinned-source",
+        "contract-tests",
+        "authenticated-runtime-e2e"
+      ],
+      "rule": "catalogue visibility does not authorize execution; keep PROJECTED until all required evidence passes"
+    },
+    {
+      "id": "bijux-dag-runtime",
+      "source": "bijux/bijux-core",
+      "primaryOwner": "N07",
+      "consumers": [
+        "N01",
+        "N02",
+        "N03",
+        "N04",
+        "N05",
+        "N06",
+        "SARA"
+      ],
+      "affinity": [
+        "DAG-runtime",
+        "dependency-graph-execution"
+      ],
+      "status": "projected-no-runtime-route",
+      "mode": "GRCE-projected-complement",
+      "pinnedRevision": "f0f5f56b49f380196918c4c6910b725b2b30ab7d",
+      "requiredEvidence": [
+        "native-adapter-contract",
+        "exact-pinned-source",
+        "contract-tests",
+        "authenticated-runtime-e2e"
+      ],
+      "rule": "catalogue visibility does not authorize execution; keep PROJECTED until all required evidence passes"
+    },
+    {
+      "id": "ouro-loop",
+      "source": "VictorVVedtion/ouro-loop",
+      "primaryOwner": "N07",
+      "consumers": [
+        "N01",
+        "N02",
+        "N03",
+        "N04",
+        "N05",
+        "N06",
+        "SARA"
+      ],
+      "affinity": [
+        "recursive-feedback-loop",
+        "regeneration-complement"
+      ],
+      "status": "projected-no-runtime-route",
+      "mode": "GRCE-projected-complement",
+      "pinnedRevision": "52f97e22dc2a72a45ffa025d452ea02c58cb6b94",
+      "requiredEvidence": [
+        "native-adapter-contract",
+        "exact-pinned-source",
+        "contract-tests",
+        "authenticated-runtime-e2e"
+      ],
+      "rule": "catalogue visibility does not authorize execution; keep PROJECTED until all required evidence passes"
+    },
+    {
+      "id": "recuris",
+      "source": "Gen-Verse/Recuris",
+      "primaryOwner": "N06",
+      "consumers": [
+        "N01",
+        "N02",
+        "N03",
+        "N04",
+        "N05",
+        "N07",
+        "SARA"
+      ],
+      "affinity": [
+        "recursive-execution",
+        "bounded-recursion",
+        "experiential-memory"
+      ],
+      "status": "projected-no-runtime-route",
+      "mode": "GRCE-projected-complement",
+      "pinnedRevision": "7d3745ab787b1206ccd981cb1511100476097266",
+      "requiredEvidence": [
+        "native-adapter-contract",
+        "exact-pinned-source",
+        "contract-tests",
+        "authenticated-runtime-e2e"
+      ],
+      "rule": "catalogue visibility does not authorize execution; keep PROJECTED until all required evidence passes",
+      "legacy_id": "recurs"
+    },
+    {
+      "id": "nats-go",
+      "source": "nats-io/nats.go",
+      "primaryOwner": "N07",
+      "consumers": [
+        "N01",
+        "N02",
+        "N03",
+        "N04",
+        "N05",
+        "N06",
+        "SARA"
+      ],
+      "affinity": [
+        "event-transport",
+        "pub-sub",
+        "request-reply"
+      ],
+      "status": "projected-no-runtime-route",
+      "mode": "GRCE-projected-transport",
+      "requiredEvidence": [
+        "native-nervo-vago-transport-adapter",
+        "ETR-before-delivery",
+        "exact-pinned-source",
+        "authenticated-event-e2e",
+        "idempotent-replay-proof"
+      ],
+      "pinnedRevision": "f90b0a9f9df8f42a634a4f5351df1594dada4184"
+    }
   ]
 }
