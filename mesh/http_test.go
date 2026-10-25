@@ -285,6 +285,9 @@ func TestExternalFederationCatalogAndAllThirtyTwoSourcesAreDiscoverableOverMeshH
 			t.Errorf("source %s returned incomplete/unsafe evidence over Mesh HTTP: %#v", id, evidence)
 		}
 
+	// Keep the 32 descriptions and 32 probes in separate request windows.
+	// The gateway's per-source limit remains enforced; this test must not bypass production throttling.
+	for _, id := range ids {
 		probeWire := canonicalRequest("request", orchestrator.ExternalFederationSourceProbeOperation, "trace-probe-"+id, nil)
 		probeWire["payload"].(map[string]any)["provider"] = id
 		probeResponse, probeStatus := postWire(t, h, probeWire)
@@ -324,6 +327,7 @@ func TestExternalFederationCatalogAndAllThirtyTwoSourcesAreDiscoverableOverMeshH
 			t.Errorf("active source %s probe must report package availability: %#v", id, probeEvidence)
 		}
 	}
+
 	if len(seen) != 32 {
 		t.Fatalf("Mesh exposed %d unique public upstreams, want 32", len(seen))
 	}
