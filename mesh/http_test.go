@@ -227,9 +227,9 @@ func TestExternalFederationCatalogAndAllThirtyTwoSourcesAreDiscoverableOverMeshH
 		t.Fatalf("catalog response contains invalid JSON: %v", err)
 	}
 	if catalog.State != "PASS" || catalog.RuntimeEvidence != "UNVERIFIED" ||
-		catalog.ProviderCount != 22 || catalog.ExpansionProviderCount != 9 ||
+		catalog.ProviderCount != 22 || catalog.ExpansionProviderCount != 10 ||
 		catalog.DeclaredExternalRepositoryCount != 32 ||
-		len(catalog.Providers) != 22 || len(catalog.ExpansionProviders) != 9 {
+		len(catalog.Providers) != 22 || len(catalog.ExpansionProviders) != 10 {
 		t.Fatalf("catalog inventory/evidence mismatch: %#v", catalog)
 	}
 
