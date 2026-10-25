@@ -131,7 +131,13 @@ func superpowersAgentRoute(e *Engine) Handler {
 		// correlation ID remain explicit so nested Engine.Submit calls cannot
 		// collide with the still-active parent trace.
 		delegatedMetadata["parent_trace_id"] = m.TraceID
-		delete(delegatedMetadata, "trace_id")
+		// Engine.Execute honors trace_id in metadata. Explicitly allocate the child
+		// trace here; deleting trace_id is insufficient if metadata is later enriched
+		// by another adapter. The outer Engine.Submit still restores the root trace.
+		delegatedMetadata["trace_id"] = protocol.NewTraceID()
+		if delegatedMetadata["trace_id"] == m.TraceID {
+			delegatedMetadata["trace_id"] = protocol.NewTraceID()
+		}
 		if strings.TrimSpace(delegatedMetadata["correlation_id"]) == "" {
 			delegatedMetadata["correlation_id"] = m.CorrelationID
 		}
