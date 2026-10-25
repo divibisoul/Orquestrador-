@@ -234,6 +234,40 @@ func TestCanonicalFederationSourceMetadataContractCoversAllThirtyOneSources(t *t
 	}
 }
 
+func TestCanonicalFederationSourceProbeDoesNotClaimExecution(t *testing.T) {
+	e, _ := newExternalTestEngine(t)
+	for _, provider := range []struct {
+		id string
+		projected bool
+	}{
+		{id: "langgraph"},
+		{id: "ray", projected: true},
+	} {
+		result, err := e.Execute(context.Background(), ExternalFederationSourceProbeOperation, nil, map[string]string{"provider": provider.id})
+		if err != nil {
+			t.Fatalf("source probe failed for %s: %v", provider.id, err)
+		}
+		var evidence map[string]any
+		if err := json.Unmarshal([]byte(result.Metadata["external_result_json"]), &evidence); err != nil {
+			t.Fatalf("source probe returned invalid JSON for %s: %v", provider.id, err)
+		}
+		probe, ok := evidence["sourceProbe"].(map[string]any)
+		if !ok || evidence["provider"] != provider.id || evidence["executionProven"] != false ||
+			evidence["runtimeEvidence"] != "UNVERIFIED" || probe["source_integrity_only"] != true ||
+			probe["execution_proven"] != false {
+			t.Fatalf("source probe claimed execution or omitted health evidence for %s: %#v", provider.id, evidence)
+		}
+		if provider.projected {
+			if probe["execution_enabled"] != false ||
+				(evidence["sourceProbeState"] != "PROJECTED" && evidence["sourceProbeState"] != "BLOCKED") {
+				t.Fatalf("projected source %s must remain non-executable: %#v", provider.id, evidence)
+			}
+		} else if _, ok := probe["package_available"].(bool); !ok {
+			t.Fatalf("active source %s probe must expose package availability: %#v", provider.id, probe)
+		}
+	}
+}
+
 func TestCanonicalFederationSourceMetadataRejectsUnknownSource(t *testing.T) {
 	e, _ := newExternalTestEngine(t)
 	_, err := e.Execute(context.Background(), ExternalFederationSourceDescribeOperation, nil, map[string]string{"provider": "not-registered"})

@@ -597,6 +597,9 @@ func RegisterExternalAdapterOperations(e *Engine, r ExternalAdapterRegistry) err
 			if err != nil {
 				return externalAdapterFailure(m, err.Error())
 			}
+			if op == ExternalFederationSourceProbeOperation {
+				result = externalFederationSourceProbe(ctx, r, provider, m.Metadata, result)
+			}
 			return externalAdapterResult(m, result), nil
 		}); err != nil {
 			return err
@@ -765,6 +768,49 @@ func externalFederationSourceMetadata(r ExternalAdapterRegistry, providerID, ope
 		},
 	}, nil
 }
+
+// externalFederationSourceProbe reports a read-only health signal for a source.
+ // Active adapters verify the exact pinned worktree and expose package importability.
+ // Projected sources remain metadata-only and cannot gain an execution route here.
+ func externalFederationSourceProbe(ctx context.Context, r ExternalAdapterRegistry, providerID string, metadata map[string]string, evidence map[string]any) map[string]any {
+ 	if _, active := r.byID[providerID]; active {
+ 		probe, err := r.run(ctx, providerID, "probe", "probe", metadata)
+ 		if err != nil {
+ 			evidence["sourceProbe"] = map[string]any{
+ 				"state": "BLOCKED",
+ 				"provider": providerID,
+ 				"mode": "probe",
+ 				"code": err.Error(),
+ 				"source_integrity_only": true,
+ 				"execution_proven": false,
+ 				"runtime_evidence": "UNVERIFIED",
+ 			}
+ 			evidence["sourceProbeState"] = "BLOCKED"
+ 			return evidence
+ 		}
+ 		evidence["sourceProbe"] = probe
+ 		state, _ := probe["state"].(string)
+ 		if state == "" {
+ 			state = "BLOCKED"
+ 		}
+ 		evidence["sourceProbeState"] = state
+ 		return evidence
+ 	}
+ 	state, _ := evidence["state"].(string)
+ 	evidence["sourceProbeState"] = state
+ 	evidence["sourceProbe"] = map[string]any{
+ 		"state": state,
+ 		"provider": providerID,
+ 		"mode": "source-integrity-only",
+ 		"source_present": evidence["sourcePresent"],
+ 		"revision_matched": evidence["revisionMatched"],
+ 		"source_integrity_only": true,
+ 		"execution_enabled": false,
+ 		"execution_proven": false,
+ 		"runtime_evidence": "UNVERIFIED",
+ 	}
+ 	return evidence
+ }
 
 func externalProjectedSourceResult(m protocol.Message, r ExternalAdapterRegistry, p ExternalAdapterSpec, operation string) protocol.Result {
 	root := p.Root

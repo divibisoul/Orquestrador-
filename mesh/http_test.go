@@ -241,6 +241,10 @@ func TestExternalFederationCatalogAndAllThirtyOneSourcesAreDiscoverableOverMeshH
 	for _, provider := range catalog.ExpansionProviders {
 		ids = append(ids, provider.ID)
 	}
+	projectedIDs := make(map[string]struct{}, len(catalog.ExpansionProviders))
+	for _, projected := range catalog.ExpansionProviders {
+		projectedIDs[projected.ID] = struct{}{}
+	}
 	for _, id := range ids {
 		if _, duplicate := seen[id]; duplicate {
 			t.Fatalf("duplicate public upstream in Mesh catalog: %s", id)
@@ -279,6 +283,45 @@ func TestExternalFederationCatalogAndAllThirtyOneSourcesAreDiscoverableOverMeshH
 			(evidence.State != "PROJECTED" && evidence.State != "UNMEASURABLE" && evidence.State != "BLOCKED") ||
 			len(evidence.MeshMetadataOperations) < 2 {
 			t.Errorf("source %s returned incomplete/unsafe evidence over Mesh HTTP: %#v", id, evidence)
+		}
+
+		probeWire := canonicalRequest("request", orchestrator.ExternalFederationSourceProbeOperation, "trace-probe-"+id, nil)
+		probeWire["payload"].(map[string]any)["provider"] = id
+		probeResponse, probeStatus := postWire(t, h, probeWire)
+		if probeStatus != http.StatusOK || probeResponse.Kind != "response" {
+			t.Fatalf("source %s was not probeable through common Mesh HTTP API: status=%d envelope=%+v", id, probeStatus, probeResponse)
+		}
+		probeMetadata, ok := probeResponse.Payload["metadata"].(map[string]any)
+		if !ok {
+			t.Fatalf("source %s probe omitted HTTP result metadata: %#v", id, probeResponse.Payload)
+		}
+		probeRaw, ok := probeMetadata["external_result_json"].(string)
+		if !ok || strings.TrimSpace(probeRaw) == "" {
+			t.Fatalf("source %s probe omitted evidence JSON: %#v", id, probeMetadata)
+		}
+		var probeEvidence struct {
+			Provider string `json:"provider"`
+			ExecutionProven bool `json:"executionProven"`
+			RuntimeEvidence string `json:"runtimeEvidence"`
+			SourceProbeState string `json:"sourceProbeState"`
+			SourceProbe map[string]any `json:"sourceProbe"`
+		}
+		if err := json.Unmarshal([]byte(probeRaw), &probeEvidence); err != nil {
+			t.Fatalf("source %s returned malformed probe evidence: %v; raw=%s", id, err, probeRaw)
+		}
+		if probeEvidence.Provider != id || probeEvidence.ExecutionProven ||
+			probeEvidence.RuntimeEvidence != "UNVERIFIED" || probeEvidence.SourceProbe == nil ||
+			probeEvidence.SourceProbe["source_integrity_only"] != true ||
+			probeEvidence.SourceProbe["execution_proven"] != false {
+			t.Errorf("source %s returned unsafe/incomplete probe evidence: %#v", id, probeEvidence)
+		}
+		if _, projected := projectedIDs[id]; projected {
+			if probeEvidence.SourceProbe["execution_enabled"] != false ||
+				(probeEvidence.SourceProbeState != "PROJECTED" && probeEvidence.SourceProbeState != "BLOCKED") {
+				t.Errorf("projected source %s must remain metadata-only: %#v", id, probeEvidence)
+			}
+		} else if _, ok := probeEvidence.SourceProbe["package_available"].(bool); !ok {
+			t.Errorf("active source %s probe must report package availability: %#v", id, probeEvidence)
 		}
 	}
 	if len(seen) != 31 {
