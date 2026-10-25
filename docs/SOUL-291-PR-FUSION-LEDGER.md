@@ -1690,3 +1690,17 @@ Um draft não é eliminado só por estar velho ou falhando. Ele só pode ser cla
 
 - Every PASS above is tied to its exact run and source SHA. A successful consumer E2E does not mark PR #53 independently validated, and queued N07 checks remain pending.
 - No PRs were merged or closed; no branch was force-pushed; no historical source or dependency was removed; no `main` branch was modified.
+
+## Follow-up checkpoint 2026-10-25 — exact-head retests queued
+
+### N04 ↔ N05
+- Confirmed run `40214678457` on N04 head `0404e9da50ac7cca182c9fcb10e77341fc2a01e4`, with N05 pinned to its current candidate `efd4f4fc3b0648d054e1b06d04afb15940ae4083`: production builds and bidirectional real-process HTTP/HMAC E2E **PASS**.
+- N04 and N05 remain separate open drafts; the passing consumer E2E does not imply either PR is merged or standalone N05 CI is measured.
+
+### N07 PR #152 — current head `ad7c65c9a97c0fa9ea8855ff7bb4e27289b5838f`
+- Two additive workflow corrections are now committed on the existing branch:
+  1. `0e3ab12bf4648a975b72f2114e99adac0f6d4be8`: the LangGraph probe assertion resolves the result by the semantic `provider=langgraph` within operation-specific `*_json` Mesh metadata, instead of hard-coding `metadata.external_result_json`. This matches the envelope contract and avoids coupling the probe to one metadata key.
+  2. `ad7c65c9a97c0fa9ea8855ff7bb4e27289b5838f`: the GRCE E2E stimulus uses SARA's documented protected-tag detector trigger (`modificar 🔒IDENTITY`) while retaining the positive-cycle assertions. This replaces a stimulus that the real SARA audit returned with `flaws=[]`, which correctly left GRCE in `IDLE`.
+- Runs `40237594823` (N07 CI, SHA `0e3ab12...`) and `40237629246` (GRF/GRCE E2E, SHA `ad7c65c...`) were queued/in progress at the last poll. They are **PENDING**, not PASS. N07 integrity/Go tests had passed on the previous head, but the production smoke and full real-SARA cycle still require these retests.
+- The prior run also emitted a cleanup warning for nested upstream path `integrations/external/autogenesis/datasets/leetcode` lacking a matching `.gitmodules` URL. It was a post-job cleanup warning, not the primary smoke assertion; preserve the upstream source and investigate separately if it remains.
+- No main write, merge, force-push, PR closure, or source/dependency removal occurred.
