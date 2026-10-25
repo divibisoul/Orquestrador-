@@ -18,16 +18,19 @@ func SOULTopology() map[string]any {
 	activeAIDirectedRoutes := len(activeAI) * (len(activeAI) - 1)
 	totalLogicalDirectedRoutes := len(nuclei) * (len(nuclei) - 1)
 	structuralN07AdditionalRoutes := totalLogicalDirectedRoutes - activeAIDirectedRoutes
-	ops := []string{"mesh.ping", "mesh.health", "mesh.discovery", "mesh.capabilities", "mesh.capability.resolve@1.0.0", "mesh.delegate", "mesh.fusion.describe", "mesh.fusion.execute", "mesh.supergpu.describe", "mesh.supergpu.execute", "mesh.supergpu.parallel", "supergpu.federated.execute", "prefrontal.admission", "prefrontal.orbital.evaluate@1.0.0", "transcendental.estimate@1.0.0", "neural.forward", "neural.learn", "jev.systemone@1.0.0", "cooperation.handshake@1.0.0", "cooperation.exchange@1.0.0", "cooperation.health@1.0.0", "cognitive.planning.sources@1.0.0", "external.federation.describe@1.0.0", "external.federation.execute@1.0.0", "external.federation.source.describe@1.0.0", "external.federation.source.probe@1.0.0", "superpowers.agent.describe@1.0.0", "superpowers.agent.route@1.0.0", "soul.integration.engineers.describe@1.0.0", "soul.integration.engineer.prepare@1.0.0", "soul.capability.upgrade.describe@1.0.0", "soul.capability.upgrade.resolve@1.0.0", "soul.capability.augment.describe@1.0.0", "soul.capability.augment.resolve@1.0.0", "grf.describe@2.0.0", "grf.participant.describe@2.0.0", "grce.describe@2.0.0", "grce.bindings.describe@2.0.0", "grce.cycle.execute@2.0.0", "grf.participant.ingest@2.0.0", "grce.sara.authoritative.execute@2.0.0"}
-	transports := []string{"IN_PROCESS", "LOOPBACK_HTTP", "HTTP", "REALTIME", "EVENT"}
+	n07DeclaredOps := []string{"mesh.ping", "mesh.health", "mesh.discovery", "mesh.capabilities", "mesh.capability.resolve@1.0.0", "mesh.delegate", "mesh.fusion.describe", "mesh.fusion.execute", "mesh.supergpu.describe", "mesh.supergpu.execute", "mesh.supergpu.parallel", "supergpu.federated.execute", "prefrontal.admission", "prefrontal.orbital.evaluate@1.0.0", "transcendental.estimate@1.0.0", "neural.forward", "neural.learn", "jev.systemone@1.0.0", "cooperation.handshake@1.0.0", "cooperation.exchange@1.0.0", "cooperation.health@1.0.0", "cognitive.planning.sources@1.0.0", "external.federation.describe@1.0.0", "external.federation.execute@1.0.0", "external.federation.source.describe@1.0.0", "external.federation.source.probe@1.0.0", "superpowers.agent.describe@1.0.0", "superpowers.agent.route@1.0.0", "soul.integration.engineers.describe@1.0.0", "soul.integration.engineer.prepare@1.0.0", "soul.capability.upgrade.describe@1.0.0", "soul.capability.upgrade.resolve@1.0.0", "soul.capability.augment.describe@1.0.0", "soul.capability.augment.resolve@1.0.0", "grf.describe@2.0.0", "grf.participant.describe@2.0.0", "grce.describe@2.0.0", "grce.bindings.describe@2.0.0", "grce.cycle.execute@2.0.0", "grf.participant.ingest@2.0.0", "grce.sara.authoritative.execute@2.0.0"}
+	transports := []string{"HTTP", "HTTPS"}
+	// Every peer exposes one bootstrap operation. Native executable capabilities
+	// are discovered from the destination instead of copied onto every link.
+	bootstrapOps := []string{"mesh.describe"}
 	channels := make([]PeerChannel, 0, (len(nuclei)-1)*2)
 	for _, peer := range nuclei {
 		if peer == protocol.N07 {
 			continue // A nucleus never routes to itself.
 		}
 		channels = append(channels,
-			PeerChannel{Peer: peer, Direction: "OUT", Operations: append([]string(nil), ops...), Transports: append([]string(nil), transports...)},
-			PeerChannel{Peer: peer, Direction: "IN", Operations: append([]string(nil), ops...), Transports: append([]string(nil), transports...)},
+			PeerChannel{Peer: peer, Direction: "OUT", Operations: append([]string(nil), bootstrapOps...), Transports: append([]string(nil), transports...)},
+			PeerChannel{Peer: peer, Direction: "IN", Operations: append([]string(nil), bootstrapOps...), Transports: append([]string(nil), transports...)},
 		)
 	}
 	return map[string]any{
@@ -41,6 +44,8 @@ func SOULTopology() map[string]any {
 		"in_peer_count":  6,
 		"out_peer_count": 6,
 		"channels":       channels,
+		"n07_declared_operations": append([]string(nil), n07DeclaredOps...),
+		"capability_routing_policy": "discover-at-destination; only runtime-advertised executable capabilities may be called",
 		// "directional" counts N07's direct IN/OUT channels to its six peers.
 		// The full seven-nucleus network has 42 logical directed routes.
 		"directional":    len(channels),
