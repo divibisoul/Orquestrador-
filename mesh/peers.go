@@ -430,7 +430,7 @@ func (p *PeerClient) call(ctx context.Context, nucleus, capability string, paylo
 			return nil, err
 		}
 		var result map[string]any
-		decodeErr := jsonDecodeLimited(resp, &result)
+		responseRaw, decodeErr := jsonDecodeLimited(resp, &result)
 		resp.Body.Close()
 		if decodeErr != nil {
 			lastErr = decodeErr
@@ -474,7 +474,12 @@ func (p *PeerClient) call(ctx context.Context, nucleus, capability string, paylo
 			p.recordFailure(nucleus, latency, lastErr.Error())
 			return nil, lastErr
 		}
-		if err := verifyResponseHMAC(result, p.secret); err != nil {
+		if result["source"] != nucleus || result["target"] != protocol.N07 {
+			lastErr = errors.New("mesh response route identity mismatch")
+			p.recordFailure(nucleus, latency, lastErr.Error())
+			return nil, lastErr
+		}
+		if err := verifyResponseHMACWithRaw(result, responseRaw, p.secret); err != nil {
 			lastErr = err
 			p.recordFailure(nucleus, latency, err.Error())
 			return nil, err
@@ -488,14 +493,24 @@ func (p *PeerClient) call(ctx context.Context, nucleus, capability string, paylo
 	return nil, lastErr
 }
 
-func jsonDecodeLimited(resp *http.Response, out *map[string]any) error {
+func jsonDecodeLimited(resp *http.Response, out *map[string]any) ([]byte, error) {
 	if resp == nil || resp.Body == nil {
-		return errors.New("empty peer response")
+		return nil, errors.New("empty peer response")
 	}
 	if resp.ContentLength > 1<<20 {
-		return errors.New("peer response exceeds configured limit")
+		return nil, errors.New("peer response exceeds configured limit")
 	}
-	return json.NewDecoder(io.LimitReader(resp.Body, 1<<20)).Decode(out)
+	raw, err := io.ReadAll(io.LimitReader(resp.Body, (1<<20)+1))
+	if err != nil {
+		return nil, err
+	}
+	if len(raw) > 1<<20 {
+		return nil, errors.New("peer response exceeds configured limit")
+	}
+	if err := json.Unmarshal(raw, out); err != nil {
+		return nil, err
+	}
+	return raw, nil
 }
 
 func waitBackoff(ctx context.Context, attempt int) error {
@@ -543,6 +558,106 @@ func (p *PeerClient) recordFailure(nucleus string, latency time.Duration, lastEr
 		peer.RetryAfter = time.Now().Add(p.cooldown)
 	}
 	p.peers[nucleus] = peer
+}
+
+// verifyResponseHMACWithRaw accepts both response signatures already used by
+// the nuclei: N01/N04/N05's preserved legacy response contract and the canonical
+// soul-mesh/1 request-shaped response signature used by N06. The raw envelope is
+// retained so nested JSON property order and bytes match JavaScript JSON.stringify.
+func verifyResponseHMACWithRaw(result map[string]any, raw []byte, secret string) error {
+	hmacValue, _ := result["hmac"].(string)
+	nonce, _ := result["nonce"].(string)
+	source, _ := result["source"].(string)
+	timestamp, ok := result["timestamp"].(float64)
+	if !ok {
+		return errors.New("peer response timestamp is invalid")
+	}
+	if delta := time.Now().UnixMilli() - int64(timestamp); delta > 30000 || delta < -30000 {
+		return errors.New("peer response timestamp outside accepted clock skew")
+	}
+	if hmacValue == "" || nonce == "" || source == "" {
+		return errors.New("peer response HMAC credentials are missing")
+	}
+	if canonicalResponseHMACMatches(raw, secret, hmacValue) {
+		if !acceptHeaderNonce(source, nonce, time.Now()) {
+			return errors.New("Mesh replay detected")
+		}
+		return nil
+	}
+	return verifyResponseHMAC(result, secret)
+}
+
+func canonicalResponseHMACMatches(raw []byte, secret, signature string) bool {
+	if strings.TrimSpace(secret) == "" || len(signature) != sha256.Size*2 {
+		return false
+	}
+	supplied, err := hex.DecodeString(signature)
+	if err != nil || len(supplied) != sha256.Size {
+		return false
+	}
+	canonical, err := canonicalResponseBytes(raw)
+	if err != nil {
+		return false
+	}
+	mac := hmac.New(sha256.New, []byte(secret))
+	_, _ = mac.Write(canonical)
+	return hmac.Equal(mac.Sum(nil), supplied)
+}
+
+func canonicalResponseBytes(raw []byte) ([]byte, error) {
+	var fields map[string]json.RawMessage
+	if err := json.Unmarshal(raw, &fields); err != nil {
+		return nil, err
+	}
+	for _, required := range []string{"protocol", "contractVersion", "id", "correlationId", "source", "target", "kind", "timestamp", "nonce"} {
+		if len(fields[required]) == 0 || string(fields[required]) == "null" {
+			return nil, fmt.Errorf("canonical Mesh response field %q is required", required)
+		}
+	}
+	capability := fields["capability"]
+	if len(capability) == 0 || string(capability) == "null" {
+		capability = json.RawMessage("null")
+	}
+	meta := fields["meta"]
+	if len(meta) == 0 {
+		meta = json.RawMessage("null")
+	}
+	var metadata map[string]json.RawMessage
+	if string(meta) != "null" {
+		if err := json.Unmarshal(meta, &metadata); err != nil {
+			return nil, fmt.Errorf("canonical Mesh response metadata: %w", err)
+		}
+	}
+	transport := metadata["transport"]
+	type canonicalResponse struct {
+		Protocol        json.RawMessage  `json:"protocol"`
+		ContractVersion json.RawMessage  `json:"contractVersion"`
+		ID              json.RawMessage  `json:"id"`
+		CorrelationID   json.RawMessage  `json:"correlationId"`
+		Source          json.RawMessage  `json:"source"`
+		Target          json.RawMessage  `json:"target"`
+		Kind            json.RawMessage  `json:"kind"`
+		Capability      json.RawMessage  `json:"capability"`
+		Payload         json.RawMessage  `json:"payload,omitempty"`
+		Timestamp       json.RawMessage  `json:"timestamp"`
+		Transport       json.RawMessage  `json:"transport,omitempty"`
+		Meta            json.RawMessage  `json:"meta"`
+		Nonce           json.RawMessage  `json:"nonce"`
+	}
+	value := canonicalResponse{
+		Protocol: fields["protocol"], ContractVersion: fields["contractVersion"],
+		ID: fields["id"], CorrelationID: fields["correlationId"],
+		Source: fields["source"], Target: fields["target"], Kind: fields["kind"],
+		Capability: capability, Payload: fields["payload"], Timestamp: fields["timestamp"],
+		Transport: transport, Meta: meta, Nonce: fields["nonce"],
+	}
+	var buffer bytes.Buffer
+	encoder := json.NewEncoder(&buffer)
+	encoder.SetEscapeHTML(false)
+	if err := encoder.Encode(value); err != nil {
+		return nil, err
+	}
+	return bytes.TrimSuffix(buffer.Bytes(), []byte("\n")), nil
 }
 
 func verifyResponseHMAC(result map[string]any, secret string) error {
