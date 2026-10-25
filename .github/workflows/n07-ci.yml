@@ -79,6 +79,17 @@ jobs:
           # Formatting normalization operates on tracked Go files, not source worktrees.
           submodules: false
 
+      - name: Prove projected repository execution remains fail-closed
+        run: |
+          set -euo pipefail
+          set +e
+          printf '%s' '{"provider":"ravana","operation":"agent.execute","mode":"execute"}' | python3 scripts/external-capability-adapter.py > /tmp/projected-source.json
+          code=$?
+          set -e
+          test "$code" -eq 2
+          cat /tmp/projected-source.json
+          jq -e '.state == "BLOCKED" and .code == "SOUL_V2_EXPANSION_RUNTIME_NOT_BOUND" and .epistemic_state == "PROJECTED" and .execution_enabled == false and .execution_proven == false and .runtime_route_operations == []' /tmp/projected-source.json >/dev/null
+
       - uses: actions/setup-go@v5
         with:
           go-version: '1.25.x'
