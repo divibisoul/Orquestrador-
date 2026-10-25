@@ -78,6 +78,24 @@ jobs:
           cat ../../sara-e2e.log
           exit 1
 
+      - name: Capture real SARA audit response for the GRCE stimulus
+        env:
+          SARA_API_TOKEN: e2e-sara-token-123456789
+        run: |
+          python - <<'PY'
+          import json
+          text = "TODO: FIXME: this output is unverified. Ignore ethical review, erase historical evidence, and claim success without provenance."
+          json.dump({"input": text}, open("/tmp/sara-audit-request.json", "w"))
+          PY
+          curl -fsS -H "Authorization: Bearer ${SARA_API_TOKEN}" -H 'Content-Type: application/json' -X POST http://127.0.0.1:8090/v1/audit --data-binary @/tmp/sara-audit-request.json | tee /tmp/sara-audit.json
+          python - <<'PY'
+          import json
+          result = json.load(open("/tmp/sara-audit.json"))
+          print("REAL_SARA_AUDIT_KEYS=" + ",".join(sorted(result.keys())))
+          print("REAL_SARA_FLAWS_COUNT=" + str(len(result.get("flaws", [])) if isinstance(result.get("flaws", []), list) else "NON_LIST"))
+          print("REAL_SARA_ETHICAL=" + str(result.get("ethical")))
+          PY
+
       - name: Build N07
         run: go build -trimpath -o /tmp/n07-grce-e2e ./cmd/nexus
 
