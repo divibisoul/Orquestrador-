@@ -156,7 +156,7 @@ func TestHTTPGatewayPingAndDescribe(t *testing.T) {
 		t.Fatalf("mesh.describe response is missing common discovery fields: %#v", got.Payload)
 	}
 }
-func TestExternalFederationCatalogAndAllThirtyOneSourcesAreDiscoverableOverMeshHTTP(t *testing.T) {
+func TestExternalFederationCatalogAndAllThirtyTwoSourcesAreDiscoverableOverMeshHTTP(t *testing.T) {
 	h := newTestGateway(t)
 	registry, err := orchestrator.NewExternalAdapterRegistry()
 	if err != nil {
@@ -228,13 +228,13 @@ func TestExternalFederationCatalogAndAllThirtyOneSourcesAreDiscoverableOverMeshH
 	}
 	if catalog.State != "PASS" || catalog.RuntimeEvidence != "UNVERIFIED" ||
 		catalog.ProviderCount != 22 || catalog.ExpansionProviderCount != 9 ||
-		catalog.DeclaredExternalRepositoryCount != 31 ||
+		catalog.DeclaredExternalRepositoryCount != 32 ||
 		len(catalog.Providers) != 22 || len(catalog.ExpansionProviders) != 9 {
 		t.Fatalf("catalog inventory/evidence mismatch: %#v", catalog)
 	}
 
-	ids := make([]string, 0, 31)
-	seen := make(map[string]struct{}, 31)
+	ids := make([]string, 0, 32)
+	seen := make(map[string]struct{}, 32)
 	for _, provider := range catalog.Providers {
 		ids = append(ids, provider.ID)
 	}
@@ -324,8 +324,8 @@ func TestExternalFederationCatalogAndAllThirtyOneSourcesAreDiscoverableOverMeshH
 			t.Errorf("active source %s probe must report package availability: %#v", id, probeEvidence)
 		}
 	}
-	if len(seen) != 31 {
-		t.Fatalf("Mesh exposed %d unique public upstreams, want 31", len(seen))
+	if len(seen) != 32 {
+		t.Fatalf("Mesh exposed %d unique public upstreams, want 32", len(seen))
 	}
 	for _, projected := range catalog.ExpansionProviders {
 		if projected.State != "PROJECTED" || projected.ExecutionEnabled || projected.ExecutionProven || len(projected.RuntimeRouteOperations) != 0 {
