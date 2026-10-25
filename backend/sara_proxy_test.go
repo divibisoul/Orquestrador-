@@ -88,6 +88,53 @@ func TestSARAProxyPropagatesCorrelationHeader(t *testing.T) {
 	}
 }
 
+func TestSARAProxyGRCEHooksUsesCanonicalHTTPBoundary(t *testing.T) {
+	var gotPath, gotCorrelation string
+	var gotBody map[string]any
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotPath = r.URL.Path
+		gotCorrelation = r.Header.Get("X-Correlation-ID")
+		if err := json.NewDecoder(r.Body).Decode(&gotBody); err != nil {
+			t.Errorf("decode GRCE hooks request: %v", err)
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"final_status":"VALIDATED","all_hooks_observed":true,"hook_evidence":{"RGO":true,"ARA":true,"ITR":true,"ETR":true,"ERU":true,"MMD":true}}`))
+	}))
+	defer server.Close()
+
+	proxy := NewSARAProxy(Config{
+		SARAServiceURL:   server.URL,
+		SARAServiceToken: "token",
+	})
+	finding := map[string]any{
+		"schema_version": "1.0.0",
+		"finding_id":     "grce:corr-rgo-001",
+		"epistemic":      map[string]any{"mode": "EXECUTION", "verification_state": "UNVERIFIED"},
+	}
+	out, err := proxy.GRCEHooks(context.Background(), finding, "cycle-rgo-001", "corr-rgo-001")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if gotPath != "/v1/grce/hooks" {
+		t.Fatalf("request path=%q, want /v1/grce/hooks", gotPath)
+	}
+	if gotCorrelation != "corr-rgo-001" {
+		t.Fatalf("correlation header=%q, want corr-rgo-001", gotCorrelation)
+	}
+	if gotBody["cycle_id"] != "cycle-rgo-001" {
+		t.Fatalf("cycle_id=%v, want cycle-rgo-001", gotBody["cycle_id"])
+	}
+	gotFinding, ok := gotBody["finding"].(map[string]any)
+	if !ok || gotFinding["finding_id"] != finding["finding_id"] {
+		t.Fatalf("finding envelope was not preserved: %#v", gotBody["finding"])
+	}
+	if out["final_status"] != "VALIDATED" || out["all_hooks_observed"] != true {
+		t.Fatalf("GRCE hook evidence response was not preserved: %#v", out)
+	}
+}
+
 func TestSARAProxyLiveCycleIsOptIn(t *testing.T) {
 	baseURL := strings.TrimSpace(os.Getenv("SARA_E2E_URL"))
 	token := strings.TrimSpace(os.Getenv("SARA_E2E_TOKEN"))
