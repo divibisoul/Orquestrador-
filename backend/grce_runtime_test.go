@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/divibisoul/Orquestrador-/grf"
@@ -100,4 +101,25 @@ func TestGRCEExecutorRuntimeCompletesWithHTTPBoundaryFixture(t *testing.T) {
 func writeGRCEJSONTest(w http.ResponseWriter, payload map[string]any) {
 	w.Header().Set("Content-Type", "application/json")
 	_ = json.NewEncoder(w).Encode(payload)
+}
+
+
+func TestGRCEEthicalReviewInputPreservesFullContent(t *testing.T) {
+	content := "simulação de auditoria com modificar 🔒IDENTITY; manter o original intacto"
+	got := grceEthicalReviewInput("avaliar a necessidade e os limites da transformação", content)
+	for _, required := range []string{
+		"Princípios do ciclo GRCE",
+		"autonomia",
+		"transparência",
+		"responsabilidade",
+		"cuidado com a comunidade",
+		"histórico causal",
+		"proveniência",
+		"Finalidade da avaliação: avaliar a necessidade e os limites da transformação",
+		content,
+	} {
+		if !strings.Contains(got, required) {
+			t.Fatalf("ethical review input lost required context %q: %q", required, got)
+		}
+	}
 }
