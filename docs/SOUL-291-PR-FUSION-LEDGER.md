@@ -1663,3 +1663,30 @@ Um draft não é eliminado só por estar velho ou falhando. Ele só pode ser cla
 - Não rebasear ou trocar bases em massa enquanto checks estiverem pendentes. Não usar resultados de SHA anterior como prova do head atual.
 - Critério global de encerramento: todas as 291 PRs classificadas por função e destino; capacidades úteis ativadas ou bloqueadas com motivo; todos os pares de conexão definidos no mapa de arquitetura testados; CI verde no SHA final de cada candidato; nenhum estado PROJECTED promovido por inferência.
 
+
+
+## Checkpoint 2026-10-25 — runtime evidence and active blockers
+
+### N04 ↔ N05 — REAL / PASS
+
+- N04 PR #51 head `0404e9da50ac7cca182c9fcb10e77341fc2a01e4`; N05 PR #53 was checked out and asserted at exact head `efd4f4fc3b0648d054e1b06d04afb15940ae4083`.
+- Workflow run `40214678457`, job `bidirectional-http-hmac`: **PASS**. Both independent production builds passed and the real-process N04 ↔ N05 HTTP/HMAC E2E returned `status=PASS`.
+- Root cause fixed before this run: N05 `lib/soul-mesh/peer-client.ts` carried over-escaped TypeScript template/regex syntax; current file is corrected in N05 commit `efd4f4fc...`. N04's existing workflow now pins that exact SHA.
+- N05's own PR-triggered run list returned no runs for its exact SHA; therefore standalone N05 CI remains **UNMEASURABLE**. The consumer-side production build and E2E are REAL/PASS evidence for this particular cross-front.
+
+### N07 external federation / GRF-GRCE — PENDING RECONCILE
+
+- N07 PR #152 current head: `0e9069240d12d56616479021de0b6f068a063260`; branch remains `forensic/public-capability-integration-2026-10-06`, base `recovery/soul-25-external-materialization-2026-10-06`. No merge or `main` write.
+- Prior head `3e54a8e0...` exposed two real blockers. Production container probe for `external.langgraph.probe@1.0.0` returned HTTP 400 because the runtime validator depended on Git admin metadata that is not present in the image. The GRCE positive-cycle case returned HTTP 400 / `ROLLBACK_PRESERVED:ETR_GATE` because the real SARA audit denied the test stimulus (virtue and care framework scores were zero).
+- New head adds build-attestation validation against `soul.external.runtime-attestation.v1` and the canonical pinned revision for source directories inside the production image; this establishes source materialization/pin only, not native provider execution. It also updates the GRCE stimulus to satisfy SARA's virtue/care rubric and explicitly asserts `ethical.approved == true` before continuing.
+- Latest checks on `0e906924...` were **QUEUED** at the last query (including N07 CI, production container smoke, and GRF/GRCE E2E). These fixes are not yet PASS. Retest the exact latest SHA before changing status.
+
+### N01 — unresolved failures remain
+
+- N01 PR #108 head `842f53ddec9e3e3245a0cc061c2d7c70058585ec`: `npm ci` fails because `package-lock.json` does not match `package.json` (`picomatch@2.3.2` vs required `picomatch@4.0.7`). Regenerate the lock with npm in a controlled runner; do not hand-edit the lockfile.
+- The `N01 Correlation Continuity` check also failed on that candidate. The production/remote N01 ↔ N02 connection remains unproven; a loopback HTTP contract is not production connectivity evidence.
+
+### Integrity rules applied in this checkpoint
+
+- Every PASS above is tied to its exact run and source SHA. A successful consumer E2E does not mark PR #53 independently validated, and queued N07 checks remain pending.
+- No PRs were merged or closed; no branch was force-pushed; no historical source or dependency was removed; no `main` branch was modified.
