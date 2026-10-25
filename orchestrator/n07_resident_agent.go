@@ -32,10 +32,7 @@ func N07ResidentAgent() N07ResidentAgentDescriptor {
 }
 
 func N07ResidentAgentMessage() protocol.Message {
-	return protocol.Message{
-		Source: "N07",
-		Target: "N07",
-		Capability: "resident.agent.describe@1.0.0",
-		Metadata: map[string]string{"resident_agent_id": N07ResidentAgentID},
-	}
+	message := protocol.NewMessage("N07", "N07", "command", "mesh.resident.describe@1.0.0", nil)
+	message.Metadata["resident_agent_id"] = N07ResidentAgentID
+	return message
 }

@@ -123,7 +123,17 @@ func superpowersAgentRoute(e *Engine) Handler {
 		if !allowed {
 			return superpowersAgentFail(m, "SUPERPOWERS_AGENT_OPERATION_NOT_BOUND", fmt.Errorf("%s -> %s", agentID, operation))
 		}
-		result, err := e.Execute(ctx, operation, m.Payload, m.Metadata)
+		delegatedMetadata := make(map[string]string, len(m.Metadata)+2)
+		for key, value := range m.Metadata {
+			delegatedMetadata[key] = value
+		}
+		if strings.TrimSpace(delegatedMetadata["trace_id"]) == "" {
+			delegatedMetadata["trace_id"] = m.TraceID
+		}
+		if strings.TrimSpace(delegatedMetadata["correlation_id"]) == "" {
+			delegatedMetadata["correlation_id"] = m.CorrelationID
+		}
+		result, err := e.Execute(ctx, operation, m.Payload, delegatedMetadata)
 		if err != nil {
 			return superpowersAgentFail(m, "SUPERPOWERS_AGENT_DELEGATE_FAILED", err)
 		}
