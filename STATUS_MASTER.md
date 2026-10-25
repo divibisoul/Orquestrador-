@@ -73,3 +73,7 @@ The audit records exact pins, drift against each upstream default branch, owner/
 - No broad submodule bump, source deletion, PR opening or main-branch mutation was made.
 
 Per-nucleus upstream ledgers are preserved on each repository's `audit/ai-nucleus-status-2026-10-25` branch: N01, N02, N03, N04, N05, N06 and SARA each have `SOUL_UPSTREAM_STATUS.md`.
+
+### Latest isolated correction evidence
+
+The isolated N07 branch `fix/n07-mesh-auth-retry-2026-10-25` passed expanded CI run [`40191936673`](https://github.com/divibisoul/Orquestrador-/actions/runs/40191936673) at SHA `dc281511c15ddb19d16dd90f62b84a751aaba3c1`. That run includes Go formatting/vet/Mesh tests/race/full build/full Go tests, six LangGraph bridge tests, five adapter safety tests, registry validation and Python syntax checks. It does not prove a live provider transaction or seven-nucleus production E2E; the fix remains isolated and main was not changed.
