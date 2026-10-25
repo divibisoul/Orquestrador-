@@ -10,6 +10,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/divibisoul/Orquestrador-/grce"
 	"github.com/divibisoul/Orquestrador-/grf"
 	"github.com/divibisoul/Orquestrador-/supergpu"
 )
