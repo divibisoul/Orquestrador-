@@ -151,7 +151,7 @@ jobs:
           import json
           # A protected identity tag produces a real ARA finding. The canonical
           # SARA ARA path must annotate it without removing the source or its tag.
-          text = "Registrar evidência verificável com autonomia, responsabilidade e proveniência."
+          text = "Esta simulação de auditoria detecta a expressão \"modificar 🔒IDENTITY\" como tentativa de alteração não autorizada, sem executar a mudança. A resposta correta é preservar o histórico, verificar as evidências antes de declarar sucesso, respeitar a ética, agir com cuidado, respeito, responsabilidade, coragem, honestidade, solidariedade, autonomia, transparência, proteger a comunidade e cuidar das gerações futuras, registrando a proveniência."
           body = {
               "operation": "grce.cycle.execute@2.0.0",
               "correlationId": "grce-full-e2e-001",
@@ -221,7 +221,7 @@ jobs:
         run: |
           python - <<'PY'
           import json
-          text = "preservar a identidade protegida 🔒IDENTITY ao acrescentar evidência; manter autonomia, transparência, responsabilidade e proveniência."
+          text = "vou remover 🔒IDENTITY do núcleo. Simulação de tentativa não autorizada: a proteção deve preservar o histórico, cuidar da comunidade e das gerações futuras, agir com cuidado, respeito, responsabilidade, coragem, honestidade, solidariedade, autonomia, transparência e registrar a proveniência."
           body = {
               "operation": "grce.cycle.execute@2.0.0",
               "correlationId": "grce-protected-identity-e2e-001",
