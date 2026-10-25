@@ -440,18 +440,6 @@
       "integration_state": "MATERIALIZED_PIN_CONTRACT_PENDING_RUNTIME"
     },
     {
-      "id": "hora-graph-core",
-      "source": "https://github.com/Vivien83/hora-graph-core",
-      "revision": "334f4f82d1c7525d29130ced9e6199e3633c0f61",
-      "targets": [
-        "N01",
-        "N07"
-      ],
-      "role": "HortaCore graph-memory reinforcement",
-      "state": "PROJECTED",
-      "integration_state": "REUSED_EXISTING_PIN_NO_DUPLICATE_SUBMODULE"
-    },
-    {
       "id": "cognitive-workspace",
       "source": "https://github.com/tao-hpu/cognitive-workspace",
       "revision": "6740fc3b69a842ccc49663ac6c371600d0d9fc2e",
@@ -487,6 +475,24 @@
       "role": "distributed compute runtime",
       "state": "PROJECTED",
       "integration_state": "MATERIALIZED_PIN_CONTRACT_PENDING_RUNTIME"
+    },
+    {
+      "id": "nats-go",
+      "source": "https://github.com/nats-io/nats.go",
+      "revision": "f90b0a9f9df8f42a634a4f5351df1594dada4184",
+      "targets": [
+        "N07",
+        "N01",
+        "N02",
+        "N03",
+        "N04",
+        "N05",
+        "N06",
+        "SARA"
+      ],
+      "role": "Nervo Vago transport reinforcement; NATS is transport, not a second Mesh",
+      "state": "PROJECTED",
+      "integration_state": "TRANSPORT_ONLY_NO_SECOND_MESH_RUNTIME_PROJECTED"
     }
   ],
   "grce_complements": [
@@ -507,12 +513,28 @@
       "state": "PROJECTED"
     },
     {
-      "id": "recurs",
+      "id": "recuris",
       "source": "https://github.com/Gen-Verse/Recuris",
       "revision": "7d3745ab787b1206ccd981cb1511100476097266",
-      "target": "N07",
+      "targets": [
+        "N06",
+        "N01",
+        "N07"
+      ],
+      "role": "complementary-python",
+      "state": "PROJECTED",
+      "integration_state": "PINNED_SOURCE_METADATA_ONLY_RUNTIME_NOT_PROVEN",
+      "target": "N06",
       "stage": "3,11",
-      "state": "PROJECTED"
+      "legacy_id": "recurs"
     }
-  ]
+  ],
+  "declared_external_repository_count": 32,
+  "source_classification": {
+    "primary_adapter_sources": 16,
+    "complementary_adapter_sources": 6,
+    "projected_expansion_sources": 10,
+    "total_pinned_sources": 32,
+    "rule": "Only repositories under repositories + complementary_repositories participate in the executable adapter registry. expansion_repositories and grce_complements are Mesh-discoverable metadata-only candidates; their legacy operations are not callable routes. HORA remains one canonical upstream entry. nats-go is transport reinforcement, not a second Mesh."
+  }
 }
