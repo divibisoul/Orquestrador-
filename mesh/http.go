@@ -275,7 +275,29 @@ func (g *HTTPGateway) Handler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if canonicalKind(wire) == "request" && capability == "mesh.describe" {
-		g.respond(w, http.StatusOK, envelope, "TASK_RESULT", map[string]any{"nucleus": "N07", "operations": g.Engine.Operations(), "transports": []string{"LOOPBACK_HTTP", "HTTP"}})
+		// This is the common bootstrap contract used by other nuclei. Report
+		// only operations with a real handler, including the two gateway-native
+		// control operations; callers must never infer execution from topology.
+		registered := g.Engine.Operations()
+		executable := make([]string, 0, len(registered)+2)
+		seen := make(map[string]struct{}, len(registered)+2)
+		for _, operation := range append([]string{"mesh.describe", "mesh.ping"}, registered...) {
+			if operation == "" {
+				continue
+			}
+			if _, exists := seen[operation]; exists {
+				continue
+			}
+			seen[operation] = struct{}{}
+			executable = append(executable, operation)
+		}
+		g.respond(w, http.StatusOK, envelope, "TASK_RESULT", map[string]any{
+			"nucleus": "N07",
+			"operations": executable, // retained for older N07 consumers
+			"declaredCapabilities": executable,
+			"executableCapabilities": executable,
+			"transports": []string{"HTTP", "HTTPS"},
+		})
 		return
 	}
 	var values []float64
