@@ -220,6 +220,32 @@ def execute_letta(v,rt):
 def execute(v,rt):
     provider=str(v.get("provider") or "").strip().lower()
     op=str(v.get("operation") or "").strip().lower()
+    if is_projected_expansion(provider):
+        if op.endswith(".describe") or op.endswith(".describe@1.0.0") or op.endswith(".probe") or op.endswith(".probe@1.0.0"):
+            emit({
+                "state":"PROJECTED" if rt.exists() else "BLOCKED",
+                "code":"SOUL_V2_EXPANSION_ADAPTER_REQUIRED",
+                "provider":provider,
+                "operation":op,
+                "source_present":rt.exists(),
+                "package_available":package_available(provider),
+                "epistemic_state":"PROJECTED",
+                "execution_enabled":False,
+                "execution_proven":False,
+                "runtime_route_operations":[],
+                "reason":"pinned source presence does not prove a native runtime adapter",
+            },2)
+        emit({
+            "state":"BLOCKED",
+            "code":"SOUL_V2_EXPANSION_RUNTIME_NOT_BOUND",
+            "provider":provider,
+            "operation":op,
+            "reason":"native adapter and observed runtime are required before execution promotion",
+            "epistemic_state":"PROJECTED",
+            "execution_enabled":False,
+            "execution_proven":False,
+            "runtime_route_operations":[],
+        },2)
     if provider=="superpowers" and op=="skills.read": read_skill(rt,v)
     if provider=="langgraph" and op=="workflow.invoke":
         try:
@@ -343,18 +369,6 @@ def execute(v,rt):
             out.parent.mkdir(parents=True,exist_ok=True); sf.write(str(out),np.concatenate(chunks),24000)
             emit({"state":"PASS","provider":provider,"operation":op,"output_path":str(out)})
         except Exception as e: emit({"state":"BLOCKED","code":"KOKORO_EXECUTION_BLOCKED","detail":str(e)},2)
-    if provider in {"fedml","hivemind","temporal","cognitive-workspace","ravana","ray"} and op not in {
-        "federated.describe","swarm.describe","workflow.describe","workspace.describe","agent.describe","cluster.describe"
-    }:
-        emit({
-            "state":"BLOCKED",
-            "code":"SOUL_V2_EXPANSION_RUNTIME_NOT_BOUND",
-            "provider":provider,
-            "operation":op,
-            "reason":"native adapter and observed runtime are required before execution promotion",
-            "epistemic_state":"PROJECTED"
-        },2)
-
     if op.endswith(".describe"):
         emit({
             "state":"REAL" if rt.exists() else "BLOCKED",
@@ -369,5 +383,20 @@ def execute(v,rt):
 v=load()
 rt=root(v)
 if str(v.get("mode") or "probe").strip().lower()=="probe":
-    emit({"state":"PASS","provider":str(v.get("provider") or ""),"mode":"probe","source_present":rt.exists(),"package_available":package_available(str(v.get("provider") or "")),"root":str(rt)})
+    provider=str(v.get("provider") or "").strip().lower()
+    if is_projected_expansion(provider):
+        emit({
+            "state":"PROJECTED" if rt.exists() else "BLOCKED",
+            "code":"SOUL_V2_EXPANSION_ADAPTER_REQUIRED",
+            "provider":provider,
+            "mode":"probe",
+            "source_present":rt.exists(),
+            "package_available":package_available(provider),
+            "epistemic_state":"PROJECTED",
+            "execution_enabled":False,
+            "execution_proven":False,
+            "runtime_route_operations":[],
+            "root":str(rt),
+        },2)
+    emit({"state":"PASS","provider":provider,"mode":"probe","source_present":rt.exists(),"package_available":package_available(provider),"execution_proven":False,"root":str(rt)})
 execute(v,rt)
