@@ -44,6 +44,44 @@ func TestExternalAdapterExecutionFailsClosedByDefault(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 }
+func TestExternalAdapterMetadataCannotOverrideExecutionContext(t *testing.T) {
+	metadata := map[string]string{
+		"provider":   "superagi",
+		"mode":       "probe",
+		"operation":  "agent.execute",
+		"root":       "/tmp/untrusted-upstream",
+		"metadata":   "untrusted-metadata-replacement",
+		"prompt":     "preserve the actual task payload",
+	}
+	request := externalAdapterRequest(
+		"langgraph",
+		"execute",
+		"workflow.invoke",
+		"/repo/integrations/external/langgraph",
+		metadata,
+	)
+
+	if request["provider"] != "langgraph" {
+		t.Fatalf("provider identity overridden by request metadata: %#v", request["provider"])
+	}
+	if request["mode"] != "execute" {
+		t.Fatalf("adapter mode overridden by request metadata: %#v", request["mode"])
+	}
+	if request["operation"] != "workflow.invoke" {
+		t.Fatalf("operation overridden by request metadata: %#v", request["operation"])
+	}
+	if request["root"] != "/repo/integrations/external/langgraph" {
+		t.Fatalf("pinned source root overridden by request metadata: %#v", request["root"])
+	}
+	if request["prompt"] != "preserve the actual task payload" {
+		t.Fatalf("ordinary provider payload was lost: %#v", request["prompt"])
+	}
+	nested, ok := request["metadata"].(map[string]string)
+	if !ok || nested["root"] != "/tmp/untrusted-upstream" {
+		t.Fatalf("original caller metadata was not preserved as nested evidence: %#v", request["metadata"])
+	}
+}
+
 func TestExternalAdapterProbeRegistered(t *testing.T) {
 	e, _ := newExternalTestEngine(t)
 	if _, err := e.Execute(context.Background(), "external.langgraph.probe@1.0.0", nil, nil); err != nil {
