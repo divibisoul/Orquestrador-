@@ -264,6 +264,17 @@ func (p *PeerClient) Call(ctx context.Context, nucleus, capability string, paylo
 	return p.CallWithCorrelation(ctx, nucleus, capability, payload, protocol.NewTraceID())
 }
 
+// peerMeshEndpoint accepts either a service base URL or an already complete
+// Mesh endpoint. This keeps nuclei with different environment-variable
+// conventions interoperable without ever appending /api/soul-mesh twice.
+func peerMeshEndpoint(endpoint string) string {
+	endpoint = strings.TrimRight(strings.TrimSpace(endpoint), "/")
+	if strings.HasSuffix(endpoint, "/api/soul-mesh") {
+		return endpoint
+	}
+	return endpoint + "/api/soul-mesh"
+}
+
 func (p *PeerClient) CallWithCorrelation(ctx context.Context, nucleus, capability string, payload map[string]any, correlation string) (map[string]any, error) {
 	if ctx == nil {
 		return nil, errors.New("context is nil")
@@ -415,7 +426,7 @@ func (p *PeerClient) call(ctx context.Context, nucleus, capability string, paylo
 		if err != nil {
 			return nil, err
 		}
-		req, err := http.NewRequestWithContext(ctx, http.MethodPost, peer.URL+"/api/soul-mesh", bytes.NewReader(body))
+		req, err := http.NewRequestWithContext(ctx, http.MethodPost, peerMeshEndpoint(peer.URL), bytes.NewReader(body))
 		if err != nil {
 			return nil, err
 		}
