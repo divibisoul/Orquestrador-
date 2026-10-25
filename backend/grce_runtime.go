@@ -432,57 +432,35 @@ func (r *GRCEExecutorRuntime) validateITR(ctx context.Context, state grf.State, 
 	return len(transformedRaw) >= len(originalRaw) && len(transformedRaw) > 0, nil
 }
 
-func (r *GRCEExecutorRuntime) validateRGO(ctx context.Context, state grf.State, c grf.Context) (bool, error) {
-	// RGO's actual SARA contract requires a complete envelope and referenced
-	// evidence. Reuse artifacts produced by this GRCE candidate; do not assert
-	// success from descriptive metadata alone.
-	rawArtifacts, ok := state.Payload["artifacts"].([]grf.Artifact)
-	if !ok || len(rawArtifacts) == 0 {
-		return false, errors.New("GRCE_RGO_ARTIFACT_EVIDENCE_MISSING")
-	}
-	inputHash, err := state.Hash()
-	if err != nil {
-		return false, fmt.Errorf("GRCE_RGO_INPUT_HASH_FAILED:%w", err)
-	}
-	// Keep the full original state in the hash-linked candidate and evidence
-	// chain, but do not feed the entire raw user payload into SARA's second
-	// RGO/Trinity description pass. That pass validates the candidate/evidence
-	// envelope; the original input was already submitted to SARA's ARA/ETR
-	// audit/regeneration stages. Re-embedding it here can produce a second,
-	// unrelated structural finding (for example, punctuation density on a
-	// deliberately repetitive input) and make the real cycle inconclusive.
-	originalState, hasOriginalState := state.Payload["original_state"]
-	if !hasOriginalState || originalState == nil {
-		return false, errors.New("GRCE_RGO_ORIGINAL_STATE_REFERENCE_MISSING")
-	}
-	originalStateHash, err := grf.HashJSON(originalState)
-	if err != nil {
-		return false, fmt.Errorf("GRCE_RGO_ORIGINAL_STATE_HASH_FAILED:%w", err)
-	}
-	evidence := make([]map[string]any, 0, len(rawArtifacts))
-	parentIDs := make([]string, 0, len(rawArtifacts))
-	artifactStages := make([]string, 0, len(rawArtifacts))
-	for _, artifact := range rawArtifacts {
-		if strings.TrimSpace(artifact.ID) == "" || strings.TrimSpace(artifact.Stage) == "" {
-			return false, errors.New("GRCE_RGO_ARTIFACT_ID_OR_STAGE_MISSING")
+func grceInputText(state grf.State) string {
+	if original, ok := state.Payload["original_state"].(map[string]any); ok {
+		if value, exists := original["text"].(string); exists && strings.TrimSpace(value) != "" {
+			return value
 		}
-		artifactHash, err := grf.HashJSON(artifact)
-		if err != nil {
-			return false, fmt.Errorf("GRCE_RGO_ARTIFACT_HASH_FAILED:%w", err)
-		}
-		evidence = append(evidence, map[string]any{
-			"id":   "grce-evidence:" + artifactHash[:16],
-			"kind": "GRCE_ARTIFACT:" + artifact.Stage,
-			"ref":  artifact.ID,
-		})
-		parentIDs = append(parentIDs, artifact.ID)
-		artifactStages = append(artifactStages, artifact.Stage)
 	}
-	description := fmt.Sprintf(
-		"Validar envelope GRCE %s; candidate_hash=%s; original_state_hash=%s; artefatos=%d; estágios=%s. Conteúdo original integral permanece preservado nos artefatos hash-linked e nas referências de evidência. Critérios SARA/ETR: autonomia, transparência, responsabilidade, cuidado, benefício para a comunidade, melhoria e proveniência íntegra; validação restrita ao envelope e hashes.",
-		state.ID, inputHash, originalStateHash, len(rawArtifacts), strings.Join(artifactStages, ","),
-	)
-	finding := map[string]any{
+	return stateText(state)
+}
+
+func buildGRCERGOFinding(state grf.State, c grf.Context) (map[string]any, error) {
+	if strings.TrimSpace(state.ID) == "" {
+		return nil, errors.New("GRCE_RGO_STATE_ID_REQUIRED")
+	}
+	if err := c.Validate(); err != nil {
+		return nil, fmt.Errorf("GRCE_RGO_CONTEXT_INVALID:%w", err)
+	}
+	inputHash, err := stateHash(state)
+	if err != nil {
+		return nil, fmt.Errorf("GRCE_RGO_STATE_HASH_FAILED:%w", err)
+	}
+	if len(inputHash) < 16 {
+		return nil, errors.New("GRCE_RGO_STATE_HASH_INVALID")
+	}
+	content := grceInputText(state)
+	if strings.TrimSpace(content) == "" {
+		return nil, errors.New("GRCE_RGO_CONTENT_REQUIRED")
+	}
+	evidenceID := "grce-state:" + inputHash[:16]
+	return map[string]any{
 		"schema_version": "1.0.0",
 		"finding_id":     "grce:" + c.CorrelationID,
 		"object_id":      state.ID,
@@ -492,82 +470,72 @@ func (r *GRCEExecutorRuntime) validateRGO(ctx context.Context, state grf.State, 
 		"source": map[string]any{
 			"system":  "SOUL",
 			"module":  "N07.GRCE",
-			"version": "2.0.0",
+			"version": grce.Version,
 		},
 		"epistemic": map[string]any{
-			"mode":                "EXECUTION",
+			"mode":               "EXECUTION",
 			"verification_state": "UNVERIFIED",
 		},
 		"actionability": map[string]any{
 			"status": "ACTIONABLE",
-			"reason": "GRCE candidate requires canonical SARA RGO/Trinity validation before activation",
+			"reason": "Independent SARA RGO/Trinity validation must pass before candidate promotion.",
 		},
 		"failure": map[string]any{
 			"type":        "GRCE_CANDIDATE_VALIDATION",
-			"description": description,
-			"nature":      "candidate-validation",
-			"cause":       "candidate must retain its input, outputs, and ordered provenance",
-			"impact":      "prevent promotion without SARA stage evidence",
+			"description": content,
+			"nature":      "provenance-preserving candidate validation",
+			"cause":       "The transformed candidate requires independent RGO/Trinity validation.",
+			"impact":      "The candidate must remain PRESERVED unless all GRCE gates pass.",
 		},
 		"correction_boundary": map[string]any{
-			"problem_to_resolve": "validate the candidate through SARA's existing RGO/Trinity processor",
-			"required_property":  "preserve parent/input/output hashes and ordered stage evidence",
+			"problem_to_resolve": "Validate the transformed candidate through SARA RGO/Trinity without replacing its source state.",
+			"required_property":  "Preserve original content, protected identity tags, evidence, and ordered causal provenance.",
 		},
 		"dual": map[string]any{
-			"status":       "UNRESOLVED",
-			"property":     "",
-			"evidence_refs": parentIDs,
+			"status":   "UNRESOLVED",
+			"property": "",
 		},
-		"evidence": evidence,
+		"evidence": []any{
+			map[string]any{
+				"id":   evidenceID,
+				"kind": "GRCE_STATE_HASH",
+				"ref":  "sha256:" + inputHash,
+			},
+		},
 		"provenance": map[string]any{
 			"origin":     "N07.GRCE",
-			"parent_ids": parentIDs,
+			"parent_ids": []string{state.ID},
 			"input_hash": inputHash,
 		},
 		"extensions": map[string]any{
-			"grce_sequence_index": c.SequenceIndex,
-			"artifact_count":      len(rawArtifacts),
-			"original_state_hash": originalStateHash,
-			"candidate_hash":      inputHash,
-			"artifact_stages":     artifactStages,
+			"sequence_index":            c.SequenceIndex,
+			"candidate_epistemic_state": string(state.EpistemicState),
+			"evidence_source":           "GRCE_STATE_HASH",
 		},
-	}
-	result, err := r.SARA.RGOTrinityWithCycle(ctx, finding, c.CorrelationID, c.CorrelationID)
+	}, nil
+}
+
+func (r *GRCEExecutorRuntime) validateRGO(ctx context.Context, state grf.State, c grf.Context) (bool, error) {
+	finding, err := buildGRCERGOFinding(state, c)
 	if err != nil {
-		return false, fmt.Errorf("GRCE_RGO_TRINITY_FAILED:%w", err)
+		return false, err
+	}
+	result, err := r.SARA.GRCEHooks(ctx, finding, c.CorrelationID, c.CorrelationID)
+	if err != nil {
+		return false, fmt.Errorf("GRCE_SARA_HOOKS_FAILED:%w", err)
 	}
 	status, _ := result["final_status"].(string)
-	if !strings.EqualFold(status, "VALIDATED") {
-		return false, nil
+	observed, _ := result["all_hooks_observed"].(bool)
+	evidence, ok := result["hook_evidence"].(map[string]any)
+	if !ok {
+		return false, errors.New("GRCE_SARA_HOOK_EVIDENCE_MISSING")
 	}
-	stages, ok := result["stages"].([]any)
-	if !ok || len(stages) < 3 {
-		return false, errors.New("GRCE_RGO_TRINITY_STAGE_EVIDENCE_MISSING")
-	}
-	seen := map[string]bool{}
-	for _, raw := range stages {
-		stage, ok := raw.(map[string]any)
-		if !ok {
-			continue
-		}
-		name, _ := stage["stage"].(string)
-		upper := strings.ToUpper(name)
-		if strings.HasPrefix(upper, "TRINITY::") {
-			seen["TRINITY"] = true
-		}
-		if upper == "ERU" {
-			seen["ERU"] = true
-		}
-		if upper == "MMD" {
-			seen["MMD"] = true
+	for _, name := range []string{"RGO", "ARA", "ITR", "ETR", "ERU", "MMD"} {
+		if value, ok := evidence[name].(bool); !ok || !value {
+			return false, fmt.Errorf("GRCE_SARA_HOOK_MISSING:%s", name)
 		}
 	}
-	for _, key := range []string{"TRINITY", "ERU", "MMD"} {
-		if !seen[key] {
-			return false, fmt.Errorf("GRCE_RGO_TRINITY_%s_EVIDENCE_MISSING", key)
-		}
-	}
-	return true, nil
+	return strings.EqualFold(status, "VALIDATED") && observed, nil
 }
 
 func (r *GRCEExecutorRuntime) rollback(ctx context.Context, state grf.State, prov []grf.Provenance, evidence []grf.Evidence, c grf.Context) error {
