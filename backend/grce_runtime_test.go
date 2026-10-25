@@ -128,12 +128,21 @@ func TestGRCEEthicalReviewInputPreservesFullContent(t *testing.T) {
 }
 
 func TestBuildGRCERGOFindingMatchesSARAEnvelopeSchema(t *testing.T) {
+	const originalText = "preservar 🔒IDENTITY, evidências e proveniência"
+	const transformedText = "candidate-transformed-output-preserving-history"
 	state := grf.State{
 		ID:              "grce-candidate-001",
 		EpistemicState: grf.PRESERVED,
 		Payload: map[string]any{
-			"original_state": map[string]any{"text": "preservar 🔒IDENTITY, evidências e proveniência"},
-			"artifacts":      []grf.Artifact{},
+			"original_state": map[string]any{"text": originalText},
+			"artifacts": []grf.Artifact{{
+				ID:    "candidate-artifact-001",
+				Stage: "ITR",
+				State: grf.REAL,
+				Payload: map[string]any{
+					"transformed": transformedText,
+				},
+			}},
 		},
 	}
 	context := grf.Context{TraceID: "trace-rgo-001", CorrelationID: "corr-rgo-001", SequenceIndex: 7}
@@ -189,7 +198,39 @@ func TestBuildGRCERGOFindingMatchesSARAEnvelopeSchema(t *testing.T) {
 		t.Fatalf("invalid GRCE provenance: %#v", finding["provenance"])
 	}
 	failure, ok := finding["failure"].(map[string]any)
-	if !ok || !strings.Contains(fmt.Sprint(failure["description"]), "🔒IDENTITY") {
-		t.Fatalf("RGO payload did not preserve the original source content: %#v", finding["failure"])
+	if !ok {
+		t.Fatalf("RGO failure record is missing: %#v", finding["failure"])
+	}
+	description, ok := failure["description"].(string)
+	if !ok {
+		t.Fatalf("RGO candidate description must remain a complete serialized string: %T", failure["description"])
+	}
+	var reviewed map[string]any
+	if err := json.Unmarshal([]byte(description), &reviewed); err != nil {
+		t.Fatalf("RGO candidate representation is not valid JSON: %v", err)
+	}
+	if reviewed["candidate_id"] != state.ID || reviewed["candidate_epistemic_state"] != string(grf.PRESERVED) {
+		t.Fatalf("candidate identity/epistemic state was lost: %#v", reviewed)
+	}
+	candidatePayload, ok := reviewed["source_and_transformations"].(map[string]any)
+	if !ok {
+		t.Fatalf("original state and transformations were dropped from RGO payload: %#v", reviewed["source_and_transformations"])
+	}
+	original, ok := candidatePayload["original_state"].(map[string]any)
+	if !ok || original["text"] != originalText {
+		t.Fatalf("original source content/protected tag was not preserved: %#v", candidatePayload["original_state"])
+	}
+	artifacts, ok := candidatePayload["artifacts"].([]any)
+	if !ok || len(artifacts) != 1 {
+		t.Fatalf("candidate transformation artifacts were not preserved: %#v", candidatePayload["artifacts"])
+	}
+	artifact, ok := artifacts[0].(map[string]any)
+	if !ok || artifact["id"] != "candidate-artifact-001" {
+		t.Fatalf("candidate artifact identity was lost: %#v", artifacts[0])
+	}
+	artifactPayload, ok := artifact["payload"].(map[string]any)
+	if !ok || artifactPayload["transformed"] != transformedText {
+		t.Fatalf("transformed candidate content was lost: %#v", artifact["payload"])
 	}
 }
+
