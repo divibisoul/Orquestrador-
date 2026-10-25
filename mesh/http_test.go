@@ -284,6 +284,7 @@ func TestExternalFederationCatalogAndAllThirtyTwoSourcesAreDiscoverableOverMeshH
 			len(evidence.MeshMetadataOperations) < 2 {
 			t.Errorf("source %s returned incomplete/unsafe evidence over Mesh HTTP: %#v", id, evidence)
 		}
+	}
 
 	// Keep the 32 descriptions and 32 probes in separate request windows.
 	// The gateway's per-source limit remains enforced; this test must not bypass production throttling.
