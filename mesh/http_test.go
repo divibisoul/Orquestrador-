@@ -61,6 +61,53 @@ func canonicalRequest(kind, capability, correlation string, values []float64) ma
 	}
 	return map[string]any{"protocol": "soul-mesh/1", "contractVersion": "1.1.0", "id": protocol.NewTraceID(), "correlationId": correlation, "source": "N01", "target": "N07", "kind": kind, "capability": capability, "payload": payload, "timestamp": time.Now().UnixMilli(), "nonce": protocol.NewTraceID()}
 }
+func TestCanonicalN01BytesOmitsUndefinedTransportButKeepsMeta(t *testing.T) {
+	wire := canonicalWireEnvelope{
+		Protocol:        "soul-mesh/1",
+		ContractVersion: "1.1.0",
+		ID:              "message-1",
+		CorrelationID:   "correlation-1",
+		Source:          "N07",
+		Target:          "N01",
+		Kind:            "request",
+		Capability:      "mesh.describe",
+		Payload:         map[string]any{},
+		Timestamp:       1790000000000,
+		Nonce:           "nonce-1",
+	}
+
+	raw, err := canonicalN01Bytes(wire, wire.Nonce)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var encoded map[string]json.RawMessage
+	if err := json.Unmarshal(raw, &encoded); err != nil {
+		t.Fatal(err)
+	}
+	if _, exists := encoded["transport"]; exists {
+		t.Fatalf("undefined transport must be omitted like Node JSON.stringify, got %s", raw)
+	}
+	if string(encoded["meta"]) != "null" {
+		t.Fatalf("absent metadata must remain explicit null, got %s", encoded["meta"])
+	}
+
+	wire.Meta = map[string]any{"transport": "HTTP"}
+	raw, err = canonicalN01Bytes(wire, wire.Nonce)
+	if err != nil {
+		t.Fatal(err)
+	}
+	encoded = nil
+	if err := json.Unmarshal(raw, &encoded); err != nil {
+		t.Fatal(err)
+	}
+	if string(encoded["transport"]) != "`HTTP`" {
+		t.Fatalf("defined transport must be preserved, got %s", encoded["transport"])
+	}
+	if string(encoded["meta"]) != "{\"transport\":\"HTTP\"}" {
+		t.Fatalf("metadata must be preserved in canonical bytes, got %s", encoded["meta"])
+	}
+}
+
 func postWire(t *testing.T, h http.Handler, wire map[string]any) (testWire, int) {
 	t.Helper()
 	body, err := json.Marshal(wire)
