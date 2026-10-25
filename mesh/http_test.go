@@ -13,6 +13,7 @@ import (
 	"github.com/divibisoul/Orquestrador-/protocol"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 )
@@ -155,6 +156,141 @@ func TestHTTPGatewayPingAndDescribe(t *testing.T) {
 		t.Fatalf("mesh.describe response is missing common discovery fields: %#v", got.Payload)
 	}
 }
+func TestExternalFederationCatalogAndAllThirtyOneSourcesAreDiscoverableOverMeshHTTP(t *testing.T) {
+	h := newTestGateway(t)
+	registry, err := orchestrator.NewExternalAdapterRegistry()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := orchestrator.RegisterExternalAdapterOperations(h.Engine, registry); err != nil {
+		t.Fatal(err)
+	}
+
+	// One common bootstrap advertises the actual federation handlers.
+	describeWire := canonicalRequest("request", "mesh.describe", "trace-external-mesh-bootstrap", nil)
+	got, code := postWire(t, h, describeWire)
+	if code != http.StatusOK {
+		t.Fatalf("mesh.describe failed over HTTP: code=%d payload=%#v", code, got.Payload)
+	}
+	executable, ok := got.Payload["executableCapabilities"].([]any)
+	if !ok {
+		t.Fatalf("N07 mesh.describe omitted executableCapabilities: %#v", got.Payload)
+	}
+	for _, required := range []string{
+		orchestrator.ExternalFederationDescribeOperation,
+		orchestrator.ExternalFederationExecuteOperation,
+		orchestrator.ExternalFederationSourceDescribeOperation,
+		orchestrator.ExternalFederationSourceProbeOperation,
+	} {
+		found := false
+		for _, advertised := range executable {
+			if advertised == required {
+				found = true
+				break
+			}
+		}
+		if !found {
+			t.Errorf("N07 did not advertise registered federation operation %q: %#v", required, executable)
+		}
+	}
+
+	// Retrieve source identities through the same Mesh route used by peer nuclei.
+	catalogWire := canonicalRequest("request", orchestrator.ExternalFederationDescribeOperation, "trace-external-catalog", nil)
+	catalogResponse, code := postWire(t, h, catalogWire)
+	if code != http.StatusOK || catalogResponse.Kind != "response" {
+		t.Fatalf("external federation catalog failed over Mesh HTTP: code=%d envelope=%+v", code, catalogResponse)
+	}
+	catalogMetadata, ok := catalogResponse.Payload["metadata"].(map[string]any)
+	if !ok {
+		t.Fatalf("catalog response omitted metadata: %#v", catalogResponse.Payload)
+	}
+	catalogRaw, ok := catalogMetadata["federation_json"].(string)
+	if !ok || strings.TrimSpace(catalogRaw) == "" {
+		t.Fatalf("catalog response omitted federation_json: %#v", catalogMetadata)
+	}
+	var catalog struct {
+		State string `json:"state"`
+		RuntimeEvidence string `json:"runtime_evidence"`
+		ProviderCount int `json:"provider_count"`
+		ExpansionProviderCount int `json:"expansion_provider_count"`
+		DeclaredExternalRepositoryCount int `json:"declared_external_repository_count"`
+		Providers []struct { ID string `json:"id"` } `json:"providers"`
+		ExpansionProviders []struct {
+			ID string `json:"id"`
+			State string `json:"state"`
+			ExecutionEnabled bool `json:"executionEnabled"`
+			ExecutionProven bool `json:"executionProven"`
+			RuntimeRouteOperations []string `json:"runtimeRouteOperations"`
+		} `json:"expansion_providers"`
+	}
+	if err := json.Unmarshal([]byte(catalogRaw), &catalog); err != nil {
+		t.Fatalf("catalog response contains invalid JSON: %v", err)
+	}
+	if catalog.State != "PASS" || catalog.RuntimeEvidence != "UNVERIFIED" ||
+		catalog.ProviderCount != 22 || catalog.ExpansionProviderCount != 9 ||
+		catalog.DeclaredExternalRepositoryCount != 31 ||
+		len(catalog.Providers) != 22 || len(catalog.ExpansionProviders) != 9 {
+		t.Fatalf("catalog inventory/evidence mismatch: %#v", catalog)
+	}
+
+	ids := make([]string, 0, 31)
+	seen := make(map[string]struct{}, 31)
+	for _, provider := range catalog.Providers {
+		ids = append(ids, provider.ID)
+	}
+	for _, provider := range catalog.ExpansionProviders {
+		ids = append(ids, provider.ID)
+	}
+	for _, id := range ids {
+		if _, duplicate := seen[id]; duplicate {
+			t.Fatalf("duplicate public upstream in Mesh catalog: %s", id)
+		}
+		seen[id] = struct{}{}
+		wire := canonicalRequest("request", orchestrator.ExternalFederationSourceDescribeOperation, "trace-source-"+id, nil)
+		wire["payload"].(map[string]any)["provider"] = id
+		response, status := postWire(t, h, wire)
+		if status != http.StatusOK || response.Kind != "response" {
+			t.Fatalf("source %s was not discoverable over Mesh HTTP: status=%d envelope=%+v", id, status, response)
+		}
+		sourceMetadata, ok := response.Payload["metadata"].(map[string]any)
+		if !ok {
+			t.Fatalf("source %s omitted HTTP Mesh result metadata: %#v", id, response.Payload)
+		}
+		sourceRaw, ok := sourceMetadata["external_result_json"].(string)
+		if !ok || strings.TrimSpace(sourceRaw) == "" {
+			t.Fatalf("source %s omitted canonical source evidence: %#v", id, sourceMetadata)
+		}
+		var evidence struct {
+			State string `json:"state"`
+			Provider string `json:"provider"`
+			Owner string `json:"owner"`
+			ExpectedRevision string `json:"expectedRevision"`
+			ExecutionEnabled bool `json:"executionEnabled"`
+			ExecutionProven bool `json:"executionProven"`
+			RuntimeEvidence string `json:"runtimeEvidence"`
+			MeshMetadataOperations []string `json:"meshMetadataOperations"`
+			RuntimeRouteOperations []string `json:"runtimeRouteOperations"`
+		}
+		if err := json.Unmarshal([]byte(sourceRaw), &evidence); err != nil {
+			t.Fatalf("source %s returned malformed evidence: %v; raw=%s", id, err, sourceRaw)
+		}
+		if evidence.Provider != id || evidence.Owner == "" || evidence.ExpectedRevision == "" ||
+			evidence.RuntimeEvidence != "UNVERIFIED" || evidence.ExecutionProven ||
+			(evidence.State != "PROJECTED" && evidence.State != "UNMEASURABLE" && evidence.State != "BLOCKED") ||
+			len(evidence.MeshMetadataOperations) < 2 {
+			t.Errorf("source %s returned incomplete/unsafe evidence over Mesh HTTP: %#v", id, evidence)
+		}
+	}
+	if len(seen) != 31 {
+		t.Fatalf("Mesh exposed %d unique public upstreams, want 31", len(seen))
+	}
+	for _, projected := range catalog.ExpansionProviders {
+		if projected.State != "PROJECTED" || projected.ExecutionEnabled || projected.ExecutionProven || len(projected.RuntimeRouteOperations) != 0 {
+			t.Errorf("projected source %s acquired an execution route: %#v", projected.ID, projected)
+		}
+	}
+}
+
 func TestHTTPGatewayExecutesRealNeuralCapability(t *testing.T) {
 	h := newTestGateway(t)
 	wire := canonicalRequest("request", "neural.forward", "trace-neural", []float64{1, 2, 3, 4, 5, 6, 7, 8})
