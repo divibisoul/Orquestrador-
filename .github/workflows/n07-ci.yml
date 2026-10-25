@@ -323,5 +323,13 @@ jobs:
           print('Production federation aligned: source pin evidence separated from runtime authority')
           PY
           curl -fsS             -H 'Authorization: Bearer ci'             -H 'Content-Type: application/json'             -X POST http://127.0.0.1:18082/execute             -d '{"operation":"external.langgraph.probe@1.0.0","metadata":{}}'             | tee /tmp/langgraph-probe.json
-          grep -q '"state":"PASS"' /tmp/langgraph-probe.json
-          grep -q '"source_present":true' /tmp/langgraph-probe.json
+          # The Mesh envelope stores the adapter result as JSON text. Parse
+          # that nested value rather than grepping escaped quotes in the outer JSON.
+          jq -e '(.metadata.external_result_json | fromjson) as $probe
+            | $probe.state == "PASS"
+              and $probe.provider == "langgraph"
+              and $probe.source_present == true
+              and $probe.source_integrity_only == true
+              and $probe.execution_proven == false
+              and $probe.runtime_evidence == "UNVERIFIED"
+              and ($probe.package_available | type == "boolean")' /tmp/langgraph-probe.json >/dev/null
