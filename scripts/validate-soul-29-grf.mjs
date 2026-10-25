@@ -12,6 +12,7 @@ const contracts=JSON.parse(await readFile('integrations/grf/soul-29-participant-
 const binding=JSON.parse(await readFile('integrations/grf/system-binding.json','utf8'));
 const invariantCatalog=JSON.parse(await readFile('integrations/grf/invariants.json','utf8'));
 const nervoVago=JSON.parse(await readFile('integrations/grf/nervo-vago-unified-contract.json','utf8'));
+const externalRegistry=JSON.parse(await readFile('integrations/external-capabilities.json','utf8'));
 
 const parentHash=createHash('sha256').update(raw25).digest('hex');
 if(soul29.parent_hash!==`sha256:${parentHash}`) throw new Error(`SOUL29_PARENT_HASH_MISMATCH:expected=sha256:${parentHash}:actual=${soul29.parent_hash}`);
@@ -30,13 +31,27 @@ for(const id of ['autogenesis','supergpu-agi','clareira-agi','nervo-vago']){
   if(!soul29.nodes.some(x=>x.id===id)) throw new Error(`SOUL29_NODE_MISSING:${id}`);
 }
 const nervoNode=soul29.nodes.find(x=>x.id==='nervo-vago');
-if(nervoNode.repository!=='https://github.com/OpenSIN-AI/OpenSIN-Neural-Bus') throw new Error('NERVOVAGO_SOURCE_ALIGNMENT_INVALID');
-if(nervoNode.state!=='BLOCKED') throw new Error('NERVOVAGO_BLOCKED_STATE_INVALID');
-if(contracts.contracts?.length!==10 || contracts.contracts_count!==10) throw new Error('GRF_NEW_CONTRACT_COUNT_INVALID');
+const historicalNervoRepository='https://github.com/OpenSIN-AI/OpenSIN-Neural-Bus';
+const selectedTransportRepository='https://github.com/nats-io/nats.go';
+if(nervoNode.repository===selectedTransportRepository) {
+  if(nervoNode.previous_repository!==historicalNervoRepository) throw new Error('NERVOVAGO_HISTORICAL_SOURCE_NOT_PRESERVED');
+  if(nervoNode.state!=='PROJECTED') throw new Error('NERVOVAGO_NATS_STATE_INVALID');
+  if(!String(nervoNode.role||'').includes('not a second Mesh')) throw new Error('NERVOVAGO_NATS_MUST_REMAIN_TRANSPORT_ONLY');
+  const natsPin=[...(externalRegistry.repositories||[]), ...(externalRegistry.complementary_repositories||[]), ...(externalRegistry.expansion_repositories||[]), ...(externalRegistry.grce_complements||[])].find(x=>x.id==='nats-go');
+  if(!natsPin || natsPin.source!=='https://github.com/nats-io/nats.go' || natsPin.revision!==nervoNode.replacement_revision)
+    throw new Error('NERVOVAGO_NATS_PIN_MISMATCH');
+} else if(nervoNode.repository===historicalNervoRepository) {
+  if(nervoNode.state!=='BLOCKED') throw new Error('NERVOVAGO_BLOCKED_STATE_INVALID');
+} else {
+  throw new Error('NERVOVAGO_SOURCE_ALIGNMENT_INVALID');
+}
+if(!Array.isArray(contracts.contracts) || contracts.contracts_count!==contracts.contracts.length)
+  throw new Error(`GRF_CONTRACT_COUNT_MISMATCH:declared=${contracts.contracts_count}:actual=${contracts.contracts?.length}`);
+if(contracts.new_public_contracts!==10) throw new Error('GRF_NEW_PUBLIC_CONTRACT_COUNT_INVALID');
 const required=['ingest','epistemicState','invariants','capabilities','failuresAbsorbed','provenance'];
 for(const c of contracts.contracts){
   for(const method of required) if(!c.interface?.includes(method)) throw new Error(`GRF_PARTICIPANT_INTERFACE_MISSING:${c.id}:${method}`);
-  if(!['PROJECTED','BLOCKED','REAL'].includes(c.state)) throw new Error(`GRF_PARTICIPANT_STATE_INVALID:${c.id}`);
+  if(!['PRESERVED','PROJECTED','BLOCKED','REAL','UNMEASURABLE'].includes(c.state)) throw new Error(`GRF_PARTICIPANT_STATE_INVALID:${c.id}`);
 }
 const invariantIds=['I1','I2','I3','I4','I5','I6','I7','I8','I9','I10','I11','I12','I13','I14','I15','I16','I17','I18'];
 if(invariantCatalog.count!==18 || JSON.stringify(invariantCatalog.invariants.map(x=>x.id))!==JSON.stringify(invariantIds)) throw new Error('GRF_INVARIANT_CATALOG_INVALID');
@@ -49,8 +64,33 @@ if(nervoVago.authority?.no_second_vagus!==true || nervoVago.authority?.no_second
 if(nervoVago.canonical_contract?.event_protocol!=='soul.vagus.event.v1') throw new Error('NERVOVAGO_EVENT_PROTOCOL_INVALID');
 if(nervoVago.etr_gate?.required_before_delivery!==true) throw new Error('NERVOVAGO_ETR_GATE_INVALID');
 const participants=contracts.contracts.map(x=>x.id).sort();
-const expected=['autogenesis','belel-protocol','cognifold','cuda-oxide','functional-graph-agi','hora-graph-core','mycelium','octos','prime-agent','opensinn-bus'].sort();
-if(JSON.stringify(participants)!==JSON.stringify(expected)) throw new Error('GRF_PARTICIPANT_SET_INVALID');
+if(new Set(participants).size!==participants.length) throw new Error('GRF_PARTICIPANT_DUPLICATE_ID');
+const expected=[
+  // Historical participants and existing complements remain recoverable.
+  'autogenesis','belel-protocol','cognifold','cuda-oxide','functional-graph-agi',
+  'hora-graph-core','mycelium','octos','prime-agent','opensinn-bus',
+  // The ten additional public sources are additive, not a replacement set.
+  'bijux-dag-runtime','ouro-loop','recuris','fedml','hivemind',
+  'temporal','cognitive-workspace','ravana','ray','nats-go'
+].sort();
+const missingParticipants=expected.filter(id=>!participants.includes(id));
+if(missingParticipants.length) throw new Error(`GRF_PARTICIPANTS_NOT_PRESERVED:${missingParticipants.join(',')}`);
+
+// Keep evidence state semantics intact: obsolete/unavailable historical sources
+// are PRESERVED; the ten added upstream integrations stay PROJECTED until live E2E.
+const stateById=new Map(contracts.contracts.map(c=>[c.id,c.state]));
+const preservedHistoricalIds=['autogenesis','cognifold','belel-protocol','opensinn-bus','functional-graph-agi'];
+for(const id of preservedHistoricalIds) {
+  if(stateById.get(id)!=='PRESERVED') throw new Error(`GRF_HISTORICAL_SOURCE_STATE_CHANGED:${id}:${stateById.get(id)}`);
+}
+const projectedSourceIds=[
+  'octos','hora-graph-core','mycelium','prime-agent','cuda-oxide',
+  'bijux-dag-runtime','ouro-loop','recuris','fedml','hivemind',
+  'temporal','cognitive-workspace','ravana','ray','nats-go'
+];
+for(const id of projectedSourceIds) {
+  if(stateById.get(id)!=='PROJECTED') throw new Error(`GRF_SOURCE_PREMATURELY_PROMOTED:${id}:${stateById.get(id)}`);
+}
 if(!binding.operations?.includes('nervo-vago.event@1.0.0') || !binding.operations?.includes('nervo-vago.describe@1.0.0')) {
   throw new Error('NERVOVAGO_OPERATIONS_MISSING');
 }
@@ -64,5 +104,6 @@ console.log(JSON.stringify({
   soul29_edges:soul29.edges.length,
   grf_invariants:invariantCatalog.count,
   grf_layers:8,
-  new_participant_contracts:10
+  participant_contracts:participants.length,
+  new_participant_contracts:contracts.new_public_contracts
 },null,2));
