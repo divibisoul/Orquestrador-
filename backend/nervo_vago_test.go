@@ -24,7 +24,7 @@ func TestNervoVagoGRCEFeedbackAuditsHashLinkedSummaryAndPublishesFullEvidence(t 
 			}
 			auditedInput, _ = body["input"].(string)
 			_, _ = w.Write([]byte("{\"ethical\":{\"approved\":true},\"operation\":\"audit\"}"))
-			if !strings.Contains(input, "Finalidade da avaliação: avaliar a segurança, integridade e proveniência do evento antes da publicação no Vagus") {
+			if !strings.Contains(auditedInput, "Finalidade da avaliação: avaliar a segurança, integridade e proveniência do evento antes da publicação no Vagus") {
 				t.Fatal("ETR audit must preserve the security/integrity/provenance intent")
 			}
 		case "/v1/vagus":
