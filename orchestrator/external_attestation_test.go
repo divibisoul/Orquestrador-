@@ -25,6 +25,7 @@ func TestInspectExternalSourceUsesBuildAttestationWhenImageOmitsGitMetadata(t *t
 	}
 	attestation := ExternalRuntimeAttestation{
 		SchemaVersion: "soul.external.runtime-attestation.v1",
+		GeneratedFromMaterializedGit: true,
 		Repositories:  map[string]string{"langgraph": revision},
 	}
 	raw, err := json.Marshal(attestation)
@@ -61,6 +62,7 @@ func TestInspectExternalSourceAttestationMustMatchExpectedPin(t *testing.T) {
 	}
 	raw, err := json.Marshal(ExternalRuntimeAttestation{
 		SchemaVersion: "soul.external.runtime-attestation.v1",
+		GeneratedFromMaterializedGit: true,
 		Repositories:  map[string]string{"langgraph": attestedRevision},
 	})
 	if err != nil {
@@ -93,6 +95,7 @@ func TestInspectExternalSourceDoesNotAcceptGitMetadataOnlyDirectory(t *testing.T
 	}
 	raw, err := json.Marshal(ExternalRuntimeAttestation{
 		SchemaVersion: "soul.external.runtime-attestation.v1",
+		GeneratedFromMaterializedGit: true,
 		Repositories:  map[string]string{"langgraph": strings.Repeat("a", 40)},
 	})
 	if err != nil {
@@ -106,5 +109,26 @@ func TestInspectExternalSourceDoesNotAcceptGitMetadataOnlyDirectory(t *testing.T
 	got := inspectExternalSource(sourceRoot, strings.Repeat("a", 40))
 	if got.Present || got.RevisionMatched || got.State != "MISSING_WORKTREE" {
 		t.Fatalf("metadata-only empty worktree misclassified: %#v", got)
+	}
+}
+
+
+// The build marker is required before an attestation can stand in for a Git HEAD.
+func TestInspectAttestedExternalSourceRejectsUntrustedBuildMarker(t *testing.T) {
+	root := t.TempDir()
+	if err := os.WriteFile(filepath.Join(root, "README.md"), []byte("source files\n"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	revision := strings.Repeat("a", 40)
+	attestationPath := filepath.Join(t.TempDir(), "attestation.json")
+	raw, err := json.Marshal(ExternalRuntimeAttestation{
+		SchemaVersion: "soul.external.runtime-attestation.v1",
+		Repositories: map[string]string{"provider": revision},
+	})
+	if err != nil { t.Fatal(err) }
+	if err := os.WriteFile(attestationPath, raw, 0600); err != nil { t.Fatal(err) }
+	got := inspectAttestedExternalSource(root, revision, attestationPath)
+	if got.Present || got.RevisionMatched || got.State != "ATTESTATION_UNTRUSTED" {
+		t.Fatalf("untrusted attestation promoted source: %#v", got)
 	}
 }
