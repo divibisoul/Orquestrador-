@@ -139,7 +139,7 @@ func TestHTTPGatewayPingAndDescribe(t *testing.T) {
 	if !ok {
 		t.Fatalf("mesh.describe must expose live executableCapabilities, got %#v", got.Payload["executableCapabilities"])
 	}
-	for _, required := range []string{"mesh.describe", "mesh.ping", "neural.forward"} {
+	for _, required := range []string{"mesh.describe", "mesh.ping", "neural.forward@1.0.0"} {
 		found := false
 		for _, raw := range operations {
 			if raw == required {

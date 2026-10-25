@@ -398,9 +398,15 @@ func TestPeerResponseVerifierAcceptsCanonicalN06AndRejectsReplay(t *testing.T) {
 
 func TestPeerResponseVerifierStillAcceptsLegacyN01Response(t *testing.T) {
 	secret := "n07-legacy-response-secret-0123456789"
-	result := signedPeerErrorResponse("correlation-legacy-response", "mesh.ping", secret)
-	raw, err := json.Marshal(result)
+	signed := signedPeerErrorResponse("correlation-legacy-response", "mesh.ping", secret)
+	raw, err := json.Marshal(signed)
 	if err != nil {
+		t.Fatal(err)
+	}
+	// PeerClient verifies decoded JSON; reproduce that runtime type contract so
+	// timestamp is float64 as produced by encoding/json into map[string]any.
+	var result map[string]any
+	if err := json.Unmarshal(raw, &result); err != nil {
 		t.Fatal(err)
 	}
 	if err := verifyResponseHMACWithRaw(result, raw, secret); err != nil {
