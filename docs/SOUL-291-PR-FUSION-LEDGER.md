@@ -1704,3 +1704,53 @@ Um draft não é eliminado só por estar velho ou falhando. Ele só pode ser cla
 - Runs `40237594823` (N07 CI, SHA `0e3ab12...`) and `40237629246` (GRF/GRCE E2E, SHA `ad7c65c...`) were queued/in progress at the last poll. They are **PENDING**, not PASS. N07 integrity/Go tests had passed on the previous head, but the production smoke and full real-SARA cycle still require these retests.
 - The prior run also emitted a cleanup warning for nested upstream path `integrations/external/autogenesis/datasets/leetcode` lacking a matching `.gitmodules` URL. It was a post-job cleanup warning, not the primary smoke assertion; preserve the upstream source and investigate separately if it remains.
 - No main write, merge, force-push, PR closure, or source/dependency removal occurred.
+
+
+## Regra operacional cumulativa — atualização 2026-10-25
+
+### Princípio de continuidade
+Um comando não anula o outro: todo prompt novo complementa e ajusta as instruções anteriores. O histórico de requisitos deve ser acumulado, não resumido de modo que descarte restrições ou capacidades. O trabalho avança por camadas: fundação → contratos → transporte → canais reais → capacidades proprietárias → ciclo completo → evidência final. Correções devem preservar código útil, branches, PRs, contratos, proveniência e comportamento legado, adicionando o necessário para a sinergia funcionar.
+
+### Regra anti-rascunho
+Draft não é um estado de aceitação. Cada rascunho ativo deve ter ação concreta: corrigir o defeito, resolver a integração/ancestralidade, obter testes reais e reavaliar a PR. Não marcar uma PR pronta apenas para mudar o rótulo: isso só acontece quando a evidência necessária existe. Da mesma forma, não deixar uma frente paralisada em documentação sem executar a correção que seus achados autorizam. Ações destrutivas continuam restritas: não apagar arquivos/branches/PRs, remover dependências, reescrever histórico, fazer force-push ou alterar `main` sem a autorização exigida.
+
+### Coordenação obrigatória entre frentes
+- O ledger é a fonte de verdade da coordenação; cada correção lista núcleo proprietário, branch/base/SHA, consumidores impactados, testes relevantes e condição de encerramento.
+- Contratos compartilhados podem convergir, mas a lógica nativa permanece no núcleo proprietário.
+- Antes de incorporar uma frente, comparar ancestralidade, mudanças de arquivo e comportamento executável; uma PR verde em SHA antigo não valida o head atual.
+- Quando branches divergem, propagar correções compatíveis aditivamente em cada frente e documentar o caminho de reconciliação. Não forçar merge/rebase para esconder conflito.
+- Estados de CI permanecem literais: `PASS` apenas para execução concluída no SHA identificado; `PENDING` para queued/in-progress; `ACTION_REQUIRED` não é PASS; `UNMEASURABLE` para ausência de evidência acessível; `PROJECTED/BLOCKED` não são execução real.
+
+## Checkpoint de integração atualizado — 2026-10-25
+
+### N07 — contratos externos e GRF/GRCE
+
+**Correções aplicadas na PR #152**
+- Head da PR: `63b9c721e459a5d6fc1b37ed996c9f6f22e4b860`, branch `forensic/public-capability-integration-2026-10-06`, base de recuperação `recovery/soul-25-external-materialization-2026-10-06`.
+- `0e3ab12...`: foi identificado que a correção inicial do provider ID não bastava; o smoke ainda assumia campos `source_integrity_only/runtime_evidence` inexistentes no retorno específico de `external.langgraph.probe@1.0.0`. O validador foi então alinhado ao esquema observado do adapter: `state=PASS`, `provider=langgraph`, `mode=probe`, `source_present=true`, `execution_proven=false`, regra de evidência que nega prova de execução, e `package_available` booleano. Commit corretivo do workflow: `86e7761c05c4501ba417b348c8942a246e0b37b2`. O reteste desse head ainda está pendente.
+- `15e632da2a043abde67e65fe404910f28f38f30a`: runtime GRCE agora preserva o texto integral sob avaliação e inclui propósito/princípios de contexto nos gates ETR, seguindo o helper já existente em #148/#160. O gate ético continua a poder rejeitar uma operação; não há aprovação sintética.
+- `b58d52cd22e70b72cc7767206d462d65af460ba7`: estímulo positivo E2E combina a marca protegida + verbo de modificação (para produzir finding ARA real) com virtudes/cuidado/proveniência (para a revisão ética real). O teste verifica ambos; o caso negativo usa `vou remover 🔒IDENTITY` e continua exigindo HTTP 400 + ETR_GATE + finding de tag protegida.
+- `63b9c721e459a5d6fc1b37ed996c9f6f22e4b860`: adicionada regressão unitária para garantir que `grceEthicalReviewInput` não perca texto integral, propósito, autonomia, transparência, responsabilidade, cuidado, histórico causal e proveniência.
+- Testes exatos mais novos no head `63b9c721...`: N07 Orquestrador CI ainda estava `in_progress`, GRF/GRCE Real SARA E2E estava `queued`; ambos são **PENDING**, não PASS. O workflow de probe e o caminho GRCE devem ser reavaliados após conclusão.
+
+**Sincronização das frentes N07**
+- Reapliquei a correção dos estímulos E2E em #148 head `53e8f2a1570671cf9a951e2e58a44f16a963fd44` e #160 head `5591fba26b1b4508e061b6ddc2060cff84a94ceb`. Isso mantém os testes compatíveis com o runtime já existente nessas branches.
+- As branches #148, #152 e #160 partilham arquivos de GRCE/Mesh/federação, mas têm bases e ancestrais divergentes. #148 está na base `main`; #160 depende de uma versão anterior da base #148; #152 permanece sobre a branch de recuperação. #148/#160 ainda retornam `mergeable=false` e continuam drafts. Não devem ser mescladas às cegas; a próxima reconciliação tem que usar uma única cadeia de integração, comparar conflitos reais e executar CI na árvore final.
+- Retestes após os novos commits de #148 e #160: execuções de push dos novos SHAs estavam `queued/in_progress`; ainda não provam PASS.
+
+### N01 — lockfile e correlação
+- PR #108 head atual reportado pelo REST: `3d48552d0dd73b87355c9e518a710e11666efe8e`. A workflow `N01 Correlation Continuity` run `40216115500` regenerou o lockfile com npm, `npm ci` instalou 392 pacotes e os 3 testes de correlação/HTTP passaram. O job criou e enviou o head `3d48552...` durante a própria execução. Isso é evidência operacional útil para a árvore gerada, mas o run mantém metadado `head_sha=c6cbbf8...` e a execução pull-request do head atual `40216183424` concluiu `ACTION_REQUIRED`; portanto não registrar ainda uma aprovação formal da CI associada ao SHA final.
+- No lockfile atual, o pacote raiz `node_modules/picomatch` está em `4.0.7`; versões `2.3.2` permanecem aninhadas como dependências transitivas, o que não prova por si só incompatibilidade. O erro antigo em head `842f53...` permanece como histórico, não como prova de falha atual.
+- Correlação local/loopback aprovada não prova conectividade de produção N01↔N02. A saída final deve separar as duas evidências.
+
+### N04 ↔ N05 — confirmado
+- N04 head `0404e9da50ac7cca182c9fcb10e77341fc2a01e4`, consumidor N05 fixado em `efd4f4fc3b0648d054e1b06d04afb15940ae4083`.
+- Workflow real de processos `40214678457`: build dos dois runtimes de produção e HTTP/HMAC bidirecional **PASS**.
+- N04 #51 e N05 #53 seguem drafts; N05 ainda não tem CI independente medido no seu SHA. O PASS do consumidor não valida automaticamente a CI autônoma do N05 nem autoriza concluir a fusão global.
+
+### Estado que não pode ser inferido
+- N02 #57 tem quatro checks concluídos com sucesso no SHA `1b671751d13927cc78ccd7512e6382b245b06ece`.
+- SARA #43 tem sete checks de integração/validação bem-sucedidos em `248e3ecab3675005fd1efb6ab3cdf2b15bc07d97`.
+- N06 #30 tem quatro checks verdes na sua execução anterior, mas a PR continua não-mergeável; a ancestralidade/integração precisa ser reconciliada.
+- JEV #5 tem checks anteriores bem-sucedidos, mas permanece draft e não-mergeado.
+- O total de 291 PRs foi inventariado, mas ainda não terminou a análise funcional de cada PR, a atribuição de destino para toda capacidade útil, nem a prova de todos os pares em runtime. Este ledger coordena a execução; não declara a fusão global concluída.
