@@ -380,12 +380,15 @@ func (p *PeerClient) call(ctx context.Context, nucleus, capability string, paylo
 		return nil, errors.New("SOUL_MESH_HMAC_SECRET is not configured")
 	}
 
+	// Keep one operation identity across attempts. Each attempt still gets a fresh
+	// nonce, timestamp and HMAC so transport retries preserve identity without
+	// replaying the same authentication envelope.
+	messageID := protocol.NewTraceID()
 	var lastErr error
 	for attempt := 1; attempt <= p.maxRetry; attempt++ {
 		if err := ctx.Err(); err != nil {
 			return nil, err
 		}
-		messageID := protocol.NewTraceID()
 		nonce := protocol.NewTraceID()
 		wirePayload := payload
 		if wirePayload == nil {
@@ -440,16 +443,13 @@ func (p *PeerClient) call(ctx context.Context, nucleus, capability string, paylo
 			}
 			return nil, decodeErr
 		}
-		if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-			lastErr = fmt.Errorf("peer request failed: %s", resp.Status)
-			p.recordFailure(nucleus, latency, lastErr.Error())
-			if attempt < p.maxRetry && (resp.StatusCode == 408 || resp.StatusCode == 429 || resp.StatusCode >= 500) {
-				if err := waitBackoff(ctx, attempt); err != nil {
-					return nil, err
-				}
-				continue
-			}
-			return result, lastErr
+		// Authenticate and validate the peer response before trusting its HTTP
+		// status. Even an error response that controls retry behavior must be
+		// an authenticated, correlated Mesh envelope.
+		if err := verifyResponseHMAC(result, p.secret); err != nil {
+			lastErr = err
+			p.recordFailure(nucleus, latency, err.Error())
+			return nil, err
 		}
 		if result["contractVersion"] != protocol.SoulMeshContractVersion {
 			lastErr = errors.New("mesh response contract version mismatch")
@@ -471,10 +471,16 @@ func (p *PeerClient) call(ctx context.Context, nucleus, capability string, paylo
 			p.recordFailure(nucleus, latency, lastErr.Error())
 			return nil, lastErr
 		}
-		if err := verifyResponseHMAC(result, p.secret); err != nil {
-			lastErr = err
-			p.recordFailure(nucleus, latency, err.Error())
-			return nil, err
+		if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+			lastErr = fmt.Errorf("peer request failed: %s", resp.Status)
+			p.recordFailure(nucleus, latency, lastErr.Error())
+			if attempt < p.maxRetry && (resp.StatusCode == 408 || resp.StatusCode == 429 || resp.StatusCode >= 500) {
+				if err := waitBackoff(ctx, attempt); err != nil {
+					return nil, err
+				}
+				continue
+			}
+			return result, lastErr
 		}
 		p.recordSuccess(nucleus, latency)
 		return result, nil
