@@ -1,6 +1,8 @@
 package backend
 
 import (
+	"time"
+	"fmt"
 	"context"
 	"encoding/json"
 	"net/http"
@@ -121,5 +123,72 @@ func TestGRCEEthicalReviewInputPreservesFullContent(t *testing.T) {
 		if !strings.Contains(got, required) {
 			t.Fatalf("ethical review input lost required context %q: %q", required, got)
 		}
+	}
+}
+
+func TestBuildGRCERGOFindingMatchesSARAEnvelopeSchema(t *testing.T) {
+	state := grf.State{
+		ID:              "grce-candidate-001",
+		EpistemicState: grf.PRESERVED,
+		Payload: map[string]any{
+			"original_state": map[string]any{"text": "preservar 🔒IDENTITY, evidências e proveniência"},
+			"artifacts":      []grf.Artifact{},
+		},
+	}
+	context := grf.Context{TraceID: "trace-rgo-001", CorrelationID: "corr-rgo-001", SequenceIndex: 7}
+	finding, err := buildGRCERGOFinding(state, context)
+	if err != nil {
+		t.Fatal(err)
+	}
+	requiredStrings := map[string]string{
+		"schema_version": "1.0.0",
+		"finding_id":     "grce:corr-rgo-001",
+		"object_id":      state.ID,
+		"correlation_id": context.CorrelationID,
+		"trace_id":       context.TraceID,
+	}
+	for key, want := range requiredStrings {
+		if got, ok := finding[key].(string); !ok || got != want {
+			t.Fatalf("%s=%v, want %q", key, finding[key], want)
+		}
+	}
+	timestamp, ok := finding["timestamp"].(string)
+	if !ok {
+		t.Fatalf("timestamp missing or non-string: %T", finding["timestamp"])
+	}
+	if _, err := time.Parse(time.RFC3339Nano, timestamp); err != nil {
+		t.Fatalf("timestamp does not satisfy RFC3339Nano: %q: %v", timestamp, err)
+	}
+	source, ok := finding["source"].(map[string]any)
+	if !ok || source["system"] != "SOUL" || source["module"] != "N07.GRCE" || source["version"] != grce.Version {
+		t.Fatalf("invalid SARA source contract: %#v", finding["source"])
+	}
+	epistemic, ok := finding["epistemic"].(map[string]any)
+	if !ok || epistemic["mode"] != "EXECUTION" || epistemic["verification_state"] != "UNVERIFIED" {
+		t.Fatalf("invalid or overstated epistemic state: %#v", finding["epistemic"])
+	}
+	actionability, ok := finding["actionability"].(map[string]any)
+	if !ok || actionability["status"] != "ACTIONABLE" {
+		t.Fatalf("invalid actionability contract: %#v", finding["actionability"])
+	}
+	dual, ok := finding["dual"].(map[string]any)
+	if !ok || dual["status"] != "UNRESOLVED" {
+		t.Fatalf("invalid dual contract: %#v", finding["dual"])
+	}
+	evidence, ok := finding["evidence"].([]any)
+	if !ok || len(evidence) != 1 {
+		t.Fatalf("expected one state-hash evidence reference, got %#v", finding["evidence"])
+	}
+	ref, ok := evidence[0].(map[string]any)
+	if !ok || ref["id"] == "" || ref["kind"] != "GRCE_STATE_HASH" || !strings.HasPrefix(fmt.Sprint(ref["ref"]), "sha256:") {
+		t.Fatalf("invalid state-hash evidence reference: %#v", evidence[0])
+	}
+	provenance, ok := finding["provenance"].(map[string]any)
+	if !ok || provenance["origin"] != "N07.GRCE" || provenance["input_hash"] == "" {
+		t.Fatalf("invalid GRCE provenance: %#v", finding["provenance"])
+	}
+	failure, ok := finding["failure"].(map[string]any)
+	if !ok || !strings.Contains(fmt.Sprint(failure["description"]), "🔒IDENTITY") {
+		t.Fatalf("RGO payload did not preserve the original source content: %#v", finding["failure"])
 	}
 }
