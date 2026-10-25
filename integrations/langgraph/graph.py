@@ -26,6 +26,7 @@ MAX_RESPONSE_BYTES = 1 << 20
 
 class SoulGraphState(TypedDict, total=False):
     tasks: list[dict[str, Any]]
+    correlationId: str
     routed: list[dict[str, Any]]
     aggregate: dict[str, Any]
 
@@ -73,18 +74,25 @@ def decompose(state: SoulGraphState) -> SoulGraphState:
     if len(raw) > MAX_TASKS:
         raise ValueError(f"tasks exceeds limit of {MAX_TASKS}")
 
+    default_correlation = str(state.get("correlationId") or "").strip()
     normalized: list[dict[str, Any]] = []
     for index, task in enumerate(raw):
         if not isinstance(task, dict):
             raise ValueError(f"task {index} must be an object")
+        task_id = str(task.get("id") or f"task-{index + 1}")
+        model = str(task.get("model") or "soul-auto").strip()
+        if model != "soul-auto":
+            raise ValueError("N07 ingress only accepts model soul-auto")
+        correlation = str(task.get("correlationId") or default_correlation or f"langgraph-{task_id}").strip()
         normalized.append(
             {
-                "id": str(task.get("id") or f"task-{index + 1}"),
+                "id": task_id,
                 "prompt": _task_prompt(task),
-                "model": str(task.get("model") or "soul-auto"),
+                "model": model,
+                "correlationId": correlation,
             }
         )
-    return {"tasks": normalized, "routed": []}
+    return {"tasks": normalized, "correlationId": default_correlation, "routed": []}
 
 
 def _call_n07(task: dict[str, Any]) -> dict[str, Any]:
@@ -101,7 +109,7 @@ def _call_n07(task: dict[str, Any]) -> dict[str, Any]:
         headers={
             "Authorization": f"Bearer {_n07_token()}",
             "Content-Type": "application/json",
-            "X-Request-ID": f"langgraph-{task['id']}",
+            "X-Request-ID": str(task.get("correlationId") or f"langgraph-{task['id']}"),
         },
     )
     try:
@@ -137,6 +145,7 @@ def _call_n07(task: dict[str, Any]) -> dict[str, Any]:
         "status": "routed",
         "text": content,
         "metadata": metadata if isinstance(metadata, dict) else {},
+        "correlationId": str(task.get("correlationId") or f"langgraph-{task['id']}"),
     }
 
 
