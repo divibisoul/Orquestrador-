@@ -39,6 +39,30 @@
 - **N07/GRCE:** #147/#148/#149/#153/#156 são reconciliações grandes com sobreposição provável. Fazer análise de ancestralidade, arquivos e funcionalidades antes de qualquer consolidação.
 - **SARA:** #40 provenance do Vagus + #41 autoridade NervoVago/VagusBus + #42 reconciliação + #43 evidência de execução real da regeneração; distinguir correção transversal de integração/runtime.
 
+## Mapa transversal atualizado — frentes ativas nos nove repositórios
+
+**Leitura feita em 2026-10-25.** Estes são os elos ativos que devem andar coordenados; os números de PR são locais a cada repositório.
+
+| Núcleo/frente | PRs ativas relevantes | Ligação obrigatória / risco a reconciliar |
+|---|---|---|
+| N01 — `aeternum-core-29` | [#106](https://github.com/divibisoul/aeternum-core-29/pull/106), [#105](https://github.com/divibisoul/aeternum-core-29/pull/105), [#108](https://github.com/divibisoul/aeternum-core-29/pull/108) | #106 mantém HortaCore/Clareira/Mesh; #105 trata identidade de retry e contrato Android; #108 preserva correlação N01→N02. Consolidar por função e ancestry; nenhuma deve substituir o contrato canônico de Mesh. |
+| N02 — `Eternium-` | [#54](https://github.com/divibisoul/Eternium-/pull/54) → [#55](https://github.com/divibisoul/Eternium-/pull/55) → [#56](https://github.com/divibisoul/Eternium-/pull/56) → [#57](https://github.com/divibisoul/Eternium-/pull/57) | Cadeia explícita: contrato/CI, export idempotente, tempo de recuperação, depois configuração E2E real. Não integrar #57 isoladamente sem respeitar sua base. |
+| N03 — `nexus-aeternum-fusion` | [#45](https://github.com/divibisoul/nexus-aeternum-fusion/pull/45), [#46](https://github.com/divibisoul/nexus-aeternum-fusion/pull/46) | Corrigir contagem real do registry antes de aceitar fixture Gemini TTS; preservar o contrato de resposta de áudio e o listener Mesh. |
+| N04 — `nextjs-ai-chatbots` | [#48](https://github.com/divibisoul/nextjs-ai-chatbots/pull/48), [#51](https://github.com/divibisoul/nextjs-ai-chatbots/pull/51) | E2E reativado + HMAC de respostas Mesh. A integração deve comprovar autenticação no ingress/egress e manter correlation/trace. |
+| N05 — `nextjs-ai-chatbot` | [#48](https://github.com/divibisoul/nextjs-ai-chatbot/pull/48), [#50](https://github.com/divibisoul/nextjs-ai-chatbot/pull/50), [#53](https://github.com/divibisoul/nextjs-ai-chatbot/pull/53), [#19](https://github.com/divibisoul/nextjs-ai-chatbot/pull/19) | E2E reativado, endpoint Mesh canônico, HMAC em produção e contexto federado SARA são uma só trilha de comunicação; preservar contratos de retrieval/dispatch e lockfiles. |
+| N06 — `nextjs-ai-chatbot-2000` | [#43](https://github.com/divibisoul/nextjs-ai-chatbot-2000/pull/43), [#30](https://github.com/divibisoul/nextjs-ai-chatbot-2000/pull/30), [#15](https://github.com/divibisoul/nextjs-ai-chatbot-2000/pull/15) | E2E, ponte cooperativa N06↔N07 e contexto SARA devem conservar a mesma correlação ponta a ponta. |
+| N07 — `Orquestrador-` | [#148](https://github.com/divibisoul/Orquestrador-/pull/148), [#152](https://github.com/divibisoul/Orquestrador-/pull/152), [#160](https://github.com/divibisoul/Orquestrador-/pull/160), [#161](https://github.com/divibisoul/Orquestrador-/pull/161), [#162](https://github.com/divibisoul/Orquestrador-/pull/162) | #148 é fundação; #152 federação externa sobre recovery; #160 GRF/GRCE+SOUL-28; #161 API neural aditiva; #162 evidência Mesh. Os arquivos compartilhados foram medidos; a reconciliação deve ser feita por camada e SHA, não por merge cego. |
+| SARA | [#43](https://github.com/divibisoul/SARA/pull/43), [#26](https://github.com/divibisoul/SARA/pull/26), [#15](https://github.com/divibisoul/SARA/pull/15) | #43 adiciona evidência real dos hooks GRCE; #26/#15 transportam contexto federado. A frente N07 #152 agora fixa explicitamente o SHA verde #43 `248e3ecab3675005fd1efb6ab3cdf2b15bc07d97` no teste real, em vez de depender de um snapshot SARA anterior sem essa ligação verificada. |
+| JEV — `jev-api` | [#4](https://github.com/divibisoul/jev-api/pull/4), [#5](https://github.com/divibisoul/jev-api/pull/5) | Manter JEV como serviço/guardrail próprio; só habilitar a integração após contrato, readiness e autenticação confirmados. Não reclassificar JEV como núcleo N08/N09. |
+
+### Sequência de convergência entre repositórios
+
+1. **Contrato comum:** fechar Mesh 1.1.0, assinatura HMAC, operation identity, retry/idempotência e correlação/trace. Os testes de cada núcleo continuam pertencendo ao respectivo repositório.
+2. **Conectividade real:** fechar os E2Es reativados e bridges dos pares; em particular N01↔N02, N01↔N04, N06↔N07 e N07↔SARA. Uma fixture HTTP de unidade não substitui o E2E real.
+3. **Capacidades:** só depois ligar os catálogos de funções e adaptadores externos aos núcleos proprietários; o grafo de afinidade orienta o roteamento, não prova deployment.
+4. **Ciclo global:** correlacionar GRF/GRCE, HortaCore, VagusBus e SARA com o mesmo trace, mantendo HortaCore como estado e VagusBus como sinal.
+5. **Encerramento:** registrar por PR a capacidade absorvida e o SHA verde; drafts e branches em cadeia permanecem preservados até que suas funções tenham destino comprovado.
+
 ## Registro completo das PRs de origem
 
 ### JEV — decisões e guardrails — 2 PRs
