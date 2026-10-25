@@ -41,11 +41,15 @@ def root(v):
         if mode != "verify" or operation != "source.verify":
             emit({
                 "state":"BLOCKED",
-                "code":"EXTERNAL_EXPANSION_RUNTIME_ROUTE_DISABLED",
+                "code":"SOUL_V2_EXPANSION_RUNTIME_NOT_BOUND",
                 "provider":provider,
                 "mode":mode,
                 "operation":operation,
+                "reason":"native adapter and observed runtime are required before execution promotion",
+                "epistemic_state":"PROJECTED",
+                "execution_enabled":False,
                 "execution_proven":False,
+                "runtime_route_operations":[],
             },2)
         entry=projected
     expected=(REPO_ROOT/str(entry["root"])).resolve()
