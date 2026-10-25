@@ -196,13 +196,14 @@ type externalSourceObservation struct {
 	ExpectedRevision string
 	ObservedRevision string
 	RevisionMatched  bool
+	EvidenceMode     string
 	State            string
 }
 
-// inspectExternalSource treats a path as a source checkout only when it is the
-// root of its own Git worktree, then compares HEAD with the recorded pin.
-// os.Stat alone is insufficient: an uninitialized gitlink can appear as an
-// empty directory and must never be reported as a present upstream repository.
+// inspectExternalSource prefers live Git worktree evidence. Production images
+// intentionally omit .git databases, so they may use the image-build attestation
+// generated only after the Dockerfile verifies each submodule HEAD against its
+// gitlink. A directory alone, especially an empty gitlink, is never enough.
 func inspectExternalSource(root, expectedRevision string) externalSourceObservation {
 	return inspectExternalSourceWithRepositoryRoot(root, expectedRevision, repositoryRoot())
 }
@@ -225,7 +226,13 @@ func inspectExternalSourceWithRepositoryRoot(root, expectedRevision, repoRoot st
 	if err != nil {
 		return observation
 	}
-
+	fallback := func() externalSourceObservation {
+		return inspectAttestedExternalSource(
+			resolvedRoot,
+			observation.ExpectedRevision,
+			externalRuntimeAttestationPath(repoRoot),
+		)
+	}
 	topCommand := exec.Command("git", "-C", resolvedRoot, "rev-parse", "--show-toplevel")
 	topBytes, topErr := topCommand.Output()
 	if topErr == nil {
@@ -268,7 +275,7 @@ func inspectExternalSourceWithRepositoryRoot(root, expectedRevision, repoRoot st
 	}
 	entries, err := os.ReadDir(resolvedRoot)
 	if err != nil {
-		return observation
+		return fallback()
 	}
 	hasContent := false
 	for _, entry := range entries {
@@ -278,7 +285,7 @@ func inspectExternalSourceWithRepositoryRoot(root, expectedRevision, repoRoot st
 		}
 	}
 	if !hasContent {
-		return observation
+		return fallback()
 	}
 
 	attestationPath := strings.TrimSpace(os.Getenv("SOUL_EXTERNAL_RUNTIME_ATTESTATION"))
@@ -289,7 +296,7 @@ func inspectExternalSourceWithRepositoryRoot(root, expectedRevision, repoRoot st
 	}
 	raw, err := os.ReadFile(attestationPath)
 	if err != nil {
-		return observation
+		return fallback()
 	}
 	var attestation ExternalRuntimeAttestation
 	if err := json.Unmarshal(raw, &attestation); err != nil ||
@@ -299,9 +306,10 @@ func inspectExternalSourceWithRepositoryRoot(root, expectedRevision, repoRoot st
 	}
 	observed := strings.ToLower(strings.TrimSpace(attestation.Repositories[filepath.Base(resolvedRoot)]))
 	if !isGitRevision(observed) {
-		return observation
+		return fallback()
 	}
 	observation.Present = true
+	observation.EvidenceMode = "git-worktree"
 	observation.ObservedRevision = observed
 	observation.RevisionMatched = isGitRevision(observation.ExpectedRevision) && observed == observation.ExpectedRevision
 	if observation.RevisionMatched {
@@ -310,6 +318,79 @@ func inspectExternalSourceWithRepositoryRoot(root, expectedRevision, repoRoot st
 		observation.State = "REVISION_MISMATCH"
 	}
 	return observation
+}
+
+// inspectAttestedExternalSource represents source files in a production image
+// without claiming that a runtime Git worktree exists. The image attestation is
+// emitted after the builder checks gitlink SHA == checked-out submodule HEAD.
+func inspectAttestedExternalSource(root, expectedRevision, attestationPath string) externalSourceObservation {
+	observation := externalSourceObservation{
+		ExpectedRevision: strings.ToLower(strings.TrimSpace(expectedRevision)),
+		State:            "MISSING_WORKTREE",
+	}
+	info, err := os.Stat(root)
+	if err != nil || !info.IsDir() {
+		return observation
+	}
+	entries, err := os.ReadDir(root)
+	if err != nil {
+		return observation
+	}
+	hasSourceContent := false
+	for _, entry := range entries {
+		if entry.Name() != ".git" && entry.Name() != ".gitmodules" {
+			hasSourceContent = true
+			break
+		}
+	}
+	if !hasSourceContent {
+		return observation
+	}
+	observation.Present = true
+	observation.State = "ATTESTATION_UNAVAILABLE"
+	observation.EvidenceMode = "filesystem-unattested"
+	raw, err := os.ReadFile(attestationPath)
+	if err != nil {
+		return observation
+	}
+	var attestation ExternalRuntimeAttestation
+	if err := json.Unmarshal(raw, &attestation); err != nil {
+		observation.State = "ATTESTATION_INVALID"
+		return observation
+	}
+	if attestation.SchemaVersion != "soul.external.runtime-attestation.v1" {
+		observation.State = "ATTESTATION_SCHEMA_UNSUPPORTED"
+		return observation
+	}
+	if !attestation.GeneratedFromMaterializedGit {
+		observation.State = "ATTESTATION_UNTRUSTED"
+		return observation
+	}
+	observed := strings.ToLower(strings.TrimSpace(attestation.Repositories[filepath.Base(filepath.Clean(root))]))
+	if !isGitRevision(observed) {
+		observation.State = "ATTESTATION_REVISION_MISSING"
+		return observation
+	}
+	observation.ObservedRevision = observed
+	observation.RevisionMatched = isGitRevision(observation.ExpectedRevision) && observed == observation.ExpectedRevision
+	observation.EvidenceMode = "build-attestation"
+	if observation.RevisionMatched {
+		observation.State = "ATTESTED_PIN_MATCH"
+	} else {
+		observation.State = "ATTESTATION_REVISION_MISMATCH"
+	}
+	return observation
+}
+
+func externalRuntimeAttestationPath(rootDir string) string {
+	configured := strings.TrimSpace(os.Getenv("SOUL_EXTERNAL_RUNTIME_ATTESTATION"))
+	if configured == "" {
+		return filepath.Join(rootDir, "config", "soul-external-runtime-attestation.json")
+	}
+	if !filepath.IsAbs(configured) {
+		return filepath.Join(rootDir, configured)
+	}
+	return configured
 }
 
 func isGitRevision(revision string) bool {
@@ -528,6 +609,29 @@ func (r ExternalAdapterRegistry) run(ctx context.Context, provider, mode, operat
 	}
 	return result, nil
 }
+func validateExternalExecutionAuthorization(r ExternalAdapterRegistry, provider string, metadata map[string]string) error {
+	provider = strings.ToLower(strings.TrimSpace(provider))
+	spec, ok := r.byID[provider]
+	if !ok {
+		return fmt.Errorf("EXTERNAL_PROVIDER_UNKNOWN:%s", provider)
+	}
+	nativeOwner := strings.TrimSpace(metadata["native_owner"])
+	if nativeOwner == "" {
+		return errors.New("EXTERNAL_NATIVE_OWNER_REQUIRED")
+	}
+	if nativeOwner != spec.Owner {
+		return fmt.Errorf("EXTERNAL_NATIVE_OWNER_MISMATCH:%s", provider)
+	}
+	providerRevision := strings.TrimSpace(metadata["provider_revision"])
+	expectedRevision := strings.TrimSpace(r.revisions[spec.ID])
+	if providerRevision == "" {
+		return errors.New("EXTERNAL_PROVIDER_REVISION_REQUIRED")
+	}
+	if expectedRevision == "" || providerRevision != expectedRevision {
+		return fmt.Errorf("EXTERNAL_PROVIDER_REVISION_MISMATCH:%s", provider)
+	}
+	return nil
+}
 func RegisterExternalAdapterOperations(e *Engine, r ExternalAdapterRegistry) error {
 	if e == nil {
 		return errors.New("engine is required")
@@ -544,7 +648,7 @@ func RegisterExternalAdapterOperations(e *Engine, r ExternalAdapterRegistry) err
 				"id": p.ID, "owner": p.Owner, "kind": p.Kind, "root": root,
 				"revision": r.revisions[p.ID], "expectedRevision": observation.ExpectedRevision,
 				"observedRevision": observation.ObservedRevision, "revisionMatched": observation.RevisionMatched,
-				"sourceState": observation.State, "operations": p.Operations,
+				"sourceState": observation.State, "evidenceMode": observation.EvidenceMode, "operations": p.Operations,
 				"sourcePresent": observation.Present, "executionEnabled": externalEnabled(p.ID),
 			})
 		}
@@ -559,7 +663,7 @@ func RegisterExternalAdapterOperations(e *Engine, r ExternalAdapterRegistry) err
 				"id": p.ID, "owner": p.Owner, "kind": p.Kind, "root": root,
 				"revision": r.revisions[p.ID], "expectedRevision": observation.ExpectedRevision,
 				"observedRevision": observation.ObservedRevision, "revisionMatched": observation.RevisionMatched,
-				"sourceState": observation.State, "sourcePresent": observation.Present,
+				"sourceState": observation.State, "evidenceMode": observation.EvidenceMode, "sourcePresent": observation.Present,
 				"operations": p.Operations, "state": p.State, "integrationState": p.IntegrationState,
 				"runtimeRequirement": p.RuntimeRequirement, "executionEnabled": false,
 				"meshMetadataOperations": []string{"external." + p.ID + ".describe@1.0.0", "external." + p.ID + ".probe@1.0.0"},
@@ -610,6 +714,9 @@ func RegisterExternalAdapterOperations(e *Engine, r ExternalAdapterRegistry) err
 		op := strings.TrimSpace(m.Metadata["external_operation"])
 		if provider == "" || op == "" {
 			return externalAdapterFailure(m, "EXTERNAL_PROVIDER_AND_OPERATION_REQUIRED")
+		}
+		if err := validateExternalExecutionAuthorization(r, provider, m.Metadata); err != nil {
+			return externalAdapterFailure(m, err.Error())
 		}
 		if !externalEnabled(provider) {
 			return externalAdapterFailure(m, "EXTERNAL_ADAPTER_DISABLED")
@@ -675,6 +782,9 @@ func RegisterExternalAdapterOperations(e *Engine, r ExternalAdapterRegistry) err
 			}
 			if !externalEnabled(provider) {
 				return externalAdapterFailure(m, "EXTERNAL_ADAPTER_DISABLED")
+			}
+			if err := validateExternalExecutionAuthorization(r, provider, m.Metadata); err != nil {
+				return externalAdapterFailure(m, err.Error())
 			}
 			result, err := r.run(ctx, provider, "execute", op, m.Metadata)
 			if err != nil {
