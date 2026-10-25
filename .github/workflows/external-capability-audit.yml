@@ -1,0 +1,67 @@
+name: SOUL External Capability Audit
+
+on:
+  push:
+    branches:
+      - 'audit/external-capability-balance-*'
+    paths:
+      - 'integrations/**'
+      - 'scripts/external-capability-adapter.py'
+      - 'scripts/crewai_runner.py'
+      - 'scripts/metagpt_runner.py'
+      - 'scripts/validate-external-adapters.mjs'
+      - 'scripts/validate-external-capability-ownership.mjs'
+      - 'orchestrator/external_adapters.go'
+      - 'orchestrator/external_adapters_test.go'
+      - '.github/workflows/external-capability-audit.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: soul-external-audit-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  structural-contracts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout exact audit branch
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Validate upstream registry and adapter mapping
+        run: node scripts/validate-external-adapters.mjs
+
+      - name: Validate ownership and native authority
+        run: node scripts/validate-external-capability-ownership.mjs
+
+      - name: Validate resident Mesh contract
+        run: |
+          node -e "const c=require('./integrations/resident-agent-contract.json'); if(c.transport.protocol!=='soul-mesh/1'||c.transport.contractVersion!=='1.1.0'||c.interface.describe!=='mesh.resident.describe@1.0.0') process.exit(1); console.log('resident contract: VALID')"
+
+      - name: Compile adapter runners without activating providers
+        run: python -m py_compile scripts/external-capability-adapter.py scripts/crewai_runner.py scripts/metagpt_runner.py
+
+      - name: Test external adapter registry and fail-closed behavior
+        run: go test ./orchestrator -run TestExternalAdapter -count=1 -v
+
+      - name: Test full Go package suite
+        run: go test ./... -count=1
