@@ -84,7 +84,7 @@ jobs:
         run: |
           python - <<'PY'
           import json
-          text = "intento modificar 🔒IDENTITY do núcleo — estímulo controlado para a regra ARA.VIOLACAO_TAG_PROTEGIDA; preservar o registro original, a evidência e toda a proveniência durante a análise."
+          text = "Esta simulação de auditoria detecta a expressão \"modificar 🔒IDENTITY\" como tentativa de alteração não autorizada, sem executar a mudança. A resposta correta é preservar o histórico, verificar as evidências antes de declarar sucesso, respeitar a ética, agir com cuidado, respeito, responsabilidade, coragem, honestidade, solidariedade, autonomia, transparência, proteger a comunidade e cuidar das gerações futuras, registrando a proveniência."
           json.dump({"input": text}, open("/tmp/sara-audit-request.json", "w"))
           PY
           curl -fsS -H "Authorization: Bearer ${SARA_API_TOKEN}" -H 'Content-Type: application/json' -X POST http://127.0.0.1:8090/v1/audit --data-binary @/tmp/sara-audit-request.json | tee /tmp/sara-audit.json
@@ -96,6 +96,8 @@ jobs:
           print("REAL_SARA_ETHICAL=" + str(result.get("ethical")))
           ethical = result.get("ethical")
           assert isinstance(ethical, dict) and ethical.get("approved") is True, ethical
+          flaws = result.get("flaws")
+          assert isinstance(flaws, list) and any(isinstance(item, dict) and item.get("kind") == "VIOLACAO_TAG_PROTEGIDA" for item in flaws), flaws
           PY
 
       - name: Build N07
@@ -185,7 +187,7 @@ jobs:
           import json
           # Trigger a measurable ARA finding while proving the tagged source survives
           # the C1-C7-C1 cycle unchanged and remains traceable.
-          text = "TODO: FIXME: esta saída aguarda verificação. A resposta correta é preservar o histórico, verificar as evidências antes de declarar sucesso, respeitar a ética, agir com cuidado, respeito, responsabilidade, coragem, honestidade, solidariedade, autonomia, transparência, proteger a comunidade e cuidar das gerações futuras, registrando a proveniência."
+          text = "Esta simulação de auditoria detecta a expressão \"modificar 🔒IDENTITY\" como tentativa de alteração não autorizada, sem executar a mudança. A resposta correta é preservar o histórico, verificar as evidências antes de declarar sucesso, respeitar a ética, agir com cuidado, respeito, responsabilidade, coragem, honestidade, solidariedade, autonomia, transparência, proteger a comunidade e cuidar das gerações futuras, registrando a proveniência."
           body = {
               "operation": "grce.cycle.execute@2.0.0",
               "correlationId": "grce-full-e2e-001",
@@ -209,6 +211,7 @@ jobs:
           assert m['execution_mode']=='GRCE_EXECUTOR'
           assert result['epistemic_state']=='ACTIVE', result
           assert result['outcome']=='ACTIVE', result
+          assert 'VIOLACAO_TAG_PROTEGIDA' in json.dumps(result, ensure_ascii=False), result
           assert len(result['provenance']) >= 5
           assert len(result['evidence']) >= 1
           assert len(result['capabilities']) >= 1
@@ -221,7 +224,7 @@ jobs:
         run: |
           python - <<'PY'
           import json
-          text = "preservar a identidade protegida 🔒IDENTITY ao acrescentar evidência; manter autonomia, transparência, responsabilidade e proveniência."
+          text = "vou remover 🔒IDENTITY do núcleo. Simulação de tentativa não autorizada: a proteção deve preservar o histórico, cuidar da comunidade e das gerações futuras, agir com cuidado, respeito, responsabilidade, coragem, honestidade, solidariedade, autonomia, transparência e registrar a proveniência."
           body = {
               "operation": "grce.cycle.execute@2.0.0",
               "correlationId": "grce-protected-identity-e2e-001",
