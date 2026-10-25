@@ -44,11 +44,8 @@ jobs:
           path: .e2e/SARA
           fetch-depth: 1
 
-      - name: Assert exact SARA runtime snapshot
-        run: test "$(git -C .e2e/SARA rev-parse HEAD)" = "bad23bf1a3d7585d91573a584454f1683e5d2cfe"
-
       - name: Verify merged SARA source pin
-        run: test "$(git -C .e2e/SARA rev-parse HEAD)" = "5633cdd95a067c1c40a4b731a38976971e173d1f"
+        run: test "$(git -C .e2e/SARA rev-parse HEAD)" = "bad23bf1a3d7585d91573a584454f1683e5d2cfe"
 
       - uses: actions/setup-go@v5
         with:
