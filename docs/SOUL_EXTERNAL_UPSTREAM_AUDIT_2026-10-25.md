@@ -86,3 +86,47 @@ O adapter central faz resolução de imports por pacote e roteia para runners es
 Um upstream só recebe estado **adapter-live** após uma execução real controlada que comprove: SHA de origem conhecido, owner correto, operação permitida, limites aplicados, falha fechada, resposta validada, HMAC/correlação preservados e evidência registrada. CI verde sozinho não satisfaz esse critério.
 
 **Limite desta auditoria:** nenhum upstream foi ativado e nenhuma dependência pública foi atualizada. Este documento registra achados e sequência de correção; não altera `main`.
+
+
+## Aditivo crítico — frente pública já existente (branch forensic)
+
+A inspeção da branch existente `forensic/public-capability-integration-2026-10-06` revelou que o inventário não termina nos 16 upstreams da `main`. Essa frente declara **32 fontes externas**: 22 fontes primárias/complementares e 10 expansões projetadas. Não abri uma nova PR para isso; esta auditoria é separada e preserva a frente existente.
+
+### Dezesseis fontes adicionais presentes na frente existente
+
+| Fonte adicional | Repositório | Papel declarado | Estado correto nesta auditoria |
+|---|---|---|---|
+| Autogenesis | [DVampire/Autogenesis](https://github.com/DVampire/Autogenesis) | meta-agente/otimização/avaliação | PROJECTED |
+| OctOS | [lispking/octos](https://github.com/lispking/octos) | fan-out paralelo, swarm e sandbox | PROJECTED |
+| Hora Graph Core | [Vivien83/hora-graph-core](https://github.com/Vivien83/hora-graph-core) | grafo de conhecimento e memória | PROJECTED |
+| Mycelium | [mycelium-io/mycelium](https://github.com/mycelium-io/mycelium) | workspace e coordenação compartilhada | PROJECTED |
+| Prime Agent | [PrimeIntellect-ai/prime-agent](https://github.com/PrimeIntellect-ai/prime-agent) | subagentes recursivos/RLM | PROJECTED |
+| CUDA Oxide | [SuperInstance/cuda-oxide](https://github.com/SuperInstance/cuda-oxide) | runtime CUDA/PTX e execução GPU | PROJECTED |
+| Bijux DAG Runtime | [bijux/bijux-core](https://github.com/bijux/bijux-core) | execução determinística de DAG | PROJECTED |
+| Ouro Loop | [VictorVVedtion/ouro-loop](https://github.com/VictorVVedtion/ouro-loop) | loop de verificação e autocorreção | PROJECTED |
+| Recuris | [Gen-Verse/Recuris](https://github.com/Gen-Verse/Recuris) | memória experiencial e localização de falhas | PROJECTED |
+| FedML | [FedML-AI/FedML](https://github.com/FedML-AI/FedML) | aprendizagem federada e deployment | PROJECTED |
+| Hivemind | [learning-at-home/hivemind](https://github.com/learning-at-home/hivemind) | treinamento P2P e agregação distribuída | PROJECTED |
+| Temporal | [temporalio/temporal](https://github.com/temporalio/temporal) | workflows duráveis e retry | PROJECTED |
+| Cognitive Workspace | [tao-hpu/cognitive-workspace](https://github.com/tao-hpu/cognitive-workspace) | contexto/workspace cognitivo | PROJECTED |
+| RAVANA | [OpenSource-Syndicate/RAVANA](https://github.com/OpenSource-Syndicate/RAVANA) | agência proativa e reflexão | PROJECTED |
+| Ray | [ray-project/ray](https://github.com/ray-project/ray) | computação distribuída | PROJECTED |
+| NATS Go | [nats-io/nats.go](https://github.com/nats-io/nats.go) | transporte de eventos/pub-sub | PROJECTED |
+
+A tabela é um inventário de função declarada, não aprovação técnica. A compatibilidade, licença por pacote, API no SHA fixado, dependências e execução real de cada fonte adicional ainda precisam ser verificadas.
+
+### Falhas e lacunas observadas na execução da frente existente
+
+- **CI de contrato da frente pública:** a execução `40216778045` de “SOUL External Adapter Contract” terminou SUCCESS; a execução `40216777897` de “SOUL External Ownership + Resident Contract CI” também terminou SUCCESS. Isso valida os checks cobertos, não runtime de todos os providers.
+- **CI N07:** a execução `40216777945` terminou FAILURE no passo “Production external federation smoke”. O log expõe entradas com `sourcePresent=false`, `sourceState=MISSING_WORKTREE`, `observedRevision=""` para fontes projetadas como Recuris, FedML, Hivemind, Temporal, NATS Go, Ouro Loop, Cognitive Workspace, RAVANA, Ray e Bijux DAG Runtime. Isso prova que a prova de produção não materializou essas fontes no worktree/container usado. **Não prova que o upstream está quebrado.** A pipeline precisa separar “source metadata/probe sem checkout” de “execução que requer código upstream” e garantir que o caminho de runtime só seja executado quando a fonte estiver materializada no SHA esperado.
+- **E2E GRCE/SARA:** a execução `40216777915` terminou FAILURE. A asserção mostrou um estado `IDLE`, sem evidence/capabilities, enquanto a entrada contém `TODO: FIXME`. Portanto, o ciclo GRCE→C1-C7-C1 não pode ser considerado concluído; é um bloqueio real da prova de ciclo, separado do inventário dos upstreams.
+- **Cancelamento:** a execução `40216778003` cancelou o job de instalação/teste de Ray; isso é `CANCELLED`, não PASS nem FAIL funcional.
+- **Pinning divergente entre branches:** várias fontes da lista original têm SHAs diferentes entre `main` e a frente `forensic/public-capability-integration-2026-10-06` (incluindo LangGraph, CrewAI, Microsoft Agent Framework, OpenHands, Browser Use, Letta Code, Pydantic AI, LlamaIndex e DSPy). Cada branch é internamente pinada, mas a integração final deve escolher um SHA canônico por provider e registrar a decisão com evidência. Não atualizar silenciosamente nem escolher “o mais novo” por inferência.
+
+### Correção recomendada para o próximo ciclo
+
+1. Reconciliar o manifesto de 32 fontes com os 16 adapters primários e os 16 adapters/metadata das fontes adicionais; validar IDs, SHA, URL e owner por máquina.
+2. Separar três operações: `describe` (metadados, não exige import do upstream), `probe` (presença e compatibilidade, reporta PIN_MATCH/MISSING_WORKTREE/REVISION_MISMATCH) e `execute` (só após preflight, limites e dependências reais).
+3. Corrigir o gate que transforma um `MISSING_WORKTREE` projetado em falha ambígua de produção: ele deve falhar se o caso de teste exige execução real, mas não deve rotular metadata-only como execução comprovada.
+4. Corrigir a prova GRCE/SARA independentemente; remover TODO/FIXME apenas se o comportamento e as evidências forem substituídos por implementação testada, preservando histórico/proveniência.
+5. Reconciliar os SHAs divergentes entre branches antes de promover qualquer adapter a `adapter-live`.
