@@ -56,3 +56,20 @@
 - N07 has one observed Pages/Jekyll build failure (run `39408331813`); the failure was in `Build with Jekyll`, with `Liquid Exception: Invalid Date` inside the Pages layout while rendering vendored external documentation. It does not prove the Go backend build fails.
 - Runtime secrets/deployment settings were not inspected. `.env.example` placeholders do not establish whether deployment secrets exist.
 - No production provider call or seven-nucleus E2E transaction was executed during this audit.
+
+
+## Public upstream integration status
+
+**Companion audit:** [`EXTERNAL_UPSTREAM_AUDIT.md`](./EXTERNAL_UPSTREAM_AUDIT.md) — snapshot 2026-10-25.
+
+The eight main trees inspected contain 50 Git submodule references to 26 unique public upstream projects. N07's canonical provider registry has 16 entries; N02's additional 13 source mappings contribute 10 unique projects, and all 21 N02 function mappings remain `TRIAGED`. None of this means all upstreams are active at runtime.
+
+The audit records exact pins, drift against each upstream default branch, owner/function mapping, adapter status, dependency/runtime provenance, license/ref-resolution blocks, and the next test per owner. Key unresolved items:
+- All 16 N07 ownership entries are `adapter-planned`; runtime is disabled by default and the adapter-contract workflow is manual-only.
+- N02's extra sources have registry and triage evidence, not live-adapter evidence.
+- CrewAI and Microsoft Agent Framework have conflicting pins between N07 and N02.
+- N04 Browser Use catalog mismatch was corrected only on its isolated audit branch, not main.
+- Hashiru/Xun licensing remains unverified; Codette is non-commercial CSAL 1.0; Chyren pinned-ref resolution needs revalidation.
+- No broad submodule bump, source deletion, PR opening or main-branch mutation was made.
+
+Per-nucleus upstream ledgers are preserved on each repository's `audit/ai-nucleus-status-2026-10-25` branch: N01, N02, N03, N04, N05, N06 and SARA each have `SOUL_UPSTREAM_STATUS.md`.
