@@ -40,9 +40,12 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: divibisoul/SARA
-          ref: 90fe0c93af787cf2dba560992ef247e43460a94c
+          ref: bad23bf1a3d7585d91573a584454f1683e5d2cfe
           path: .e2e/SARA
           fetch-depth: 1
+
+      - name: Assert exact SARA runtime snapshot
+        run: test "$(git -C .e2e/SARA rev-parse HEAD)" = "bad23bf1a3d7585d91573a584454f1683e5d2cfe"
 
       - uses: actions/setup-go@v5
         with:
