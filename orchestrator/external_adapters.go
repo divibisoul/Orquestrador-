@@ -97,6 +97,22 @@ func (r ExternalAdapterRegistry) python() string {
 	}
 	return "python3"
 }
+func externalAdapterRequest(provider, mode, operation, root string, metadata map[string]string) map[string]any {
+	// Copy caller metadata first, then write reserved execution-context fields.
+	// This prevents untrusted Mesh metadata from overriding the catalog-selected
+	// provider, operation, or pinned source root used for this adapter invocation.
+	req := make(map[string]any, len(metadata)+5)
+	for k, v := range metadata {
+		req[k] = v
+	}
+	req["provider"] = provider
+	req["mode"] = mode
+	req["operation"] = operation
+	req["root"] = root
+	req["metadata"] = metadata
+	return req
+}
+
 func (r ExternalAdapterRegistry) run(ctx context.Context, provider, mode, operation string, metadata map[string]string) (map[string]any, error) {
 	p, ok := r.byID[strings.ToLower(strings.TrimSpace(provider))]
 	if !ok {
@@ -122,10 +138,7 @@ func (r ExternalAdapterRegistry) run(ctx context.Context, provider, mode, operat
 	if _, err := os.Stat(runner); err != nil {
 		return nil, errors.New("EXTERNAL_ADAPTER_RUNNER_NOT_FOUND")
 	}
-	req := map[string]any{"provider": provider, "mode": mode, "operation": operation, "root": root, "metadata": metadata}
-	for k, v := range metadata {
-		req[k] = v
-	}
+	req := externalAdapterRequest(provider, mode, operation, root, metadata)
 	data, err := json.Marshal(req)
 	if err != nil {
 		return nil, err
