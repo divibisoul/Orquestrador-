@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/divibisoul/Orquestrador-/grce"
 	"github.com/divibisoul/Orquestrador-/grf"
@@ -424,14 +425,93 @@ func (r *GRCEExecutorRuntime) validateITR(ctx context.Context, state grf.State, 
 	return len(transformedRaw) >= len(originalRaw) && len(transformedRaw) > 0, nil
 }
 
-func (r *GRCEExecutorRuntime) validateRGO(ctx context.Context, state grf.State, c grf.Context) (bool, error) {
-	finding := map[string]any{
-		"finding_id":  "grce:" + c.CorrelationID,
-		"description": stateText(state),
-		"provenance": map[string]any{
-			"trace_id":       c.TraceID,
-			"sequence_index": c.SequenceIndex,
+func grceInputText(state grf.State) string {
+	if original, ok := state.Payload["original_state"].(map[string]any); ok {
+		if value, exists := original["text"].(string); exists && strings.TrimSpace(value) != "" {
+			return value
+		}
+	}
+	return stateText(state)
+}
+
+func buildGRCERGOFinding(state grf.State, c grf.Context) (map[string]any, error) {
+	if strings.TrimSpace(state.ID) == "" {
+		return nil, errors.New("GRCE_RGO_STATE_ID_REQUIRED")
+	}
+	if err := c.Validate(); err != nil {
+		return nil, fmt.Errorf("GRCE_RGO_CONTEXT_INVALID:%w", err)
+	}
+	inputHash, err := stateHash(state)
+	if err != nil {
+		return nil, fmt.Errorf("GRCE_RGO_STATE_HASH_FAILED:%w", err)
+	}
+	if len(inputHash) < 16 {
+		return nil, errors.New("GRCE_RGO_STATE_HASH_INVALID")
+	}
+	content := grceInputText(state)
+	if strings.TrimSpace(content) == "" {
+		return nil, errors.New("GRCE_RGO_CONTENT_REQUIRED")
+	}
+	evidenceID := "grce-state:" + inputHash[:16]
+	return map[string]any{
+		"schema_version": "1.0.0",
+		"finding_id":     "grce:" + c.CorrelationID,
+		"object_id":      state.ID,
+		"timestamp":      time.Now().UTC().Format(time.RFC3339Nano),
+		"correlation_id": c.CorrelationID,
+		"trace_id":       c.TraceID,
+		"source": map[string]any{
+			"system":  "SOUL",
+			"module":  "N07.GRCE",
+			"version": grce.Version,
 		},
+		"epistemic": map[string]any{
+			"mode":               "EXECUTION",
+			"verification_state": "UNVERIFIED",
+		},
+		"actionability": map[string]any{
+			"status": "ACTIONABLE",
+			"reason": "Independent SARA RGO/Trinity validation must pass before candidate promotion.",
+		},
+		"failure": map[string]any{
+			"type":        "GRCE_CANDIDATE_VALIDATION",
+			"description": content,
+			"nature":      "provenance-preserving candidate validation",
+			"cause":       "The transformed candidate requires independent RGO/Trinity validation.",
+			"impact":      "The candidate must remain PRESERVED unless all GRCE gates pass.",
+		},
+		"correction_boundary": map[string]any{
+			"problem_to_resolve": "Validate the transformed candidate through SARA RGO/Trinity without replacing its source state.",
+			"required_property":  "Preserve original content, protected identity tags, evidence, and ordered causal provenance.",
+		},
+		"dual": map[string]any{
+			"status":   "UNRESOLVED",
+			"property": "",
+		},
+		"evidence": []any{
+			map[string]any{
+				"id":   evidenceID,
+				"kind": "GRCE_STATE_HASH",
+				"ref":  "sha256:" + inputHash,
+			},
+		},
+		"provenance": map[string]any{
+			"origin":     "N07.GRCE",
+			"parent_ids": []string{state.ID},
+			"input_hash": inputHash,
+		},
+		"extensions": map[string]any{
+			"sequence_index":          c.SequenceIndex,
+			"candidate_epistemic_state": string(state.EpistemicState),
+			"evidence_source":         "GRCE_STATE_HASH",
+		},
+	}, nil
+}
+
+func (r *GRCEExecutorRuntime) validateRGO(ctx context.Context, state grf.State, c grf.Context) (bool, error) {
+	finding, err := buildGRCERGOFinding(state, c)
+	if err != nil {
+		return false, err
 	}
 	result, err := r.SARA.GRCEHooks(ctx, finding, c.CorrelationID, c.CorrelationID)
 	if err != nil {
