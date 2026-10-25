@@ -127,9 +127,11 @@ func superpowersAgentRoute(e *Engine) Handler {
 		for key, value := range m.Metadata {
 			delegatedMetadata[key] = value
 		}
-		if strings.TrimSpace(delegatedMetadata["trace_id"]) == "" {
-			delegatedMetadata["trace_id"] = m.TraceID
-		}
+		// Delegated operations get their own active trace; the parent trace and
+		// correlation ID remain explicit so nested Engine.Submit calls cannot
+		// collide with the still-active parent trace.
+		delegatedMetadata["parent_trace_id"] = m.TraceID
+		delete(delegatedMetadata, "trace_id")
 		if strings.TrimSpace(delegatedMetadata["correlation_id"]) == "" {
 			delegatedMetadata["correlation_id"] = m.CorrelationID
 		}
@@ -143,6 +145,7 @@ func superpowersAgentRoute(e *Engine) Handler {
 		if result.Metadata == nil {
 			result.Metadata = map[string]string{}
 		}
+		result.Metadata["parent_trace_id"] = m.TraceID
 		result.Metadata["superpowers_agent"] = agentID
 		result.Metadata["superpowers_skill_boundary"] = strings.Join(binding.Skills, ",")
 		return result, nil
