@@ -96,12 +96,12 @@ func TestExternalAdapterProbeDoesNotClaimRuntimeWithoutSourceWorktree(t *testing
 	if err := json.Unmarshal([]byte(result.Metadata["external_result_json"]), &details); err != nil {
 		t.Fatalf("probe response is not valid JSON: %v", err)
 	}
-	if details["executionProven"] != false {
+	if details["execution_proven"] != false {
 		t.Fatalf("probe must never claim source execution: %#v", details)
 	}
 	root := filepath.Join(repositoryRoot(), r.byID["langgraph"].Root)
 	if !sourceWorktreeIsGit(root) {
-		if details["state"] != "PROJECTED" || details["sourcePresent"] != false || result.Status != "degraded" {
+		if details["state"] != "PROJECTED" || details["source_present"] != false || result.Status != "degraded" {
 			t.Fatalf("missing source must remain PROJECTED/degraded, not PASS: result=%#v details=%#v", result, details)
 		}
 	}
