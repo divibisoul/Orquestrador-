@@ -363,10 +363,10 @@
       "runtime_requirement": "native loop adapter, bounded execution policy, and real capability conformance tests"
     },
     {
-      "id": "recurs",
-      "owner": "N07",
+      "id": "recuris",
+      "owner": "N06",
       "kind": "complementary-recursion",
-      "root": "integrations/external/recurs",
+      "root": "integrations/external/recuris",
       "operations": [
         "recursion.describe",
         "recursion.execute"
@@ -374,7 +374,22 @@
       "package": null,
       "state": "PROJECTED",
       "integration_state": "PINNED_SOURCE_NO_NATIVE_ADAPTER_NO_RUNTIME_ROUTE",
-      "runtime_requirement": "native recursion adapter, depth/deadline limits, and real capability conformance tests"
+      "runtime_requirement": "native recursion adapter, depth/deadline limits, and real capability conformance tests",
+      "legacy_id": "recurs"
+    },
+    {
+      "id": "nats-go",
+      "owner": "N07",
+      "kind": "transport-go",
+      "root": "integrations/external/nats-go",
+      "operations": [
+        "transport.connect"
+      ],
+      "package": null,
+      "state": "PROJECTED",
+      "integration_state": "TRANSPORT_ONLY_NO_SECOND_MESH_RUNTIME_PROJECTED",
+      "runtime_requirement": "native Nervo Vago transport adapter, SARA/ETR gate, and authenticated event delivery/replay E2E",
+      "legacy_id": null
     }
   ],
   "notes": {
