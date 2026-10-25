@@ -15,9 +15,9 @@ RUN set -eu; \
       echo '  "generated_from_materialized_git": true,'; \
       echo '  "repositories": {'; \
       for d in integrations/external/*; do \
-        test -d "$d"; \
         id="$(basename "$d")"; \
         if [ "$id" = "recurs" ]; then continue; fi; \
+        test -d "$d"; \
         sha="$(git -C "$d" rev-parse HEAD)"; \
         gitlink="$(git ls-tree HEAD -- "$d" | awk '{print $3}')"; \
         test -n "$sha" && test "$gitlink" = "$sha"; \
