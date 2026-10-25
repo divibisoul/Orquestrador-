@@ -317,6 +317,26 @@ func TestPeerDiscoverySupportsN01LegacyCapabilitiesWithoutTrustingDeclarations(t
 	}
 }
 
+func TestPeerMeshEndpointAcceptsBaseOrCompleteURL(t *testing.T) {
+	cases := []struct {
+		name string
+		input string
+		want string
+	}{
+		{name: "base", input: "https://n01.example", want: "https://n01.example/api/soul-mesh"},
+		{name: "base with trailing slash", input: "https://n01.example/", want: "https://n01.example/api/soul-mesh"},
+		{name: "complete endpoint", input: "https://n01.example/api/soul-mesh", want: "https://n01.example/api/soul-mesh"},
+		{name: "complete endpoint with trailing slash", input: "https://n01.example/api/soul-mesh/", want: "https://n01.example/api/soul-mesh"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := peerMeshEndpoint(tc.input); got != tc.want {
+				t.Fatalf("peerMeshEndpoint(%q) = %q, want %q", tc.input, got, tc.want)
+			}
+		})
+	}
+}
+
 func TestPeerClientRegisterPeerUpdatesCanonicalTable(t *testing.T) {
 	p, err := NewPeerClient(nil)
 	if err != nil {
