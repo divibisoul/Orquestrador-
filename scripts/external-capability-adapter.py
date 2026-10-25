@@ -71,17 +71,33 @@ def execute_agentscope(v,rt):
 def execute_browser(v,rt):
     task=str(v.get("task") or v.get("prompt") or "").strip()
     if not task: emit({"state":"BLOCKED","code":"BROWSER_USE_TASK_REQUIRED"},2)
-    if not os.environ.get("BROWSER_USE_API_KEY") and not os.environ.get("OPENAI_API_KEY"):
-        emit({"state":"BLOCKED","code":"BROWSER_USE_CREDENTIALS_REQUIRED"},2)
+    allowed_domains=v.get("allowed_domains") or v.get("allowedDomains")
+    if not isinstance(allowed_domains,list) or not allowed_domains or any(not isinstance(d,str) or not d.strip() for d in allowed_domains):
+        emit({"state":"BLOCKED","code":"BROWSER_USE_DOMAIN_ALLOWLIST_REQUIRED"},2)
+    prohibited_domains=v.get("prohibited_domains") or v.get("prohibitedDomains") or []
+    if not isinstance(prohibited_domains,list) or any(not isinstance(d,str) or not d.strip() for d in prohibited_domains):
+        emit({"state":"BLOCKED","code":"BROWSER_USE_PROHIBITED_DOMAINS_INVALID"},2)
+    if not os.environ.get("BROWSER_USE_API_KEY"):
+        emit({"state":"BLOCKED","code":"BROWSER_USE_API_KEY_REQUIRED"},2)
     try:
+        max_steps=max(1,min(20,int(v.get("max_steps") or v.get("maxSteps") or 10)))
         import asyncio
-        from browser_use import Agent, ChatBrowserUse
+        sys.path.insert(0,str(rt))
+        from browser_use import Agent, BrowserSession, ChatBrowserUse
         async def run():
-            agent=Agent(task=task,llm=ChatBrowserUse(model=v.get("model") or None) if v.get("model") else ChatBrowserUse())
-            result=await agent.run(max_steps=max(1,min(500,int(v.get("max_steps") or 50))))
-            final=getattr(result,"final_result",None)
-            return final() if callable(final) else str(result)
-        emit({"state":"PASS","provider":"browser-use","operation":"browser.execute","result":asyncio.run(run())})
+            browser=BrowserSession(
+                allowed_domains=[d.strip() for d in allowed_domains],
+                prohibited_domains=[d.strip() for d in prohibited_domains] or None,
+            )
+            try:
+                llm=ChatBrowserUse(model=v.get("model") or None) if v.get("model") else ChatBrowserUse()
+                agent=Agent(task=task,llm=llm,browser_session=browser)
+                result=await agent.run(max_steps=max_steps)
+                final=getattr(result,"final_result",None)
+                return final() if callable(final) else str(result)
+            finally:
+                await browser.kill()
+        emit({"state":"PASS","provider":"browser-use","operation":"browser.execute","allowed_domains":allowed_domains,"max_steps":max_steps,"result":asyncio.run(run())})
     except Exception as e: emit({"state":"BLOCKED","code":"BROWSER_USE_EXECUTION_BLOCKED","detail":str(e)},2)
 
 def execute_smolagents(v,rt):
@@ -113,7 +129,8 @@ def execute_microsoft_agent_framework(v,rt):
 
 def execute_openhands(v,rt):
     import urllib.request
-    base=str(v.get("base_url") or os.environ.get("SOUL_EXTERNAL_OPENHANDS_URL") or "").strip().rstrip("/")
+    # Endpoint configuration is operator-owned; request metadata cannot select a network destination.
+    base=str(os.environ.get("SOUL_EXTERNAL_OPENHANDS_URL") or "").strip().rstrip("/")
     conversation=str(v.get("conversation_id") or os.environ.get("SOUL_EXTERNAL_OPENHANDS_CONVERSATION_ID") or "").strip()
     prompt=str(v.get("prompt") or v.get("input") or "").strip()
     if not base or not conversation or not prompt:
@@ -133,11 +150,10 @@ def execute_letta(v,rt):
     agent=str(v.get("agent_id") or "").strip()
     prompt=str(v.get("prompt") or v.get("input") or "").strip()
     if not prompt: emit({"state":"BLOCKED","code":"LETTA_PROMPT_REQUIRED"},2)
+    if not agent:
+        emit({"state":"BLOCKED","code":"LETTA_AGENT_ID_REQUIRED"},2)
     binary=str(os.environ.get("SOUL_EXTERNAL_LETTA_BIN") or "letta")
-    args=[binary,"-p"]
-    if agent: args+=["--agent",agent]
-    else: args+=["--new-agent"]
-    args += [prompt]
+    args=[binary,"-p","--agent",agent,prompt]
     try:
         p=subprocess.run(args,text=True,capture_output=True,timeout=min(600,int(v.get("timeout_seconds") or 120)),env=os.environ.copy(),check=False)
         if p.returncode!=0: emit({"state":"BLOCKED","code":"LETTA_EXECUTION_BLOCKED","detail":p.stderr[-4000:]},2)
@@ -240,7 +256,8 @@ def execute(v,rt):
     if provider=="letta-code" and op=="memory.execute":
         execute_letta(v,rt)
     if provider=="superagi" and op=="agent.execute":
-        base=str(v.get("base_url") or os.environ.get("SOUL_EXTERNAL_SUPERAGI_URL") or "").strip().rstrip("/")
+        # Endpoint configuration is operator-owned; request metadata cannot select a network destination.
+        base=str(os.environ.get("SOUL_EXTERNAL_SUPERAGI_URL") or "").strip().rstrip("/")
         agent_id=str(v.get("agent_id") or os.environ.get("SOUL_EXTERNAL_SUPERAGI_AGENT_ID") or "").strip()
         api_key=str(os.environ.get("SOUL_EXTERNAL_SUPERAGI_API_KEY") or "").strip()
         if not base or not agent_id or not api_key:
