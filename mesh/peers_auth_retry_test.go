@@ -53,7 +53,7 @@ func signedPeerResponse(secret, messageID, correlation, kind, capability string,
 		"capability":      capability,
 		"payload":         payload,
 		"timestamp":       env.Timestamp,
-		"nonce":            env.Nonce,
+		"nonce":           env.Nonce,
 		"hmac":            env.HMAC,
 	}, nil
 }
