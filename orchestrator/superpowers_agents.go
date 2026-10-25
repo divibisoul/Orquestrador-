@@ -145,6 +145,11 @@ func superpowersAgentRoute(e *Engine) Handler {
 		if result.Metadata == nil {
 			result.Metadata = map[string]string{}
 		}
+		// Retain child execution evidence while the outer Submit returns under
+		// the originating request trace.
+		if strings.TrimSpace(result.TraceID) != "" {
+			result.Metadata["delegated_trace_id"] = result.TraceID
+		}
 		result.Metadata["parent_trace_id"] = m.TraceID
 		result.Metadata["superpowers_agent"] = agentID
 		result.Metadata["superpowers_skill_boundary"] = strings.Join(binding.Skills, ",")

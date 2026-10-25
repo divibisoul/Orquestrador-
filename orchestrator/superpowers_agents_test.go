@@ -108,11 +108,14 @@ func TestPrefrontalOptimizerAgentExecutesThroughNeuralExecutiveAndPreservesTrace
 	if result.Status != "ok" {
 		t.Fatalf("optimizer agent status=%q error=%q", result.Status, result.Error)
 	}
-	if result.TraceID == "" || result.TraceID == m.TraceID {
-		t.Fatalf("expected a distinct child execution trace: request=%q response=%q", m.TraceID, result.TraceID)
+	if result.TraceID == "" || result.TraceID != m.TraceID {
+		t.Fatalf("root trace was not preserved: request=%q response=%q", m.TraceID, result.TraceID)
 	}
 	if result.Metadata["parent_trace_id"] != m.TraceID {
 		t.Fatalf("parent trace linkage missing: request=%q metadata=%#v", m.TraceID, result.Metadata)
+	}
+	if child := result.Metadata["delegated_trace_id"]; child == "" || child == m.TraceID {
+		t.Fatalf("delegated execution trace missing or not distinct: root=%q metadata=%#v", m.TraceID, result.Metadata)
 	}
 	if result.CorrelationID != m.CorrelationID {
 		t.Fatalf("correlation not preserved: request=%q response=%q", m.CorrelationID, result.CorrelationID)
