@@ -108,7 +108,7 @@ jobs:
           print('GRF discovery: PASS')
           PY
 
-      - name: Assert 22-provider inventory and exact source states
+      - name: Assert 22 active providers, 10 projected sources, and exact source states
         run: |
           curl -fsS -H 'Authorization: Bearer e2e-n07-token-123456789' -H 'Content-Type: application/json' -X POST http://127.0.0.1:8080/v1/execute -d '{"operation":"external.federation.describe@1.0.0","metadata":{}}' | tee /tmp/federation.json
           python - <<'PY'
@@ -118,6 +118,12 @@ jobs:
           providers=raw['providers']
           assert raw['control_plane']=='N07'
           assert raw['provider_count']==22 and len(providers)==22
+          expansions=raw.get('expansion_providers', [])
+          assert raw.get('expansion_provider_count')==10 and len(expansions)==10
+          assert raw.get('declared_external_repository_count')==32
+          assert all(p.get('state')=='PROJECTED' and p.get('executionEnabled') is False and p.get('executionProven') is False and p.get('runtimeRouteOperations')==[] and len(p.get('meshMetadataOperations', []))==2 for p in expansions)
+          expansion_ids={p['id'] for p in expansions}
+          assert expansion_ids=={'fedml','hivemind','temporal','cognitive-workspace','ravana','ray','bijux-dag-runtime','ouro-loop','recuris','nats-go'}
           ids=[p['id'] for p in providers]
           assert len(set(ids))==22
           for p in providers:
@@ -136,7 +142,7 @@ jobs:
           counts={state:sum(p['sourceState']==state for p in providers) for state in ('PIN_MATCH','REVISION_MISMATCH','MISSING_WORKTREE')}
           enabled=sum(p['executionEnabled'] for p in providers)
           print(json.dumps({'providerInventory':'PASS','providerCount':len(providers),'sourceStates':counts,'executionEnabled':enabled,'runtimeExecutionProven':False},sort_keys=True))
-          print('22-provider inventory: PASS; source presence, exact pin, and execution enablement reported separately')
+          print('22 active providers + 10 projected metadata-only sources: PASS; source presence, exact pin, and execution enablement reported separately')
           PY
 
       - name: Execute full GRCE -> C1-C7-C1 with real SARA authority
