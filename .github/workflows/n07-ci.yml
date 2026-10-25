@@ -189,7 +189,8 @@ jobs:
           code=$?
           set -e
           test "$code" -eq 2
-          jq -e '.state == "BLOCKED" and .code == "SOUL_V2_EXPANSION_RUNTIME_NOT_BOUND" and .epistemic_state == "PROJECTED" and .execution_enabled == false and .execution_proven == false' /tmp/projected-source.json >/dev/null
+          cat /tmp/projected-source.json
+          jq -e '.state == "BLOCKED" and .code == "SOUL_V2_EXPANSION_RUNTIME_NOT_BOUND" and .epistemic_state == "PROJECTED" and .execution_enabled == false and .execution_proven == false and .runtime_route_operations == []' /tmp/projected-source.json >/dev/null
 
       - name: Assert declarative SOUL source
         run: |
