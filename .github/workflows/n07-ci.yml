@@ -325,8 +325,19 @@ jobs:
           curl -fsS             -H 'Authorization: Bearer ci'             -H 'Content-Type: application/json'             -X POST http://127.0.0.1:18082/execute             -d '{"operation":"external.langgraph.probe@1.0.0","metadata":{}}'             | tee /tmp/langgraph-probe.json
           # The Mesh envelope stores the adapter result as JSON text. Parse
           # that nested value rather than grepping escaped quotes in the outer JSON.
-          jq -e '(.metadata.external_result_json | fromjson) as $probe
-            | $probe.state == "PASS"
+          # Mesh adapter result metadata uses operation-specific *_json keys
+          # (for example federation_json or external_result_json). Resolve the
+          # LangGraph probe by its semantic provider identity, not one envelope key.
+          jq -e '(
+              .metadata
+              | to_entries
+              | map(select(.key | endswith("_json")))
+              | map(.value | try fromjson catch empty)
+              | map(select(type == "object" and .provider == "langgraph"))
+              | first
+            ) as $probe
+            | $probe != null
+              and $probe.state == "PASS"
               and $probe.provider == "langgraph"
               and $probe.source_present == true
               and $probe.source_integrity_only == true
