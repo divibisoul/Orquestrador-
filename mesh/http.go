@@ -148,7 +148,7 @@ func canonicalN01Bytes(w canonicalWireEnvelope, nonce string) ([]byte, error) {
 		Capability      string         `json:"capability"`
 		Payload         map[string]any `json:"payload"`
 		Timestamp       int64          `json:"timestamp"`
-		Transport       any            `json:"transport"`
+		Transport       any            `json:"transport,omitempty"`
 		Meta            map[string]any `json:"meta"`
 		Nonce           string         `json:"nonce"`
 	}{Protocol: w.Protocol, ContractVersion: w.ContractVersion, ID: canonicalID(w), CorrelationID: w.CorrelationID, Source: w.Source, Target: w.Target, Kind: canonicalKind(w), Capability: canonicalCapability(w), Payload: w.Payload, Timestamp: w.Timestamp, Transport: transport, Meta: w.Meta, Nonce: nonce}
