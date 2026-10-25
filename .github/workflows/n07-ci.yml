@@ -174,7 +174,7 @@ jobs:
       - name: Materialize top-level SOUL submodules without unsafe recursion
         run: node scripts/materialize-top-level-submodules.mjs
 
-      - name: Validate the external 31-source fan-out contracts
+      - name: Validate the external 32-source fan-out contracts
         run: |
           set -euo pipefail
           node scripts/validate-external-adapters.mjs
@@ -284,7 +284,7 @@ jobs:
             sleep 1
           done
           curl -fsS             -H 'Authorization: Bearer ci'             -H 'Content-Type: application/json'             -X POST http://127.0.0.1:18082/execute             -d '{"operation":"external.federation.describe@1.0.0","metadata":{}}'             | tee /tmp/external-federation.json
-          jq -e '.metadata.federation_json | fromjson | .provider_count == 22 and .expansion_provider_count == 9 and .declared_external_repository_count == 31 and .runtime_evidence == "UNVERIFIED" and (.expansion_providers | length) == 9 and all(.expansion_providers[]; .state == "PROJECTED" and .executionEnabled == false and .executionProven == false and (.meshMetadataOperations | length) == 2 and (.runtimeRouteOperations | length) == 0)' /tmp/external-federation.json >/dev/null
+          jq -e '.metadata.federation_json | fromjson | .provider_count == 22 and .expansion_provider_count == 10 and .declared_external_repository_count == 32 and .runtime_evidence == "UNVERIFIED" and (.expansion_providers | length) == 10 and all(.expansion_providers[]; .state == "PROJECTED" and .executionEnabled == false and .executionProven == false and (.meshMetadataOperations | length) == 2 and (.runtimeRouteOperations | length) == 0)' /tmp/external-federation.json >/dev/null
           curl -fsS             -H 'Authorization: Bearer ci'             -H 'Content-Type: application/json'             -X POST http://127.0.0.1:18082/execute             -d '{"operation":"external.federation.source.describe@1.0.0","metadata":{"provider":"ravana"}}'             | tee /tmp/ravana-describe.json
           jq -e '.metadata.external_result_json | fromjson | .provider == "ravana" and ((.state == "PROJECTED" or .state == "BLOCKED") and .executionEnabled == false and .executionProven == false and .runtimeEvidence == "UNVERIFIED")' /tmp/ravana-describe.json >/dev/null
           curl -fsS             -H 'Authorization: Bearer ci'             -H 'Content-Type: application/json'             -X POST http://127.0.0.1:18082/execute             -d '{"operation":"external.federation.source.probe@1.0.0","metadata":{"provider":"langgraph"}}'             | tee /tmp/langgraph-canonical-probe.json
