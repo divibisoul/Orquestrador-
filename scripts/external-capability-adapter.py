@@ -217,6 +217,19 @@ def execute_letta(v,rt):
         emit({"state":"PASS","provider":"letta-code","operation":"memory.execute","result":p.stdout[:MAX_OUTPUT]})
     except Exception as e: emit({"state":"BLOCKED","code":"LETTA_PROCESS_FAILED","detail":str(e)},2)
 
+
+def is_projected_expansion(provider):
+    try:
+        manifest=json.loads((REPO_ROOT/"integrations/external-adapters.json").read_text(encoding="utf-8"))
+    except Exception as e:
+        emit({"state":"BLOCKED","code":"EXTERNAL_ADAPTER_REGISTRY_UNREADABLE","detail":str(e)},2)
+    return any(
+        str(item.get("id") or "").strip().lower()==str(provider or "").strip().lower()
+        and str(item.get("state") or "").strip().upper()=="PROJECTED"
+        for item in manifest.get("expansion_providers",[])
+    )
+
+
 def execute(v,rt):
     provider=str(v.get("provider") or "").strip().lower()
     op=str(v.get("operation") or "").strip().lower()
