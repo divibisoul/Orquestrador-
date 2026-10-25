@@ -151,8 +151,7 @@ jobs:
           import json
           # A protected identity tag produces a real ARA finding. The canonical
           # SARA ARA path must annotate it without removing the source or its tag.
-          text = ("preservar a identidade protegida 🔒IDENTITY ao acrescentar evidência; "
-                  "manter autonomia, transparência, responsabilidade e proveniência.")
+          text = "Registrar evidência verificável com autonomia, responsabilidade e proveniência."
           body = {
               "operation": "grce.cycle.execute@2.0.0",
               "correlationId": "grce-full-e2e-001",
@@ -217,6 +216,32 @@ jobs:
           assert 'COMPLEXIDADE_EXCESSIVA' in evidence, result
           print('GRCE high-complexity input: BLOCKED / PRESERVED / REAL')
           PY
+
+      - name: Prove ETR rejects protected identity mutation
+        run: |
+          python - <<'PY'
+          import json
+          text = "preservar a identidade protegida 🔒IDENTITY ao acrescentar evidência; manter autonomia, transparência, responsabilidade e proveniência."
+          body = {
+              "operation": "grce.cycle.execute@2.0.0",
+              "correlationId": "grce-protected-identity-e2e-001",
+              "metadata": {
+                  "grf_sequence_index": "2",
+                  "grf_input_text": text
+              }
+          }
+          json.dump(body, open("/tmp/grce-protected-identity-request.json", "w"))
+          PY
+          set +e
+          http_status="$(curl -sS -o /tmp/grce-protected-identity.json -w '%{http_code}' -H 'Authorization: Bearer e2e-n07-token-123456789' -H 'Content-Type: application/json' -X POST http://127.0.0.1:8080/v1/execute --data-binary @/tmp/grce-protected-identity-request.json)"
+          curl_status=$?
+          set -e
+          echo "GRCE_PROTECTED_IDENTITY_HTTP_STATUS=${http_status}"
+          cat /tmp/grce-protected-identity.json
+          test "${curl_status}" -eq 0
+          test "${http_status}" = "400"
+          grep -q 'ETR_GATE' /tmp/grce-protected-identity.json
+          grep -q 'VIOLACAO_TAG_PROTEGIDA' /tmp/grce-protected-identity.json
 
       - name: Execute unified Nervo Vago path with ETR provenance
         run: |
