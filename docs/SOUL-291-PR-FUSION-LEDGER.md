@@ -55,6 +55,20 @@
 | SARA | [#43](https://github.com/divibisoul/SARA/pull/43), [#26](https://github.com/divibisoul/SARA/pull/26), [#15](https://github.com/divibisoul/SARA/pull/15) | #43 adiciona evidência real dos hooks GRCE; #26/#15 transportam contexto federado. A frente N07 #152 agora fixa explicitamente o SHA verde #43 `248e3ecab3675005fd1efb6ab3cdf2b15bc07d97` no teste real, em vez de depender de um snapshot SARA anterior sem essa ligação verificada. |
 | JEV — `jev-api` | [#4](https://github.com/divibisoul/jev-api/pull/4), [#5](https://github.com/divibisoul/jev-api/pull/5) | Manter JEV como serviço/guardrail próprio; só habilitar a integração após contrato, readiness e autenticação confirmados. Não reclassificar JEV como núcleo N08/N09. |
 
+### Snapshot CI transversal — evidência observada em 2026-10-25
+
+| Frente / SHA | Resultado medido | Ação / critério |
+|---|---|---|
+| N01 #108 — `842f53ddec9e3e3245a0cc061c2d7c70058585ec` | **FAIL** em `npm ci`: package.json e package-lock não sincronizados; `picomatch@2.3.2` no lock não satisfaz `picomatch@4.0.7`. Outros checks do núcleo passaram. | Regenerar o lockfile com npm, não editar a árvore de dependências por tentativa; executar `npm ci` e E2E de correlação no SHA novo. |
+| N02 #57 — `1b671751d13927cc78ccd7512e6382b245b06ece` | **PASS** nos quatro checks retornados: runner forensics, SOUL-25 capability upgrade, Mesh CI e integration CI. | Manter o SHA como evidência da frente de configuração E2E; verificar a cadeia #54→#55→#56→#57 antes de absorver. |
+| N03 #46 — `430a46222fc231f1bbed9be0644bedb84a952c9f` | **PASS** nos dois checks retornados: SOUL-25 capability upgrade e integration CI. | Preservar contrato de resposta Gemini TTS; isso não substitui E2E de transporte com N07. |
+| N04 #51 — `1ae2c6b6bf88232b2e01e32a81e69e478bdd1438` | **FAIL** no E2E bidirecional: build de N05 falha com TypeScript `noImplicitReturns` em `lib/soul-mesh/peer-client.ts:79`. A leitura do arquivo no SHA declarado aparenta ter `throw` terminal; há divergência a reconciliar entre log/checkout/arquivo, portanto a causa de código ainda não está fechada. | Verificar o conteúdo efetivamente compilado no checkout N05 do run #40198980235; corrigir a origem em N05, não criar workaround em N04. Reexecutar build de ambos os runtimes e o E2E HMAC bidirecional. |
+| N05 #53 — `bcfc31536edf670e2c4ef6f0b9c6361fe2cee30d` | **UNMEASURABLE** nesta consulta: não retornaram workflow runs para o head, embora o N04 E2E tenha tentado compilar esse SHA. | Ligar/confirmar gates de CI para o branch N05 e usar o build de produção do N04 como consumidor cruzado, sem tratar ausência de runs como PASS. |
+| N06 #30 — `f8f34cec02e4bcbe4d3f2fd256cc7b825c624952` | **PASS** nos quatro checks retornados: dependency review, channel contract, Mesh CI e validation diagnostics. | Usar como evidência parcial da ponte N06↔N07; falta ainda prova E2E de ponta a ponta no mapa global. |
+| SARA #43 — `248e3ecab3675005fd1efb6ab3cdf2b15bc07d97` | **PASS** nos sete checks retornados, incluindo SARA CI, validation, hook evidence, integration e RGO/GRCE. | Pin exato usado pelo N07 E2E atualizado no commit `3e54a8e08efa4a528f1010ce4a5b63cd1632d9e1`; a nova execução N07 ainda está pendente. |
+
+**Importante:** esses resultados pertencem aos SHAs listados. Não provam que a PR está integrada, que a branch base está verde ou que a capacidade está online em produção.
+
 ### Sequência de convergência entre repositórios
 
 1. **Contrato comum:** fechar Mesh 1.1.0, assinatura HMAC, operation identity, retry/idempotência e correlação/trace. Os testes de cada núcleo continuam pertencendo ao respectivo repositório.
