@@ -5,31 +5,9 @@ RUN apk add --no-cache ca-certificates git
 COPY go.mod go.sum ./
 RUN go mod download
 COPY . .
-RUN set -eu; \
-    expected="$(git ls-tree -r HEAD integrations/external | awk '$1 == "160000" && $4 != "integrations/external/recurs" { count++ } END { print count+0 }')"; \
-    test "$expected" -gt 0; \
-    count=0; first=1; \
-    { \
-      echo '{'; \
-      echo '  "schema_version": "soul.external.runtime-attestation.v1",'; \
-      echo '  "generated_from_materialized_git": true,'; \
-      echo '  "repositories": {'; \
-      for d in integrations/external/*; do \
-        id="$(basename "$d")"; \
-        if [ "$id" = "recurs" ]; then continue; fi; \
-        test -d "$d"; \
-        sha="$(git -C "$d" rev-parse HEAD)"; \
-        gitlink="$(git ls-tree HEAD -- "$d" | awk '{print $3}')"; \
-        test -n "$sha" && test "$gitlink" = "$sha"; \
-        if [ "$first" -eq 0 ]; then printf ',\n'; fi; \
-        printf '    "%s": "%s"' "$id" "$sha"; \
-        first=0; count=$((count+1)); \
-      done; \
-      echo; \
-      echo '  }'; \
-      echo '}'; \
-      test "$count" -eq "$expected"; \
-    } > config/soul-external-runtime-attestation.json
+RUN test -s config/soul-external-runtime-attestation.json \
+    && grep -q '"schema_version": "soul.external.runtime-attestation.v1"' config/soul-external-runtime-attestation.json \
+    && grep -q '"generated_from_materialized_git": true' config/soul-external-runtime-attestation.json
 RUN CGO_ENABLED=0 go build -trimpath -ldflags='-s -w' -o /out/n07 ./cmd/nexus
 RUN GOBIN=/out go install github.com/storacha/guppy@v0.7.0
 

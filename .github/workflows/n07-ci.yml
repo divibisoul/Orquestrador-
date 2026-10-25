@@ -18,6 +18,7 @@ on:
       - 'scripts/metagpt_runner.py'
       - 'scripts/validate-soul-external-submodules.mjs'
       - 'scripts/materialize-top-level-submodules.mjs'
+      - 'scripts/generate-external-runtime-attestation.mjs'
       - 'integrations/external-adapters.json'
       - 'integrations/external-capabilities.json'
       - 'integrations/external/**'
@@ -40,6 +41,7 @@ on:
       - 'scripts/metagpt_runner.py'
       - 'scripts/validate-soul-external-submodules.mjs'
       - 'scripts/materialize-top-level-submodules.mjs'
+      - 'scripts/generate-external-runtime-attestation.mjs'
       - 'scripts/validate-external-adapters.mjs'
       - 'scripts/validate-external-capability-ownership.mjs'
       - 'scripts/validate-soul-29-grf.mjs'
@@ -253,6 +255,9 @@ jobs:
 
       - name: Materialize top-level SOUL submodules without unsafe recursion
         run: node scripts/materialize-top-level-submodules.mjs
+
+      - name: Generate and verify source-pin attestation before Docker context packaging
+        run: node scripts/generate-external-runtime-attestation.mjs
 
       - name: Build production image
         run: docker build --pull --tag n07-orquestrador:ci .

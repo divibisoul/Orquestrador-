@@ -1,0 +1,19 @@
+# Build-pin attestation is generated before Docker receives a context; Git object databases
+# and mutable submodule checkout metadata are never required inside the production image.
+.git
+**/.git
+**/.git/**
+**/.gitmodules
+
+# Local development and test caches from the public upstream repositories.
+**/node_modules
+**/.venv
+**/venv
+**/__pycache__
+**/*.pyc
+**/*.pyo
+**/.pytest_cache
+**/.mypy_cache
+**/.ruff_cache
+**/.tox
+**/.cache
