@@ -347,6 +347,7 @@ def execute(v,rt):
             "epistemic_state":"PROJECTED",
             "execution_enabled":False,
             "execution_proven":False,
+            "runtime_route_operations":[],
         },2)
 
     if op.endswith(".describe"):
@@ -361,6 +362,7 @@ def execute(v,rt):
                 "execution_enabled":False,
                 "execution_proven":False,
                 "epistemic_state":"PROJECTED",
+                "runtime_route_operations":[],
                 "reason":"pinned public source presence does not prove a native adapter or live runtime",
             },2)
         emit({
