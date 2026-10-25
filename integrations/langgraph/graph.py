@@ -140,12 +140,18 @@ def _call_n07(task: dict[str, Any]) -> dict[str, Any]:
         raise RuntimeError("N07 response has no textual assistant content")
 
     metadata = decoded.get("metadata")
+    if not isinstance(metadata, dict):
+        raise RuntimeError("N07 response metadata is missing")
+    expected_correlation = str(task.get("correlationId") or f"langgraph-{task['id']}")
+    returned_correlation = str(metadata.get("correlation_id") or "").strip()
+    if not returned_correlation or returned_correlation != expected_correlation:
+        raise RuntimeError("N07 response correlation ID mismatch")
     return {
         "id": task["id"],
         "status": "routed",
         "text": content,
-        "metadata": metadata if isinstance(metadata, dict) else {},
-        "correlationId": str(task.get("correlationId") or f"langgraph-{task['id']}"),
+        "metadata": metadata,
+        "correlationId": returned_correlation,
     }
 
 
