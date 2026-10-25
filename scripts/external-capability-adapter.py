@@ -389,6 +389,7 @@ if str(v.get("mode") or "probe").strip().lower()=="probe":
             "execution_enabled":False,
             "execution_proven":False,
             "epistemic_state":"PROJECTED",
+            "runtime_route_operations":[],
             "root":str(rt),
         },2)
     emit({
