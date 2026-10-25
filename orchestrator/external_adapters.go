@@ -362,6 +362,10 @@ func inspectAttestedExternalSource(root, expectedRevision, attestationPath strin
 		observation.State = "ATTESTATION_SCHEMA_UNSUPPORTED"
 		return observation
 	}
+	if !attestation.GeneratedFromMaterializedGit {
+		observation.State = "ATTESTATION_UNTRUSTED"
+		return observation
+	}
 	observed := strings.ToLower(strings.TrimSpace(attestation.Repositories[filepath.Base(filepath.Clean(root))]))
 	if !isGitRevision(observed) {
 		observation.State = "ATTESTATION_REVISION_MISSING"
