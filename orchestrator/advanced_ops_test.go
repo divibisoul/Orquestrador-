@@ -42,6 +42,16 @@ func TestSOULTopologyExposesAllSixOtherNucleiBidirectionally(t *testing.T) {
 	if !ok {
 		t.Fatalf("N07 declared operations are missing: %#v", top["n07_declared_operations"])
 	}
+	hasDescribe := false
+	for _, advertised := range declared {
+		if advertised == "mesh.describe" {
+			hasDescribe = true
+			break
+		}
+	}
+	if !hasDescribe {
+		t.Error("N07 declared operation catalog must include the shared mesh.describe bootstrap")
+	}
 	for _, operation := range canonicalExternalMeshOperations {
 		found := false
 		for _, advertised := range declared {
