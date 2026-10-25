@@ -149,13 +149,44 @@ def execute(v,rt):
     op=str(v.get("operation") or "").strip().lower()
     if provider=="superpowers" and op=="skills.read": read_skill(rt,v)
     if provider=="langgraph" and op=="workflow.invoke":
+        # Never report PASS for an identity graph that merely echoes the input.
+        # Reuse SOUL's real decompose -> route -> aggregate bridge, which calls
+        # N07's authenticated ingress and returns a correlated Mesh-backed result.
+        correlation=str(v.get("correlationId") or v.get("correlation_id") or v.get("request_id") or "").strip()
+        if not correlation:
+            emit({"state":"BLOCKED","code":"LANGGRAPH_CORRELATION_REQUIRED"},2)
+        if not os.environ.get("N07_APP_TOKEN","").strip():
+            emit({"state":"BLOCKED","code":"LANGGRAPH_N07_APP_TOKEN_REQUIRED"},2)
+        raw_tasks=v.get("tasks")
+        if raw_tasks is None:
+            prompt=str(v.get("prompt") or v.get("input") or "").strip()
+            if not prompt:
+                emit({"state":"BLOCKED","code":"LANGGRAPH_TASKS_OR_PROMPT_REQUIRED"},2)
+            tasks=[{"id":str(v.get("task_id") or correlation),"prompt":prompt,"model":str(v.get("model") or "soul-auto")}]
+        elif isinstance(raw_tasks,list) and raw_tasks:
+            tasks=raw_tasks
+        else:
+            emit({"state":"BLOCKED","code":"LANGGRAPH_TASKS_INVALID"},2)
+        bridge=pathlib.Path(__file__).resolve().parents[1]/"integrations"/"langgraph"
+        if not (bridge/"graph.py").is_file():
+            emit({"state":"BLOCKED","code":"LANGGRAPH_SOUL_BRIDGE_NOT_AVAILABLE"},2)
         try:
-            from langgraph.graph import END, START, StateGraph
-            g=StateGraph(dict)
-            g.add_node("soul",lambda s:{"soul_output":s.get("input")})
-            g.add_edge(START,"soul"); g.add_edge("soul",END)
-            emit({"state":"PASS","provider":provider,"operation":op,"result":g.compile().invoke({"input":v.get("input") or v.get("prompt") or ""})})
-        except Exception as e: emit({"state":"BLOCKED","code":"LANGGRAPH_EXECUTION_BLOCKED","detail":str(e)},2)
+            from importlib.metadata import version
+            installed_version=version("langgraph")
+            if installed_version!="1.2.12":
+                emit({"state":"BLOCKED","code":"LANGGRAPH_PACKAGE_VERSION_MISMATCH","expected":"1.2.12","actual":installed_version},2)
+            sys.path.insert(0,str(bridge))
+            from graph import GRAPH
+            result=GRAPH.invoke({"tasks":tasks,"correlationId":correlation})
+            aggregate=result.get("aggregate") if isinstance(result,dict) else None
+            routed=aggregate.get("results") if isinstance(aggregate,dict) else None
+            if not isinstance(routed,list) or not routed or aggregate.get("status")!="completed":
+                emit({"state":"BLOCKED","code":"LANGGRAPH_RESULT_INVALID"},2)
+            if any(not isinstance(item,dict) or item.get("status")!="routed" or item.get("correlationId")!=correlation for item in routed):
+                emit({"state":"BLOCKED","code":"LANGGRAPH_CORRELATION_OR_ROUTE_INVALID"},2)
+            emit({"state":"PASS","provider":provider,"operation":op,"runtime_package":"langgraph==1.2.12","correlationId":correlation,"result":aggregate})
+        except Exception as e:
+            emit({"state":"BLOCKED","code":"LANGGRAPH_EXECUTION_BLOCKED","detail":str(e)},2)
     if provider=="crewai" and op=="team.execute":
         run_script("crewai_runner.py",{"goal":v.get("goal") or v.get("prompt"),"roles":v.get("roles") or ["Planner","Executor"],"root":str(rt),"maxRounds":v.get("maxRounds") or 3})
     if provider=="metagpt" and op=="team.execute":
