@@ -216,7 +216,12 @@ func (g *HTTPGateway) respond(w http.ResponseWriter, status int, in protocol.Mes
 	timestamp := time.Now().UnixMilli()
 	response := map[string]any{"protocol": "soul-mesh/1", "contractVersion": protocol.SoulMeshContractVersion, "id": messageID, "correlationId": in.CorrelationID, "source": "N07", "target": in.Source, "kind": kind, "capability": capability, "payload": payload, "timestamp": timestamp}
 	if g.Secret != "" {
-		legacy := protocol.MeshEnvelope{Version: protocol.SoulMeshVersion, ContractVersion: protocol.SoulMeshContractVersion, MessageID: messageID, Source: "N07", Target: in.Source, Timestamp: timestamp, Nonce: protocol.NewTraceID(), CorrelationID: in.CorrelationID, Type: typ, Payload: map[string]any{"capability": capability, "payload": payload}}
+		nonce, err := protocol.NewSecureNonce()
+		if err != nil {
+			writeMeshJSON(w, http.StatusInternalServerError, map[string]any{"error": "response signing nonce generation failed"})
+			return
+		}
+		legacy := protocol.MeshEnvelope{Version: protocol.SoulMeshVersion, ContractVersion: protocol.SoulMeshContractVersion, MessageID: messageID, Source: "N07", Target: in.Source, Timestamp: timestamp, Nonce: nonce, CorrelationID: in.CorrelationID, Type: typ, Payload: map[string]any{"capability": capability, "payload": payload}}
 		if err := protocol.SignHMAC(&legacy, g.Secret); err != nil {
 			writeMeshJSON(w, http.StatusInternalServerError, map[string]any{"error": "response signing failed"})
 			return

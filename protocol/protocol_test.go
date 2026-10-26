@@ -1,9 +1,31 @@
 package protocol
 
 import (
+	"encoding/hex"
 	"testing"
 	"time"
 )
+
+func TestNewSecureNonceUsesCryptographicRandomBytes(t *testing.T) {
+	seen := make(map[string]struct{}, 32)
+	for i := 0; i < 32; i++ {
+		nonce, err := NewSecureNonce()
+		if err != nil {
+			t.Fatalf("secure nonce generation failed: %v", err)
+		}
+		decoded, err := hex.DecodeString(nonce)
+		if err != nil {
+			t.Fatalf("nonce is not hexadecimal: %q: %v", nonce, err)
+		}
+		if len(decoded) != 16 || len(nonce) != 32 {
+			t.Fatalf("nonce length invalid: text=%d bytes=%d", len(nonce), len(decoded))
+		}
+		if _, exists := seen[nonce]; exists {
+			t.Fatalf("duplicate nonce returned: %s", nonce)
+		}
+		seen[nonce] = struct{}{}
+	}
+}
 
 func TestProtocol(t *testing.T) {
 	m := NewMessage("N01", "N07", "command", "compute.execute", []float64{1, 2})

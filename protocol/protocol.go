@@ -40,6 +40,16 @@ type Result struct {
 	Error         string            `json:"error,omitempty"`
 }
 
+// NewSecureNonce generates a 128-bit cryptographic nonce for authenticated Mesh
+// envelopes. Unlike a trace ID, a nonce must never fall back to clock-based entropy.
+func NewSecureNonce() (string, error) {
+	b := make([]byte, 16)
+	if _, err := rand.Read(b); err != nil {
+		return "", fmt.Errorf("secure nonce generation failed: %w", err)
+	}
+	return hex.EncodeToString(b), nil
+}
+
 func NewTraceID() string {
 	b := make([]byte, 16)
 	if _, err := rand.Read(b); err != nil {

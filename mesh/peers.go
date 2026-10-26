@@ -386,7 +386,10 @@ func (p *PeerClient) call(ctx context.Context, nucleus, capability string, paylo
 			return nil, err
 		}
 		messageID := protocol.NewTraceID()
-		nonce := protocol.NewTraceID()
+		nonce, err := protocol.NewSecureNonce()
+		if err != nil {
+			return nil, fmt.Errorf("secure Mesh nonce generation failed: %w", err)
+		}
 		wirePayload := payload
 		if wirePayload == nil {
 			wirePayload = map[string]any{}
