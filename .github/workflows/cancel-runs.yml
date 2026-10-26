@@ -1,0 +1,90 @@
+name: SOUL Queue Recovery
+
+on:
+  push:
+    branches:
+      - ops/cancel-runs-mesh-20261026
+  workflow_dispatch:
+
+permissions:
+  actions: write
+  contents: read
+
+concurrency:
+  group: soul-queue-recovery-${{ github.repository }}
+  cancel-in-progress: false
+
+jobs:
+  cancel-queued-and-in-progress:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Cancel all other queued and in-progress runs in this repository
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          api="${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/actions/runs"
+          current="${GITHUB_RUN_ID}"
+          ids=()
+
+          # Collect IDs before cancelling so pagination cannot skip entries as the
+          # active-run list shrinks. This workflow is intentionally repo-scoped:
+          # the default GITHUB_TOKEN cannot safely cancel runs in sibling repos.
+          for status in queued in_progress; do
+            page=1
+            while true; do
+              payload="$(curl --fail --silent --show-error \
+                -H "Authorization: Bearer ${GH_TOKEN}" \
+                -H "Accept: application/vnd.github+json" \
+                "${api}?per_page=100&page=${page}&status=${status}")"
+              count="$(jq '.workflow_runs | length' <<< "${payload}")"
+              if [[ "${count}" -eq 0 ]]; then
+                break
+              fi
+              while IFS= read -r id; do
+                ids+=("${id}")
+              done < <(jq -r '.workflow_runs[].id' <<< "${payload}")
+              if [[ "${count}" -lt 100 ]]; then
+                break
+              fi
+              page=$((page + 1))
+            done
+          done
+
+          cancelled=0
+          skipped_self=0
+          races=0
+          failures=0
+          while IFS= read -r id; do
+            [[ -z "${id}" ]] && continue
+            if [[ "${id}" == "${current}" ]]; then
+              skipped_self=$((skipped_self + 1))
+              continue
+            fi
+            status_code="$(curl --silent --show-error -o /dev/null -w '%{http_code}' \
+              -X POST \
+              -H "Authorization: Bearer ${GH_TOKEN}" \
+              -H "Accept: application/vnd.github+json" \
+              "${api}/${id}/cancel")"
+            case "${status_code}" in
+              202|204)
+                echo "CANCEL_REQUESTED run_id=${id}"
+                cancelled=$((cancelled + 1))
+                ;;
+              409|422)
+                echo "ALREADY_FINISHED_OR_NOT_CANCELLABLE run_id=${id} http=${status_code}"
+                races=$((races + 1))
+                ;;
+              *)
+                echo "CANCEL_FAILED run_id=${id} http=${status_code}"
+                failures=$((failures + 1))
+                ;;
+            esac
+          done < <(printf '%s\n' "${ids[@]}" | sort -u)
+
+          echo "SUMMARY repo=${GITHUB_REPOSITORY} cancel_requested=${cancelled} skipped_current_run=${skipped_self} races=${races} failures=${failures}"
+          if [[ "${failures}" -gt 0 ]]; then
+            exit 1
+          fi
