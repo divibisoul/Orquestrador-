@@ -133,6 +133,9 @@ func superpowersAgentRoute(e *Engine) Handler {
 		if result.Metadata == nil {
 			result.Metadata = map[string]string{}
 		}
+		result.Metadata["parent_trace_id"] = m.TraceID
+		result.Metadata["delegated_trace_id"] = result.TraceID
+		result.Metadata["delegated_correlation_id"] = result.CorrelationID
 		result.Metadata["superpowers_agent"] = agentID
 		result.Metadata["superpowers_skill_boundary"] = strings.Join(binding.Skills, ",")
 		return result, nil
@@ -150,8 +153,9 @@ func superpowersDelegationMetadata(m protocol.Message) map[string]string {
 	for key, value := range m.Metadata {
 		out[key] = value
 	}
+	delete(out, "trace_id")
 	if traceID := strings.TrimSpace(m.TraceID); traceID != "" {
-		out["trace_id"] = traceID
+		out["parent_trace_id"] = traceID
 	}
 	if correlationID := strings.TrimSpace(m.CorrelationID); correlationID != "" {
 		out["correlation_id"] = correlationID

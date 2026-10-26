@@ -15,8 +15,11 @@ func TestSuperpowersDelegationMetadataPreservesTraceAndCorrelation(t *testing.T)
 	m.Metadata["agent_id"] = "superpowers.cortex-orbital-supergpu"
 
 	got := superpowersDelegationMetadata(m)
-	if got["trace_id"] != m.TraceID {
-		t.Fatalf("delegated trace id mismatch: got=%q want=%q", got["trace_id"], m.TraceID)
+	if got["trace_id"] != "" {
+		t.Fatalf("nested call must generate its own trace id, got parent trace reused: %q", got["trace_id"])
+	}
+	if got["parent_trace_id"] != m.TraceID {
+		t.Fatalf("parent trace link mismatch: got=%q want=%q", got["parent_trace_id"], m.TraceID)
 	}
 	if got["correlation_id"] != m.CorrelationID {
 		t.Fatalf("delegated correlation id mismatch: got=%q want=%q", got["correlation_id"], m.CorrelationID)

@@ -125,6 +125,16 @@ func TestMeshPrefrontalAgentRoutePreservesTrace(t *testing.T) {
 	if metadata["simulation_is_not_hardware"] != "true" {
 		t.Fatalf("ORBITAL_SIMULATION_BOUNDARY_MISSING: %#v", metadata)
 	}
-	t.Logf("REAL_AGENT_MESH_TRACE_ID=%s CORRELATION_ID=%s AGENT=%s", traceID, correlationID, metadata["superpowers_agent"])
+	if metadata["parent_trace_id"] != traceID {
+		t.Fatalf("AGENT_PARENT_TRACE_NOT_PRESERVED expected=%s got=%#v", traceID, metadata["parent_trace_id"])
+	}
+	delegatedTrace, ok := metadata["delegated_trace_id"].(string)
+	if !ok || delegatedTrace == "" || delegatedTrace == traceID {
+		t.Fatalf("AGENT_CHILD_TRACE_NOT_UNIQUE parent=%s child=%#v", traceID, metadata["delegated_trace_id"])
+	}
+	if metadata["delegated_correlation_id"] != correlationID {
+		t.Fatalf("AGENT_CORRELATION_NOT_PRESERVED expected=%s got=%#v", correlationID, metadata["delegated_correlation_id"])
+	}
+	t.Logf("REAL_AGENT_MESH_TRACE_ID=%s DELEGATED_TRACE_ID=%s CORRELATION_ID=%s AGENT=%s", traceID, delegatedTrace, correlationID, metadata["superpowers_agent"])
 	t.Logf("AGENT_HOPS_PASS=N01-envelope>N07-Mesh>superpowers.agent.route>prefrontal.orbital.evaluate>neural.forward>Cortex-commit>N01-response")
 }
