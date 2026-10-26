@@ -103,7 +103,7 @@ func startLocalModelWorker(t *testing.T) *localModelWorker {
 		_ = cmd.Wait()
 		t.Fatalf("unexpected pinned model revision: %s", ready.ModelRevisionSHA)
 	}
-	if ready.LangGraphVersion == "" || ready.Checkpointer != "MemorySaver" {
+	if ready.LangGraphVersion == "" || ready.Checkpointer != "InMemorySaver" {
 		_ = cmd.Process.Kill()
 		_ = cmd.Wait()
 		t.Fatalf("LangGraph/checkpointer runtime is not ready: %+v", ready)
@@ -150,7 +150,7 @@ func registerMeshModelCapability(t *testing.T, h *HTTPGateway, worker *localMode
 		if result.TraceID != message.TraceID || result.CorrelationID != message.CorrelationID {
 			return protocol.Result{TraceID: message.TraceID, CorrelationID: message.CorrelationID, Status: "error", Error: "LOCAL_MODEL_TRACE_MISMATCH"}, fmt.Errorf("worker trace/correlation mismatch")
 		}
-		if mode == "graph" && (!result.CheckpointWritten || result.Checkpointer != "MemorySaver" || len(result.GraphNodes) != 2) {
+		if mode == "graph" && (!result.CheckpointWritten || result.Checkpointer != "InMemorySaver" || len(result.GraphNodes) != 2) {
 			return protocol.Result{TraceID: message.TraceID, CorrelationID: message.CorrelationID, Status: "error", Error: "LANGGRAPH_CHECKPOINT_NOT_PROVEN"}, fmt.Errorf("LangGraph checkpoint or graph nodes missing")
 		}
 		preview, _ := json.Marshal(result.OutputPreview)
@@ -216,7 +216,7 @@ func requestMeshModel(t *testing.T, server *httptest.Server, capability, mode st
 	if payload["execution_mode"] != mode {
 		t.Fatalf("mode mismatch: expected %s got %#v", mode, payload["execution_mode"])
 	}
-	if mode == "graph" && (payload["checkpoint_written"] != "true" || payload["checkpointer"] != "MemorySaver") {
+	if mode == "graph" && (payload["checkpoint_written"] != "true" || payload["checkpointer"] != "InMemorySaver") {
 		t.Fatalf("LangGraph checkpointer not proven: %#v", payload)
 	}
 	preview := []float64{}
@@ -316,7 +316,7 @@ func TestMeshLangGraphTransformersSynergy10x10(t *testing.T) {
 		"tokenizer": baseline[0].Tokenizer,
 		"torch_version": baseline[0].TorchVersion,
 		"transformers_version": baseline[0].TransformersVersion,
-		"checkpointer": "MemorySaver",
+		"checkpointer": "LangGraph MemorySaver (runtime type InMemorySaver)",
 		"warmups_each_path_excluded": 2,
 		"baseline_samples": baseline,
 		"integrated_samples": integrated,
