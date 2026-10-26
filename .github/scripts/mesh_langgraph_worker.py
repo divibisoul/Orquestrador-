@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Persistent, test-only Mesh sidecar for real local Transformers + LangGraph inference."""
 import hashlib
+import importlib.metadata
 import json
 import sys
 import time
@@ -135,7 +136,7 @@ print(json.dumps({
     "backend": "PyTorch CPU",
     "task": "feature-extraction",
     "tokenizer": type(extractor.tokenizer).__name__,
-    "langgraph_version": __import__("langgraph").__version__,
+    "langgraph_version": importlib.metadata.version("langgraph"),
     "checkpointer": type(checkpointer).__name__,
 }, separators=(",", ":")), flush=True)
 
