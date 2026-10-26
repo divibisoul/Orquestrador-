@@ -34,42 +34,15 @@ jobs:
         run: go test ./neural ./prefrontal -count=1
       - name: Verify Mesh authentication and trace continuity
         run: go test ./mesh -run 'TestHTTPGatewayHMACAuthentication|TestHTTPGatewayPreservesTraceIdentity|TestMeshRoutesIntoPrefrontalExecutiveAdmission' -count=1 -v
-
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-          cache: 'pip'
       - name: Install pinned CPU inference and LangGraph test runtime
         run: |
           python -m pip install --no-cache-dir --index-url https://download.pytorch.org/whl/cpu 'torch==2.8.0+cpu'
           python -m pip install --no-cache-dir 'transformers==4.57.1' 'huggingface_hub==0.36.0' 'safetensors==0.6.2' 'langgraph==1.2.17'
       - name: Run 10+10 same-runner Mesh and LangGraph synergy benchmark
-        run: go test ./mesh -run '^TestMeshLangGraphTransformersSynergy10x10
-  group-f-transformers-pytorch-cpu:
-    name: Group F — isolated Transformers and PyTorch CPU inference
-    runs-on: ubuntu-latest
-    timeout-minutes: 25
-    container:
-      image: python:3.12-slim
-    env:
-      HF_HOME: /tmp/soul-hf-cache
-      TOKENIZERS_PARALLELISM: 'false'
-    steps:
-      - name: Install checkout prerequisites
-        run: |
-          apt-get update
-          apt-get install -y --no-install-recommends git ca-certificates
-          rm -rf /var/lib/apt/lists/*
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 1
-      - name: Install pinned CPU-only inference runtime
-        run: |
-          python -m pip install --no-cache-dir --index-url https://download.pytorch.org/whl/cpu 'torch==2.8.0+cpu'
-          python -m pip install --no-cache-dir 'transformers==4.57.1' 'huggingface_hub==0.36.0' 'safetensors==0.6.2'
-      - name: Run real DistilBERT feature extraction and report model SHA and latency
-        run: python .github/scripts/group_f_local_inference.py
- -count=1 -v
+        run: go test ./mesh -run '^TestMeshLangGraphTransformersSynergy10x10$' -count=1 -v
 
   group-f-transformers-pytorch-cpu:
     name: Group F — isolated Transformers and PyTorch CPU inference
