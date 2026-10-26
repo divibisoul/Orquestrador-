@@ -15,4 +15,6 @@ jobs:
         with:
           node-version: 22
       - run: node scripts/validate-external-capability-ownership.mjs
-      - run: node -e "const c=require('./integrations/resident-agent-contract.json'); if(c.transport.protocol!=='soul-mesh/1'||c.transport.contractVersion!=='1.1.0'||c.interface.describe!=='mesh.resident.describe@1.0.0') process.exit(1); console.log('resident contract: VALID')"
+      - name: Validate resident contract
+        run: |
+          node -e "const c=require('./integrations/resident-agent-contract.json'); if(c.transport.protocol!=='soul-mesh/1'||c.transport.contractVersion!=='1.1.0'||c.interface.describe!=='mesh.resident.describe@1.0.0') process.exit(1); console.log('resident contract valid')"
