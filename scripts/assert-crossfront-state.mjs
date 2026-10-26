@@ -16,7 +16,11 @@ for (const id of nuclei) {
   if (row.source === 'not-found' || row.state !== 'OBSERVED') {
     throw new Error('CROSSFRONT_EVIDENCE_NOT_OBSERVED:' + id + ':' + row.state + ':' + row.source);
   }
-  if (row.mesh !== true) throw new Error('CROSSFRONT_MESH_DISCOVERY_FAILED:' + id);
+  if (row.mesh !== true) throw new Error('CROSSFRONT_MESH_SOURCE_MARKER_MISSING:' + id);
+  if (row.evidenceKind !== 'STATIC_SOURCE_SCAN') throw new Error('CROSSFRONT_EVIDENCE_KIND_INVALID:' + id);
+  if (row.runtimeState !== 'UNMEASURABLE' || row.runtimeProof !== false) {
+    throw new Error('CROSSFRONT_RUNTIME_PROOF_OVERSTATED:' + id);
+  }
   if (row.contract !== expectedContract) {
     throw new Error('CROSSFRONT_CONTRACT_MISMATCH:' + id + ':' + row.contract + ':expected:' + expectedContract);
   }
@@ -27,6 +31,6 @@ console.log(JSON.stringify({
   expectedContract,
   nuclei: Object.fromEntries(nuclei.map((id) => {
     const row = rows.get(id);
-    return [id, { mesh: row.mesh, contract: row.contract, source: row.source, state: row.state }];
+    return [id, { meshSourceMarker: row.mesh, contract: row.contract, source: row.source, sourceState: row.state, runtimeState: row.runtimeState, runtimeProof: row.runtimeProof }];
   })),
 }, null, 2));
