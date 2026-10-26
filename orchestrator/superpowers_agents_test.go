@@ -42,6 +42,18 @@ func TestSuperpowersAgentBindingsCoverRequestedCrossfronts(t *testing.T) {
 				t.Fatalf("%s missing target %s in %v", b.ID, target, b.Targets)
 			}
 		}
+		if b.ID == "superpowers.prefrontal-optimizer" {
+			foundBridge := false
+			for _, operation := range b.Operations {
+				if operation == "neural.prefrontal.optimize@1.0.0" {
+					foundBridge = true
+					break
+				}
+			}
+			if !foundBridge {
+				t.Fatal("prefrontal specialist must be able to delegate to N01's native Mesh capability")
+			}
+		}
 		if !b.FailClosed {
 			t.Fatalf("%s must fail closed", b.ID)
 		}

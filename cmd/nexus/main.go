@@ -162,6 +162,9 @@ func main() {
 	if err := orchestrator.RegisterExternalPlanningSourceOperation(e); err != nil {
 		log.Fatal(err)
 	}
+	if err := registerN01PrefrontalBridge(e, peerClient); err != nil {
+		log.Fatal(err)
+	}
 	if err := orchestrator.RegisterSuperpowersAgentOperations(e); err != nil {
 		log.Fatal(err)
 	}
