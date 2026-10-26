@@ -31,6 +31,7 @@ func TestMeshPrefrontalTraceCorrelationPreserved(t *testing.T) {
 	wire := canonicalRequest("request", "prefrontal.admission", correlationID, []float64{1, 2, 3, 4, 5, 6, 7, 8})
 	traceID := wire["id"].(string)
 	wire["metadata"] = map[string]string{
+		"trace_id":       traceID,
 		"candidate_json": string(candidate),
 		"task_id":        candidateID,
 	}
@@ -96,6 +97,7 @@ func TestMeshPrefrontalAgentRoutePreservesTrace(t *testing.T) {
 	wire := canonicalRequest("request", orchestrator.SuperpowersAgentRouteOperation, correlationID, []float64{1, 2, 3, 4, 5, 6, 7, 8})
 	traceID := wire["id"].(string)
 	wire["metadata"] = map[string]string{
+		"trace_id":       traceID,
 		"agent_id":       "superpowers.cortex-orbital-supergpu",
 		"operation":      "prefrontal.orbital.evaluate@1.0.0",
 		"workloads_json": string(workloads),
