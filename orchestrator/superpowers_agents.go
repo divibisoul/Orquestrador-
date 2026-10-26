@@ -122,7 +122,8 @@ func superpowersAgentRoute(e *Engine) Handler {
 		if !allowed {
 			return superpowersAgentFail(m, "SUPERPOWERS_AGENT_OPERATION_NOT_BOUND", fmt.Errorf("%s -> %s", agentID, operation))
 		}
-		result, err := e.Execute(ctx, operation, m.Payload, m.Metadata)
+		delegationMetadata := superpowersDelegationMetadata(m)
+		result, err := e.Execute(ctx, operation, m.Payload, delegationMetadata)
 		if err != nil {
 			return superpowersAgentFail(m, "SUPERPOWERS_AGENT_DELEGATE_FAILED", err)
 		}
@@ -141,3 +142,20 @@ func superpowersAgentRoute(e *Engine) Handler {
 func superpowersAgentFail(m protocol.Message, code string, err error) (protocol.Result, error) {
 	return protocol.Result{TraceID: m.TraceID, CorrelationID: m.CorrelationID, Source: "N07.superpowers", Target: m.Source, Status: "error", Error: code + ":" + err.Error()}, err
 }
+ 
+// superpowersDelegationMetadata preserves the parent's trace identity across
+// the agent-to-capability hop while keeping the original metadata immutable.
+func superpowersDelegationMetadata(m protocol.Message) map[string]string {
+	out := make(map[string]string, len(m.Metadata)+2)
+	for key, value := range m.Metadata {
+		out[key] = value
+	}
+	if traceID := strings.TrimSpace(m.TraceID); traceID != "" {
+		out["trace_id"] = traceID
+	}
+	if correlationID := strings.TrimSpace(m.CorrelationID); correlationID != "" {
+		out["correlation_id"] = correlationID
+	}
+	return out
+}
+

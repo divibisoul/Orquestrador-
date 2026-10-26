@@ -27,7 +27,39 @@ jobs:
           go-version: '1.25.x'
           cache: true
       - name: Test generated trace through Mesh gateway and prefrontal decision
-        run: go test ./mesh -run '^TestMeshPrefrontalTraceCorrelationPreserved$' -count=1 -v
+        run: go test ./mesh -run 'TestMeshPrefrontalTraceCorrelationPreserved|TestMeshPrefrontalAgentRoutePreservesTrace' -count=1 -v
+      - name: Verify delegated trace metadata is propagated by the agent router
+        run: go test ./orchestrator -run '^TestSuperpowersDelegationMetadataPreservesTraceAndCorrelation
+      - name: Verify neural and prefrontal packages
+        run: go test ./neural ./prefrontal -count=1
+      - name: Verify Mesh authentication, trace continuity, and prefrontal admission
+        run: go test ./mesh -run 'TestHTTPGatewayHMACAuthentication|TestHTTPGatewayPreservesTraceIdentity|TestMeshRoutesIntoPrefrontalExecutiveAdmission|TestMeshPrefrontalTraceCorrelationPreserved' -count=1 -v
+
+  group-f-transformers-pytorch-cpu:
+    name: Group F — isolated Transformers and PyTorch CPU inference
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    container:
+      image: python:3.12-slim
+    env:
+      HF_HOME: /tmp/soul-hf-cache
+      TOKENIZERS_PARALLELISM: 'false'
+    steps:
+      - name: Install checkout prerequisites
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends git ca-certificates
+          rm -rf /var/lib/apt/lists/*
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - name: Install pinned CPU-only inference runtime
+        run: |
+          python -m pip install --no-cache-dir --index-url https://download.pytorch.org/whl/cpu 'torch==2.8.0+cpu'
+          python -m pip install --no-cache-dir 'transformers==4.57.1' 'huggingface_hub==0.36.0' 'safetensors==0.6.2'
+      - name: Run real DistilBERT feature extraction and report model SHA and latency
+        run: python .github/scripts/group_f_local_inference.py
+ -count=1 -v
       - name: Verify neural and prefrontal packages
         run: go test ./neural ./prefrontal -count=1
       - name: Verify Mesh authentication, trace continuity, and prefrontal admission
