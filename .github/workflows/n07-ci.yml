@@ -9,6 +9,11 @@ on:
       - 'Dockerfile'
       - 'supabase/migrations/**'
       - 'soul-nuclei.json'
+      - 'integrations/external-capabilities.json'
+      - 'integrations/external-capability-ownership.json'
+      - 'integrations/resident-agent-contract.json'
+      - 'scripts/validate-external-capability-ownership.mjs'
+      - '.github/workflows/external-ownership-resident-contract.yml'
       - 'SOUL_MASTER_ENGINEERING_CONTRACT.md'
       - 'scripts/soul-architectural-integrity.mjs'
       - 'scripts/soul-live-source-audit.mjs'
@@ -22,6 +27,11 @@ on:
       - 'Dockerfile'
       - 'supabase/migrations/**'
       - 'soul-nuclei.json'
+      - 'integrations/external-capabilities.json'
+      - 'integrations/external-capability-ownership.json'
+      - 'integrations/resident-agent-contract.json'
+      - 'scripts/validate-external-capability-ownership.mjs'
+      - '.github/workflows/external-ownership-resident-contract.yml'
       - 'SOUL_MASTER_ENGINEERING_CONTRACT.md'
       - 'scripts/soul-architectural-integrity.mjs'
       - 'scripts/soul-live-source-audit.mjs'
@@ -90,6 +100,12 @@ jobs:
 
       - name: Live source integrity
         run: node scripts/soul-live-source-audit.mjs
+
+      - name: External capability ownership contract
+        run: node scripts/validate-external-capability-ownership.mjs
+
+      - name: Resident Mesh contract
+        run: node -e "const c=require('./integrations/resident-agent-contract.json'); if(c.transport.protocol!=='soul-mesh/1'||c.transport.contractVersion!=='1.1.0'||c.interface.describe!=='mesh.resident.describe@1.0.0') process.exit(1); console.log('resident contract: VALID')"
 
       - name: Declarative crossfront generation
         run: node scripts/generate-crossfront-state.mjs

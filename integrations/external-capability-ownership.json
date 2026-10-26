@@ -115,7 +115,6 @@
       "primaryOwner": "N06",
       "consumers": [
         "N02",
-        "N06",
         "N07"
       ],
       "affinity": "MetaGPT execution is owned by N06; N07 may request it through canonical federation.",
@@ -332,7 +331,6 @@
       "consumers": [
         "N01",
         "N05",
-        "N06",
         "N07",
         "SARA"
       ],

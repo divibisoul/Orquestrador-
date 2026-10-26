@@ -1,20 +1,34 @@
 import fs from 'node:fs/promises';
 
-const registry = JSON.parse(await fs.readFile('integrations/external-capabilities.json','utf8'));
-const ownership = JSON.parse(await fs.readFile('integrations/external-capability-ownership.json','utf8'));
+const registry = JSON.parse(await fs.readFile('integrations/external-capabilities.json', 'utf8'));
+const ownership = JSON.parse(await fs.readFile('integrations/external-capability-ownership.json', 'utf8'));
 
-const registryIds = registry.repositories.map(x=>x.id).sort();
+if (!Array.isArray(registry.repositories) || !Array.isArray(ownership.capabilities)) {
+  throw new Error('EXTERNAL_CAPABILITY_REGISTRY_SCHEMA_INVALID');
+}
+const registryIds = registry.repositories.map(x => x.id).sort();
 const rows = ownership.capabilities;
-if (rows.length !== 16) throw new Error(`OWNERSHIP_COUNT:${rows.length}`);
-const ids = rows.map(x=>x.id).sort();
+const ids = rows.map(x => x.id).sort();
+if (new Set(registryIds).size !== registryIds.length) throw new Error('DUPLICATE_REGISTRY_IDS');
+if (rows.length !== registryIds.length) {
+  throw new Error(`OWNERSHIP_COUNT_MISMATCH:registry=${registryIds.length};ownership=${rows.length}`);
+}
+if (new Set(ids).size !== ids.length) throw new Error('DUPLICATE_OWNERSHIP_IDS');
 if (JSON.stringify(ids) !== JSON.stringify(registryIds)) throw new Error('OWNERSHIP_IDS_DO_NOT_MATCH_REGISTRY');
-const owners = new Set(['N01','N02','N03','N04','N05','N06','N07']);
+
+// SARA is a valid transversal governance/memory authority; JEV remains a consumer,
+// not a canonical SOUL nucleus owner.
+const owners = new Set(['N01', 'N02', 'N03', 'N04', 'N05', 'N06', 'N07', 'SARA']);
 for (const row of rows) {
   if (!owners.has(row.primaryOwner)) throw new Error(`INVALID_PRIMARY_OWNER:${row.id}`);
-  if (!Array.isArray(row.consumers) || row.consumers.includes(row.primaryOwner)) throw new Error(`OWNER_MUST_BE_DISTINCT_FROM_CONSUMER:${row.id}`);
-  if (!['structural-only','adapter-planned','adapter-live'].includes(row.status)) throw new Error(`INVALID_STATUS:${row.id}`);
-  const source = registry.repositories.find(x=>x.id===row.id);
-  if (!source || source.source !== `https://github.com/${row.source}.git` && source.source !== `https://github.com/${row.source}`) {
+  if (!Array.isArray(row.consumers) || row.consumers.includes(row.primaryOwner)) {
+    throw new Error(`OWNER_MUST_BE_DISTINCT_FROM_CONSUMER:${row.id}`);
+  }
+  if (!['structural-only', 'adapter-planned', 'adapter-live'].includes(row.status)) {
+    throw new Error(`INVALID_STATUS:${row.id}`);
+  }
+  const source = registry.repositories.find(x => x.id === row.id);
+  if (!source || (source.source !== `https://github.com/${row.source}.git` && source.source !== `https://github.com/${row.source}`)) {
     throw new Error(`SOURCE_MISMATCH:${row.id}`);
   }
 }
@@ -26,4 +40,9 @@ for (const row of rows) {
   if (row.id === 'superpowers' && row.mode !== 'dev-skill-pack') throw new Error('SUPERPOWERS_MODE_INVALID');
 }
 
-console.log(JSON.stringify({ok:true,capabilities:rows.length,owners:[...new Set(rows.map(x=>x.primaryOwner))].sort()},null,2));
+console.log(JSON.stringify({
+  ok: true,
+  capabilities: rows.length,
+  registryCount: registryIds.length,
+  owners: [...new Set(rows.map(x => x.primaryOwner))].sort()
+}, null, 2));
