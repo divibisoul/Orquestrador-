@@ -58,15 +58,22 @@ type modelWorkerResponse struct {
 }
 
 type synergySample struct {
-	Index            int       `json:"index"`
-	TraceID          string    `json:"trace_id"`
-	CorrelationID    string    `json:"correlation_id"`
-	LatencyMS        float64   `json:"latency_ms"`
-	InferenceLatency float64   `json:"inference_latency_ms"`
-	OutputSHA256     string    `json:"output_sha256"`
-	OutputPreview    []float64 `json:"output_preview"`
-	Checkpoint       bool      `json:"checkpoint_written"`
-	GraphNodes       []string  `json:"graph_nodes"`
+	Index               int       `json:"index"`
+	TraceID             string    `json:"trace_id"`
+	CorrelationID       string    `json:"correlation_id"`
+	LatencyMS           float64   `json:"latency_ms"`
+	InferenceLatencyMS  float64   `json:"inference_latency_ms"`
+	OutputSHA256        string    `json:"output_sha256"`
+	OutputPreview       []float64 `json:"output_preview"`
+	ModelRevisionSHA    string    `json:"model_revision_sha"`
+	WeightsSHA256       string    `json:"weights_sha256"`
+	Task                string    `json:"task"`
+	Tokenizer           string    `json:"tokenizer"`
+	TorchVersion        string    `json:"torch_version"`
+	TransformersVersion string    `json:"transformers_version"`
+	Backend             string    `json:"backend"`
+	CheckpointWritten   bool      `json:"checkpoint_written"`
+	GraphNodes          []string  `json:"graph_nodes"`
 }
 
 func startLocalModelWorker(t *testing.T) *localModelWorker {
@@ -222,8 +229,12 @@ func requestMeshModel(t *testing.T, server *httptest.Server, capability, mode st
 	_, _ = fmt.Sscanf(fmt.Sprint(payload["inference_latency_ms"]), "%f", &inferenceLatency)
 	return synergySample{
 		Index: index, TraceID: traceID, CorrelationID: correlationID, LatencyMS: mathRound3(elapsedMS),
-		InferenceLatency: inferenceLatency, OutputSHA256: fmt.Sprint(payload["output_sha256"]),
-		OutputPreview: preview, Checkpoint: payload["checkpoint_written"] == "true", GraphNodes: nodes,
+		InferenceLatencyMS: inferenceLatency, OutputSHA256: fmt.Sprint(payload["output_sha256"]),
+		OutputPreview: preview, ModelRevisionSHA: fmt.Sprint(payload["model_revision_sha"]),
+		WeightsSHA256: fmt.Sprint(payload["weights_sha256"]), Task: fmt.Sprint(payload["task"]),
+		Tokenizer: fmt.Sprint(payload["tokenizer"]), TorchVersion: fmt.Sprint(payload["torch_version"]),
+		TransformersVersion: fmt.Sprint(payload["transformers_version"]), Backend: fmt.Sprint(payload["backend"]),
+		CheckpointWritten: payload["checkpoint_written"] == "true", GraphNodes: nodes,
 	}
 }
 
@@ -268,13 +279,26 @@ func TestMeshLangGraphTransformersSynergy10x10(t *testing.T) {
 	for _, sample := range baseline { baselineLatencies = append(baselineLatencies, sample.LatencyMS) }
 	for i, sample := range integrated {
 		integratedLatencies = append(integratedLatencies, sample.LatencyMS)
-		if i >= len(baseline) || baseline[i].OutputSHA256 != sample.OutputSHA256 || fmt.Sprint(baseline[i].OutputPreview) != fmt.Sprint(sample.OutputPreview) {
+		if i >= len(baseline) || baseline[i].OutputSHA256 != sample.OutputSHA256 ||
+			fmt.Sprint(baseline[i].OutputPreview) != fmt.Sprint(sample.OutputPreview) ||
+			baseline[i].ModelRevisionSHA != sample.ModelRevisionSHA ||
+			baseline[i].WeightsSHA256 != sample.WeightsSHA256 {
 			equivalent = false
 		}
-		if !sample.Checkpoint || len(sample.GraphNodes) != 2 {
+		if !sample.CheckpointWritten || len(sample.GraphNodes) != 2 {
 			t.Fatalf("integrated sample %d did not prove LangGraph checkpoint: %+v", i+1, sample)
 		}
 	}
+	for i, sample := range baseline {
+		if sample.ModelRevisionSHA == "" || sample.WeightsSHA256 == "" || sample.OutputSHA256 == "" {
+			t.Fatalf("baseline sample %d lacks model/output provenance: %+v", i+1, sample)
+		}
+		if i > 0 && (baseline[i-1].OutputSHA256 != sample.OutputSHA256 ||
+			fmt.Sprint(baseline[i-1].OutputPreview) != fmt.Sprint(sample.OutputPreview)) {
+			equivalent = false
+		}
+	}
+
 	p50Baseline := medianMS(baselineLatencies)
 	p50Integrated := medianMS(integratedLatencies)
 	ratio := p50Integrated / p50Baseline
@@ -285,10 +309,13 @@ func TestMeshLangGraphTransformersSynergy10x10(t *testing.T) {
 		"status": verdict,
 		"mesh_transport": "HTTPGateway via test-local Mesh endpoint; source N01 target N07",
 		"model_id": "distilbert/distilbert-base-uncased",
-		"model_revision_sha": baseline[0].OutputSHA256, // replaced below with the pinned revision from worker logs
-		"weights_sha256": "",
-		"backend": "PyTorch CPU",
-		"task": "feature-extraction",
+		"model_revision_sha": baseline[0].ModelRevisionSHA,
+		"weights_sha256": baseline[0].WeightsSHA256,
+		"backend": baseline[0].Backend,
+		"task": baseline[0].Task,
+		"tokenizer": baseline[0].Tokenizer,
+		"torch_version": baseline[0].TorchVersion,
+		"transformers_version": baseline[0].TransformersVersion,
 		"checkpointer": "MemorySaver",
 		"warmups_each_path_excluded": 2,
 		"baseline_samples": baseline,
@@ -299,11 +326,7 @@ func TestMeshLangGraphTransformersSynergy10x10(t *testing.T) {
 		"outputs_equivalent": equivalent,
 		"criterion_ratio_max": 1.5,
 	}
-	// The identity fields are sourced from the actual output response, never synthesized.
-	if len(baseline) > 0 {
-		report["model_revision_sha"] = workerModelRevision(t, worker)
-		report["weights_sha256"] = workerWeightsSHA(worker)
-	}
+
 	raw, err := json.Marshal(report)
 	if err != nil { t.Fatal(err) }
 	fmt.Printf("SOUL_MESH_SYNERGY_10_PLUS_10=%s\n", raw)
@@ -312,18 +335,3 @@ func TestMeshLangGraphTransformersSynergy10x10(t *testing.T) {
 	}
 }
 
-// The readiness values are retained by the worker process as immutable headers
-// so every measured request uses the exact same model artifact.
-func workerModelRevision(t *testing.T, worker *localModelWorker) string {
-	t.Helper()
-	result, err := worker.invoke(modelWorkerRequest{Mode: "direct", TraceID: protocol.NewTraceID(), CorrelationID: protocol.NewTraceID(), InputText: synergyInput})
-	if err != nil { t.Fatal(err) }
-	return result.ModelRevisionSHA
-}
-
-func workerWeightsSHA(t *testing.T, worker *localModelWorker) string {
-	t.Helper()
-	result, err := worker.invoke(modelWorkerRequest{Mode: "direct", TraceID: protocol.NewTraceID(), CorrelationID: protocol.NewTraceID(), InputText: synergyInput})
-	if err != nil { t.Fatal(err) }
-	return result.WeightsSHA256
-}
