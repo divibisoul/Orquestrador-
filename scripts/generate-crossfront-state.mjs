@@ -55,8 +55,12 @@ for (const [id, nucleus] of Object.entries(matrix.nuclei ?? {})) {
     mesh,
     neuralBridge: has(joined, ['synapticnodebridge', 'neural', 'federation']),
     source,
-    // File presence alone is not Mesh evidence; fail closed on missing Mesh proof.
+    // OBSERVED means source evidence only; this scanner does not contact live processes.
+    evidenceKind: 'STATIC_SOURCE_SCAN',
     state: missing.length > 0 || source === 'not-found' || !mesh ? 'DEGRADED' : 'OBSERVED',
+    runtimeState: 'UNMEASURABLE',
+    runtimeProof: false,
+    runtimeReason: 'No authenticated live-process transaction was performed by this source scanner.',
     missing,
   });
 }
@@ -66,9 +70,9 @@ const lines = [
   '',
   '> Generated from the declarative SOUL matrix. Missing repository evidence is surfaced as DEGRADED; runtime availability is never fabricated.',
   '',
-  '| Nucleus | Repository | Role | Contract | Mesh | Neural/Federation | Evidence state | Source |',
+  '| Nucleus | Repository | Role | Contract | Mesh source marker | Source evidence | Runtime state | Runtime proof | Source |',
   '|---|---|---|---:|---|---|---|---|',
-  ...rows.map((row) => `| ${row.id} | ${row.repo} | ${row.role} | ${row.contract} | ${row.mesh ? 'present' : 'not detected'} | ${row.neuralBridge ? 'present' : 'not detected'} | ${row.state} | ${row.source} |`),
+  ...rows.map((row) => `| ${row.id} | ${row.repo} | ${row.role} | ${row.contract} | ${row.mesh ? 'present' : 'not detected'} | ${row.state} | ${row.runtimeState} | ${row.runtimeProof ? 'proven' : 'not performed'} | ${row.source} |`),
   '',
   '## Governance',
   '',
